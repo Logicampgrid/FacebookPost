@@ -12,7 +12,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
         console.log('User cancelled login or did not fully authorize.');
       }
     }, {
-      scope: 'pages_manage_posts,pages_read_engagement,pages_show_list,publish_to_groups'
+      scope: 'pages_manage_posts,pages_read_engagement,pages_show_list'
     });
   };
 
