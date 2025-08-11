@@ -90,6 +90,23 @@ L'application utilise les identifiants Facebook configurés dans `/app/backend/.
 3. **Tester l'upload d'images**
 4. **Vérifier la programmation de posts**
 
+## 🛠️ Problèmes Résolus
+
+### Erreur "Invalid Host header" - ✅ RÉSOLU
+- **Problème** : React Dev Server bloquait les connexions externes
+- **Solution appliquée** : Ajout de `DANGEROUSLY_DISABLE_HOST_CHECK=true` dans `.env`
+- **Statut** : ✅ Application entièrement accessible
+
+### Permissions Facebook - ✅ RÉSOLU  
+- **Problème initial** : "Invalid Scopes: publish_to_groups"
+- **Solution appliquée** : Suppression de la permission obsolète
+- **Statut** : ✅ Permissions corrigées
+
+### Compatibilité Backend - ✅ RÉSOLU
+- **Problème initial** : FastAPI 0.104.1 incompatibilité
+- **Solution appliquée** : Downgrade vers FastAPI 0.100.1  
+- **Statut** : ✅ Backend stable
+
 ## 🛠️ Commandes de Maintenance
 
 ### Redémarrage des services
