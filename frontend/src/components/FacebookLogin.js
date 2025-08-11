@@ -126,8 +126,40 @@ const FacebookLogin = ({ onLogin, loading }) => {
   const handleLogin = () => {
     if (loginMethod === 'popup') {
       handleFacebookLoginPopup();
+    } else if (loginMethod === 'manual') {
+      handleManualTokenLogin();
     } else {
       handleFacebookLoginRedirect();
+    }
+  };
+
+  const handleManualTokenLogin = async () => {
+    if (!manualToken.trim()) {
+      setError('Veuillez saisir un token d\'accès Facebook valide');
+      return;
+    }
+
+    try {
+      setExchangingCode(true);
+      setError('');
+      
+      // Test the token first
+      const testResponse = await fetch(`${API_BASE}/api/debug/facebook-token/${manualToken}`);
+      const testData = await testResponse.json();
+      
+      if (testData.status !== 'valid') {
+        setError('Token Facebook invalide: ' + (testData.error?.message || 'Token expiré ou incorrect'));
+        return;
+      }
+
+      // Login with the token
+      onLogin(manualToken);
+      
+    } catch (err) {
+      console.error('Error with manual token:', err);
+      setError('Erreur lors de la validation du token');
+    } finally {
+      setExchangingCode(false);
     }
   };
 
