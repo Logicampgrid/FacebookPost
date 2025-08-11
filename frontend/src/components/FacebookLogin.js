@@ -184,7 +184,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
       {/* Login Method Selection */}
       <div className="space-y-2">
         <label className="text-sm text-gray-600">Méthode de connexion :</label>
-        <div className="flex space-x-4">
+        <div className="space-y-2">
           <label className="flex items-center space-x-2">
             <input
               type="radio"
@@ -194,7 +194,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
               className="text-facebook-primary"
               disabled={isLoading}
             />
-            <span className="text-sm">Redirection (recommandé)</span>
+            <span className="text-sm">Redirection (nécessite configuration domaine)</span>
           </label>
           <label className="flex items-center space-x-2">
             <input
@@ -207,8 +207,44 @@ const FacebookLogin = ({ onLogin, loading }) => {
             />
             <span className="text-sm">Popup</span>
           </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              value="manual"
+              checked={loginMethod === 'manual'}
+              onChange={(e) => setLoginMethod(e.target.value)}
+              className="text-facebook-primary"
+              disabled={isLoading}
+            />
+            <span className="text-sm">Token manuel (solution temporaire)</span>
+          </label>
         </div>
       </div>
+
+      {/* Manual Token Input */}
+      {loginMethod === 'manual' && (
+        <div className="space-y-2">
+          <label className="text-sm text-gray-600">
+            Token d'accès Facebook :
+          </label>
+          <textarea
+            value={manualToken}
+            onChange={(e) => setManualToken(e.target.value)}
+            placeholder="Collez votre token Facebook ici..."
+            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+            rows="3"
+            disabled={isLoading}
+          />
+          <div className="text-xs text-blue-600 space-y-1">
+            <p>📋 <strong>Comment obtenir un token :</strong></p>
+            <p>1. Allez sur <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="underline">Facebook Graph API Explorer</a></p>
+            <p>2. Sélectionnez App ID: 5664227323683118</p>
+            <p>3. Générez un "User Access Token"</p>
+            <p>4. Ajoutez les permissions: pages_manage_posts, pages_read_engagement, pages_show_list</p>
+            <p>5. Copiez le token généré et collez-le ci-dessus</p>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handleLogin}
