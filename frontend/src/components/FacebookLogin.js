@@ -186,6 +186,9 @@ const FacebookLogin = ({ onLogin, loading }) => {
 
   return (
     <div className="space-y-4">
+      {/* Connection Status Check */}
+      <ConnectionStatus API_BASE={API_BASE} />
+      
       {error && (
         <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
