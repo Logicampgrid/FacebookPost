@@ -553,6 +553,50 @@ async def get_user_pages(user_id: str):
     
     return {"pages": user.get("facebook_pages", [])}
 
+@app.post("/api/links/preview")
+async def get_link_preview(request: LinkPreviewRequest):
+    """Get link preview metadata"""
+    try:
+        metadata = await extract_link_metadata(request.url)
+        
+        if not metadata:
+            raise HTTPException(status_code=400, detail="Unable to fetch link metadata")
+            
+        return {"success": True, "metadata": metadata}
+        
+    except Exception as e:
+        print(f"Error getting link preview: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching link preview: {str(e)}")
+
+@app.post("/api/text/extract-links")
+async def extract_links_from_text_content(text_content: dict):
+    """Extract URLs from text content and get their metadata"""
+    try:
+        text = text_content.get("text", "")
+        
+        if not text:
+            return {"links": []}
+            
+        # Extract URLs
+        urls = extract_urls_from_text(text)
+        
+        # Get metadata for each URL
+        links_metadata = []
+        for url in urls[:3]:  # Limit to first 3 URLs to avoid performance issues
+            try:
+                metadata = await extract_link_metadata(url)
+                if metadata:
+                    links_metadata.append(metadata)
+            except Exception as e:
+                print(f"Error processing URL {url}: {e}")
+                continue
+                
+        return {"links": links_metadata}
+        
+    except Exception as e:
+        print(f"Error extracting links: {e}")
+        raise HTTPException(status_code=500, detail=f"Error extracting links: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
