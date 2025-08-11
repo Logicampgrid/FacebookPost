@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Users } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 const PageSelector = ({ pages, selectedPage, onPageSelect }) => {
   if (!pages || pages.length === 0) {
