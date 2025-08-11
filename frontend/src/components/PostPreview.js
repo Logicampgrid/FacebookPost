@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageCircle, Share2, ThumbsUp } from 'lucide-react';
+import LinkPreview from './LinkPreview';
 
 const PostPreview = ({ content, mediaFiles = [], pageName, timestamp, showActions = true }) => {
   const getMediaPreview = (file) => {
