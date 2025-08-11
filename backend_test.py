@@ -221,11 +221,57 @@ class FacebookPostManagerTester:
         
         if success and response.get("status") == "invalid":
             print("✅ Correctly identified invalid token")
+            # Check if error structure is correct for the frontend fix
+            error_data = response.get("error", {})
+            if isinstance(error_data, dict) and "error" in error_data:
+                print("✅ Error structure supports testData.error?.error?.message access")
+            else:
+                print("⚠️  Error structure may not support nested error access")
             return True
         elif success:
             print(f"⚠️  Unexpected response status: {response.get('status')}")
             return False
         return success
+
+    def test_facebook_token_debug_various_invalid_tokens(self):
+        """Test Facebook token debug with various invalid token formats"""
+        invalid_tokens = [
+            "clearly_invalid_token",
+            "EAABwzLixnjYBAGZCxyz123",  # Fake token format
+            "expired_token_example",
+            "",  # Empty token
+            "short"  # Too short token
+        ]
+        
+        all_passed = True
+        for token in invalid_tokens:
+            if not token:  # Skip empty token as it would cause URL issues
+                continue
+                
+            success, response = self.run_test(
+                f"Facebook Token Debug (Invalid: {token[:20]}...)",
+                "GET",
+                f"api/debug/facebook-token/{token}",
+                200
+            )
+            
+            if success:
+                status = response.get("status")
+                if status == "invalid":
+                    print(f"✅ Token '{token[:20]}...' correctly identified as invalid")
+                    # Check error message structure
+                    error_data = response.get("error", {})
+                    if isinstance(error_data, dict):
+                        print(f"   Error structure: {list(error_data.keys())}")
+                elif status == "error":
+                    print(f"✅ Token '{token[:20]}...' caused error (expected for malformed tokens)")
+                else:
+                    print(f"⚠️  Unexpected status '{status}' for token '{token[:20]}...'")
+                    all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
 
     def test_facebook_config_debug(self):
         """Test Facebook configuration debug endpoint"""
