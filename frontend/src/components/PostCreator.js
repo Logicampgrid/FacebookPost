@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Send, Image, Calendar, Users, Clock } from 'lucide-react';
+import { Send, Image, Calendar, Users, Clock, Link } from 'lucide-react';
 import axios from 'axios';
 import MediaUploader from './MediaUploader';
 import PostPreview from './PostPreview';
+import LinkPreview from './LinkPreview';
+import { useLinkDetection } from '../hooks/useLinkDetection';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
