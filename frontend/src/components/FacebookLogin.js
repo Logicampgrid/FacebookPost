@@ -6,6 +6,8 @@ const FacebookLogin = ({ onLogin, loading }) => {
   const [error, setError] = useState('');
   const [loginMethod, setLoginMethod] = useState('redirect'); // Default to redirect
   const [exchangingCode, setExchangingCode] = useState(false);
+  const [manualToken, setManualToken] = useState('');
+  const [showManualTokenInput, setShowManualTokenInput] = useState(false);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
