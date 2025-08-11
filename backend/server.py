@@ -179,6 +179,72 @@ async def facebook_auth(auth_request: FacebookAuthRequest):
         "user": user
     }
 
+@app.post("/api/auth/facebook/exchange-code")
+async def exchange_facebook_code(request: dict):
+    """Exchange Facebook authorization code for access token"""
+    try:
+        code = request.get("code")
+        redirect_uri = request.get("redirect_uri")
+        
+        if not code or not redirect_uri:
+            raise HTTPException(status_code=400, detail="Code and redirect_uri are required")
+        
+        # Exchange code for access token
+        token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
+        token_params = {
+            "client_id": FACEBOOK_APP_ID,
+            "client_secret": FACEBOOK_APP_SECRET,
+            "redirect_uri": redirect_uri,
+            "code": code
+        }
+        
+        response = requests.get(token_url, params=token_params)
+        token_data = response.json()
+        
+        if "access_token" not in token_data:
+            raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+        
+        # Now authenticate the user with this access token
+        access_token = token_data["access_token"]
+        
+        user_info = await get_facebook_user_info(access_token)
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Invalid access token received")
+        
+        # Get user's pages
+        pages = await get_facebook_pages(access_token)
+        
+        # Create or update user
+        user_data = {
+            "facebook_id": user_info["id"],
+            "name": user_info["name"],
+            "email": user_info.get("email", ""),
+            "facebook_access_token": access_token,
+            "facebook_pages": pages,
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Update or insert user
+        await db.users.update_one(
+            {"facebook_id": user_info["id"]},
+            {"$set": user_data},
+            upsert=True
+        )
+        
+        # Get the user document
+        user = await db.users.find_one({"facebook_id": user_info["id"]})
+        user["_id"] = str(user["_id"])
+        
+        return {
+            "message": "Authentication successful",
+            "user": user,
+            "access_token": access_token
+        }
+        
+    except Exception as e:
+        print(f"Error in Facebook code exchange: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
+
 @app.get("/api/posts")
 async def get_posts(user_id: str = None):
     """Get all posts for a user"""
