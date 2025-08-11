@@ -79,6 +79,19 @@ const PostPreview = ({ content, mediaFiles = [], detectedLinks = [], pageName, t
         </div>
       )}
 
+      {/* Detected Links */}
+      {detectedLinks.length > 0 && (
+        <div className="space-y-2 mt-3">
+          {detectedLinks.map((link, index) => (
+            <LinkPreview 
+              key={`preview-${link.url}-${index}`}
+              link={link}
+              onRemove={null} // No remove in preview
+            />
+          ))}
+        </div>
+      )}
+
       {/* Post Actions */}
       {showActions && (
         <div className="post-actions">
