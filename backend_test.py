@@ -132,7 +132,7 @@ class FacebookPostManagerTester:
             "api/posts",
             200,
             data=form_data,
-            files={}  # This will make it send as multipart/form-data
+            form_data=True
         )
         
         if success and "post" in response:
