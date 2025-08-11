@@ -12,10 +12,14 @@ class FacebookPostManagerTester:
         self.test_user_id = None
         self.test_post_id = None
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, files=None, form_data=False):
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
-        headers = {'Content-Type': 'application/json'} if not files else {}
+        headers = {}
+        
+        # Don't set Content-Type for form data - let requests handle it
+        if not files and not form_data:
+            headers['Content-Type'] = 'application/json'
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
@@ -25,7 +29,7 @@ class FacebookPostManagerTester:
             if method == 'GET':
                 response = requests.get(url, headers=headers)
             elif method == 'POST':
-                if files:
+                if files or form_data:
                     response = requests.post(url, data=data, files=files)
                 else:
                     response = requests.post(url, json=data, headers=headers)
