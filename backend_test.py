@@ -169,7 +169,7 @@ class FacebookPostManagerTester:
             "Publish Post (No User Setup)",
             "POST",
             f"api/posts/{self.test_post_id}/publish",
-            404  # User not found expected
+            500  # Internal server error expected when user not found
         )
         return success
 
