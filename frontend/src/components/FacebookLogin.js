@@ -148,7 +148,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
       const testData = await testResponse.json();
       
       if (testData.status !== 'valid') {
-        setError('Token Facebook invalide: ' + (testData.error?.message || 'Token expiré ou incorrect'));
+        setError('Token Facebook invalide: ' + (testData.error?.error?.message || 'Token expiré ou incorrect'));
         return;
       }
 
