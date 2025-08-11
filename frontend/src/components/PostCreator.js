@@ -134,6 +134,46 @@ const PostCreator = ({ user, selectedPage, onPostCreated }) => {
             />
           </div>
 
+          {/* Detected Links Preview */}
+          {(detectedLinks.length > 0 || linksLoading) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Link className="w-4 h-4 inline mr-1" />
+                Liens détectés
+                {linksLoading && (
+                  <span className="ml-2 text-xs text-gray-500">
+                    (Chargement...)
+                  </span>
+                )}
+              </label>
+              
+              <div className="space-y-2">
+                {linksLoading && detectedLinks.length === 0 && (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="animate-pulse">
+                      <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-2 bg-gray-300 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                )}
+                
+                {detectedLinks.map((link, index) => (
+                  <LinkPreview 
+                    key={`${link.url}-${index}`}
+                    link={link}
+                    onRemove={removeLink}
+                  />
+                ))}
+              </div>
+              
+              {detectedLinks.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Les liens seront automatiquement inclus dans votre post Facebook
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Schedule Time */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
