@@ -317,6 +317,9 @@ def main():
     tests = [
         tester.test_health_check,
         tester.test_cors_headers,
+        tester.test_facebook_config_debug,
+        tester.test_facebook_auth_url_generation,
+        tester.test_facebook_token_debug_invalid,
         tester.test_facebook_auth_invalid,
         tester.test_get_posts_without_user,
         tester.test_create_post_without_auth,
