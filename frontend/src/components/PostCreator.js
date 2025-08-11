@@ -1,0 +1,206 @@
+import React, { useState } from 'react';
+import { Send, Image, Calendar, Users, Clock } from 'lucide-react';
+import axios from 'axios';
+import MediaUploader from './MediaUploader';
+import PostPreview from './PostPreview';
+
+const API_BASE = process.env.REACT_APP_BACKEND_URL;
+
+const PostCreator = ({ user, selectedPage, onPostCreated }) => {
+  const [content, setContent] = useState('');
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!content.trim()) {
+      alert('Veuillez saisir un contenu pour votre post');
+      return;
+    }
+    
+    if (!selectedPage) {
+      alert('Veuillez sélectionner une page Facebook');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Create post
+      const formData = new FormData();
+      formData.append('user_id', user._id);
+      
+      const postData = {
+        content: content.trim(),
+        target_type: 'page',
+        target_id: selectedPage.id,
+        target_name: selectedPage.name,
+        scheduled_time: scheduledTime || null
+      };
+
+      const response = await axios.post(`${API_BASE}/api/posts`, postData, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const newPost = response.data.post;
+
+      // Upload media if present
+      if (mediaFiles.length > 0) {
+        for (const file of mediaFiles) {
+          const mediaFormData = new FormData();
+          mediaFormData.append('file', file);
+          
+          await axios.post(`${API_BASE}/api/posts/${newPost.id}/media`, mediaFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
+      }
+
+      // Reset form
+      setContent('');
+      setMediaFiles([]);
+      setScheduledTime('');
+
+      // Notify parent
+      onPostCreated(newPost);
+
+      alert(scheduledTime ? 'Post programmé avec succès!' : 'Post créé avec succès!');
+      
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Erreur lors de la création du post: ' + (error.response?.data?.detail || 'Erreur inconnue'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5); // Minimum 5 minutes from now
+    return now.toISOString().slice(0, 16);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Post Creator */}
+      <div className="facebook-card p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-10 h-10 bg-facebook-primary rounded-full flex items-center justify-center">
+            <Send className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">Créer un nouveau post</h2>
+            <p className="text-sm text-gray-600">
+              Publication sur: {selectedPage?.name || 'Sélectionnez une page'}
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Content Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Contenu du post *
+            </label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Que voulez-vous partager?"
+              className="facebook-textarea h-32"
+              disabled={loading}
+            />
+            <div className="mt-1 text-xs text-gray-500">
+              {content.length}/2000 caractères
+            </div>
+          </div>
+
+          {/* Media Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Image className="w-4 h-4 inline mr-1" />
+              Médias (optionnel)
+            </label>
+            <MediaUploader 
+              files={mediaFiles} 
+              onFilesChange={setMediaFiles}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Schedule Time */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 inline mr-1" />
+              Programmer la publication (optionnel)
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+              min={getMinDateTime()}
+              className="facebook-input w-full max-w-xs"
+              disabled={loading}
+            />
+            {scheduledTime && (
+              <p className="text-xs text-gray-500 mt-1">
+                Sera publié le {new Date(scheduledTime).toLocaleString('fr-FR')}
+              </p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-gray-500">
+              {selectedPage ? (
+                <span className="flex items-center">
+                  <Users className="w-4 h-4 mr-1" />
+                  {selectedPage.name}
+                </span>
+              ) : (
+                'Sélectionnez une page Facebook'
+              )}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={loading || !selectedPage || !content.trim()}
+              className="facebook-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" />
+                  <span>Création...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>{scheduledTime ? 'Programmer' : 'Créer'} le Post</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Live Preview */}
+      {(content || mediaFiles.length > 0) && (
+        <div className="facebook-card p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <Calendar className="w-5 h-5 mr-2" />
+            Aperçu du post
+          </h3>
+          <PostPreview 
+            content={content}
+            mediaFiles={mediaFiles}
+            pageName={selectedPage?.name || 'Ma Page'}
+            timestamp="À l'instant"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PostCreator;
