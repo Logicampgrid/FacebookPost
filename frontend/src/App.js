@@ -96,7 +96,7 @@ function App() {
   const handleFacebookLogin = async (accessToken) => {
     try {
       setLoading(true);
-      console.log('Authenticating with Facebook...');
+      console.log('Authenticating with Facebook...', accessToken.substring(0, 20) + '...');
       
       const response = await axios.post(`${API_BASE}/api/auth/facebook`, {
         access_token: accessToken
@@ -108,10 +108,26 @@ function App() {
       // Set default page if available
       if (response.data.user.facebook_pages && response.data.user.facebook_pages.length > 0) {
         setSelectedPage(response.data.user.facebook_pages[0]);
+        console.log('Pages found:', response.data.user.facebook_pages.length);
+      } else {
+        console.log('No Facebook pages found for this user');
       }
     } catch (error) {
       console.error('Facebook auth error:', error);
-      const errorMessage = error.response?.data?.detail || 'Erreur lors de l\'authentification Facebook';
+      console.error('Error details:', error.response?.data);
+      
+      let errorMessage = 'Erreur lors de l\'authentification Facebook';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Token Facebook invalide ou expiré';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer.';
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion.';
+      }
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
