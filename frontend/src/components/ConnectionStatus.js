@@ -75,7 +75,7 @@ const ConnectionStatus = ({ API_BASE }) => {
       )}
       
       <div className="mt-2 text-xs text-gray-500">
-        Endpoint: {API_BASE}/api/health
+        Endpoint: {API_BASE || 'API via proxy'}/api/health
       </div>
     </div>
   );
