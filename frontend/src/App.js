@@ -6,7 +6,7 @@ import PostList from './components/PostList';
 import FacebookLogin from './components/FacebookLogin';
 import PageSelector from './components/PageSelector';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL;
+const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 function App() {
   const [user, setUser] = useState(null);
