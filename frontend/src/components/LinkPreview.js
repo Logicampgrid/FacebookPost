@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 const LinkPreview = ({ link, onRemove = null }) => {
   const handleClick = () => {
