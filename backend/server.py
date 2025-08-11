@@ -184,11 +184,11 @@ async def facebook_auth(auth_request: FacebookAuthRequest):
     }
 
 @app.post("/api/auth/facebook/exchange-code")
-async def exchange_facebook_code(request: dict):
+async def exchange_facebook_code(request: FacebookCodeExchangeRequest):
     """Exchange Facebook authorization code for access token"""
     try:
-        code = request.get("code")
-        redirect_uri = request.get("redirect_uri")
+        code = request.code
+        redirect_uri = request.redirect_uri
         
         if not code or not redirect_uri:
             raise HTTPException(status_code=400, detail="Code and redirect_uri are required")
