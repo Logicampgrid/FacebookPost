@@ -185,7 +185,7 @@ async def extract_link_metadata(url: str):
         
         # Regular meta tags (final fallback)
         title_tag = soup.find('title')
-        description_tag = soup.find('meta', attrs={'name': 'description'})
+        description_tag = soup.find('meta', {'name': 'description'})
         
         # Set title
         if og_title:
