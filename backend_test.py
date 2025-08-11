@@ -505,7 +505,14 @@ def main():
         tester.test_publish_post_without_user,
         tester.test_delete_post,
         tester.test_delete_nonexistent_post,
-        tester.test_get_user_pages_nonexistent
+        tester.test_get_user_pages_nonexistent,
+        # New link detection tests
+        tester.test_extract_links_from_text,
+        tester.test_extract_links_empty_text,
+        tester.test_extract_links_no_urls,
+        tester.test_link_preview_single_url,
+        tester.test_link_preview_invalid_url,
+        tester.test_link_preview_malformed_url
     ]
     
     for test in tests:
