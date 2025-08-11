@@ -248,7 +248,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
 
       <button
         onClick={handleLogin}
-        disabled={isLoading}
+        disabled={isLoading || (loginMethod === 'manual' && !manualToken.trim())}
         className="facebook-button w-full flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
@@ -259,15 +259,19 @@ const FacebookLogin = ({ onLogin, loading }) => {
         ) : (
           <>
             <Users className="w-5 h-5" />
-            <span>Se connecter avec Facebook</span>
+            <span>
+              {loginMethod === 'manual' ? 'Tester le Token' : 'Se connecter avec Facebook'}
+            </span>
           </>
         )}
       </button>
       
       <div className="text-xs text-gray-500 text-center">
         {loginMethod === 'redirect' 
-          ? 'Vous serez redirigé vers Facebook pour vous connecter'
-          : 'Une popup Facebook s\'ouvrira pour la connexion'
+          ? '⚠️ Nécessite configuration du domaine dans Facebook Developer Console'
+          : loginMethod === 'popup'
+          ? 'Une popup Facebook s\'ouvrira pour la connexion'
+          : 'Solution temporaire avec token manuel'
         }
       </div>
     </div>
