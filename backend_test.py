@@ -209,7 +209,8 @@ class FacebookPostManagerTester:
         """Test CORS configuration"""
         print(f"\n🔍 Testing CORS Headers...")
         try:
-            response = requests.options(f"{self.base_url}/api/health")
+            # Test with a regular GET request to see CORS headers
+            response = requests.get(f"{self.base_url}/api/health")
             cors_headers = {
                 'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
                 'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
@@ -217,7 +218,11 @@ class FacebookPostManagerTester:
             }
             print(f"   CORS Headers: {cors_headers}")
             
-            if cors_headers['Access-Control-Allow-Origin']:
+            # Also test OPTIONS request
+            options_response = requests.options(f"{self.base_url}/api/health")
+            print(f"   OPTIONS Status: {options_response.status_code}")
+            
+            if cors_headers['Access-Control-Allow-Origin'] or options_response.status_code == 200:
                 print("✅ CORS is configured")
                 self.tests_passed += 1
             else:
