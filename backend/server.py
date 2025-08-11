@@ -171,63 +171,51 @@ async def extract_link_metadata(url: str):
             'type': 'website'
         }
         
-        # Open Graph tags (priority)
-        og_title = soup.find('meta', property='og:title')
-        og_description = soup.find('meta', property='og:description')
-        og_image = soup.find('meta', property='og:image')
-        og_site_name = soup.find('meta', property='og:site_name')
-        og_type = soup.find('meta', property='og:type')
-        
-        # Twitter Card tags (fallback)
-        twitter_title = soup.find('meta', name='twitter:title')
-        twitter_description = soup.find('meta', name='twitter:description')
-        twitter_image = soup.find('meta', name='twitter:image')
-        
-        # Regular meta tags (final fallback)
-        title_tag = soup.find('title')
-        description_tag = soup.find('meta', {'name': 'description'})
-        
-        # Set title
-        if og_title:
-            metadata['title'] = og_title.get('content', '').strip()
-        elif twitter_title:
-            metadata['title'] = twitter_title.get('content', '').strip()
-        elif title_tag:
-            metadata['title'] = title_tag.get_text().strip()
+        # Get title - prioritize og:title
+        og_title = soup.find('meta', {'property': 'og:title'})
+        if og_title and og_title.get('content'):
+            metadata['title'] = og_title.get('content').strip()
+        else:
+            title_tag = soup.find('title')
+            if title_tag:
+                metadata['title'] = title_tag.get_text().strip()
             
-        # Set description
-        if og_description:
-            metadata['description'] = og_description.get('content', '').strip()
-        elif twitter_description:
-            metadata['description'] = twitter_description.get('content', '').strip()
-        elif description_tag:
-            metadata['description'] = description_tag.get('content', '').strip()
+        # Get description - prioritize og:description
+        og_description = soup.find('meta', {'property': 'og:description'})
+        if og_description and og_description.get('content'):
+            metadata['description'] = og_description.get('content').strip()
+        else:
+            description_tag = soup.find('meta', {'name': 'description'})
+            if description_tag and description_tag.get('content'):
+                metadata['description'] = description_tag.get('content').strip()
             
-        # Set image
-        if og_image:
-            metadata['image'] = og_image.get('content', '').strip()
-        elif twitter_image:
-            metadata['image'] = twitter_image.get('content', '').strip()
+        # Get image - prioritize og:image
+        og_image = soup.find('meta', {'property': 'og:image'})
+        if og_image and og_image.get('content'):
+            metadata['image'] = og_image.get('content').strip()
+            # Make image URL absolute if relative
+            if metadata['image'] and not metadata['image'].startswith('http'):
+                metadata['image'] = urljoin(response.url, metadata['image'])
             
-        # Make image URL absolute if relative
-        if metadata['image'] and not metadata['image'].startswith('http'):
-            metadata['image'] = urljoin(response.url, metadata['image'])
-            
-        # Set site name
-        if og_site_name:
-            metadata['site_name'] = og_site_name.get('content', '').strip()
+        # Get site name
+        og_site_name = soup.find('meta', {'property': 'og:site_name'})
+        if og_site_name and og_site_name.get('content'):
+            metadata['site_name'] = og_site_name.get('content').strip()
         else:
             # Extract domain name
             parsed_url = urlparse(response.url)
             metadata['site_name'] = parsed_url.netloc
             
-        # Set type
-        if og_type:
-            metadata['type'] = og_type.get('content', '').strip()
+        # Get type
+        og_type = soup.find('meta', {'property': 'og:type'})
+        if og_type and og_type.get('content'):
+            metadata['type'] = og_type.get('content').strip()
             
         # Limit text length
-        metadata['title'] = metadata['title'][:200] if metadata['title'] else ''
-        metadata['description'] = metadata['description'][:300] if metadata['description'] else ''
+        if metadata['title']:
+            metadata['title'] = metadata['title'][:200]
+        if metadata['description']:
+            metadata['description'] = metadata['description'][:300]
         
         return metadata
         
