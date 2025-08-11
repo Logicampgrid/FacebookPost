@@ -142,6 +142,51 @@ async def post_to_facebook(post: Post, page_access_token: str):
 
 # API Routes
 
+@app.get("/api/debug/facebook-token/{token}")
+async def debug_facebook_token(token: str):
+    """Debug Facebook token for troubleshooting"""
+    try:
+        # Test with Facebook Graph API
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/me",
+            params={
+                "access_token": token,
+                "fields": "id,name,email"
+            }
+        )
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            return {
+                "status": "valid",
+                "token": token,
+                "user": user_data,
+                "expires_at": "unknown"
+            }
+        else:
+            error_data = response.json()
+            return {
+                "status": "invalid", 
+                "token": token,
+                "error": error_data,
+                "status_code": response.status_code
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "token": token, 
+            "error": str(e)
+        }
+
+@app.get("/api/debug/facebook-config")
+async def debug_facebook_config():
+    """Debug Facebook app configuration"""
+    return {
+        "app_id": FACEBOOK_APP_ID,
+        "graph_url": FACEBOOK_GRAPH_URL,
+        "app_secret_configured": "Yes" if FACEBOOK_APP_SECRET else "No"
+    }
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
