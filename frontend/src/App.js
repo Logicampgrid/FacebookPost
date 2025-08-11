@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Calendar, Image, Video, Link, Send, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Calendar, Send } from 'lucide-react';
 import PostCreator from './components/PostCreator';
 import PostList from './components/PostList';
 import FacebookLogin from './components/FacebookLogin';
