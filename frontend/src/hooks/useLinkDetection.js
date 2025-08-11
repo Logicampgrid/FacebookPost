@@ -59,7 +59,7 @@ export const useLinkDetection = (text, debounceMs = 1000) => {
 
 // Utilitaire pour détecter les URLs dans du texte (côté client)
 export const detectUrlsInText = (text) => {
-  const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
+  const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g;
   return text.match(urlRegex) || [];
 };
 
