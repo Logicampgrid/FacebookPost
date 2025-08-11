@@ -15,6 +15,7 @@ import json
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
+from bson import ObjectId
 
 load_dotenv()
 
