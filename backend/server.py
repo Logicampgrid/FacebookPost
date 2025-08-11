@@ -146,6 +146,102 @@ async def post_to_facebook(post: Post, page_access_token: str):
         print(f"Error posting to Facebook: {e}")
         return None
 
+async def extract_link_metadata(url: str):
+    """Extract metadata from a URL for link preview"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # Make request with timeout
+        response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+        
+        if response.status_code != 200:
+            return None
+            
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Extract metadata
+        metadata = {
+            'url': response.url,  # Final URL after redirects
+            'title': '',
+            'description': '',
+            'image': '',
+            'site_name': '',
+            'type': 'website'
+        }
+        
+        # Open Graph tags (priority)
+        og_title = soup.find('meta', property='og:title')
+        og_description = soup.find('meta', property='og:description')
+        og_image = soup.find('meta', property='og:image')
+        og_site_name = soup.find('meta', property='og:site_name')
+        og_type = soup.find('meta', property='og:type')
+        
+        # Twitter Card tags (fallback)
+        twitter_title = soup.find('meta', name='twitter:title')
+        twitter_description = soup.find('meta', name='twitter:description')
+        twitter_image = soup.find('meta', name='twitter:image')
+        
+        # Regular meta tags (final fallback)
+        title_tag = soup.find('title')
+        description_tag = soup.find('meta', attrs={'name': 'description'})
+        
+        # Set title
+        if og_title:
+            metadata['title'] = og_title.get('content', '').strip()
+        elif twitter_title:
+            metadata['title'] = twitter_title.get('content', '').strip()
+        elif title_tag:
+            metadata['title'] = title_tag.get_text().strip()
+            
+        # Set description
+        if og_description:
+            metadata['description'] = og_description.get('content', '').strip()
+        elif twitter_description:
+            metadata['description'] = twitter_description.get('content', '').strip()
+        elif description_tag:
+            metadata['description'] = description_tag.get('content', '').strip()
+            
+        # Set image
+        if og_image:
+            metadata['image'] = og_image.get('content', '').strip()
+        elif twitter_image:
+            metadata['image'] = twitter_image.get('content', '').strip()
+            
+        # Make image URL absolute if relative
+        if metadata['image'] and not metadata['image'].startswith('http'):
+            metadata['image'] = urljoin(response.url, metadata['image'])
+            
+        # Set site name
+        if og_site_name:
+            metadata['site_name'] = og_site_name.get('content', '').strip()
+        else:
+            # Extract domain name
+            parsed_url = urlparse(response.url)
+            metadata['site_name'] = parsed_url.netloc
+            
+        # Set type
+        if og_type:
+            metadata['type'] = og_type.get('content', '').strip()
+            
+        # Limit text length
+        metadata['title'] = metadata['title'][:200] if metadata['title'] else ''
+        metadata['description'] = metadata['description'][:300] if metadata['description'] else ''
+        
+        return metadata
+        
+    except Exception as e:
+        print(f"Error extracting metadata from {url}: {e}")
+        return None
+
+def extract_urls_from_text(text: str):
+    """Extract URLs from text content"""
+    # Regex pattern for URLs
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    urls = re.findall(url_pattern, text)
+    return list(set(urls))  # Remove duplicates
+
 # API Routes
 
 @app.get("/api/facebook/auth-url")
