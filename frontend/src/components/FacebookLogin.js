@@ -10,7 +10,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
   const [manualToken, setManualToken] = useState('');
   const [showManualTokenInput, setShowManualTokenInput] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_BACKEND_URL;
+  const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
   // Check for Facebook login redirect response
   useEffect(() => {
