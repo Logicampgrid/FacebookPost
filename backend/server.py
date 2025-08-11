@@ -481,8 +481,19 @@ async def publish_post(post_id: str):
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
         
-        # Get user
-        user = await db.users.find_one({"_id": post["user_id"]})
+        # Get user - Convert string user_id to ObjectId
+        user_id = post["user_id"]
+        try:
+            # Try to convert to ObjectId if it's a valid ObjectId string
+            if len(user_id) == 24:
+                user = await db.users.find_one({"_id": ObjectId(user_id)})
+            else:
+                # Fallback to search by string ID 
+                user = await db.users.find_one({"_id": user_id})
+        except Exception:
+            # If ObjectId conversion fails, try other search methods
+            user = await db.users.find_one({"_id": user_id}) or await db.users.find_one({"facebook_id": user_id})
+            
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
