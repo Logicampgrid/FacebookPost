@@ -142,6 +142,28 @@ async def post_to_facebook(post: Post, page_access_token: str):
 
 # API Routes
 
+@app.get("/api/facebook/auth-url")
+async def get_facebook_auth_url(redirect_uri: str = "http://localhost:3000"):
+    """Generate Facebook authentication URL"""
+    import urllib.parse
+    
+    params = {
+        "client_id": FACEBOOK_APP_ID,
+        "redirect_uri": redirect_uri,
+        "scope": "pages_manage_posts,pages_read_engagement,pages_show_list",
+        "response_type": "code",
+        "state": "test123"
+    }
+    
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://www.facebook.com/v18.0/dialog/oauth?{query_string}"
+    
+    return {
+        "auth_url": auth_url,
+        "redirect_uri": redirect_uri,
+        "app_id": FACEBOOK_APP_ID
+    }
+
 @app.get("/api/debug/facebook-token/{token}")
 async def debug_facebook_token(token: str):
     """Debug Facebook token for troubleshooting"""
