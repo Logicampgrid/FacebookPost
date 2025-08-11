@@ -209,6 +209,74 @@ class FacebookPostManagerTester:
         )
         return success
 
+    def test_facebook_token_debug_invalid(self):
+        """Test Facebook token debug endpoint with invalid token"""
+        invalid_token = "invalid_token_12345"
+        success, response = self.run_test(
+            "Facebook Token Debug (Invalid)",
+            "GET",
+            f"api/debug/facebook-token/{invalid_token}",
+            200  # Endpoint should return 200 but with status: invalid
+        )
+        
+        if success and response.get("status") == "invalid":
+            print("✅ Correctly identified invalid token")
+            return True
+        elif success:
+            print(f"⚠️  Unexpected response status: {response.get('status')}")
+            return False
+        return success
+
+    def test_facebook_config_debug(self):
+        """Test Facebook configuration debug endpoint"""
+        success, response = self.run_test(
+            "Facebook Config Debug",
+            "GET",
+            "api/debug/facebook-config",
+            200
+        )
+        
+        if success:
+            app_id = response.get("app_id")
+            graph_url = response.get("graph_url")
+            app_secret_configured = response.get("app_secret_configured")
+            
+            print(f"   App ID: {app_id}")
+            print(f"   Graph URL: {graph_url}")
+            print(f"   App Secret: {app_secret_configured}")
+            
+            if app_id == "5664227323683118":
+                print("✅ Correct Facebook App ID configured")
+            else:
+                print("⚠️  Unexpected App ID")
+        
+        return success
+
+    def test_facebook_auth_url_generation(self):
+        """Test Facebook auth URL generation"""
+        success, response = self.run_test(
+            "Facebook Auth URL Generation",
+            "GET",
+            "api/facebook/auth-url?redirect_uri=http://localhost:3000",
+            200
+        )
+        
+        if success:
+            auth_url = response.get("auth_url")
+            app_id = response.get("app_id")
+            redirect_uri = response.get("redirect_uri")
+            
+            print(f"   Auth URL: {auth_url[:100]}...")
+            print(f"   App ID: {app_id}")
+            print(f"   Redirect URI: {redirect_uri}")
+            
+            if "facebook.com" in auth_url and "5664227323683118" in auth_url:
+                print("✅ Valid Facebook auth URL generated")
+            else:
+                print("⚠️  Invalid auth URL format")
+        
+        return success
+
     def test_cors_headers(self):
         """Test CORS configuration"""
         print(f"\n🔍 Testing CORS Headers...")
