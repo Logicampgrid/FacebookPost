@@ -28,20 +28,19 @@ const PostCreator = ({ user, selectedPage, onPostCreated }) => {
     try {
       setLoading(true);
 
-      // Create post
+      // Create post with FormData
       const formData = new FormData();
       formData.append('user_id', user._id);
-      
-      const postData = {
-        content: content.trim(),
-        target_type: 'page',
-        target_id: selectedPage.id,
-        target_name: selectedPage.name,
-        scheduled_time: scheduledTime || null
-      };
+      formData.append('content', content.trim());
+      formData.append('target_type', 'page');
+      formData.append('target_id', selectedPage.id);
+      formData.append('target_name', selectedPage.name);
+      if (scheduledTime) {
+        formData.append('scheduled_time', scheduledTime);
+      }
 
-      const response = await axios.post(`${API_BASE}/api/posts`, postData, {
-        headers: { 'Content-Type': 'application/json' }
+      const response = await axios.post(`${API_BASE}/api/posts`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       const newPost = response.data.post;
