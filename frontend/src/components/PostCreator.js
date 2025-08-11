@@ -14,6 +14,9 @@ const PostCreator = ({ user, selectedPage, onPostCreated }) => {
   const [scheduledTime, setScheduledTime] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Hook pour la détection automatique des liens
+  const { detectedLinks, loading: linksLoading, removeLink, resetRemovedLinks } = useLinkDetection(content);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
