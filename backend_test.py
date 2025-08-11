@@ -353,6 +353,136 @@ class FacebookPostManagerTester:
             self.tests_run += 1
             return False
 
+    def test_extract_links_from_text(self):
+        """Test extracting links from text content"""
+        test_text = "Découvrez https://www.youtube.com et https://github.com pour plus d'infos!"
+        
+        success, response = self.run_test(
+            "Extract Links from Text",
+            "POST",
+            "api/text/extract-links",
+            200,
+            data={"text": test_text}
+        )
+        
+        if success:
+            links = response.get("links", [])
+            print(f"   Found {len(links)} links")
+            
+            # Check if we found the expected URLs
+            urls = [link.get("url") for link in links]
+            expected_urls = ["https://www.youtube.com", "https://github.com"]
+            
+            found_youtube = any("youtube.com" in url for url in urls)
+            found_github = any("github.com" in url for url in urls)
+            
+            if found_youtube and found_github:
+                print("✅ Successfully extracted expected URLs")
+                
+                # Check metadata structure
+                for link in links:
+                    if link.get("title") and link.get("url"):
+                        print(f"   Link: {link['title'][:50]}... - {link['url']}")
+                    else:
+                        print(f"   Link missing metadata: {link}")
+                        
+            else:
+                print(f"⚠️  Expected URLs not found. Got: {urls}")
+        
+        return success
+
+    def test_extract_links_empty_text(self):
+        """Test extracting links from empty text"""
+        success, response = self.run_test(
+            "Extract Links (Empty Text)",
+            "POST",
+            "api/text/extract-links",
+            200,
+            data={"text": ""}
+        )
+        
+        if success:
+            links = response.get("links", [])
+            if len(links) == 0:
+                print("✅ Correctly returned empty links for empty text")
+            else:
+                print(f"⚠️  Expected no links, got {len(links)}")
+        
+        return success
+
+    def test_extract_links_no_urls(self):
+        """Test extracting links from text without URLs"""
+        test_text = "Ceci est un texte sans aucun lien web."
+        
+        success, response = self.run_test(
+            "Extract Links (No URLs)",
+            "POST",
+            "api/text/extract-links",
+            200,
+            data={"text": test_text}
+        )
+        
+        if success:
+            links = response.get("links", [])
+            if len(links) == 0:
+                print("✅ Correctly returned no links for text without URLs")
+            else:
+                print(f"⚠️  Expected no links, got {len(links)}")
+        
+        return success
+
+    def test_link_preview_single_url(self):
+        """Test getting preview for a single URL"""
+        test_url = "https://www.google.com"
+        
+        success, response = self.run_test(
+            "Link Preview (Single URL)",
+            "POST",
+            "api/links/preview",
+            200,
+            data={"url": test_url}
+        )
+        
+        if success:
+            metadata = response.get("metadata", {})
+            if metadata.get("url") and metadata.get("title"):
+                print(f"✅ Successfully got metadata for {test_url}")
+                print(f"   Title: {metadata.get('title', 'N/A')}")
+                print(f"   Description: {metadata.get('description', 'N/A')[:100]}...")
+                print(f"   Site: {metadata.get('site_name', 'N/A')}")
+            else:
+                print(f"⚠️  Incomplete metadata: {list(metadata.keys())}")
+        
+        return success
+
+    def test_link_preview_invalid_url(self):
+        """Test getting preview for invalid URL"""
+        test_url = "https://this-domain-definitely-does-not-exist-12345.com"
+        
+        success, response = self.run_test(
+            "Link Preview (Invalid URL)",
+            "POST",
+            "api/links/preview",
+            400,  # Should return 400 for invalid URLs
+            data={"url": test_url}
+        )
+        
+        return success
+
+    def test_link_preview_malformed_url(self):
+        """Test getting preview for malformed URL"""
+        test_url = "not-a-valid-url"
+        
+        success, response = self.run_test(
+            "Link Preview (Malformed URL)",
+            "POST",
+            "api/links/preview",
+            500,  # Should return 500 for malformed URLs
+            data={"url": test_url}
+        )
+        
+        return success
+
 def main():
     print("🚀 Starting Facebook Post Manager API Tests")
     print("=" * 50)
