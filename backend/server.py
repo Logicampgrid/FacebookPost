@@ -76,6 +76,10 @@ class PostRequest(BaseModel):
     target_name: str
     scheduled_time: Optional[str] = None
 
+class FacebookCodeExchangeRequest(BaseModel):
+    code: str
+    redirect_uri: str
+
 # Facebook API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
