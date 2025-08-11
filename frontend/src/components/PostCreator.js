@@ -239,6 +239,7 @@ const PostCreator = ({ user, selectedPage, onPostCreated }) => {
           <PostPreview 
             content={content}
             mediaFiles={mediaFiles}
+            detectedLinks={detectedLinks}
             pageName={selectedPage?.name || 'Ma Page'}
             timestamp="À l'instant"
           />
