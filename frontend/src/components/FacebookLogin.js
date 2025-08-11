@@ -143,21 +143,39 @@ const FacebookLogin = ({ onLogin, loading }) => {
       setExchangingCode(true);
       setError('');
       
-      // Test the token first
-      const testResponse = await fetch(`${API_BASE}/api/debug/facebook-token/${manualToken}`);
+      console.log('Testing token:', manualToken.substring(0, 20) + '...');
+      
+      // Test the token first with better error handling
+      const testResponse = await fetch(`${API_BASE}/api/debug/facebook-token/${encodeURIComponent(manualToken)}`);
+      
+      if (!testResponse.ok) {
+        throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
+      }
+      
       const testData = await testResponse.json();
+      console.log('Token validation response:', testData);
       
       if (testData.status !== 'valid') {
-        setError('Token Facebook invalide: ' + (testData.error?.error?.message || 'Token expiré ou incorrect'));
+        const errorMessage = testData.error?.error?.message || 
+                            testData.error?.message || 
+                            'Token expiré ou incorrect';
+        setError(`Token Facebook invalide: ${errorMessage}`);
         return;
       }
 
+      console.log('Token valid, proceeding with login...');
       // Login with the token
       onLogin(manualToken);
       
     } catch (err) {
       console.error('Error with manual token:', err);
-      setError('Erreur lors de la validation du token');
+      if (err.message.includes('HTTP')) {
+        setError(`Erreur de connexion: ${err.message}`);
+      } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Impossible de se connecter au serveur. Vérifiez que le backend est accessible.');
+      } else {
+        setError(`Erreur lors de la validation du token: ${err.message}`);
+      }
     } finally {
       setExchangingCode(false);
     }
