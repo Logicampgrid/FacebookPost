@@ -66,6 +66,7 @@ const PostCreator = ({ user, selectedPage, onPostCreated }) => {
       setContent('');
       setMediaFiles([]);
       setScheduledTime('');
+      resetRemovedLinks();
 
       // Notify parent
       onPostCreated(newPost);
