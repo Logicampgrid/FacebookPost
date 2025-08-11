@@ -83,6 +83,9 @@ class FacebookCodeExchangeRequest(BaseModel):
     code: str
     redirect_uri: str
 
+class LinkPreviewRequest(BaseModel):
+    url: str
+
 # Facebook API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
