@@ -108,21 +108,28 @@ class FacebookPostManagerTester:
         return success
 
     def test_create_post_with_form_data(self):
-        """Test creating post with form data (simulating authenticated user)"""
+        """Test creating post with mixed content (JSON + form data)"""
         # Create a fake user_id for testing
         test_user_id = str(uuid.uuid4())
         self.test_user_id = test_user_id
         
-        form_data = {
-            "user_id": test_user_id,
+        # The endpoint expects PostRequest as JSON body AND user_id as form data
+        # This is unusual API design but let's test it properly
+        post_request_data = {
             "content": "Test post content for Facebook",
             "target_type": "page", 
             "target_id": "test_page_123",
             "target_name": "Test Page Name"
         }
         
+        # Try with multipart form data including JSON
+        form_data = {
+            "user_id": test_user_id,
+            "post_request": json.dumps(post_request_data)
+        }
+        
         success, response = self.run_test(
-            "Create Post (With Form Data)",
+            "Create Post (Mixed Content)",
             "POST",
             "api/posts",
             200,
