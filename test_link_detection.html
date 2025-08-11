@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Link Detection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        .links-container { margin: 20px 0; }
+        .link-preview { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test de Détection de Liens</h1>
+        
+        <div>
+            <label for="textInput">Saisissez du texte avec des liens :</label>
+            <textarea id="textInput" placeholder="Découvrez https://www.youtube.com et https://github.com"></textarea>
+        </div>
+        
+        <div id="status" class="loading">En attente...</div>
+        
+        <div id="linksContainer" class="links-container"></div>
+        
+        <div>
+            <h3>Test API Direct</h3>
+            <button onclick="testExtractLinks()">Tester Extract Links</button>
+            <button onclick="testLinkPreview()">Tester Link Preview</button>
+        </div>
+        
+        <div id="apiResults"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let debounceTimer;
+        
+        document.getElementById('textInput').addEventListener('input', function(e) {
+            const text = e.target.value;
+            
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (text.trim()) {
+                    detectLinks(text);
+                } else {
+                    document.getElementById('linksContainer').innerHTML = '';
+                    document.getElementById('status').textContent = 'En attente...';
+                }
+            }, 1000);
+        });
+        
+        async function detectLinks(text) {
+            const statusEl = document.getElementById('status');
+            const linksEl = document.getElementById('linksContainer');
+            
+            statusEl.textContent = 'Détection des liens...';
+            statusEl.className = 'loading';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/text/extract-links`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.textContent = `${data.links.length} lien(s) détecté(s)`;
+                    statusEl.className = 'success';
+                    
+                    linksEl.innerHTML = '';
+                    data.links.forEach(link => {
+                        const linkDiv = document.createElement('div');
+                        linkDiv.className = 'link-preview';
+                        linkDiv.innerHTML = `
+                            <h4>${link.title || 'Sans titre'}</h4>
+                            <p>${link.description || 'Pas de description'}</p>
+                            <small>${link.url}</small>
+                            ${link.image ? `<br><img src="${link.image}" style="max-width: 200px; margin-top: 10px;" onerror="this.style.display='none'">` : ''}
+                        `;
+                        linksEl.appendChild(linkDiv);
+                    });
+                } else {
+                    statusEl.textContent = `Erreur: ${data.detail || 'Erreur inconnue'}`;
+                    statusEl.className = 'error';
+                }
+            } catch (error) {
+                statusEl.textContent = `Erreur réseau: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+        
+        async function testExtractLinks() {
+            const resultsEl = document.getElementById('apiResults');
+            resultsEl.innerHTML = '<p>Test Extract Links...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/text/extract-links`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        text: 'Découvrez https://www.youtube.com et https://github.com pour plus d\'infos!' 
+                    })
+                });
+                
+                const data = await response.json();
+                resultsEl.innerHTML = `<h4>Extract Links Result:</h4><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsEl.innerHTML = `<p class="error">Erreur: ${error.message}</p>`;
+            }
+        }
+        
+        async function testLinkPreview() {
+            const resultsEl = document.getElementById('apiResults');
+            resultsEl.innerHTML = '<p>Test Link Preview...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/links/preview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        url: 'https://www.google.com' 
+                    })
+                });
+                
+                const data = await response.json();
+                resultsEl.innerHTML = `<h4>Link Preview Result:</h4><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsEl.innerHTML = `<p class="error">Erreur: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
