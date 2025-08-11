@@ -14,18 +14,65 @@ function App() {
   const [selectedPage, setSelectedPage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('create');
+  const [fbInitialized, setFbInitialized] = useState(false);
 
-  // Initialize Facebook SDK
+  // Initialize Facebook SDK with better error handling
   useEffect(() => {
-    window.fbAsyncInit = function() {
-      window.FB.init({
-        appId: '5664227323683118',
-        cookie: true,
-        xfbml: true,
-        version: 'v18.0'
-      });
+    const initFacebookSDK = () => {
+      // Check if FB SDK is already loaded
+      if (window.FB) {
+        initFB();
+        return;
+      }
+
+      // Wait for FB SDK to load
+      window.fbAsyncInit = function() {
+        try {
+          window.FB.init({
+            appId: '5664227323683118',
+            cookie: true,
+            xfbml: true,
+            version: 'v18.0'
+          });
+          
+          // Check login status
+          window.FB.getLoginStatus((response) => {
+            console.log('FB Login Status:', response.status);
+            setFbInitialized(true);
+          });
+          
+        } catch (error) {
+          console.error('Facebook SDK initialization error:', error);
+          setFbInitialized(true); // Still allow the app to function
+        }
+      };
+
+      // Fallback if FB SDK doesn't load
+      setTimeout(() => {
+        if (!window.FB && !fbInitialized) {
+          console.warn('Facebook SDK failed to load, using redirect method only');
+          setFbInitialized(true);
+        }
+      }, 5000);
     };
-  }, []);
+
+    const initFB = () => {
+      try {
+        window.FB.init({
+          appId: '5664227323683118',
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+        setFbInitialized(true);
+      } catch (error) {
+        console.error('Facebook SDK init error:', error);
+        setFbInitialized(true);
+      }
+    };
+
+    initFacebookSDK();
+  }, [fbInitialized]);
 
   // Load posts when user is authenticated
   useEffect(() => {
@@ -49,10 +96,13 @@ function App() {
   const handleFacebookLogin = async (accessToken) => {
     try {
       setLoading(true);
+      console.log('Authenticating with Facebook...');
+      
       const response = await axios.post(`${API_BASE}/api/auth/facebook`, {
         access_token: accessToken
       });
       
+      console.log('Facebook auth successful:', response.data);
       setUser(response.data.user);
       
       // Set default page if available
@@ -61,7 +111,8 @@ function App() {
       }
     } catch (error) {
       console.error('Facebook auth error:', error);
-      alert('Erreur lors de l\'authentification Facebook');
+      const errorMessage = error.response?.data?.detail || 'Erreur lors de l\'authentification Facebook';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -94,6 +145,18 @@ function App() {
       setLoading(false);
     }
   };
+
+  // Show loading while Facebook SDK initializes
+  if (!fbInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-facebook flex items-center justify-center">
+        <div className="facebook-card p-8 max-w-md w-full mx-4 text-center">
+          <div className="spinner mx-auto mb-4" />
+          <p className="text-gray-600">Chargement de Facebook SDK...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
