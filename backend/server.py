@@ -187,18 +187,25 @@ async def get_posts(user_id: str = None):
     return {"posts": posts}
 
 @app.post("/api/posts")
-async def create_post(post_request: PostRequest, user_id: str = Form(...)):
+async def create_post(
+    content: str = Form(...),
+    target_type: str = Form(...),
+    target_id: str = Form(...),
+    target_name: str = Form(...),
+    user_id: str = Form(...),
+    scheduled_time: Optional[str] = Form(None)
+):
     """Create a new post"""
     post_data = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
-        "content": post_request.content,
+        "content": content,
         "media_urls": [],
-        "target_type": post_request.target_type,
-        "target_id": post_request.target_id,
-        "target_name": post_request.target_name,
-        "scheduled_time": datetime.fromisoformat(post_request.scheduled_time) if post_request.scheduled_time else None,
-        "status": "scheduled" if post_request.scheduled_time else "draft",
+        "target_type": target_type,
+        "target_id": target_id,
+        "target_name": target_name,
+        "scheduled_time": datetime.fromisoformat(scheduled_time) if scheduled_time else None,
+        "status": "scheduled" if scheduled_time else "draft",
         "created_at": datetime.utcnow()
     }
     
