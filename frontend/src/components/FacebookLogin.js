@@ -105,7 +105,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
         setError('Connexion Facebook annulée ou échouée');
       }
     }, {
-      scope: 'pages_manage_posts,pages_read_engagement,pages_show_list'
+      scope: 'pages_manage_posts,pages_read_engagement,pages_show_list,business_management,read_insights'
     });
   };
 
