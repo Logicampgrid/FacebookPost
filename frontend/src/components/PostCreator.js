@@ -79,6 +79,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       setContent('');
       setMediaFiles([]);
       setScheduledTime('');
+      setCommentLink(''); // Reset comment link
       resetRemovedLinks();
 
       // Notify parent
