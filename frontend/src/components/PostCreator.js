@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Image, Calendar, Users, Clock, Link } from 'lucide-react';
+import { Send, Image, Calendar, Users, Clock, Link, Instagram, MessageSquare, Plus, X, Target } from 'lucide-react';
 import axios from 'axios';
 import MediaUploader from './MediaUploader';
 import PostPreview from './PostPreview';
@@ -8,15 +8,125 @@ import { useLinkDetection } from '../hooks/useLinkDetection';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreated }) => {
+const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatforms, onPostCreated }) => {
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [scheduledTime, setScheduledTime] = useState('');
-  const [commentLink, setCommentLink] = useState(''); // New state for comment link
+  const [commentLink, setCommentLink] = useState('');
+  const [crossPostMode, setCrossPostMode] = useState(false);
+  const [selectedCrossTargets, setSelectedCrossTargets] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Hook pour la détection automatique des liens
   const { detectedLinks, loading: linksLoading, removeLink, resetRemovedLinks } = useLinkDetection(content);
+
+  const getPlatformIcon = (platform, type) => {
+    if (platform === 'instagram') return <Instagram className="w-4 h-4 text-pink-500" />;
+    if (type === 'group') return <MessageSquare className="w-4 h-4 text-purple-500" />;
+    return <Users className="w-4 h-4 text-blue-500" />;
+  };
+
+  const getAllAvailablePlatforms = () => {
+    const platforms = [];
+    
+    // Business platforms
+    if (allPlatforms.business_pages) {
+      allPlatforms.business_pages.forEach(page => {
+        platforms.push({
+          ...page,
+          platform: 'facebook',
+          type: 'page',
+          source: 'business'
+        });
+      });
+    }
+    
+    if (allPlatforms.business_groups) {
+      allPlatforms.business_groups.forEach(group => {
+        platforms.push({
+          ...group,
+          platform: 'facebook',
+          type: 'group',
+          source: 'business'
+        });
+      });
+    }
+    
+    if (allPlatforms.business_instagram) {
+      allPlatforms.business_instagram.forEach(ig => {
+        platforms.push({
+          ...ig,
+          platform: 'instagram',
+          type: 'instagram',
+          source: 'business'
+        });
+      });
+    }
+    
+    // Personal platforms
+    if (allPlatforms.personal_pages) {
+      allPlatforms.personal_pages.forEach(page => {
+        platforms.push({
+          ...page,
+          platform: 'facebook',
+          type: 'page',
+          source: 'personal'
+        });
+      });
+    }
+    
+    if (allPlatforms.personal_groups) {
+      allPlatforms.personal_groups.forEach(group => {
+        platforms.push({
+          ...group,
+          platform: 'facebook',
+          type: 'group',
+          source: 'personal'
+        });
+      });
+    }
+    
+    return platforms;
+  };
+
+  const handleCrossTargetToggle = (platform) => {
+    setSelectedCrossTargets(prev => {
+      const exists = prev.find(t => t.id === platform.id);
+      if (exists) {
+        return prev.filter(t => t.id !== platform.id);
+      } else {
+        return [...prev, {
+          id: platform.id,
+          name: platform.name || platform.username,
+          platform: platform.platform,
+          type: platform.type
+        }];
+      }
+    });
+  };
+
+  const isInstagramCompatible = () => {
+    // Instagram requires media
+    if (mediaFiles.length === 0 && detectedLinks.length === 0) {
+      return false;
+    }
+    return true;
+  };
+
+  const getIncompatibleWarnings = () => {
+    const warnings = [];
+    
+    if (crossPostMode) {
+      const instagramTargets = selectedCrossTargets.filter(t => t.platform === 'instagram');
+      if (instagramTargets.length > 0 && !isInstagramCompatible()) {
+        warnings.push('Instagram nécessite au moins une image ou un lien avec image');
+      }
+    } else if (selectedPlatform?.platform === 'instagram' && !isInstagramCompatible()) {
+      warnings.push('Instagram nécessite au moins une image ou un lien avec image');
+    }
+    
+    return warnings;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,9 +136,21 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       return;
     }
     
-    if (!selectedPage) {
-      alert('Veuillez sélectionner une page Facebook');
+    if (!crossPostMode && !selectedPlatform) {
+      alert('Veuillez sélectionner une plateforme');
       return;
+    }
+    
+    if (crossPostMode && selectedCrossTargets.length === 0) {
+      alert('Veuillez sélectionner au moins une plateforme pour la publication croisée');
+      return;
+    }
+
+    const warnings = getIncompatibleWarnings();
+    if (warnings.length > 0) {
+      if (!confirm(`Attention :\n${warnings.join('\n')}\n\nContinuer quand même ?`)) {
+        return;
+      }
     }
 
     try {
@@ -38,9 +160,21 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       const formData = new FormData();
       formData.append('user_id', user._id);
       formData.append('content', content.trim());
-      formData.append('target_type', 'page');
-      formData.append('target_id', selectedPage.id);
-      formData.append('target_name', selectedPage.name);
+      
+      if (crossPostMode) {
+        // Cross-posting mode
+        formData.append('target_type', 'cross-post');
+        formData.append('target_id', 'cross-post');
+        formData.append('target_name', `Cross-post (${selectedCrossTargets.length} plateformes)`);
+        formData.append('platform', 'meta');
+        formData.append('cross_post_targets', JSON.stringify(selectedCrossTargets));
+      } else {
+        // Single platform mode
+        formData.append('target_type', selectedPlatform.type);
+        formData.append('target_id', selectedPlatform.id);
+        formData.append('target_name', selectedPlatform.name || selectedPlatform.username);
+        formData.append('platform', selectedPlatform.platform);
+      }
       
       // Add Business Manager info if available
       if (selectedBusinessManager) {
@@ -52,8 +186,11 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
         formData.append('scheduled_time', scheduledTime);
       }
       
-      // Add comment link if provided
-      if (commentLink.trim()) {
+      // Add comment link if provided (Facebook only)
+      if (commentLink.trim() && (
+        !crossPostMode && selectedPlatform.platform === 'facebook' ||
+        crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook')
+      )) {
         formData.append('comment_link', commentLink.trim());
       }
 
@@ -79,7 +216,9 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       setContent('');
       setMediaFiles([]);
       setScheduledTime('');
-      setCommentLink(''); // Reset comment link
+      setCommentLink('');
+      setSelectedCrossTargets([]);
+      setCrossPostMode(false);
       resetRemovedLinks();
 
       // Notify parent
@@ -87,10 +226,9 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
 
       // Show appropriate success message
       if (scheduledTime) {
-        alert('Post programmé avec succès!');
+        alert('Post programmé avec succès !');
       } else {
-        // Show success message based on response
-        const successMessage = response.data.message || 'Post créé et publié avec succès sur Facebook! 🎉';
+        const successMessage = response.data.message || 'Post créé et publié avec succès ! 🎉';
         alert(successMessage);
       }
       
@@ -104,33 +242,147 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
 
   const getMinDateTime = () => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + 5); // Minimum 5 minutes from now
+    now.setMinutes(now.getMinutes() + 5);
     return now.toISOString().slice(0, 16);
   };
+
+  const availablePlatforms = getAllAvailablePlatforms();
 
   return (
     <div className="space-y-6">
       {/* Post Creator */}
       <div className="facebook-card p-6">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 bg-facebook-primary rounded-full flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
             <Send className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Créer et publier un post</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Créer et publier sur Meta</h2>
             <p className="text-sm text-gray-600">
-              Publication sur: {selectedPage?.name || 'Sélectionnez une page'}
+              {crossPostMode ? (
+                `Publication croisée sur ${selectedCrossTargets.length} plateforme(s)`
+              ) : (
+                selectedPlatform ? 
+                  `Publication sur: ${selectedPlatform.name || selectedPlatform.username} (${selectedPlatform.platform})` :
+                  'Sélectionnez une plateforme'
+              )}
               {selectedBusinessManager && (
                 <span className="block text-xs text-blue-600">
                   📊 Business Manager: {selectedBusinessManager.name}
                 </span>
               )}
             </p>
-            <p className="text-xs text-green-600 font-medium mt-1">
-              ✨ Les posts sont maintenant publiés directement sur Facebook !
-            </p>
           </div>
         </div>
+
+        {/* Cross-post Toggle */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-gray-800 flex items-center">
+                <Target className="w-4 h-4 mr-2" />
+                Mode de publication
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {crossPostMode ? 
+                  'Publiez simultanément sur plusieurs plateformes Meta' : 
+                  'Publiez sur une seule plateforme'
+                }
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCrossPostMode(!crossPostMode);
+                setSelectedCrossTargets([]);
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                crossPostMode 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {crossPostMode ? 'Mode Simple' : 'Publication Croisée'}
+            </button>
+          </div>
+        </div>
+
+        {/* Cross-post platform selection */}
+        {crossPostMode && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Target className="w-4 h-4 inline mr-1" />
+              Sélectionnez les plateformes ({selectedCrossTargets.length} sélectionnée(s))
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              {availablePlatforms.map((platform) => {
+                const isSelected = selectedCrossTargets.find(t => t.id === platform.id);
+                const isInstagram = platform.platform === 'instagram';
+                const isCompatible = !isInstagram || isInstagramCompatible();
+                
+                return (
+                  <button
+                    key={`${platform.source}-${platform.id}`}
+                    type="button"
+                    onClick={() => isCompatible && handleCrossTargetToggle(platform)}
+                    disabled={!isCompatible}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      isSelected 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : isCompatible
+                          ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {getPlatformIcon(platform.platform, platform.type)}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm truncate">
+                            {platform.name || platform.username}
+                          </div>
+                          <div className="text-xs text-gray-500 capitalize">
+                            {platform.platform} {platform.type}
+                          </div>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                    {!isCompatible && (
+                      <div className="text-xs text-red-500 mt-1">
+                        Nécessite une image
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedCrossTargets.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedCrossTargets.map((target) => (
+                  <span
+                    key={target.id}
+                    className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                  >
+                    {getPlatformIcon(target.platform, target.type)}
+                    <span className="ml-1">{target.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCrossTargetToggle(target)}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Content Input */}
@@ -141,7 +393,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Que voulez-vous partager?"
+              placeholder="Que voulez-vous partager sur les plateformes Meta ?"
               className="facebook-textarea h-32"
               disabled={loading}
             />
@@ -150,11 +402,24 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             </div>
           </div>
 
+          {/* Compatibility warnings */}
+          {getIncompatibleWarnings().length > 0 && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Instagram className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-800">Attention Instagram</span>
+              </div>
+              {getIncompatibleWarnings().map((warning, index) => (
+                <p key={index} className="text-sm text-yellow-700 mt-1">⚠️ {warning}</p>
+              ))}
+            </div>
+          )}
+
           {/* Media Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Image className="w-4 h-4 inline mr-1" />
-              Médias (optionnel)
+              Médias (recommandé pour Instagram)
             </label>
             <MediaUploader 
               files={mediaFiles} 
@@ -163,26 +428,29 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             />
           </div>
 
-          {/* Comment Link */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Link className="w-4 h-4 inline mr-1" />
-              Lien en commentaire (optionnel)
-            </label>
-            <input
-              type="url"
-              value={commentLink}
-              onChange={(e) => setCommentLink(e.target.value)}
-              placeholder="https://exemple.com - Ce lien sera ajouté automatiquement en commentaire"
-              className="facebook-input w-full"
-              disabled={loading}
-            />
-            {commentLink && (
-              <div className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                💡 <strong>Stratégie :</strong> Le lien sera ajouté dans le post ET automatiquement en commentaire pour maximiser la portée organique
-              </div>
-            )}
-          </div>
+          {/* Comment Link - Facebook only */}
+          {((!crossPostMode && selectedPlatform?.platform === 'facebook') || 
+            (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Link className="w-4 h-4 inline mr-1" />
+                Lien en commentaire (Facebook uniquement)
+              </label>
+              <input
+                type="url"
+                value={commentLink}
+                onChange={(e) => setCommentLink(e.target.value)}
+                placeholder="https://exemple.com - Sera ajouté automatiquement en commentaire Facebook"
+                className="facebook-input w-full"
+                disabled={loading}
+              />
+              {commentLink && (
+                <div className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                  💡 <strong>Stratégie :</strong> Ce lien sera ajouté automatiquement en commentaire sur Facebook pour maximiser la portée organique
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Detected Links Preview */}
           {(detectedLinks.length > 0 || linksLoading) && (
@@ -219,7 +487,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
               {detectedLinks.length > 0 && (
                 <div className="text-xs text-gray-500 mt-1">
                   <p className="text-green-600 font-medium">✓ {detectedLinks.length} lien(s) détecté(s) avec prévisualisation</p>
-                  <p>Les images et métadonnées des liens s'afficheront automatiquement sur Facebook</p>
+                  <p>Les images et métadonnées s'afficheront automatiquement sur toutes les plateformes</p>
                 </div>
               )}
             </div>
@@ -249,30 +517,50 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
           {/* Submit Button */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-sm text-gray-500">
-              {selectedPage ? (
-                <span className="flex items-center">
-                  <Users className="w-4 h-4 mr-1" />
-                  {selectedPage.name}
-                </span>
+              {crossPostMode ? (
+                selectedCrossTargets.length > 0 ? (
+                  <span className="flex items-center">
+                    <Target className="w-4 h-4 mr-1" />
+                    {selectedCrossTargets.length} plateforme(s) sélectionnée(s)
+                  </span>
+                ) : (
+                  'Sélectionnez des plateformes'
+                )
               ) : (
-                'Sélectionnez une page Facebook'
+                selectedPlatform ? (
+                  <span className="flex items-center">
+                    {getPlatformIcon(selectedPlatform.platform, selectedPlatform.type)}
+                    <span className="ml-1">{selectedPlatform.name || selectedPlatform.username}</span>
+                  </span>
+                ) : (
+                  'Sélectionnez une plateforme'
+                )
               )}
             </div>
             
             <button
               type="submit"
-              disabled={loading || !selectedPage || !content.trim()}
+              disabled={
+                loading || 
+                !content.trim() || 
+                (!crossPostMode && !selectedPlatform) ||
+                (crossPostMode && selectedCrossTargets.length === 0)
+              }
               className="facebook-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {loading ? (
                 <>
                   <div className="spinner" />
-                  <span>Création...</span>
+                  <span>Publication...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>{scheduledTime ? 'Programmer' : 'Publier sur Facebook'}</span>
+                  <span>
+                    {scheduledTime ? 'Programmer' : 
+                     crossPostMode ? `Publier sur ${selectedCrossTargets.length} plateformes` :
+                     'Publier'}
+                  </span>
                 </>
               )}
             </button>
@@ -291,9 +579,27 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             content={content}
             mediaFiles={mediaFiles}
             detectedLinks={detectedLinks}
-            pageName={selectedPage?.name || 'Ma Page'}
+            pageName={crossPostMode ? 'Multi-plateforme' : (selectedPlatform?.name || selectedPlatform?.username || 'Ma Page')}
             timestamp="À l'instant"
+            platform={crossPostMode ? 'meta' : selectedPlatform?.platform}
           />
+          
+          {crossPostMode && selectedCrossTargets.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2">Publication sur :</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedCrossTargets.map((target) => (
+                  <span
+                    key={target.id}
+                    className="inline-flex items-center px-2 py-1 bg-white border border-gray-200 text-xs rounded"
+                  >
+                    {getPlatformIcon(target.platform, target.type)}
+                    <span className="ml-1">{target.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
