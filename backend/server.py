@@ -1024,7 +1024,7 @@ async def get_posts(user_id: str = None):
 
 @app.post("/api/posts")
 async def create_post(
-    content: str = Form(...),
+    content: str = Form(""),  # Made optional with default empty string
     target_type: str = Form(...),
     target_id: str = Form(...),
     target_name: str = Form(...),
