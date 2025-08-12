@@ -89,7 +89,9 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       if (scheduledTime) {
         alert('Post programmé avec succès!');
       } else {
-        alert('Post créé et publié avec succès sur Facebook! 🎉');
+        // Show success message based on response
+        const successMessage = response.data.message || 'Post créé et publié avec succès sur Facebook! 🎉';
+        alert(successMessage);
       }
       
     } catch (error) {
