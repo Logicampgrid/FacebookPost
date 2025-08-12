@@ -549,6 +549,238 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_debug_test_link_post(self):
+        """Test the debug endpoint for Facebook link posting strategy"""
+        test_content = "Check out this amazing project! https://github.com/facebook/react"
+        
+        success, response = self.run_test(
+            "Debug Test Link Post",
+            "POST",
+            "api/debug/test-link-post",
+            200,
+            data={"content": test_content}
+        )
+        
+        if success:
+            content = response.get("content")
+            detected_urls = response.get("detected_urls", [])
+            link_metadata = response.get("link_metadata")
+            post_strategy = response.get("post_strategy")
+            
+            print(f"   Content: {content}")
+            print(f"   Detected URLs: {detected_urls}")
+            print(f"   Strategy: {post_strategy}")
+            
+            if detected_urls and "github.com" in str(detected_urls):
+                print("✅ Successfully detected GitHub URL")
+            else:
+                print("⚠️  GitHub URL not detected properly")
+                
+            if link_metadata and link_metadata.get("title"):
+                print(f"   Link Title: {link_metadata['title']}")
+                print("✅ Link metadata extracted successfully")
+            else:
+                print("⚠️  Link metadata not extracted")
+                
+            if post_strategy == "link_preview":
+                print("✅ Correct posting strategy identified")
+            else:
+                print(f"⚠️  Unexpected strategy: {post_strategy}")
+        
+        return success
+
+    def test_debug_test_link_post_no_links(self):
+        """Test debug endpoint with content that has no links"""
+        test_content = "This is just a regular text post without any links"
+        
+        success, response = self.run_test(
+            "Debug Test Link Post (No Links)",
+            "POST",
+            "api/debug/test-link-post",
+            200,
+            data={"content": test_content}
+        )
+        
+        if success:
+            detected_urls = response.get("detected_urls", [])
+            post_strategy = response.get("post_strategy")
+            
+            if len(detected_urls) == 0:
+                print("✅ Correctly detected no URLs")
+            else:
+                print(f"⚠️  Unexpected URLs detected: {detected_urls}")
+                
+            if post_strategy == "text_only":
+                print("✅ Correct text-only strategy")
+            else:
+                print(f"⚠️  Unexpected strategy for text-only: {post_strategy}")
+        
+        return success
+
+    def test_extract_links_popular_sites(self):
+        """Test extracting links from popular sites with rich metadata"""
+        test_cases = [
+            {
+                "name": "GitHub",
+                "text": "Check out https://github.com/microsoft/vscode",
+                "expected_domain": "github.com"
+            },
+            {
+                "name": "YouTube", 
+                "text": "Watch this video https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "expected_domain": "youtube.com"
+            },
+            {
+                "name": "Multiple Links",
+                "text": "Great resources: https://reactjs.org and https://nodejs.org",
+                "expected_domain": "reactjs.org"
+            }
+        ]
+        
+        all_passed = True
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Extract Links ({test_case['name']})",
+                "POST",
+                "api/text/extract-links",
+                200,
+                data={"text": test_case["text"]}
+            )
+            
+            if success:
+                links = response.get("links", [])
+                if len(links) > 0:
+                    found_expected = any(test_case["expected_domain"] in link.get("url", "") for link in links)
+                    if found_expected:
+                        print(f"✅ Successfully extracted {test_case['name']} link")
+                        # Check metadata quality
+                        for link in links:
+                            if test_case["expected_domain"] in link.get("url", ""):
+                                title = link.get("title", "")
+                                description = link.get("description", "")
+                                image = link.get("image", "")
+                                
+                                print(f"   Title: {title[:50]}...")
+                                print(f"   Description: {description[:50]}...")
+                                print(f"   Image: {'Yes' if image else 'No'}")
+                                
+                                if title and description:
+                                    print(f"✅ Rich metadata available for {test_case['name']}")
+                                else:
+                                    print(f"⚠️  Limited metadata for {test_case['name']}")
+                                break
+                    else:
+                        print(f"❌ Expected domain {test_case['expected_domain']} not found")
+                        all_passed = False
+                else:
+                    print(f"❌ No links extracted for {test_case['name']}")
+                    all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
+
+    def test_create_post_with_links(self):
+        """Test creating a post with links and verify metadata is stored"""
+        test_user_id = str(uuid.uuid4())
+        content_with_links = "Check out this amazing project! https://github.com/facebook/react and also https://reactjs.org"
+        
+        form_data = {
+            "content": content_with_links,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Links",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            link_metadata = post.get("link_metadata", [])
+            
+            print(f"   Post created with {len(link_metadata)} link metadata entries")
+            
+            if len(link_metadata) > 0:
+                print("✅ Link metadata stored in post")
+                for i, metadata in enumerate(link_metadata):
+                    url = metadata.get("url", "")
+                    title = metadata.get("title", "")
+                    print(f"   Link {i+1}: {title} - {url}")
+                    
+                    if "github.com" in url or "reactjs.org" in url:
+                        print(f"✅ Expected URL found: {url}")
+                    else:
+                        print(f"⚠️  Unexpected URL: {url}")
+            else:
+                print("⚠️  No link metadata stored")
+                
+            # Store post ID for cleanup
+            self.test_post_id = post["id"]
+        
+        return success
+
+    def test_facebook_posting_strategy_simulation(self):
+        """Test Facebook posting strategy with different content types"""
+        test_cases = [
+            {
+                "name": "Link Only",
+                "content": "https://github.com/facebook/react",
+                "expected_strategy": "link_preview"
+            },
+            {
+                "name": "Link with Short Text",
+                "content": "Great project! https://github.com/facebook/react",
+                "expected_strategy": "link_preview"
+            },
+            {
+                "name": "Link with Long Text",
+                "content": "This is a very long description about an amazing project that does incredible things and has many features. Check it out: https://github.com/facebook/react",
+                "expected_strategy": "link_preview"
+            },
+            {
+                "name": "Text Only",
+                "content": "This is just a regular post without any links",
+                "expected_strategy": "text_only"
+            }
+        ]
+        
+        all_passed = True
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Facebook Strategy ({test_case['name']})",
+                "POST",
+                "api/debug/test-link-post",
+                200,
+                data={"content": test_case["content"]}
+            )
+            
+            if success:
+                strategy = response.get("post_strategy")
+                detected_urls = response.get("detected_urls", [])
+                
+                print(f"   Strategy: {strategy}")
+                print(f"   URLs: {len(detected_urls)}")
+                
+                if strategy == test_case["expected_strategy"]:
+                    print(f"✅ Correct strategy for {test_case['name']}")
+                else:
+                    print(f"❌ Expected {test_case['expected_strategy']}, got {strategy}")
+                    all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
+
     def test_media_upload_without_post(self):
         """Test uploading media to non-existent post"""
         fake_post_id = str(uuid.uuid4())
