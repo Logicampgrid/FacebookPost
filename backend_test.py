@@ -636,6 +636,7 @@ def main():
     # Run all tests
     tests = [
         tester.test_health_check,
+        tester.test_uploads_directory_exists,
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         tester.test_facebook_auth_url_generation,
@@ -646,11 +647,16 @@ def main():
         tester.test_create_post_without_auth,
         tester.test_create_post_with_form_data,
         tester.test_get_posts_with_user,
+        # Media upload tests
+        tester.test_media_upload_without_post,
+        tester.test_media_upload_with_valid_post,
+        tester.test_media_upload_invalid_file_type,
+        tester.test_media_upload_large_file,
         tester.test_publish_post_without_user,
         tester.test_delete_post,
         tester.test_delete_nonexistent_post,
         tester.test_get_user_pages_nonexistent,
-        # New link detection tests
+        # Link detection tests
         tester.test_extract_links_from_text,
         tester.test_extract_links_empty_text,
         tester.test_extract_links_no_urls,
