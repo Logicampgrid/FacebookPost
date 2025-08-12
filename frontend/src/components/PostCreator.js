@@ -131,8 +131,9 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!content.trim()) {
-      alert('Veuillez saisir un contenu pour votre post');
+    // Allow empty content if there are media files
+    if (!content.trim() && mediaFiles.length === 0) {
+      alert('Veuillez saisir un contenu ou ajouter des médias pour votre post');
       return;
     }
     
