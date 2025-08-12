@@ -280,6 +280,19 @@ const FacebookLogin = ({ onLogin, loading }) => {
         </div>
       )}
 
+      {/* Diagnostic Button */}
+      {manualToken && (
+        <div className="mb-4">
+          <button
+            onClick={() => setShowDiagnostic(true)}
+            className="w-full flex items-center justify-center space-x-2 p-2 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span>Diagnostiquer les Permissions</span>
+          </button>
+        </div>
+      )}
+
       <button
         onClick={handleLogin}
         disabled={isLoading || (loginMethod === 'manual' && !manualToken.trim())}
