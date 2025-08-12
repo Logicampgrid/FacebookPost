@@ -420,13 +420,18 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Image className="w-4 h-4 inline mr-1" />
-              Médias (recommandé pour Instagram)
+              Médias (prioritaire sur les images des liens)
             </label>
             <MediaUploader 
               files={mediaFiles} 
               onFilesChange={setMediaFiles}
               disabled={loading}
             />
+            {mediaFiles.length > 0 && detectedLinks.some(link => link.image) && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                <span className="font-medium">📸 Priorité :</span> Vos images uploadées seront utilisées à la place des images des liens détectés
+              </div>
+            )}
           </div>
 
           {/* Comment Link - Facebook only */}
