@@ -299,7 +299,7 @@ class FacebookPostManagerTester:
         return success
 
     def test_facebook_auth_url_generation(self):
-        """Test Facebook auth URL generation"""
+        """Test Facebook auth URL generation with Business Manager permissions"""
         success, response = self.run_test(
             "Facebook Auth URL Generation",
             "GET",
@@ -311,16 +311,82 @@ class FacebookPostManagerTester:
             auth_url = response.get("auth_url")
             app_id = response.get("app_id")
             redirect_uri = response.get("redirect_uri")
+            scope = response.get("scope")
             
             print(f"   Auth URL: {auth_url[:100]}...")
             print(f"   App ID: {app_id}")
             print(f"   Redirect URI: {redirect_uri}")
+            print(f"   Scope: {scope}")
+            
+            # Check for Business Manager permissions
+            required_permissions = ["business_management", "read_insights"]
+            permissions_found = []
+            
+            for perm in required_permissions:
+                if perm in scope:
+                    permissions_found.append(perm)
+                    print(f"✅ Found required permission: {perm}")
+                else:
+                    print(f"❌ Missing required permission: {perm}")
             
             if "facebook.com" in auth_url and "5664227323683118" in auth_url:
                 print("✅ Valid Facebook auth URL generated")
             else:
                 print("⚠️  Invalid auth URL format")
+                
+            if len(permissions_found) == len(required_permissions):
+                print("✅ All Business Manager permissions included")
+            else:
+                print(f"⚠️  Missing {len(required_permissions) - len(permissions_found)} Business Manager permissions")
         
+        return success
+
+    def test_business_manager_endpoints_without_user(self):
+        """Test Business Manager endpoints with non-existent user"""
+        fake_user_id = str(uuid.uuid4())
+        
+        # Test getting business managers
+        success1, response1 = self.run_test(
+            "Get Business Managers (Non-existent User)",
+            "GET",
+            f"api/users/{fake_user_id}/business-managers",
+            404
+        )
+        
+        # Test selecting business manager
+        success2, response2 = self.run_test(
+            "Select Business Manager (Non-existent User)",
+            "POST",
+            f"api/users/{fake_user_id}/select-business-manager",
+            404,
+            data={"business_manager_id": "fake_bm_id"}
+        )
+        
+        return success1 and success2
+
+    def test_facebook_code_exchange_invalid(self):
+        """Test Facebook code exchange with invalid data"""
+        success, response = self.run_test(
+            "Facebook Code Exchange (Invalid)",
+            "POST",
+            "api/auth/facebook/exchange-code",
+            400,
+            data={
+                "code": "invalid_code_12345",
+                "redirect_uri": "http://localhost:3000"
+            }
+        )
+        return success
+
+    def test_facebook_code_exchange_missing_data(self):
+        """Test Facebook code exchange with missing data"""
+        success, response = self.run_test(
+            "Facebook Code Exchange (Missing Data)",
+            "POST",
+            "api/auth/facebook/exchange-code",
+            422,  # Validation error
+            data={}
+        )
         return success
 
     def test_cors_headers(self):
