@@ -69,6 +69,7 @@ class Post(BaseModel):
     user_id: str
     content: str
     media_urls: Optional[List[str]] = []
+    link_metadata: Optional[List[dict]] = []  # Store detected link metadata
     target_type: str  # "page" or "group"
     target_id: str
     target_name: str
