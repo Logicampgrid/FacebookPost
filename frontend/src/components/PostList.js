@@ -125,11 +125,11 @@ const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              {post.status !== 'published' && (
+              {post.status === 'failed' && (
                 <button
                   onClick={() => onPublish(post.id)}
                   className="text-facebook-primary hover:text-facebook-dark transition-colors p-2 rounded-lg hover:bg-facebook-light"
-                  title="Publier maintenant"
+                  title="Republier sur Facebook"
                 >
                   <Send className="w-4 h-4" />
                 </button>
