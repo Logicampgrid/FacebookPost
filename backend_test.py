@@ -1042,6 +1042,226 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_new_platforms_endpoint(self):
+        """Test the new /api/users/{user_id}/platforms endpoint"""
+        fake_user_id = str(uuid.uuid4())
+        success, response = self.run_test(
+            "Get User Platforms (New Endpoint)",
+            "GET",
+            f"api/users/{fake_user_id}/platforms",
+            404  # Should return 404 for non-existent user
+        )
+        return success
+
+    def test_facebook_auth_url_with_meta_permissions(self):
+        """Test Facebook auth URL generation with new Meta permissions"""
+        success, response = self.run_test(
+            "Facebook Auth URL (Meta Permissions)",
+            "GET",
+            "api/facebook/auth-url?redirect_uri=http://localhost:3000",
+            200
+        )
+        
+        if success:
+            scope = response.get("scope", "")
+            print(f"   Scope: {scope}")
+            
+            # Check for new Meta permissions
+            required_permissions = [
+                "groups_access_member_info",
+                "instagram_basic", 
+                "instagram_content_publish",
+                "business_management",
+                "pages_manage_posts"
+            ]
+            
+            permissions_found = []
+            for perm in required_permissions:
+                if perm in scope:
+                    permissions_found.append(perm)
+                    print(f"✅ Found Meta permission: {perm}")
+                else:
+                    print(f"❌ Missing Meta permission: {perm}")
+            
+            if len(permissions_found) == len(required_permissions):
+                print("✅ All Meta platform permissions included")
+            else:
+                print(f"⚠️  Missing {len(required_permissions) - len(permissions_found)} Meta permissions")
+        
+        return success
+
+    def test_create_instagram_post(self):
+        """Test creating Instagram post"""
+        test_user_id = str(uuid.uuid4())
+        
+        form_data = {
+            "content": "Test Instagram post with image requirement",
+            "target_type": "instagram", 
+            "target_id": "test_instagram_123",
+            "target_name": "Test Instagram Account",
+            "platform": "instagram",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Instagram Post",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            platform = post.get("platform")
+            target_type = post.get("target_type")
+            
+            if platform == "instagram" and target_type == "instagram":
+                print("✅ Instagram post created with correct platform/type")
+            else:
+                print(f"⚠️  Unexpected platform/type: {platform}/{target_type}")
+        
+        return success
+
+    def test_create_group_post(self):
+        """Test creating Facebook Group post"""
+        test_user_id = str(uuid.uuid4())
+        
+        form_data = {
+            "content": "Test Facebook Group post",
+            "target_type": "group", 
+            "target_id": "test_group_123",
+            "target_name": "Test Facebook Group",
+            "platform": "facebook",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Facebook Group Post",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            platform = post.get("platform")
+            target_type = post.get("target_type")
+            
+            if platform == "facebook" and target_type == "group":
+                print("✅ Facebook Group post created with correct platform/type")
+            else:
+                print(f"⚠️  Unexpected platform/type: {platform}/{target_type}")
+        
+        return success
+
+    def test_create_cross_post(self):
+        """Test creating cross-platform post"""
+        test_user_id = str(uuid.uuid4())
+        
+        cross_targets = [
+            {"id": "page_123", "name": "Test Page", "platform": "facebook", "type": "page"},
+            {"id": "group_456", "name": "Test Group", "platform": "facebook", "type": "group"},
+            {"id": "ig_789", "name": "Test Instagram", "platform": "instagram", "type": "instagram"}
+        ]
+        
+        form_data = {
+            "content": "Test cross-platform post",
+            "target_type": "cross-post", 
+            "target_id": "cross-post",
+            "target_name": f"Cross-post ({len(cross_targets)} plateformes)",
+            "platform": "meta",
+            "user_id": test_user_id,
+            "cross_post_targets": json.dumps(cross_targets)
+        }
+        
+        success, response = self.run_test(
+            "Create Cross-Platform Post",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            platform = post.get("platform")
+            target_type = post.get("target_type")
+            cross_post_targets = post.get("cross_post_targets", [])
+            
+            if platform == "meta" and target_type == "cross-post":
+                print("✅ Cross-platform post created with correct platform/type")
+            else:
+                print(f"⚠️  Unexpected platform/type: {platform}/{target_type}")
+                
+            if len(cross_post_targets) == len(cross_targets):
+                print(f"✅ All {len(cross_targets)} cross-post targets stored")
+            else:
+                print(f"⚠️  Expected {len(cross_targets)} targets, got {len(cross_post_targets)}")
+        
+        return success
+
+    def test_instagram_validation_logic(self):
+        """Test Instagram validation through debug endpoint"""
+        test_cases = [
+            {
+                "name": "Instagram with Image Link",
+                "content": "Check out this image: https://picsum.photos/800/600",
+                "platform": "instagram",
+                "should_be_compatible": True
+            },
+            {
+                "name": "Instagram Text Only",
+                "content": "Just text without any media",
+                "platform": "instagram", 
+                "should_be_compatible": False
+            },
+            {
+                "name": "Facebook Text Only",
+                "content": "Just text without any media",
+                "platform": "facebook",
+                "should_be_compatible": True
+            }
+        ]
+        
+        all_passed = True
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Instagram Validation ({test_case['name']})",
+                "POST",
+                "api/debug/test-link-post",
+                200,
+                data={
+                    "content": test_case["content"],
+                    "platform": test_case["platform"]
+                }
+            )
+            
+            if success:
+                instagram_compatible = response.get("instagram_compatible", False)
+                detected_urls = response.get("detected_urls", [])
+                link_metadata = response.get("link_metadata")
+                
+                print(f"   Platform: {test_case['platform']}")
+                print(f"   Instagram Compatible: {instagram_compatible}")
+                print(f"   URLs: {len(detected_urls)}")
+                print(f"   Has Image: {bool(link_metadata and link_metadata.get('image'))}")
+                
+                if instagram_compatible == test_case["should_be_compatible"]:
+                    print(f"✅ Correct Instagram compatibility for {test_case['name']}")
+                else:
+                    print(f"❌ Expected {test_case['should_be_compatible']}, got {instagram_compatible}")
+                    all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
+
     def test_uploads_directory_exists(self):
         """Test if uploads directory exists and is writable"""
         import os
