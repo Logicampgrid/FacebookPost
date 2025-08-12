@@ -40,6 +40,13 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       formData.append('target_type', 'page');
       formData.append('target_id', selectedPage.id);
       formData.append('target_name', selectedPage.name);
+      
+      // Add Business Manager info if available
+      if (selectedBusinessManager) {
+        formData.append('business_manager_id', selectedBusinessManager.id);
+        formData.append('business_manager_name', selectedBusinessManager.name);
+      }
+      
       if (scheduledTime) {
         formData.append('scheduled_time', scheduledTime);
       }
