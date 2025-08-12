@@ -158,6 +158,32 @@ const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
                   {post.content}
                 </p>
                 
+                {/* Comment Link Info */}
+                {post.comment_link && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <MessageCircle className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Lien en commentaire:</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1 break-all">{post.comment_link}</p>
+                    {post.comment_status && (
+                      <div className="mt-2 flex items-center space-x-1">
+                        {post.comment_status === 'success' ? (
+                          <>
+                            <CheckCircle className="w-3 h-3 text-green-500" />
+                            <span className="text-xs text-green-600">Commentaire ajouté avec succès</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3 h-3 text-red-500" />
+                            <span className="text-xs text-red-600">Échec de l'ajout du commentaire</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {/* Media URLs */}
                 {post.media_urls && post.media_urls.length > 0 && (
                   <div className="mt-3 space-y-2">
