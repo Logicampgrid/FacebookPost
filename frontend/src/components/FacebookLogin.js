@@ -262,7 +262,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
             <p>1. Allez sur <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="underline">Facebook Graph API Explorer</a></p>
             <p>2. Sélectionnez App ID: 5664227323683118</p>
             <p>3. Générez un "User Access Token"</p>
-            <p>4. Ajoutez les permissions: pages_manage_posts, pages_read_engagement, pages_show_list</p>
+            <p>4. Ajoutez les permissions: pages_manage_posts, pages_read_engagement, pages_show_list, business_management</p>
             <p>5. Copiez le token généré et collez-le ci-dessus</p>
             <div className="mt-2">
               <a 
