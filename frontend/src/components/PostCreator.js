@@ -179,9 +179,10 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
               </div>
               
               {detectedLinks.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Les liens seront automatiquement inclus dans votre post Facebook
-                </p>
+                <div className="text-xs text-gray-500 mt-1">
+                  <p className="text-green-600 font-medium">✓ {detectedLinks.length} lien(s) détecté(s) avec prévisualisation</p>
+                  <p>Les images et métadonnées des liens s'afficheront automatiquement sur Facebook</p>
+                </div>
               )}
             </div>
           )}
