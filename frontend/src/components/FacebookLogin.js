@@ -117,7 +117,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
     const facebookAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
       `client_id=5664227323683118&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=pages_manage_posts,pages_read_engagement,pages_show_list&` +
+      `scope=pages_manage_posts,pages_read_engagement,pages_show_list,business_management,read_insights&` +
       `response_type=code&` +
       `state=${Math.random().toString(36).substring(7)}`;
     
