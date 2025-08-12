@@ -325,6 +325,34 @@ async def extract_link_metadata(url: str):
         print(f"Error extracting metadata from {url}: {e}")
         return None
 
+async def add_comment_to_facebook_post(facebook_post_id: str, comment_text: str, page_access_token: str):
+    """Add a comment to a Facebook post"""
+    try:
+        data = {
+            "message": comment_text,
+            "access_token": page_access_token
+        }
+        
+        print(f"Adding comment to Facebook post {facebook_post_id}: {comment_text}")
+        
+        response = requests.post(
+            f"{FACEBOOK_GRAPH_URL}/{facebook_post_id}/comments",
+            data=data
+        )
+        
+        result = response.json()
+        print(f"Facebook comment API response: {response.status_code} - {result}")
+        
+        if response.status_code == 200:
+            return result
+        else:
+            print(f"Facebook comment API error: {result}")
+            return None
+            
+    except Exception as e:
+        print(f"Error adding comment to Facebook post: {e}")
+        return None
+
 def extract_urls_from_text(text: str):
     """Extract URLs from text content"""
     # Regex pattern for URLs
