@@ -321,6 +321,14 @@ const FacebookLogin = ({ onLogin, loading }) => {
           : 'Solution temporaire avec token manuel'
         }
       </div>
+      
+      {/* Diagnostic Modal */}
+      {showDiagnostic && (
+        <PermissionDiagnostic 
+          token={manualToken}
+          onClose={() => setShowDiagnostic(false)}
+        />
+      )}
     </div>
   );
 };
