@@ -548,7 +548,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
               type="submit"
               disabled={
                 loading || 
-                !content.trim() || 
+                (!content.trim() && mediaFiles.length === 0) || 
                 (!crossPostMode && !selectedPlatform) ||
                 (crossPostMode && selectedCrossTargets.length === 0)
               }
