@@ -748,7 +748,8 @@ async def create_post(
     user_id: str = Form(...),
     business_manager_id: Optional[str] = Form(None),
     business_manager_name: Optional[str] = Form(None),
-    scheduled_time: Optional[str] = Form(None)
+    scheduled_time: Optional[str] = Form(None),
+    comment_link: Optional[str] = Form(None)  # New field for comment link
 ):
     """Create and immediately publish a post to Facebook"""
     try:
