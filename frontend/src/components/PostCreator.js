@@ -106,6 +106,11 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             <h2 className="text-xl font-semibold text-gray-800">Créer un nouveau post</h2>
             <p className="text-sm text-gray-600">
               Publication sur: {selectedPage?.name || 'Sélectionnez une page'}
+              {selectedBusinessManager && (
+                <span className="block text-xs text-blue-600">
+                  📊 Business Manager: {selectedBusinessManager.name}
+                </span>
+              )}
             </p>
           </div>
         </div>
