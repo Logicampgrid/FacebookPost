@@ -911,34 +911,38 @@ async def get_link_preview(request: LinkPreviewRequest):
         print(f"Error getting link preview: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching link preview: {str(e)}")
 
-@app.post("/api/text/extract-links")
-async def extract_links_from_text_content(text_content: dict):
-    """Extract URLs from text content and get their metadata"""
+@app.post("/api/debug/test-link-post")
+async def test_link_post(request: dict):
+    """Test endpoint to debug link posting to Facebook"""
     try:
-        text = text_content.get("text", "")
+        content = request.get("content", "")
+        link_url = request.get("link_url", "")
         
-        if not text:
-            return {"links": []}
-            
+        if not content and not link_url:
+            return {"error": "Content or link_url required"}
+        
+        # Simulate the post creation flow
+        test_content = content if content else f"Check out this link: {link_url}"
+        
         # Extract URLs
-        urls = extract_urls_from_text(text)
+        urls = extract_urls_from_text(test_content)
+        print(f"Extracted URLs: {urls}")
         
-        # Get metadata for each URL
-        links_metadata = []
-        for url in urls[:3]:  # Limit to first 3 URLs to avoid performance issues
-            try:
-                metadata = await extract_link_metadata(url)
-                if metadata:
-                    links_metadata.append(metadata)
-            except Exception as e:
-                print(f"Error processing URL {url}: {e}")
-                continue
-                
-        return {"links": links_metadata}
+        # Get metadata for first URL
+        metadata = None
+        if urls:
+            metadata = await extract_link_metadata(urls[0])
+            print(f"Link metadata: {metadata}")
+        
+        return {
+            "content": test_content,
+            "detected_urls": urls,
+            "link_metadata": metadata,
+            "post_strategy": "link_preview" if urls else "text_only"
+        }
         
     except Exception as e:
-        print(f"Error extracting links: {e}")
-        raise HTTPException(status_code=500, detail=f"Error extracting links: {str(e)}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
