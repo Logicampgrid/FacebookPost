@@ -719,45 +719,119 @@ async def create_post(
     business_manager_name: Optional[str] = Form(None),
     scheduled_time: Optional[str] = Form(None)
 ):
-    """Create a new post"""
-    
-    # Extract and get metadata for links in content
-    detected_urls = extract_urls_from_text(content)
-    link_metadata = []
-    
-    # Get metadata for each detected URL (limit to first 3 for performance)
-    for url in detected_urls[:3]:
-        try:
-            metadata = await extract_link_metadata(url)
-            if metadata:
-                link_metadata.append(metadata)
-                print(f"Link metadata extracted for {url}: {metadata.get('title', 'No title')}")
-        except Exception as e:
-            print(f"Error extracting metadata for {url}: {e}")
-            continue
-    
-    post_data = {
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "content": content,
-        "media_urls": [],
-        "link_metadata": link_metadata,  # Store detected link metadata
-        "target_type": target_type,
-        "target_id": target_id,
-        "target_name": target_name,
-        "business_manager_id": business_manager_id,
-        "business_manager_name": business_manager_name,
-        "scheduled_time": datetime.fromisoformat(scheduled_time) if scheduled_time else None,
-        "status": "scheduled" if scheduled_time else "draft",
-        "created_at": datetime.utcnow()
-    }
-    
-    result = await db.posts.insert_one(post_data)
-    post_data["_id"] = str(result.inserted_id)
-    
-    print(f"Post created with {len(link_metadata)} link metadata entries")
-    
-    return {"message": "Post created successfully", "post": post_data}
+    """Create and immediately publish a post to Facebook"""
+    try:
+        print(f"Creating post for user {user_id} on target {target_name} ({target_id})")
+        
+        # Extract and get metadata for links in content
+        detected_urls = extract_urls_from_text(content)
+        link_metadata = []
+        
+        # Get metadata for each detected URL (limit to first 3 for performance)
+        for url in detected_urls[:3]:
+            try:
+                metadata = await extract_link_metadata(url)
+                if metadata:
+                    link_metadata.append(metadata)
+                    print(f"Link metadata extracted for {url}: {metadata.get('title', 'No title')}")
+            except Exception as e:
+                print(f"Error extracting metadata for {url}: {e}")
+                continue
+        
+        # Determine initial status - if scheduled, keep as scheduled, otherwise publish immediately
+        if scheduled_time:
+            status = "scheduled"
+            scheduled_dt = datetime.fromisoformat(scheduled_time)
+        else:
+            status = "published"  # Changed from "draft" to "published"
+            scheduled_dt = None
+        
+        post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "content": content,
+            "media_urls": [],
+            "link_metadata": link_metadata,
+            "target_type": target_type,
+            "target_id": target_id,
+            "target_name": target_name,
+            "business_manager_id": business_manager_id,
+            "business_manager_name": business_manager_name,
+            "scheduled_time": scheduled_dt,
+            "status": status,
+            "created_at": datetime.utcnow()
+        }
+        
+        # If not scheduled, publish immediately to Facebook
+        if not scheduled_time:
+            print("Publishing immediately to Facebook...")
+            
+            # Get user to find access token
+            try:
+                # Try to convert to ObjectId if it's a valid ObjectId string
+                if len(user_id) == 24:
+                    user = await db.users.find_one({"_id": ObjectId(user_id)})
+                else:
+                    user = await db.users.find_one({"_id": user_id})
+            except Exception:
+                user = await db.users.find_one({"_id": user_id}) or await db.users.find_one({"facebook_id": user_id})
+                
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Find the correct page access token
+            page_access_token = user["facebook_access_token"]
+            
+            # If post is from a business manager, look in business manager pages
+            if business_manager_id:
+                for bm in user.get("business_managers", []):
+                    if bm["id"] == business_manager_id:
+                        for page in bm.get("pages", []):
+                            if page["id"] == target_id:
+                                page_access_token = page.get("access_token", user["facebook_access_token"])
+                                break
+                        break
+            else:
+                # Look in personal pages
+                for page in user.get("facebook_pages", []):
+                    if page["id"] == target_id:
+                        page_access_token = page["access_token"]
+                        break
+            
+            # Create Post object for Facebook publishing
+            post_obj = Post(**post_data)
+            
+            # Publish to Facebook
+            result = await post_to_facebook(post_obj, page_access_token)
+            
+            if result and "id" in result:
+                post_data["status"] = "published"
+                post_data["published_at"] = datetime.utcnow()
+                post_data["facebook_post_id"] = result["id"]
+                print(f"✅ Post published successfully to Facebook with ID: {result['id']}")
+            else:
+                post_data["status"] = "failed"
+                print("❌ Failed to publish post to Facebook")
+        
+        # Save to database
+        result = await db.posts.insert_one(post_data)
+        post_data["_id"] = str(result.inserted_id)
+        
+        print(f"Post created with {len(link_metadata)} link metadata entries")
+        
+        # Return appropriate message based on status
+        if post_data["status"] == "published":
+            message = "Post created and published successfully to Facebook!"
+        elif post_data["status"] == "scheduled":
+            message = f"Post scheduled successfully for {scheduled_dt.strftime('%Y-%m-%d %H:%M')}"
+        else:
+            message = "Post created but failed to publish to Facebook"
+        
+        return {"message": message, "post": post_data}
+        
+    except Exception as e:
+        print(f"Error in create_post: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating post: {str(e)}")
 
 @app.post("/api/posts/{post_id}/media")
 async def upload_media(post_id: str, file: UploadFile = File(...)):
