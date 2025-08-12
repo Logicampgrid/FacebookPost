@@ -70,6 +70,7 @@ class Post(BaseModel):
     content: str
     media_urls: Optional[List[str]] = []
     link_metadata: Optional[List[dict]] = []  # Store detected link metadata
+    comment_link: Optional[str] = None  # Link to add as comment after post
     target_type: str  # "page" or "group"
     target_id: str
     target_name: str
@@ -77,6 +78,7 @@ class Post(BaseModel):
     business_manager_name: Optional[str] = None
     scheduled_time: Optional[datetime] = None
     status: str = "draft"  # "draft", "scheduled", "published", "failed"
+    comment_status: Optional[str] = None  # "success", "failed", None if no comment
     created_at: datetime = datetime.utcnow()
     published_at: Optional[datetime] = None
 
