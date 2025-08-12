@@ -1294,17 +1294,32 @@ class FacebookPostManagerTester:
         return os.path.exists(uploads_dir) and os.access(uploads_dir, os.W_OK)
 
 def main():
-    print("🚀 Starting Facebook Post Manager API Tests")
-    print("=" * 50)
+    print("🚀 Starting Meta Publishing Platform API Tests")
+    print("=" * 60)
     
     tester = FacebookPostManagerTester()
     
     # Run all tests
     tests = [
+        # Core functionality tests
         tester.test_health_check,
         tester.test_uploads_directory_exists,
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
+        
+        # New Meta platform tests
+        tester.test_new_platforms_endpoint,
+        tester.test_facebook_auth_url_with_meta_permissions,
+        
+        # Platform-specific post creation
+        tester.test_create_instagram_post,
+        tester.test_create_group_post,
+        tester.test_create_cross_post,
+        
+        # Instagram validation
+        tester.test_instagram_validation_logic,
+        
+        # Original tests
         tester.test_facebook_auth_url_generation,
         tester.test_facebook_token_debug_invalid,
         tester.test_facebook_token_debug_various_invalid_tokens,
@@ -1316,6 +1331,7 @@ def main():
         tester.test_create_post_without_auth,
         tester.test_create_post_with_form_data,
         tester.test_get_posts_with_user,
+        
         # Media upload tests
         tester.test_media_upload_without_post,
         tester.test_media_upload_with_valid_post,
@@ -1325,6 +1341,7 @@ def main():
         tester.test_delete_post,
         tester.test_delete_nonexistent_post,
         tester.test_get_user_pages_nonexistent,
+        
         # Link detection tests
         tester.test_extract_links_from_text,
         tester.test_extract_links_empty_text,
@@ -1333,11 +1350,13 @@ def main():
         tester.test_link_preview_single_url,
         tester.test_link_preview_invalid_url,
         tester.test_link_preview_malformed_url,
+        
         # Facebook link posting strategy tests
         tester.test_debug_test_link_post,
         tester.test_debug_test_link_post_no_links,
         tester.test_facebook_posting_strategy_simulation,
         tester.test_create_post_with_links,
+        
         # Comment link functionality tests
         tester.test_create_post_with_comment_link,
         tester.test_create_post_without_comment_link,
@@ -1353,15 +1372,22 @@ def main():
             tester.tests_run += 1
     
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed!")
+        print("🎉 All Meta Publishing Platform tests passed!")
         return 0
     else:
-        print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed")
-        return 1
+        failed_count = tester.tests_run - tester.tests_passed
+        print(f"⚠️  {failed_count} tests failed")
+        
+        if failed_count > tester.tests_run * 0.5:  # More than 50% failed
+            print("❌ More than 50% of tests failed - major issues detected")
+            return 2
+        else:
+            print("⚠️  Minor issues detected - proceed with caution")
+            return 1
 
 if __name__ == "__main__":
     sys.exit(main())
