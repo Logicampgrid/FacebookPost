@@ -873,6 +873,10 @@ async def create_post(
         # Return appropriate message based on status
         if post_data["status"] == "published":
             message = "Post created and published successfully to Facebook!"
+            if comment_link and post_data.get("comment_status") == "success":
+                message += " Comment with link added successfully!"
+            elif comment_link and post_data.get("comment_status") == "failed":
+                message += " However, failed to add comment with link."
         elif post_data["status"] == "scheduled":
             message = f"Post scheduled successfully for {scheduled_dt.strftime('%Y-%m-%d %H:%M')}"
         else:
