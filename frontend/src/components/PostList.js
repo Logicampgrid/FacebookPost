@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle, XCircle, Send, Trash2, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, Send, Trash2, RefreshCw, MessageCircle } from 'lucide-react';
 
 const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
   const getStatusIcon = (status) => {
