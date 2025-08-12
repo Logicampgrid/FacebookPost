@@ -1516,6 +1516,12 @@ def main():
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         
+        # NEW FUNCTIONALITY TESTS
+        tester.test_create_post_empty_content_with_media,
+        tester.test_create_post_only_media_no_content,
+        tester.test_media_priority_over_link_images,
+        tester.test_validation_empty_content_no_media,
+        
         # New Meta platform tests
         tester.test_new_platforms_endpoint,
         tester.test_facebook_auth_url_with_meta_permissions,
