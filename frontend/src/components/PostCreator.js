@@ -155,7 +155,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
 
     const warnings = getIncompatibleWarnings();
     if (warnings.length > 0) {
-      if (!confirm(`Attention :\n${warnings.join('\n')}\n\nContinuer quand même ?`)) {
+      if (!window.confirm(`Attention :\n${warnings.join('\n')}\n\nContinuer quand même ?`)) {
         return;
       }
     }
