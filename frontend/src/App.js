@@ -220,14 +220,16 @@ function App() {
   };
 
   const handlePostPublished = async (postId) => {
+    // This function is no longer needed since posts are published directly
+    // But we keep it for potential re-publishing failed posts
     try {
       setLoading(true);
       await axios.post(`${API_BASE}/api/posts/${postId}/publish`);
       await loadPosts(); // Reload to get updated status
-      alert('Post publié avec succès sur Facebook!');
+      alert('Post republié avec succès sur Facebook!');
     } catch (error) {
-      console.error('Error publishing post:', error);
-      alert('Erreur lors de la publication: ' + (error.response?.data?.detail || 'Erreur inconnue'));
+      console.error('Error republishing post:', error);
+      alert('Erreur lors de la republication: ' + (error.response?.data?.detail || 'Erreur inconnue'));
     } finally {
       setLoading(false);
     }
