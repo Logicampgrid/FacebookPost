@@ -317,6 +317,99 @@ async def get_facebook_auth_url(redirect_uri: str = "http://localhost:3000"):
         "scope": params["scope"]
     }
 
+@app.get("/api/debug/permissions/{token}")
+async def debug_permissions(token: str):
+    """Debug token permissions to help with Business Manager access"""
+    try:
+        # Check token info and permissions
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/me/permissions",
+            params={"access_token": token}
+        )
+        
+        if response.status_code == 200:
+            permissions_data = response.json()
+            granted_permissions = []
+            declined_permissions = []
+            
+            for perm in permissions_data.get("data", []):
+                if perm.get("status") == "granted":
+                    granted_permissions.append(perm.get("permission"))
+                else:
+                    declined_permissions.append({
+                        "permission": perm.get("permission"),
+                        "status": perm.get("status")
+                    })
+            
+            # Test Business Manager access
+            business_test = requests.get(
+                f"{FACEBOOK_GRAPH_URL}/me/businesses",
+                params={"access_token": token}
+            )
+            
+            business_error = None
+            if business_test.status_code != 200:
+                business_error = business_test.json()
+            
+            return {
+                "status": "success",
+                "granted_permissions": granted_permissions,
+                "declined_permissions": declined_permissions,
+                "has_business_management": "business_management" in granted_permissions,
+                "business_api_test": {
+                    "status_code": business_test.status_code,
+                    "error": business_error
+                },
+                "recommendations": get_permission_recommendations(granted_permissions)
+            }
+        else:
+            return {
+                "status": "error",
+                "error": response.json(),
+                "status_code": response.status_code
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+def get_permission_recommendations(granted_permissions):
+    """Get recommendations based on granted permissions"""
+    recommendations = []
+    required_permissions = [
+        "pages_manage_posts",
+        "pages_read_engagement", 
+        "pages_show_list",
+        "business_management"
+    ]
+    
+    missing_permissions = [p for p in required_permissions if p not in granted_permissions]
+    
+    if missing_permissions:
+        recommendations.append({
+            "type": "missing_permissions",
+            "message": f"Permissions manquantes: {', '.join(missing_permissions)}",
+            "action": "Demandez ces permissions lors de l'authentification"
+        })
+    
+    if "business_management" not in granted_permissions:
+        recommendations.append({
+            "type": "business_management",
+            "message": "La permission 'business_management' est requise pour accéder aux Business Managers",
+            "action": "Cette permission peut nécessiter une approbation Facebook pour votre application"
+        })
+        
+    if not missing_permissions:
+        recommendations.append({
+            "type": "account_access",
+            "message": "Toutes les permissions sont accordées. Vérifiez votre accès aux Business Managers sur Facebook.",
+            "action": "Allez sur business.facebook.com et vérifiez vos rôles"
+        })
+    
+    return recommendations
+
 @app.get("/api/debug/facebook-token/{token}")
 async def debug_facebook_token(token: str):
     """Debug Facebook token for troubleshooting"""
