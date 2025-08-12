@@ -961,9 +961,15 @@ def main():
         tester.test_extract_links_from_text,
         tester.test_extract_links_empty_text,
         tester.test_extract_links_no_urls,
+        tester.test_extract_links_popular_sites,
         tester.test_link_preview_single_url,
         tester.test_link_preview_invalid_url,
-        tester.test_link_preview_malformed_url
+        tester.test_link_preview_malformed_url,
+        # Facebook link posting strategy tests
+        tester.test_debug_test_link_post,
+        tester.test_debug_test_link_post_no_links,
+        tester.test_facebook_posting_strategy_simulation,
+        tester.test_create_post_with_links
     ]
     
     for test in tests:
