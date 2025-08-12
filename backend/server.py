@@ -279,34 +279,38 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with enhanced link handling"""
+    """Post content to Facebook page/group with enhanced link handling and media priority"""
     try:
         data = {
             "access_token": page_access_token
         }
         
         # Extract URLs from post content for Facebook link preview
-        urls_in_content = extract_urls_from_text(post.content)
+        urls_in_content = extract_urls_from_text(post.content) if post.content else []
         
         # Determine the best posting strategy based on content type
+        # PRIORITY: 1. Uploaded media files, 2. Link images, 3. Text only
+        
         if post.media_urls:
-            # Strategy 1: Posted image/video takes priority over links
+            # Strategy 1: Uploaded media takes highest priority
             media_url = post.media_urls[0]
             if media_url.startswith('http'):
                 data["link"] = media_url
-                data["message"] = post.content
+                if post.content and post.content.strip():
+                    data["message"] = post.content
             else:
                 # Handle local uploaded files
                 data["picture"] = f"http://localhost:8001{media_url}"
-                data["message"] = post.content
-                
+                if post.content and post.content.strip():
+                    data["message"] = post.content
+                    
         elif urls_in_content:
-            # Strategy 2: Use link sharing for better preview
+            # Strategy 2: Use link sharing for better preview (only if no uploaded media)
             # Facebook's link sharing provides better image/metadata handling
             primary_link = urls_in_content[0]
             
             # If content contains only a link (or link + short text), use link parameter
-            content_without_links = post.content
+            content_without_links = post.content if post.content else ""
             for url in urls_in_content:
                 content_without_links = content_without_links.replace(url, '').strip()
             
@@ -320,8 +324,12 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 data["link"] = primary_link  # Facebook will still show preview
                 
         else:
-            # Strategy 3: Text-only post
-            data["message"] = post.content
+            # Strategy 3: Text-only post (or empty content with no media - should not happen due to validation)
+            if post.content and post.content.strip():
+                data["message"] = post.content
+            else:
+                # This shouldn't happen due to frontend validation, but handle gracefully
+                data["message"] = "Post créé depuis Meta Publishing Platform"
         
         print(f"Posting to Facebook with strategy: {data}")
         
