@@ -78,7 +78,12 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       // Notify parent
       onPostCreated(newPost);
 
-      alert(scheduledTime ? 'Post programmé avec succès!' : 'Post créé avec succès!');
+      // Show appropriate success message
+      if (scheduledTime) {
+        alert('Post programmé avec succès!');
+      } else {
+        alert('Post créé et publié avec succès sur Facebook! 🎉');
+      }
       
     } catch (error) {
       console.error('Error creating post:', error);
