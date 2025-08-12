@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Users, AlertCircle } from 'lucide-react';
+import { Users, AlertCircle, Search } from 'lucide-react';
 import axios from 'axios';
 import ConnectionStatus from './ConnectionStatus';
+import PermissionDiagnostic from './PermissionDiagnostic';
 
 const FacebookLogin = ({ onLogin, loading }) => {
   const [error, setError] = useState('');
