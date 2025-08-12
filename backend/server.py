@@ -784,6 +784,7 @@ async def create_post(
             "content": content,
             "media_urls": [],
             "link_metadata": link_metadata,
+            "comment_link": comment_link,  # Store comment link
             "target_type": target_type,
             "target_id": target_id,
             "target_name": target_name,
@@ -791,6 +792,7 @@ async def create_post(
             "business_manager_name": business_manager_name,
             "scheduled_time": scheduled_dt,
             "status": status,
+            "comment_status": None,  # Initialize comment status
             "created_at": datetime.utcnow()
         }
         
