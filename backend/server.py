@@ -944,6 +944,35 @@ async def test_link_post(request: dict):
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/api/text/extract-links")
+async def extract_links_from_text_content(text_content: dict):
+    """Extract URLs from text content and get their metadata"""
+    try:
+        text = text_content.get("text", "")
+        
+        if not text:
+            return {"links": []}
+            
+        # Extract URLs
+        urls = extract_urls_from_text(text)
+        
+        # Get metadata for each URL
+        links_metadata = []
+        for url in urls[:3]:  # Limit to first 3 URLs to avoid performance issues
+            try:
+                metadata = await extract_link_metadata(url)
+                if metadata:
+                    links_metadata.append(metadata)
+            except Exception as e:
+                print(f"Error processing URL {url}: {e}")
+                continue
+                
+        return {"links": links_metadata}
+        
+    except Exception as e:
+        print(f"Error extracting links: {e}")
+        raise HTTPException(status_code=500, detail=f"Error extracting links: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
