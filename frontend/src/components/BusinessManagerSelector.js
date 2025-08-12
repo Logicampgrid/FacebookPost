@@ -42,15 +42,81 @@ const BusinessManagerSelector = ({ user, onBusinessManagerSelect }) => {
 
   if (!user?.business_managers || user.business_managers.length === 0) {
     return (
-      <div className="facebook-card p-4 mb-6">
-        <div className="flex items-center space-x-3 text-yellow-600">
-          <AlertCircle className="w-5 h-5" />
+      <div className="facebook-card p-6 mb-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <AlertCircle className="w-6 h-6 text-yellow-500" />
           <div>
-            <h3 className="font-medium">Aucun Business Manager trouvé</h3>
+            <h3 className="text-lg font-semibold text-yellow-800">Aucun Business Manager trouvé</h3>
             <p className="text-sm text-gray-600">
-              Vous devez avoir accès à un Business Manager pour utiliser cette fonctionnalité
+              Configuration requise pour accéder à "Entreprise de Didier Preud'homme"
             </p>
           </div>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <h4 className="font-medium text-yellow-800 mb-3">Causes possibles :</h4>
+          <ul className="space-y-2 text-sm text-yellow-700">
+            <li className="flex items-start space-x-2">
+              <span className="mt-1">•</span>
+              <span>La permission <code className="bg-yellow-100 px-1 rounded">business_management</code> n'est pas accordée</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="mt-1">•</span>
+              <span>Votre compte n'a pas accès au Business Manager sur Facebook</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="mt-1">•</span>
+              <span>Le token Facebook n'a pas les bonnes permissions</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <h4 className="font-medium text-blue-800 mb-3">Solutions :</h4>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start space-x-2">
+              <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">1</span>
+              <div>
+                <p className="font-medium text-blue-800">Utilisez le diagnostic des permissions</p>
+                <p className="text-blue-700">Collez votre token et cliquez sur "Diagnostiquer les Permissions"</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-2">
+              <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">2</span>
+              <div>
+                <p className="font-medium text-blue-800">Vérifiez vos permissions sur Facebook</p>
+                <p className="text-blue-700">Assurez-vous d'avoir accès à "Entreprise de Didier Preud'homme"</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-2">
+              <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">3</span>
+              <div>
+                <p className="font-medium text-blue-800">Demandez l'approbation business_management</p>
+                <p className="text-blue-700">Cette permission peut nécessiter une approbation Facebook</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex space-x-3">
+          <a
+            href="https://developers.facebook.com/tools/explorer/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm"
+          >
+            📋 Graph API Explorer
+          </a>
+          <a
+            href="https://business.facebook.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-center text-sm"
+          >
+            🏢 Business Manager
+          </a>
         </div>
       </div>
     );
