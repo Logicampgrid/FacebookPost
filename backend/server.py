@@ -355,7 +355,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         return None
 
 async def post_to_instagram(post: Post, page_access_token: str):
-    """Post content to Instagram Business account"""
+    """Post content to Instagram Business account with media priority"""
     try:
         # Instagram posting requires a two-step process:
         # 1. Create media container
@@ -363,20 +363,33 @@ async def post_to_instagram(post: Post, page_access_token: str):
         
         # Step 1: Create media container
         container_data = {
-            "access_token": page_access_token,
-            "caption": post.content
+            "access_token": page_access_token
         }
         
-        # Handle media
+        # Add caption (can be empty)
+        if post.content and post.content.strip():
+            container_data["caption"] = post.content
+        
+        # Handle media - PRIORITY: uploaded files over link images
+        media_url = None
+        
         if post.media_urls:
+            # Use uploaded media first (highest priority)
             media_url = post.media_urls[0]
             if media_url.startswith('http'):
                 container_data["image_url"] = media_url
             else:
                 container_data["image_url"] = f"http://localhost:8001{media_url}"
-        else:
-            # Instagram requires media, so we'll skip text-only posts
-            print("Instagram requires media - skipping text-only post")
+        elif post.link_metadata:
+            # Use link image as fallback if no uploaded media
+            for link in post.link_metadata:
+                if link.get("image"):
+                    container_data["image_url"] = link["image"]
+                    break
+        
+        if not container_data.get("image_url"):
+            # Instagram requires media, so we'll skip posts without images
+            print("Instagram requires media - skipping post without images")
             return None
         
         # Create media container
