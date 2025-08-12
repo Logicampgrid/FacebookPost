@@ -728,6 +728,154 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_create_post_with_comment_link(self):
+        """Test creating a post with comment link functionality"""
+        test_user_id = str(uuid.uuid4())
+        content = "Check out our latest product update!"
+        comment_link = "https://www.example.com/product-details"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id,
+            "comment_link": comment_link
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Comment Link",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_link = post.get("comment_link")
+            comment_status = post.get("comment_status")
+            
+            print(f"   Comment Link: {stored_comment_link}")
+            print(f"   Comment Status: {comment_status}")
+            
+            if stored_comment_link == comment_link:
+                print("✅ Comment link stored correctly")
+            else:
+                print(f"❌ Comment link mismatch. Expected: {comment_link}, Got: {stored_comment_link}")
+                
+            # Note: comment_status will be None since we don't have real Facebook integration
+            if comment_status is None:
+                print("✅ Comment status initialized correctly (None for test)")
+            else:
+                print(f"⚠️  Unexpected comment status: {comment_status}")
+        
+        return success
+
+    def test_create_post_without_comment_link(self):
+        """Test creating a post without comment link (should work normally)"""
+        test_user_id = str(uuid.uuid4())
+        content = "Regular post without comment link"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+            # No comment_link field
+        }
+        
+        success, response = self.run_test(
+            "Create Post without Comment Link",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_link = post.get("comment_link")
+            
+            if stored_comment_link is None:
+                print("✅ Comment link correctly set to None when not provided")
+            else:
+                print(f"⚠️  Unexpected comment link value: {stored_comment_link}")
+        
+        return success
+
+    def test_create_post_with_empty_comment_link(self):
+        """Test creating a post with empty comment link"""
+        test_user_id = str(uuid.uuid4())
+        content = "Post with empty comment link"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id,
+            "comment_link": ""  # Empty string
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Empty Comment Link",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_link = post.get("comment_link")
+            
+            if stored_comment_link == "":
+                print("✅ Empty comment link stored correctly")
+            else:
+                print(f"⚠️  Unexpected comment link value: {stored_comment_link}")
+        
+        return success
+
+    def test_create_post_with_invalid_comment_link(self):
+        """Test creating a post with invalid comment link format"""
+        test_user_id = str(uuid.uuid4())
+        content = "Post with invalid comment link"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id,
+            "comment_link": "not-a-valid-url"  # Invalid URL format
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Invalid Comment Link",
+            "POST",
+            "api/posts",
+            200,  # Backend should still accept it (validation is frontend responsibility)
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_link = post.get("comment_link")
+            
+            if stored_comment_link == "not-a-valid-url":
+                print("✅ Invalid comment link stored (backend accepts any string)")
+                print("⚠️  Consider adding URL validation in backend")
+            else:
+                print(f"⚠️  Unexpected comment link value: {stored_comment_link}")
+        
+        return success
+
     def test_facebook_posting_strategy_simulation(self):
         """Test Facebook posting strategy with different content types"""
         test_cases = [
