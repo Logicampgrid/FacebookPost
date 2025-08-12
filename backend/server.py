@@ -93,6 +93,7 @@ class PostRequest(BaseModel):
     target_name: str
     business_manager_id: Optional[str] = None
     scheduled_time: Optional[str] = None
+    comment_link: Optional[str] = None  # Link to add as comment
 
 class FacebookCodeExchangeRequest(BaseModel):
     code: str
