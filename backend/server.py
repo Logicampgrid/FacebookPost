@@ -187,6 +187,9 @@ async def post_to_facebook(post: Post, page_access_token: str):
             "access_token": page_access_token
         }
         
+        # Extract URLs from post content for Facebook link preview
+        urls_in_content = extract_urls_from_text(post.content)
+        
         # Add media if present
         if post.media_urls:
             # For simplicity, we'll post the first image
@@ -197,11 +200,20 @@ async def post_to_facebook(post: Post, page_access_token: str):
             else:
                 # Handle local uploaded files
                 data["picture"] = f"http://localhost:8001{media_url}"
+        elif urls_in_content:
+            # If no uploaded media but URLs found in content, use the first URL as link
+            # This allows Facebook to automatically generate link preview with image
+            data["link"] = urls_in_content[0]
+            print(f"Adding link for Facebook preview: {urls_in_content[0]}")
+        
+        print(f"Posting to Facebook with data: {data}")
         
         response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed",
             data=data
         )
+        
+        print(f"Facebook API response: {response.status_code} - {response.text}")
         
         return response.json() if response.status_code == 200 else None
     except Exception as e:
