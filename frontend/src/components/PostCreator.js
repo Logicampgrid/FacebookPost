@@ -8,7 +8,7 @@ import { useLinkDetection } from '../hooks/useLinkDetection';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-const PostCreator = ({ user, selectedPage, onPostCreated }) => {
+const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreated }) => {
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [scheduledTime, setScheduledTime] = useState('');
