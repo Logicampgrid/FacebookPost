@@ -161,6 +161,27 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             />
           </div>
 
+          {/* Comment Link */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Link className="w-4 h-4 inline mr-1" />
+              Lien en commentaire (optionnel)
+            </label>
+            <input
+              type="url"
+              value={commentLink}
+              onChange={(e) => setCommentLink(e.target.value)}
+              placeholder="https://exemple.com - Ce lien sera ajouté automatiquement en commentaire"
+              className="facebook-input w-full"
+              disabled={loading}
+            />
+            {commentLink && (
+              <div className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                💡 <strong>Stratégie :</strong> Le lien sera ajouté dans le post ET automatiquement en commentaire pour maximiser la portée organique
+              </div>
+            )}
+          </div>
+
           {/* Detected Links Preview */}
           {(detectedLinks.length > 0 || linksLoading) && (
             <div>
