@@ -1117,7 +1117,12 @@ def main():
         tester.test_debug_test_link_post,
         tester.test_debug_test_link_post_no_links,
         tester.test_facebook_posting_strategy_simulation,
-        tester.test_create_post_with_links
+        tester.test_create_post_with_links,
+        # Comment link functionality tests
+        tester.test_create_post_with_comment_link,
+        tester.test_create_post_without_comment_link,
+        tester.test_create_post_with_empty_comment_link,
+        tester.test_create_post_with_invalid_comment_link
     ]
     
     for test in tests:
