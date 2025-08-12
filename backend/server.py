@@ -181,42 +181,66 @@ async def get_facebook_pages(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page"""
+    """Post content to Facebook page with enhanced link handling"""
     try:
         data = {
-            "message": post.content,
             "access_token": page_access_token
         }
         
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content)
         
-        # Add media if present
+        # Determine the best posting strategy based on content type
         if post.media_urls:
-            # For simplicity, we'll post the first image
-            # In a real app, you'd handle multiple media properly
+            # Strategy 1: Posted image/video takes priority over links
             media_url = post.media_urls[0]
             if media_url.startswith('http'):
                 data["link"] = media_url
+                data["message"] = post.content
             else:
                 # Handle local uploaded files
                 data["picture"] = f"http://localhost:8001{media_url}"
+                data["message"] = post.content
+                
         elif urls_in_content:
-            # If no uploaded media but URLs found in content, use the first URL as link
-            # This allows Facebook to automatically generate link preview with image
-            data["link"] = urls_in_content[0]
-            print(f"Adding link for Facebook preview: {urls_in_content[0]}")
+            # Strategy 2: Use link sharing for better preview
+            # Facebook's link sharing provides better image/metadata handling
+            primary_link = urls_in_content[0]
+            
+            # If content contains only a link (or link + short text), use link parameter
+            content_without_links = post.content
+            for url in urls_in_content:
+                content_without_links = content_without_links.replace(url, '').strip()
+            
+            if len(content_without_links) <= 50:  # Short or no additional text
+                data["link"] = primary_link
+                if content_without_links:
+                    data["message"] = content_without_links
+            else:
+                # Long text with embedded links - use message only
+                data["message"] = post.content
+                data["link"] = primary_link  # Facebook will still show preview
+                
+        else:
+            # Strategy 3: Text-only post
+            data["message"] = post.content
         
-        print(f"Posting to Facebook with data: {data}")
+        print(f"Posting to Facebook with strategy: {data}")
         
         response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed",
             data=data
         )
         
-        print(f"Facebook API response: {response.status_code} - {response.text}")
+        result = response.json()
+        print(f"Facebook API response: {response.status_code} - {result}")
         
-        return response.json() if response.status_code == 200 else None
+        if response.status_code == 200:
+            return result
+        else:
+            print(f"Facebook API error: {result}")
+            return None
+            
     except Exception as e:
         print(f"Error posting to Facebook: {e}")
         return None
