@@ -10,6 +10,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
   const [exchangingCode, setExchangingCode] = useState(false);
   const [manualToken, setManualToken] = useState('');
   const [showManualTokenInput, setShowManualTokenInput] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
