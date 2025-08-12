@@ -106,11 +106,17 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
   };
 
   const isInstagramCompatible = () => {
-    // Instagram requires media
-    if (mediaFiles.length === 0 && detectedLinks.length === 0) {
-      return false;
+    // Instagram requires media: either uploaded files OR links with images
+    if (mediaFiles.length > 0) {
+      return true; // Uploaded media has priority
     }
-    return true;
+    
+    // Check if any detected links have images
+    if (detectedLinks.length > 0 && detectedLinks.some(link => link.image)) {
+      return true;
+    }
+    
+    return false;
   };
 
   const getIncompatibleWarnings = () => {
