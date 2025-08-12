@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Calendar, Send, Building2 } from 'lucide-react';
+import { Users, Calendar, Send, Building2, Instagram, MessageSquare } from 'lucide-react';
 import PostCreator from './components/PostCreator';
 import PostList from './components/PostList';
 import FacebookLogin from './components/FacebookLogin';
-import PageSelector from './components/PageSelector';
+import PlatformSelector from './components/PlatformSelector';
 import BusinessManagerSelector from './components/BusinessManagerSelector';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
@@ -12,10 +12,15 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 function App() {
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [selectedPage, setSelectedPage] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedBusinessManager, setSelectedBusinessManager] = useState(null);
-  const [businessPages, setBusinessPages] = useState([]);
-  const [personalPages, setPersonalPages] = useState([]);
+  const [allPlatforms, setAllPlatforms] = useState({
+    business_pages: [],
+    business_groups: [],
+    business_instagram: [],
+    personal_pages: [],
+    personal_groups: []
+  });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
   const [fbInitialized, setFbInitialized] = useState(false);
@@ -82,29 +87,45 @@ function App() {
   useEffect(() => {
     if (user) {
       loadPosts();
-      loadUserPages();
+      loadUserPlatforms();
     }
   }, [user]);
 
-  // Update pages when business manager selection changes
+  // Update platforms when business manager selection changes
   useEffect(() => {
     if (user && selectedBusinessManager) {
       const businessManagerData = user.business_managers?.find(bm => bm.id === selectedBusinessManager.id);
       if (businessManagerData) {
-        setBusinessPages(businessManagerData.pages || []);
-        // Clear selected page if it's not from the current business manager
-        if (selectedPage && selectedPage._sourceType === 'business') {
-          const pageExists = businessManagerData.pages?.some(p => p.id === selectedPage.id);
-          if (!pageExists) {
-            setSelectedPage(null);
+        setAllPlatforms(prev => ({
+          ...prev,
+          business_pages: businessManagerData.pages || [],
+          business_groups: businessManagerData.groups || [],
+          business_instagram: businessManagerData.instagram_accounts || []
+        }));
+        
+        // Clear selected platform if it's not from the current business manager
+        if (selectedPlatform && selectedPlatform._sourceType === 'business') {
+          const platformExists = 
+            (businessManagerData.pages?.some(p => p.id === selectedPlatform.id)) ||
+            (businessManagerData.groups?.some(g => g.id === selectedPlatform.id)) ||
+            (businessManagerData.instagram_accounts?.some(ig => ig.id === selectedPlatform.id));
+          
+          if (!platformExists) {
+            setSelectedPlatform(null);
           }
         }
       }
     } else {
-      setBusinessPages([]);
-      // Clear business page selection
-      if (selectedPage && selectedPage._sourceType === 'business') {
-        setSelectedPage(null);
+      setAllPlatforms(prev => ({
+        ...prev,
+        business_pages: [],
+        business_groups: [],
+        business_instagram: []
+      }));
+      
+      // Clear business platform selection
+      if (selectedPlatform && selectedPlatform._sourceType === 'business') {
+        setSelectedPlatform(null);
       }
     }
   }, [selectedBusinessManager, user]);
@@ -121,36 +142,43 @@ function App() {
     }
   };
 
-  const loadUserPages = async () => {
+  const loadUserPlatforms = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/api/users/${user._id}/pages`);
-      setPersonalPages(response.data.personal_pages || []);
-      setBusinessPages(response.data.business_pages || []);
+      const response = await axios.get(`${API_BASE}/api/users/${user._id}/platforms`);
+      setAllPlatforms({
+        personal_pages: response.data.personal_pages || [],
+        personal_groups: response.data.personal_groups || [],
+        business_pages: response.data.business_pages || [],
+        business_groups: response.data.business_groups || [],
+        business_instagram: response.data.business_instagram || []
+      });
       
       // Set selected business manager if available
       if (response.data.selected_business_manager) {
         setSelectedBusinessManager(response.data.selected_business_manager);
       }
     } catch (error) {
-      console.error('Error loading pages:', error);
+      console.error('Error loading platforms:', error);
     }
   };
 
   const handleFacebookLogin = async (accessToken) => {
     try {
       setLoading(true);
-      console.log('Authenticating with Facebook...', accessToken.substring(0, 20) + '...');
+      console.log('Authenticating with Meta platforms...', accessToken.substring(0, 20) + '...');
       
       const response = await axios.post(`${API_BASE}/api/auth/facebook`, {
         access_token: accessToken
       });
       
-      console.log('Facebook auth successful:', response.data);
+      console.log('Meta auth successful:', response.data);
       setUser(response.data.user);
       
       // Check for business managers
       if (response.data.user.business_managers && response.data.user.business_managers.length > 0) {
         console.log(`Found ${response.data.user.business_managers.length} Business Managers`);
+        console.log(`Found ${response.data.total_instagram_accounts} Instagram accounts`);
+        
         // Find "Entreprise de Didier Preud'homme" and auto-select it
         const didierBM = response.data.user.business_managers.find(bm => 
           bm.name.toLowerCase().includes("didier") || 
@@ -162,17 +190,16 @@ function App() {
         }
       }
       
-      // Set default page if available
+      // Set default platform if available
       if (response.data.user.facebook_pages && response.data.user.facebook_pages.length > 0) {
-        setPersonalPages(response.data.user.facebook_pages);
         console.log('Personal pages found:', response.data.user.facebook_pages.length);
       }
       
     } catch (error) {
-      console.error('Facebook auth error:', error);
+      console.error('Meta auth error:', error);
       console.error('Error details:', error.response?.data);
       
-      let errorMessage = 'Erreur lors de l\'authentification Facebook';
+      let errorMessage = 'Erreur lors de l\'authentification Meta';
       
       if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
@@ -192,15 +219,31 @@ function App() {
 
   const handleBusinessManagerSelect = (businessManager) => {
     setSelectedBusinessManager(businessManager);
-    setSelectedPage(null); // Reset page selection
+    setSelectedPlatform(null); // Reset platform selection
     
     if (businessManager && user.business_managers) {
       const bm = user.business_managers.find(b => b.id === businessManager.id);
-      if (bm && bm.pages && bm.pages.length > 0) {
-        // Auto-select first page from business manager
-        const firstPage = bm.pages[0];
-        firstPage._sourceType = 'business';
-        setSelectedPage(firstPage);
+      if (bm) {
+        // Auto-select first available platform (priority: pages > groups > instagram)
+        if (bm.pages && bm.pages.length > 0) {
+          const firstPage = bm.pages[0];
+          firstPage._sourceType = 'business';
+          firstPage.platform = 'facebook';
+          firstPage.type = 'page';
+          setSelectedPlatform(firstPage);
+        } else if (bm.groups && bm.groups.length > 0) {
+          const firstGroup = bm.groups[0];
+          firstGroup._sourceType = 'business';
+          firstGroup.platform = 'facebook';
+          firstGroup.type = 'group';
+          setSelectedPlatform(firstGroup);
+        } else if (bm.instagram_accounts && bm.instagram_accounts.length > 0) {
+          const firstIG = bm.instagram_accounts[0];
+          firstIG._sourceType = 'business';
+          firstIG.platform = 'instagram';
+          firstIG.type = 'instagram';
+          setSelectedPlatform(firstIG);
+        }
       }
     }
   };
@@ -220,13 +263,11 @@ function App() {
   };
 
   const handlePostPublished = async (postId) => {
-    // This function is no longer needed since posts are published directly
-    // But we keep it for potential re-publishing failed posts
     try {
       setLoading(true);
       await axios.post(`${API_BASE}/api/posts/${postId}/publish`);
       await loadPosts(); // Reload to get updated status
-      alert('Post republié avec succès sur Facebook!');
+      alert('Post republié avec succès !');
     } catch (error) {
       console.error('Error republishing post:', error);
       alert('Erreur lors de la republication: ' + (error.response?.data?.detail || 'Erreur inconnue'));
@@ -235,13 +276,28 @@ function App() {
     }
   };
 
+  const getPlatformIcon = (platform, type) => {
+    if (platform === 'instagram') return <Instagram className="w-4 h-4" />;
+    if (type === 'group') return <MessageSquare className="w-4 h-4" />;
+    return <Users className="w-4 h-4" />; // Default for pages
+  };
+
+  const getPlatformStats = () => {
+    const totalPages = allPlatforms.personal_pages.length + allPlatforms.business_pages.length;
+    const totalGroups = allPlatforms.personal_groups.length + allPlatforms.business_groups.length;
+    const totalInstagram = allPlatforms.business_instagram.length;
+    const totalPlatforms = totalPages + totalGroups + totalInstagram;
+    
+    return { totalPages, totalGroups, totalInstagram, totalPlatforms };
+  };
+
   // Show loading while Facebook SDK initializes
   if (!fbInitialized) {
     return (
       <div className="min-h-screen bg-gray-facebook flex items-center justify-center">
         <div className="facebook-card p-8 max-w-md w-full mx-4 text-center">
           <div className="spinner mx-auto mb-4" />
-          <p className="text-gray-600">Chargement de Facebook SDK...</p>
+          <p className="text-gray-600">Chargement du SDK Meta...</p>
         </div>
       </div>
     );
@@ -252,22 +308,38 @@ function App() {
       <div className="min-h-screen bg-gray-facebook flex items-center justify-center">
         <div className="facebook-card p-8 max-w-md w-full mx-4">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-facebook-primary rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Facebook Business Manager</h1>
-            <p className="text-gray-600">Connectez-vous pour accéder à vos Business Managers</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Meta Publishing Platform</h1>
+            <p className="text-gray-600">Publiez sur Facebook Pages, Groupes & Instagram</p>
           </div>
           
           <FacebookLogin onLogin={handleFacebookLogin} loading={loading} />
           
           <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Connectez-vous avec Facebook pour accéder à "Entreprise de Didier Preud'homme"</p>
+            <p>✨ Accès complet aux plateformes Meta Business</p>
+            <div className="flex justify-center space-x-4 mt-2">
+              <span className="flex items-center space-x-1">
+                <Users className="w-3 h-3" />
+                <span>Pages</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <MessageSquare className="w-3 h-3" />
+                <span>Groupes</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <Instagram className="w-3 h-3" />
+                <span>Instagram</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
     );
   }
+
+  const stats = getPlatformStats();
 
   return (
     <div className="min-h-screen bg-gray-facebook">
@@ -276,11 +348,11 @@ function App() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-facebook-primary rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">Facebook Business Manager</h1>
+                <h1 className="text-xl font-bold text-gray-800">Meta Publishing Platform</h1>
                 <p className="text-sm text-gray-600">Bienvenue, {user.name}</p>
                 {selectedBusinessManager && (
                   <p className="text-xs text-blue-600">📊 {selectedBusinessManager.name}</p>
@@ -289,21 +361,41 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <PageSelector 
-                pages={personalPages}
-                businessPages={businessPages}
-                selectedPage={selectedPage}
+              <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
+                <span className="flex items-center space-x-1">
+                  <Users className="w-3 h-3" />
+                  <span>{stats.totalPages}</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <MessageSquare className="w-3 h-3" />
+                  <span>{stats.totalGroups}</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <Instagram className="w-3 h-3" />
+                  <span>{stats.totalInstagram}</span>
+                </span>
+              </div>
+              
+              <PlatformSelector 
+                allPlatforms={allPlatforms}
+                selectedPlatform={selectedPlatform}
                 selectedBusinessManager={selectedBusinessManager}
-                onPageSelect={setSelectedPage}
+                onPlatformSelect={setSelectedPlatform}
               />
+              
               <button
                 onClick={() => {
                   setUser(null);
                   setPosts([]);
-                  setSelectedPage(null);
+                  setSelectedPlatform(null);
                   setSelectedBusinessManager(null);
-                  setBusinessPages([]);
-                  setPersonalPages([]);
+                  setAllPlatforms({
+                    business_pages: [],
+                    business_groups: [],
+                    business_instagram: [],
+                    personal_pages: [],
+                    personal_groups: []
+                  });
                 }}
                 className="text-gray-600 hover:text-gray-800 transition-colors"
               >
@@ -379,12 +471,12 @@ function App() {
         {/* Content */}
         {activeTab === 'setup' && (
           <div className="facebook-card p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Statut de la configuration</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Statut de la configuration Meta</h3>
             
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className={`w-3 h-3 rounded-full ${user ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span>Connexion Facebook : {user ? '✅ Connecté' : '❌ Non connecté'}</span>
+                <span>Connexion Meta : {user ? '✅ Connecté' : '❌ Non connecté'}</span>
               </div>
               
               <div className="flex items-center space-x-3">
@@ -399,22 +491,67 @@ function App() {
                 <span>Business Manager sélectionné : {selectedBusinessManager ? selectedBusinessManager.name : 'Aucun'}</span>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${businessPages.length > 0 ? 'bg-green-500' : 'bg-gray-400'}`} />
-                <span>Pages Business disponibles : {businessPages.length}</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                {/* Facebook Pages */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-blue-800">Pages Facebook</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">{stats.totalPages}</p>
+                  <p className="text-xs text-blue-600">
+                    {allPlatforms.personal_pages.length} personnelles + {allPlatforms.business_pages.length} business
+                  </p>
+                </div>
+                
+                {/* Facebook Groups */}
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <MessageSquare className="w-5 h-5 text-purple-600" />
+                    <span className="font-medium text-purple-800">Groupes Facebook</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">{stats.totalGroups}</p>
+                  <p className="text-xs text-purple-600">
+                    {allPlatforms.personal_groups.length} personnels + {allPlatforms.business_groups.length} business
+                  </p>
+                </div>
+                
+                {/* Instagram */}
+                <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Instagram className="w-5 h-5 text-pink-600" />
+                    <span className="font-medium text-pink-800">Instagram Business</span>
+                  </div>
+                  <p className="text-2xl font-bold text-pink-600">{stats.totalInstagram}</p>
+                  <p className="text-xs text-pink-600">
+                    Comptes connectés
+                  </p>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${selectedPage ? 'bg-green-500' : 'bg-gray-400'}`} />
-                <span>Page sélectionnée : {selectedPage ? selectedPage.name : 'Aucune'}</span>
+              <div className="flex items-center space-x-3 mt-6">
+                <div className={`w-3 h-3 rounded-full ${selectedPlatform ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span>Plateforme sélectionnée : {selectedPlatform ? `${selectedPlatform.name} (${selectedPlatform.platform})` : 'Aucune'}</span>
               </div>
             </div>
             
-            {selectedBusinessManager && selectedPage && (
+            {selectedBusinessManager && selectedPlatform && (
               <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-800 font-medium">🎉 Configuration terminée !</p>
                 <p className="text-green-700 text-sm mt-1">
-                  Vous pouvez maintenant créer et publier des posts sur <strong>{selectedPage.name}</strong>
+                  Vous pouvez maintenant créer et publier des posts sur <strong>{selectedPlatform.name}</strong> 
+                  {selectedPlatform.platform === 'instagram' && ' (Instagram)'}
+                  {selectedPlatform.type === 'group' && ' (Groupe)'}
+                  {selectedPlatform.type === 'page' && ' (Page)'}
+                </p>
+              </div>
+            )}
+            
+            {stats.totalPlatforms === 0 && selectedBusinessManager && (
+              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 font-medium">⚠️ Aucune plateforme trouvée</p>
+                <p className="text-yellow-700 text-sm mt-1">
+                  Vérifiez les permissions et l'accès aux pages/groupes/Instagram dans votre Business Manager.
                 </p>
               </div>
             )}
@@ -424,8 +561,9 @@ function App() {
         {activeTab === 'create' && selectedBusinessManager && (
           <PostCreator 
             user={user}
-            selectedPage={selectedPage}
+            selectedPlatform={selectedPlatform}
             selectedBusinessManager={selectedBusinessManager}
+            allPlatforms={allPlatforms}
             onPostCreated={handlePostCreated}
           />
         )}
