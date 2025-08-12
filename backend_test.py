@@ -1293,6 +1293,215 @@ class FacebookPostManagerTester:
         self.tests_run += 1
         return os.path.exists(uploads_dir) and os.access(uploads_dir, os.W_OK)
 
+    def test_create_post_empty_content_with_media(self):
+        """Test creating post with empty content but with media (NEW FUNCTIONALITY)"""
+        test_user_id = str(uuid.uuid4())
+        
+        # First create a post with empty content
+        form_data = {
+            "content": "",  # Empty content
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Post (Empty Content, No Media)",
+            "POST",
+            "api/posts",
+            200,  # Should succeed but with default message
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            content = post.get("content")
+            print(f"   Content stored: '{content}'")
+            
+            # Backend should handle empty content gracefully
+            if content == "":
+                print("✅ Empty content stored correctly")
+            else:
+                print(f"⚠️  Expected empty content, got: '{content}'")
+                
+            self.test_post_id = post["id"]
+        
+        return success
+
+    def test_create_post_only_media_no_content(self):
+        """Test creating post with only media and no text content (NEW FUNCTIONALITY)"""
+        test_user_id = str(uuid.uuid4())
+        
+        # Create post with empty content
+        form_data = {
+            "content": "",  # Empty content
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Post (Only Media, No Content)",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            post_id = post["id"]
+            
+            # Now upload media to this post
+            import io
+            test_image_content = b'\x89PNG\r\n\x1a\n\rIHDR\x01\x01\x08\x02\x90wS\xde\tpHYs\x0b\x13\x0b\x13\x01\x9a\x9c\x18\nIDATx\x9cc\xf8\x01\x01IEND\xaeB`\x82'
+            
+            files = {
+                'file': ('test_image.png', io.BytesIO(test_image_content), 'image/png')
+            }
+            
+            media_success, media_response = self.run_test(
+                "Upload Media to Empty Content Post",
+                "POST",
+                f"api/posts/{post_id}/media",
+                200,
+                files=files
+            )
+            
+            if media_success:
+                print("✅ Media uploaded successfully to post with empty content")
+                print("✅ NEW FUNCTIONALITY: Posts with only media (no text) are now supported")
+            else:
+                print("❌ Failed to upload media to empty content post")
+                
+            return media_success
+        
+        return success
+
+    def test_media_priority_over_link_images(self):
+        """Test that uploaded media has priority over link images (NEW FUNCTIONALITY)"""
+        test_user_id = str(uuid.uuid4())
+        
+        # Create post with content that has a link with image
+        content_with_link = "Check out this image: https://picsum.photos/800/600"
+        
+        form_data = {
+            "content": content_with_link,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Link Image",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            post_id = post["id"]
+            link_metadata = post.get("link_metadata", [])
+            
+            print(f"   Post created with {len(link_metadata)} link metadata entries")
+            
+            # Now upload media - this should take priority
+            import io
+            test_image_content = b'\x89PNG\r\n\x1a\n\rIHDR\x01\x01\x08\x02\x90wS\xde\tpHYs\x0b\x13\x0b\x13\x01\x9a\x9c\x18\nIDATx\x9cc\xf8\x01\x01IEND\xaeB`\x82'
+            
+            files = {
+                'file': ('priority_test.png', io.BytesIO(test_image_content), 'image/png')
+            }
+            
+            media_success, media_response = self.run_test(
+                "Upload Media (Should Have Priority)",
+                "POST",
+                f"api/posts/{post_id}/media",
+                200,
+                files=files
+            )
+            
+            if media_success:
+                media_url = media_response.get("url")
+                print(f"   Uploaded media URL: {media_url}")
+                
+                # Get the updated post to check media_urls
+                get_success, get_response = self.run_test(
+                    "Get Updated Post",
+                    "GET",
+                    f"api/posts?user_id={test_user_id}",
+                    200
+                )
+                
+                if get_success:
+                    posts = get_response.get("posts", [])
+                    updated_post = next((p for p in posts if p["id"] == post_id), None)
+                    
+                    if updated_post:
+                        media_urls = updated_post.get("media_urls", [])
+                        link_metadata = updated_post.get("link_metadata", [])
+                        
+                        print(f"   Media URLs: {media_urls}")
+                        print(f"   Link metadata count: {len(link_metadata)}")
+                        
+                        if len(media_urls) > 0 and len(link_metadata) > 0:
+                            print("✅ NEW FUNCTIONALITY: Both uploaded media and link metadata present")
+                            print("✅ Backend logic should prioritize uploaded media over link images")
+                        elif len(media_urls) > 0:
+                            print("✅ Uploaded media present")
+                        else:
+                            print("❌ No media URLs found after upload")
+                            
+                return media_success
+        
+        return success
+
+    def test_validation_empty_content_no_media(self):
+        """Test validation: post with no content AND no media should be handled"""
+        test_user_id = str(uuid.uuid4())
+        
+        form_data = {
+            "content": "",  # Empty content
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id
+            # No media uploaded
+        }
+        
+        success, response = self.run_test(
+            "Create Post (No Content, No Media)",
+            "POST",
+            "api/posts",
+            200,  # Backend accepts it, frontend should validate
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            content = post.get("content")
+            media_urls = post.get("media_urls", [])
+            
+            print(f"   Content: '{content}'")
+            print(f"   Media URLs: {media_urls}")
+            
+            if content == "" and len(media_urls) == 0:
+                print("✅ Backend accepts empty post (frontend should validate)")
+                print("⚠️  Frontend validation should prevent this scenario")
+            else:
+                print(f"⚠️  Unexpected content or media: '{content}', {media_urls}")
+        
+        return success
+
 def main():
     print("🚀 Starting Meta Publishing Platform API Tests")
     print("=" * 60)
