@@ -19,7 +19,7 @@ from bson import ObjectId
 
 load_dotenv()
 
-app = FastAPI(title="Facebook Post Manager")
+app = FastAPI(title="Facebook Post Manager - Business Edition")
 
 # CORS configuration
 app.add_middleware(
@@ -56,6 +56,13 @@ class User(BaseModel):
     email: str
     facebook_access_token: Optional[str] = None
     facebook_pages: Optional[List[dict]] = []
+    business_managers: Optional[List[dict]] = []
+    selected_business_manager: Optional[dict] = None
+
+class BusinessManager(BaseModel):
+    id: str
+    name: str
+    pages: List[dict] = []
 
 class Post(BaseModel):
     id: Optional[str] = None
@@ -65,6 +72,8 @@ class Post(BaseModel):
     target_type: str  # "page" or "group"
     target_id: str
     target_name: str
+    business_manager_id: Optional[str] = None
+    business_manager_name: Optional[str] = None
     scheduled_time: Optional[datetime] = None
     status: str = "draft"  # "draft", "scheduled", "published", "failed"
     created_at: datetime = datetime.utcnow()
@@ -72,12 +81,14 @@ class Post(BaseModel):
 
 class FacebookAuthRequest(BaseModel):
     access_token: str
+    business_manager_id: Optional[str] = None
 
 class PostRequest(BaseModel):
     content: str
     target_type: str
     target_id: str
     target_name: str
+    business_manager_id: Optional[str] = None
     scheduled_time: Optional[str] = None
 
 class FacebookCodeExchangeRequest(BaseModel):
@@ -86,6 +97,9 @@ class FacebookCodeExchangeRequest(BaseModel):
 
 class LinkPreviewRequest(BaseModel):
     url: str
+
+class BusinessManagerSelectRequest(BaseModel):
+    business_manager_id: str
 
 # Facebook API functions
 async def get_facebook_user_info(access_token: str):
@@ -103,14 +117,61 @@ async def get_facebook_user_info(access_token: str):
         print(f"Error getting Facebook user info: {e}")
         return None
 
+async def get_facebook_business_managers(access_token: str):
+    """Get user's Business Managers"""
+    try:
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/me/businesses",
+            params={
+                "access_token": access_token,
+                "fields": "id,name,verification_status"
+            }
+        )
+        
+        if response.status_code == 200:
+            businesses = response.json().get("data", [])
+            print(f"Found {len(businesses)} business managers")
+            return businesses
+        else:
+            print(f"Error getting business managers: {response.status_code}")
+            print(response.json())
+            return []
+    except Exception as e:
+        print(f"Error getting Facebook business managers: {e}")
+        return []
+
+async def get_business_manager_pages(access_token: str, business_id: str):
+    """Get pages from a specific Business Manager"""
+    try:
+        # Get pages owned by this business manager
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/{business_id}/client_pages",
+            params={
+                "access_token": access_token,
+                "fields": "id,name,access_token,category,verification_status"
+            }
+        )
+        
+        if response.status_code == 200:
+            pages = response.json().get("data", [])
+            print(f"Found {len(pages)} pages for business manager {business_id}")
+            return pages
+        else:
+            print(f"Error getting pages for business {business_id}: {response.status_code}")
+            print(response.json())
+            return []
+    except Exception as e:
+        print(f"Error getting business manager pages: {e}")
+        return []
+
 async def get_facebook_pages(access_token: str):
-    """Get user's Facebook pages"""
+    """Get user's personal Facebook pages"""
     try:
         response = requests.get(
             f"{FACEBOOK_GRAPH_URL}/me/accounts",
             params={
                 "access_token": access_token,
-                "fields": "id,name,access_token"
+                "fields": "id,name,access_token,category"
             }
         )
         return response.json().get("data", []) if response.status_code == 200 else []
@@ -235,15 +296,15 @@ def extract_urls_from_text(text: str):
 
 @app.get("/api/facebook/auth-url")
 async def get_facebook_auth_url(redirect_uri: str = "http://localhost:3000"):
-    """Generate Facebook authentication URL"""
+    """Generate Facebook authentication URL with Business Manager permissions"""
     import urllib.parse
     
     params = {
         "client_id": FACEBOOK_APP_ID,
         "redirect_uri": redirect_uri,
-        "scope": "pages_manage_posts,pages_read_engagement,pages_show_list",
+        "scope": "pages_manage_posts,pages_read_engagement,pages_show_list,business_management,read_insights",
         "response_type": "code",
-        "state": "test123"
+        "state": "business_manager_auth"
     }
     
     query_string = urllib.parse.urlencode(params)
@@ -252,7 +313,8 @@ async def get_facebook_auth_url(redirect_uri: str = "http://localhost:3000"):
     return {
         "auth_url": auth_url,
         "redirect_uri": redirect_uri,
-        "app_id": FACEBOOK_APP_ID
+        "app_id": FACEBOOK_APP_ID,
+        "scope": params["scope"]
     }
 
 @app.get("/api/debug/facebook-token/{token}")
@@ -270,10 +332,23 @@ async def debug_facebook_token(token: str):
         
         if response.status_code == 200:
             user_data = response.json()
+            
+            # Test business managers access
+            business_response = requests.get(
+                f"{FACEBOOK_GRAPH_URL}/me/businesses",
+                params={
+                    "access_token": token,
+                    "fields": "id,name"
+                }
+            )
+            
+            business_data = business_response.json() if business_response.status_code == 200 else {"data": []}
+            
             return {
                 "status": "valid",
                 "token": token,
                 "user": user_data,
+                "business_managers": business_data.get("data", []),
                 "expires_at": "unknown"
             }
         else:
@@ -306,14 +381,28 @@ async def health_check():
 
 @app.post("/api/auth/facebook")
 async def facebook_auth(auth_request: FacebookAuthRequest):
-    """Authenticate user with Facebook"""
+    """Authenticate user with Facebook and load Business Managers"""
     user_info = await get_facebook_user_info(auth_request.access_token)
     
     if not user_info:
         raise HTTPException(status_code=400, detail="Invalid Facebook access token")
     
-    # Get user's pages
-    pages = await get_facebook_pages(auth_request.access_token)
+    # Get user's personal pages
+    personal_pages = await get_facebook_pages(auth_request.access_token)
+    
+    # Get user's business managers
+    business_managers = await get_facebook_business_managers(auth_request.access_token)
+    
+    # Process business managers and their pages
+    business_managers_with_pages = []
+    for bm in business_managers:
+        pages = await get_business_manager_pages(auth_request.access_token, bm["id"])
+        business_managers_with_pages.append({
+            "id": bm["id"],
+            "name": bm["name"],
+            "verification_status": bm.get("verification_status"),
+            "pages": pages
+        })
     
     # Create or update user
     user_data = {
@@ -321,7 +410,9 @@ async def facebook_auth(auth_request: FacebookAuthRequest):
         "name": user_info["name"],
         "email": user_info.get("email", ""),
         "facebook_access_token": auth_request.access_token,
-        "facebook_pages": pages,
+        "facebook_pages": personal_pages,
+        "business_managers": business_managers_with_pages,
+        "selected_business_manager": None,
         "updated_at": datetime.utcnow()
     }
     
@@ -338,7 +429,9 @@ async def facebook_auth(auth_request: FacebookAuthRequest):
     
     return {
         "message": "Authentication successful",
-        "user": user
+        "user": user,
+        "business_managers_count": len(business_managers_with_pages),
+        "personal_pages_count": len(personal_pages)
     }
 
 @app.post("/api/auth/facebook/exchange-code")
@@ -373,8 +466,22 @@ async def exchange_facebook_code(request: FacebookCodeExchangeRequest):
         if not user_info:
             raise HTTPException(status_code=400, detail="Invalid access token received")
         
-        # Get user's pages
-        pages = await get_facebook_pages(access_token)
+        # Get user's personal pages
+        personal_pages = await get_facebook_pages(access_token)
+        
+        # Get user's business managers
+        business_managers = await get_facebook_business_managers(access_token)
+        
+        # Process business managers and their pages
+        business_managers_with_pages = []
+        for bm in business_managers:
+            pages = await get_business_manager_pages(access_token, bm["id"])
+            business_managers_with_pages.append({
+                "id": bm["id"],
+                "name": bm["name"],
+                "verification_status": bm.get("verification_status"),
+                "pages": pages
+            })
         
         # Create or update user
         user_data = {
@@ -382,7 +489,9 @@ async def exchange_facebook_code(request: FacebookCodeExchangeRequest):
             "name": user_info["name"],
             "email": user_info.get("email", ""),
             "facebook_access_token": access_token,
-            "facebook_pages": pages,
+            "facebook_pages": personal_pages,
+            "business_managers": business_managers_with_pages,
+            "selected_business_manager": None,
             "updated_at": datetime.utcnow()
         }
         
@@ -400,12 +509,62 @@ async def exchange_facebook_code(request: FacebookCodeExchangeRequest):
         return {
             "message": "Authentication successful",
             "user": user,
-            "access_token": access_token
+            "access_token": access_token,
+            "business_managers_count": len(business_managers_with_pages),
+            "personal_pages_count": len(personal_pages)
         }
         
     except Exception as e:
         print(f"Error in Facebook code exchange: {e}")
         raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
+
+@app.post("/api/users/{user_id}/select-business-manager")
+async def select_business_manager(user_id: str, request: BusinessManagerSelectRequest):
+    """Select a Business Manager for the user"""
+    try:
+        # Find user
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Find the selected business manager
+        selected_bm = None
+        for bm in user.get("business_managers", []):
+            if bm["id"] == request.business_manager_id:
+                selected_bm = bm
+                break
+        
+        if not selected_bm:
+            raise HTTPException(status_code=404, detail="Business Manager not found")
+        
+        # Update user's selected business manager
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"selected_business_manager": selected_bm}}
+        )
+        
+        return {
+            "message": "Business Manager selected successfully",
+            "selected_business_manager": selected_bm
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error selecting Business Manager: {str(e)}")
+
+@app.get("/api/users/{user_id}/business-managers")
+async def get_user_business_managers(user_id: str):
+    """Get user's Business Managers"""
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "business_managers": user.get("business_managers", []),
+            "selected_business_manager": user.get("selected_business_manager")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting Business Managers: {str(e)}")
 
 @app.get("/api/posts")
 async def get_posts(user_id: str = None):
@@ -426,6 +585,8 @@ async def create_post(
     target_id: str = Form(...),
     target_name: str = Form(...),
     user_id: str = Form(...),
+    business_manager_id: Optional[str] = Form(None),
+    business_manager_name: Optional[str] = Form(None),
     scheduled_time: Optional[str] = Form(None)
 ):
     """Create a new post"""
@@ -437,6 +598,8 @@ async def create_post(
         "target_type": target_type,
         "target_id": target_id,
         "target_name": target_name,
+        "business_manager_id": business_manager_id,
+        "business_manager_name": business_manager_name,
         "scheduled_time": datetime.fromisoformat(scheduled_time) if scheduled_time else None,
         "status": "scheduled" if scheduled_time else "draft",
         "created_at": datetime.utcnow()
@@ -499,10 +662,22 @@ async def publish_post(post_id: str):
         
         # Find the correct page access token
         page_access_token = user["facebook_access_token"]
-        for page in user.get("facebook_pages", []):
-            if page["id"] == post["target_id"]:
-                page_access_token = page["access_token"]
-                break
+        
+        # If post is from a business manager, look in business manager pages
+        if post.get("business_manager_id"):
+            for bm in user.get("business_managers", []):
+                if bm["id"] == post["business_manager_id"]:
+                    for page in bm.get("pages", []):
+                        if page["id"] == post["target_id"]:
+                            page_access_token = page.get("access_token", user["facebook_access_token"])
+                            break
+                    break
+        else:
+            # Look in personal pages
+            for page in user.get("facebook_pages", []):
+                if page["id"] == post["target_id"]:
+                    page_access_token = page["access_token"]
+                    break
         
         # Create Post object
         post_obj = Post(**post)
@@ -545,13 +720,32 @@ async def delete_post(post_id: str):
 
 @app.get("/api/users/{user_id}/pages")
 async def get_user_pages(user_id: str):
-    """Get user's Facebook pages"""
-    user = await db.users.find_one({"_id": user_id})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"pages": user.get("facebook_pages", [])}
+    """Get user's Facebook pages including Business Manager pages"""
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get personal pages
+        personal_pages = user.get("facebook_pages", [])
+        
+        # Get Business Manager pages
+        business_pages = []
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                page["business_manager_id"] = bm["id"]
+                page["business_manager_name"] = bm["name"]
+                business_pages.append(page)
+        
+        return {
+            "personal_pages": personal_pages,
+            "business_pages": business_pages,
+            "business_managers": user.get("business_managers", []),
+            "selected_business_manager": user.get("selected_business_manager")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting pages: {str(e)}")
 
 @app.post("/api/links/preview")
 async def get_link_preview(request: LinkPreviewRequest):
