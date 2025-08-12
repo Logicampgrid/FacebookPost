@@ -12,6 +12,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [scheduledTime, setScheduledTime] = useState('');
+  const [commentLink, setCommentLink] = useState(''); // New state for comment link
   const [loading, setLoading] = useState(false);
 
   // Hook pour la détection automatique des liens
