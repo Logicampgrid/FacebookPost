@@ -239,7 +239,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>{scheduledTime ? 'Programmer' : 'Créer'} le Post</span>
+                  <span>{scheduledTime ? 'Programmer' : 'Publier sur Facebook'}</span>
                 </>
               )}
             </button>
