@@ -51,6 +51,11 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
       if (scheduledTime) {
         formData.append('scheduled_time', scheduledTime);
       }
+      
+      // Add comment link if provided
+      if (commentLink.trim()) {
+        formData.append('comment_link', commentLink.trim());
+      }
 
       const response = await axios.post(`${API_BASE}/api/posts`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
