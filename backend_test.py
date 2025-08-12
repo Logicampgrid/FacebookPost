@@ -483,6 +483,150 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_media_upload_without_post(self):
+        """Test uploading media to non-existent post"""
+        fake_post_id = str(uuid.uuid4())
+        
+        # Create a small test image file
+        import io
+        test_image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+        
+        files = {
+            'file': ('test_image.png', io.BytesIO(test_image_content), 'image/png')
+        }
+        
+        success, response = self.run_test(
+            "Upload Media (Non-existent Post)",
+            "POST",
+            f"api/posts/{fake_post_id}/media",
+            500,  # Should fail when post doesn't exist
+            files=files
+        )
+        return success
+
+    def test_media_upload_with_valid_post(self):
+        """Test uploading media to existing post"""
+        if not self.test_post_id:
+            print("⚠️  Skipping - No test post ID available")
+            return True
+            
+        # Create a small test image file
+        import io
+        test_image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+        
+        files = {
+            'file': ('test_image.png', io.BytesIO(test_image_content), 'image/png')
+        }
+        
+        success, response = self.run_test(
+            "Upload Media (Valid Post)",
+            "POST",
+            f"api/posts/{self.test_post_id}/media",
+            200,
+            files=files
+        )
+        
+        if success:
+            media_url = response.get("url")
+            if media_url:
+                print(f"✅ Media uploaded successfully: {media_url}")
+                # Check if file was actually saved
+                import os
+                file_path = f"/app/backend{media_url}"
+                if os.path.exists(file_path):
+                    print(f"✅ File saved to disk: {file_path}")
+                else:
+                    print(f"⚠️  File not found on disk: {file_path}")
+            else:
+                print("⚠️  No media URL returned")
+        
+        return success
+
+    def test_media_upload_invalid_file_type(self):
+        """Test uploading invalid file type"""
+        if not self.test_post_id:
+            print("⚠️  Skipping - No test post ID available")
+            return True
+            
+        # Create a text file (should be rejected)
+        import io
+        test_text_content = b'This is not an image file'
+        
+        files = {
+            'file': ('test_file.txt', io.BytesIO(test_text_content), 'text/plain')
+        }
+        
+        success, response = self.run_test(
+            "Upload Media (Invalid File Type)",
+            "POST",
+            f"api/posts/{self.test_post_id}/media",
+            200,  # Backend currently accepts any file type
+            files=files
+        )
+        
+        if success:
+            print("⚠️  Backend accepted invalid file type - should add validation")
+        
+        return success
+
+    def test_media_upload_large_file(self):
+        """Test uploading large file"""
+        if not self.test_post_id:
+            print("⚠️  Skipping - No test post ID available")
+            return True
+            
+        # Create a larger test file (1MB)
+        import io
+        large_content = b'x' * (1024 * 1024)  # 1MB of 'x' characters
+        
+        files = {
+            'file': ('large_file.bin', io.BytesIO(large_content), 'application/octet-stream')
+        }
+        
+        success, response = self.run_test(
+            "Upload Media (Large File)",
+            "POST",
+            f"api/posts/{self.test_post_id}/media",
+            200,  # Should handle large files
+            files=files
+        )
+        
+        if success:
+            print("✅ Large file upload handled")
+        
+        return success
+
+    def test_uploads_directory_exists(self):
+        """Test if uploads directory exists and is writable"""
+        import os
+        uploads_dir = "/app/backend/uploads"
+        
+        print(f"\n🔍 Testing Uploads Directory...")
+        
+        if os.path.exists(uploads_dir):
+            print(f"✅ Uploads directory exists: {uploads_dir}")
+            
+            if os.access(uploads_dir, os.W_OK):
+                print("✅ Uploads directory is writable")
+                
+                # Test creating a file
+                test_file = os.path.join(uploads_dir, "test_write.txt")
+                try:
+                    with open(test_file, 'w') as f:
+                        f.write("test")
+                    os.remove(test_file)
+                    print("✅ Can create and delete files in uploads directory")
+                    self.tests_passed += 1
+                except Exception as e:
+                    print(f"❌ Cannot write to uploads directory: {e}")
+            else:
+                print("❌ Uploads directory is not writable")
+        else:
+            print(f"❌ Uploads directory does not exist: {uploads_dir}")
+            
+        self.tests_run += 1
+        return os.path.exists(uploads_dir) and os.access(uploads_dir, os.W_OK)
+
 def main():
     print("🚀 Starting Facebook Post Manager API Tests")
     print("=" * 50)
