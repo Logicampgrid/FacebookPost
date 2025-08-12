@@ -696,11 +696,28 @@ async def create_post(
     scheduled_time: Optional[str] = Form(None)
 ):
     """Create a new post"""
+    
+    # Extract and get metadata for links in content
+    detected_urls = extract_urls_from_text(content)
+    link_metadata = []
+    
+    # Get metadata for each detected URL (limit to first 3 for performance)
+    for url in detected_urls[:3]:
+        try:
+            metadata = await extract_link_metadata(url)
+            if metadata:
+                link_metadata.append(metadata)
+                print(f"Link metadata extracted for {url}: {metadata.get('title', 'No title')}")
+        except Exception as e:
+            print(f"Error extracting metadata for {url}: {e}")
+            continue
+    
     post_data = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "content": content,
         "media_urls": [],
+        "link_metadata": link_metadata,  # Store detected link metadata
         "target_type": target_type,
         "target_id": target_id,
         "target_name": target_name,
@@ -713,6 +730,8 @@ async def create_post(
     
     result = await db.posts.insert_one(post_data)
     post_data["_id"] = str(result.inserted_id)
+    
+    print(f"Post created with {len(link_metadata)} link metadata entries")
     
     return {"message": "Post created successfully", "post": post_data}
 
