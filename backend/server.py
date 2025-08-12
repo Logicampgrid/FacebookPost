@@ -843,6 +843,23 @@ async def create_post(
                 post_data["published_at"] = datetime.utcnow()
                 post_data["facebook_post_id"] = result["id"]
                 print(f"✅ Post published successfully to Facebook with ID: {result['id']}")
+                
+                # Add comment with link if comment_link is provided
+                if comment_link and comment_link.strip():
+                    print(f"Adding comment with link: {comment_link}")
+                    comment_result = await add_comment_to_facebook_post(
+                        result["id"], 
+                        comment_link.strip(), 
+                        page_access_token
+                    )
+                    
+                    if comment_result and "id" in comment_result:
+                        post_data["comment_status"] = "success"
+                        print(f"✅ Comment added successfully with ID: {comment_result['id']}")
+                    else:
+                        post_data["comment_status"] = "failed"
+                        print("❌ Failed to add comment to Facebook post")
+                        
             else:
                 post_data["status"] = "failed"
                 print("❌ Failed to publish post to Facebook")
