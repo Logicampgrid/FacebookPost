@@ -389,12 +389,12 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           {/* Content Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contenu du post *
+              Contenu du post (optionnel si vous ajoutez des médias)
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Que voulez-vous partager sur les plateformes Meta ?"
+              placeholder="Que voulez-vous partager sur les plateformes Meta ? (Optionnel si vous ajoutez des images)"
               className="facebook-textarea h-32"
               disabled={loading}
             />
