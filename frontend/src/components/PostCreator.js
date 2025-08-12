@@ -108,7 +108,7 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
             <Send className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Créer un nouveau post</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Créer et publier un post</h2>
             <p className="text-sm text-gray-600">
               Publication sur: {selectedPage?.name || 'Sélectionnez une page'}
               {selectedBusinessManager && (
@@ -116,6 +116,9 @@ const PostCreator = ({ user, selectedPage, selectedBusinessManager, onPostCreate
                   📊 Business Manager: {selectedBusinessManager.name}
                 </span>
               )}
+            </p>
+            <p className="text-xs text-green-600 font-medium mt-1">
+              ✨ Les posts sont maintenant publiés directement sur Facebook !
             </p>
           </div>
         </div>
