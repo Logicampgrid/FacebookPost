@@ -1753,24 +1753,30 @@ async def webhook_endpoint(request: N8NWebhookRequest):
     }
     """
     try:
-        print(f"🔗 N8N Webhook received: {request.title} for store '{request.store}'")
+        print(f"🔗 N8N Webhook POST received: {request.title} for store '{request.store}'")
+        print(f"📋 Full request data: store={request.store}, title='{request.title}', description='{request.description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
         
         # Validate required fields
         if not request.title or not request.title.strip():
+            print(f"❌ Validation failed: Empty title")
             raise HTTPException(status_code=400, detail="Product title is required")
         
         if not request.description or not request.description.strip():
+            print(f"❌ Validation failed: Empty description") 
             raise HTTPException(status_code=400, detail="Product description is required")
         
         if not request.image_url or not request.image_url.startswith('http'):
+            print(f"❌ Validation failed: Invalid image URL: {request.image_url}")
             raise HTTPException(status_code=400, detail="Valid product image URL is required")
         
         if not request.product_url or not request.product_url.startswith('http'):
+            print(f"❌ Validation failed: Invalid product URL: {request.product_url}")
             raise HTTPException(status_code=400, detail="Valid product URL is required")
         
         # Validate store type
         if not request.store or request.store not in SHOP_PAGE_MAPPING:
             available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
+            print(f"❌ Validation failed: Invalid store '{request.store}'. Available: {available_stores}")
             raise HTTPException(
                 status_code=400, 
                 detail=f"Invalid store type '{request.store}'. Available stores: {available_stores}"
