@@ -102,7 +102,8 @@ class PostRequest(BaseModel):
     business_manager_id: Optional[str] = None
     cross_post_targets: Optional[List[dict]] = []
     scheduled_time: Optional[str] = None
-    comment_link: Optional[str] = None  # Link to add as comment
+    comment_link: Optional[str] = None  # Link to add as comment (backward compatibility)
+    comment_text: Optional[str] = None  # Any text to add as comment
 
 class FacebookCodeExchangeRequest(BaseModel):
     code: str
