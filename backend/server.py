@@ -1274,7 +1274,7 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
             await f.write(content)
         
         # Update post with media URL
-        media_url = f"/uploads/{unique_filename}"
+        media_url = f"/api/uploads/{unique_filename}"
         await db.posts.update_one(
             {"id": post_id},
             {"$push": {"media_urls": media_url}}
