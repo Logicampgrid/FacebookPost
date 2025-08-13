@@ -1500,7 +1500,7 @@ async def setup_test_user():
             "facebook_pages": [
                 {
                     "id": "test_page_gizmobbs",
-                    "name": "Gizmobbs",  # Exact match for shop mapping
+                    "name": "Le Berger Blanc suisse",  # Updated page name
                     "access_token": "test_page_token_gizmobbs",
                     "category": "Shopping & Retail"
                 },
