@@ -1147,7 +1147,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         
         # Find user and page for publishing
         user, target_page, access_token = await find_user_and_page_for_publishing(
-            request.user_id, request.page_id
+            request.user_id, request.page_id, request.shop_type
         )
         
         # Download and optimize product image
