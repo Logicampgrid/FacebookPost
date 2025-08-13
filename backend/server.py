@@ -1710,6 +1710,103 @@ async def publish_product_from_n8n(request: ProductPublishRequest):
             }
         )
 
+@app.post("/api/webhook")
+async def webhook_endpoint(request: N8NWebhookRequest):
+    """
+    Webhook endpoint for N8N integration - accepts transformed product data
+    
+    This endpoint accepts the exact format from your N8N transformation script:
+    {
+        "store": "gizmobbs",
+        "title": "Product Name", 
+        "description": "Product Description",
+        "product_url": "https://...",
+        "image_url": "https://..."
+    }
+    """
+    try:
+        print(f"🔗 N8N Webhook received: {request.title} for store '{request.store}'")
+        
+        # Validate required fields
+        if not request.title or not request.title.strip():
+            raise HTTPException(status_code=400, detail="Product title is required")
+        
+        if not request.description or not request.description.strip():
+            raise HTTPException(status_code=400, detail="Product description is required")
+        
+        if not request.image_url or not request.image_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product image URL is required")
+        
+        if not request.product_url or not request.product_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product URL is required")
+        
+        # Validate store type
+        if not request.store or request.store not in SHOP_PAGE_MAPPING:
+            available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid store type '{request.store}'. Available stores: {available_stores}"
+            )
+        
+        # Convert N8N webhook format to ProductPublishRequest format
+        product_request = ProductPublishRequest(
+            title=request.title,
+            description=request.description,
+            image_url=request.image_url,
+            product_url=request.product_url,
+            shop_type=request.store,  # Map 'store' to 'shop_type'
+            user_id=None,  # Will be determined automatically
+            page_id=None,  # Will be determined from shop_type mapping
+            api_key=None
+        )
+        
+        print(f"🏪 Processing webhook for store: {request.store}")
+        print(f"📦 Product: {request.title}")
+        print(f"🔗 URL: {request.product_url}")
+        print(f"📸 Image: {request.image_url}")
+        
+        # Create and publish the product post using existing logic
+        result = await create_product_post(product_request)
+        
+        # Return webhook-friendly response
+        return {
+            "success": True,
+            "status": "published",
+            "message": f"Product '{request.title}' published successfully to {request.store}",
+            "data": {
+                "facebook_post_id": result["facebook_post_id"],
+                "post_id": result["post_id"],
+                "page_name": result["page_name"],
+                "page_id": result["page_id"],
+                "store": request.store,
+                "published_at": result["published_at"],
+                "comment_added": result["comment_status"] == "success",
+                "webhook_processed_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Error in webhook_endpoint: {e}")
+        
+        # Return webhook-friendly error response
+        error_message = str(e)
+        
+        return {
+            "success": False,
+            "status": "failed",
+            "message": f"Failed to publish product: {error_message}",
+            "error": {
+                "type": "webhook_processing_error",
+                "details": error_message,
+                "product_title": request.title if hasattr(request, 'title') else "Unknown",
+                "store": request.store if hasattr(request, 'store') else "Unknown",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }
+
 @app.get("/api/publishProduct/config")
 async def get_publish_config():
     """
