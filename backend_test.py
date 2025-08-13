@@ -1966,6 +1966,19 @@ def main():
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         
+        # NEW WEBHOOK HISTORY AND SHOP TYPE TESTS (PRIORITY)
+        tester.test_webhook_history_endpoint,
+        tester.test_webhook_history_with_limit,
+        tester.test_publish_product_config_endpoint,
+        tester.test_setup_test_user_for_n8n,
+        tester.test_publish_product_with_shop_type_outdoor,
+        tester.test_publish_product_with_shop_type_gizmobbs,
+        tester.test_publish_product_with_shop_type_logicantiq,
+        tester.test_publish_product_with_invalid_shop_type,
+        tester.test_publish_product_without_shop_type,
+        tester.test_publish_product_test_endpoint,
+        tester.test_cleanup_test_user,
+        
         # NEW FUNCTIONALITY TESTS
         tester.test_create_post_empty_content_with_media,
         tester.test_create_post_only_media_no_content,
