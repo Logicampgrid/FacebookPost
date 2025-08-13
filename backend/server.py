@@ -1499,9 +1499,9 @@ async def setup_test_user():
             "facebook_access_token": "test_access_token_n8n",
             "facebook_pages": [
                 {
-                    "id": "test_page_gizmobbs",
-                    "name": "Le Berger Blanc suisse",  # Updated page name
-                    "access_token": "test_page_token_gizmobbs",
+                    "id": "100092995904169",  # Real Facebook page ID
+                    "name": "Le Berger Blanc Suisse",  # Real page name
+                    "access_token": "test_page_token_berger_blanc",
                     "category": "Shopping & Retail"
                 },
                 {
