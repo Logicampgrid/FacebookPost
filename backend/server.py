@@ -1215,7 +1215,43 @@ async def publish_post(post_id: str):
                     }
                 }
             )
-            return {"message": f"Post published successfully on {platform}", "platform_id": result["id"]}
+            
+            # Add comment if comment_text or comment_link is provided (Facebook only)
+            comment_to_add = None
+            if post.get("comment_text") and post["comment_text"].strip():
+                comment_to_add = post["comment_text"].strip()
+            elif post.get("comment_link") and post["comment_link"].strip():
+                comment_to_add = post["comment_link"].strip()
+            
+            if comment_to_add and platform == "facebook":
+                print(f"Adding comment: {comment_to_add}")
+                comment_result = await add_comment_to_facebook_post(
+                    result["id"], 
+                    comment_to_add, 
+                    access_token
+                )
+                
+                if comment_result and "id" in comment_result:
+                    await db.posts.update_one(
+                        {"id": post_id},
+                        {"$set": {"comment_status": "success"}}
+                    )
+                    print(f"✅ Comment added successfully with ID: {comment_result['id']}")
+                else:
+                    await db.posts.update_one(
+                        {"id": post_id},
+                        {"$set": {"comment_status": "failed"}}
+                    )
+                    print("❌ Failed to add comment to Facebook post")
+            
+            success_message = f"Post published successfully on {platform}"
+            if comment_to_add and platform == "facebook":
+                if post.get("comment_status") == "success":
+                    success_message += " with comment"
+                elif post.get("comment_status") == "failed":
+                    success_message += " but comment failed"
+            
+            return {"message": success_message, "platform_id": result["id"]}
         else:
             await db.posts.update_one(
                 {"id": post_id},
