@@ -1367,9 +1367,103 @@ async def debug_facebook_config():
         "app_secret_configured": "Yes" if FACEBOOK_APP_SECRET else "No"
     }
 
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.utcnow()}
+@app.post("/api/publishProduct/setup-test-user")
+async def setup_test_user():
+    """
+    Create a test user with mock Facebook pages for testing n8n integration
+    This allows testing the real publishProduct endpoint without needing actual Facebook authentication
+    """
+    try:
+        # Check if test user already exists
+        existing_user = await db.users.find_one({"facebook_id": "test_user_n8n"})
+        
+        if existing_user:
+            return {
+                "status": "success",
+                "message": "Test user already exists",
+                "user": {
+                    "id": str(existing_user["_id"]),
+                    "name": existing_user["name"],
+                    "facebook_id": existing_user["facebook_id"],
+                    "pages_count": len(existing_user.get("facebook_pages", []))
+                }
+            }
+        
+        # Create test user with mock Facebook pages
+        test_user = {
+            "name": "Test User N8N Integration",
+            "email": "test-n8n@example.com", 
+            "facebook_id": "test_user_n8n",
+            "facebook_access_token": "test_access_token_n8n",
+            "facebook_pages": [
+                {
+                    "id": "test_page_n8n_1",
+                    "name": "Test Page N8N - Produits",
+                    "access_token": "test_page_token_n8n_1",
+                    "category": "Product/Service"
+                },
+                {
+                    "id": "test_page_n8n_2", 
+                    "name": "Test Page N8N - E-commerce",
+                    "access_token": "test_page_token_n8n_2",
+                    "category": "Shopping & Retail"
+                }
+            ],
+            "facebook_groups": [],
+            "instagram_accounts": [],
+            "business_managers": [],
+            "selected_business_manager": None,
+            "created_at": datetime.utcnow(),
+            "test_user": True
+        }
+        
+        # Insert test user
+        result = await db.users.insert_one(test_user)
+        test_user["_id"] = str(result.inserted_id)
+        
+        return {
+            "status": "success",
+            "message": "Test user created successfully for n8n integration testing",
+            "user": {
+                "id": test_user["_id"],
+                "name": test_user["name"], 
+                "facebook_id": test_user["facebook_id"],
+                "pages": test_user["facebook_pages"],
+                "note": "This is a test user. Use user_id or page_id in publishProduct requests"
+            },
+            "usage": {
+                "endpoint": "/api/publishProduct",
+                "user_id": test_user["facebook_id"],
+                "page_id": "test_page_n8n_1"
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Error creating test user: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create test user: {str(e)}")
+
+@app.delete("/api/publishProduct/cleanup-test-user")
+async def cleanup_test_user():
+    """Remove test user and test posts for clean testing"""
+    try:
+        # Remove test user
+        user_result = await db.users.delete_many({"test_user": True})
+        
+        # Remove test posts
+        posts_result = await db.posts.delete_many({"source": {"$in": ["n8n_integration", "n8n_test"]}})
+        
+        return {
+            "status": "success",
+            "message": "Test data cleaned up successfully",
+            "deleted": {
+                "users": user_result.deleted_count,
+                "posts": posts_result.deleted_count
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Error cleaning up test data: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cleanup test data: {str(e)}")
 
 # N8N Integration Endpoint
 @app.post("/api/publishProduct")
