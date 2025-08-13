@@ -1804,7 +1804,7 @@ async def test_publish_product(request: ProductPublishRequest):
         # For test mode, use mock user/page if none exists
         try:
             user, target_page, access_token = await find_user_and_page_for_publishing(
-                request.user_id, request.page_id
+                request.user_id, request.page_id, request.shop_type
             )
             print(f"✅ Found real user and page: {user.get('name')} -> {target_page['name']}")
         except Exception as user_error:
