@@ -1716,6 +1716,28 @@ async def publish_product_from_n8n(request: ProductPublishRequest):
             }
         )
 
+@app.get("/api/webhook")
+async def webhook_info():
+    """
+    GET endpoint for webhook information and testing
+    """
+    return {
+        "message": "N8N Webhook Endpoint - Use POST method to submit product data",
+        "method": "POST",
+        "url": "/api/webhook", 
+        "content_type": "application/json",
+        "required_fields": ["store", "title", "description", "product_url", "image_url"],
+        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "example_payload": {
+            "store": "gizmobbs",
+            "title": "Product Name",
+            "description": "Product Description", 
+            "product_url": "https://example.com/product",
+            "image_url": "https://example.com/image.jpg"
+        },
+        "shop_mapping": SHOP_PAGE_MAPPING
+    }
+
 @app.post("/api/webhook")
 async def webhook_endpoint(request: N8NWebhookRequest):
     """
