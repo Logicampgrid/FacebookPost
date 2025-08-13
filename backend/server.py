@@ -436,7 +436,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
             if media_url.startswith('http'):
                 container_data["image_url"] = media_url
             else:
-                # Use public domain instead of localhost for Instagram API access
+                # Use public URL instead of localhost
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://social-media-share.preview.emergentagent.com")
                 container_data["image_url"] = f"{base_url}{media_url}"
         elif post.link_metadata:
