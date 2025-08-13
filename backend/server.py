@@ -1233,50 +1233,30 @@ async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = 
         print(f"❌ Error finding user and page: {e}")
         raise Exception(f"Failed to find user and page for publishing: {str(e)}")
 
-# Déduplication cache pour N8N (eviter les posts dupliqués)
-n8n_deduplication_cache = {}
-
+# Database-based deduplication for N8N (eviter les posts dupliqués)
 async def check_duplicate_product_post(title: str, image_url: str, shop_type: str) -> dict:
     """Check if a similar product post was recently created from N8N"""
     try:
         import hashlib
+        from datetime import datetime, timedelta
         
         # Create a hash from title + image_url + shop_type
-        content_hash = hashlib.md5(f"{title}|{image_url}|{shop_type}".encode()).hexdigest()
-        
-        # Check in-memory cache first (last 10 minutes)
-        from datetime import datetime, timedelta
+        content_hash = hashlib.md5(f"{title.strip()}|{image_url.strip()}|{shop_type}".encode()).hexdigest()
         current_time = datetime.utcnow()
-        cache_expiry = current_time - timedelta(minutes=10)
         
-        # Clean old cache entries
-        expired_keys = [k for k, v in n8n_deduplication_cache.items() if v['created_at'] < cache_expiry]
-        for key in expired_keys:
-            del n8n_deduplication_cache[key]
-        
-        # Check if this content was recently posted
-        if content_hash in n8n_deduplication_cache:
-            cached_post = n8n_deduplication_cache[content_hash]
-            print(f"🔍 Duplicate detected in cache: {cached_post['post_id']} (age: {(current_time - cached_post['created_at']).seconds}s)")
-            return {
-                "is_duplicate": True,
-                "existing_post": cached_post,
-                "message": f"Duplicate post detected for '{title}' - skipping"
-            }
-        
-        # Check in database for recent similar posts (last 30 minutes)
-        db_expiry = current_time - timedelta(minutes=30)
+        # Check in database for recent similar posts (last 15 minutes)
+        db_expiry = current_time - timedelta(minutes=15)
         
         existing_post = await db.posts.find_one({
             "source": "n8n_integration",
             "shop_type": shop_type,
-            "webhook_data.title": title,
-            "webhook_data.image_url": image_url,
+            "webhook_data.title": title.strip(),
+            "webhook_data.image_url": image_url.strip(),
             "created_at": {"$gte": db_expiry}
         })
         
         if existing_post:
-            print(f"🔍 Duplicate detected in database: {existing_post.get('id')}")
+            print(f"🔍 Duplicate detected in database: {existing_post.get('id')} (created: {existing_post.get('created_at')})")
             return {
                 "is_duplicate": True,
                 "existing_post": {
@@ -1287,15 +1267,7 @@ async def check_duplicate_product_post(title: str, image_url: str, shop_type: st
                 "message": f"Duplicate post detected for '{title}' in database - skipping"
             }
         
-        # No duplicate found - add to cache
-        n8n_deduplication_cache[content_hash] = {
-            "title": title,
-            "image_url": image_url,
-            "shop_type": shop_type,
-            "created_at": current_time,
-            "post_id": None  # Will be updated after successful creation
-        }
-        
+        print(f"🆕 No duplicate found for '{title}' - proceeding with post creation")
         return {
             "is_duplicate": False,
             "content_hash": content_hash,
@@ -1309,16 +1281,6 @@ async def check_duplicate_product_post(title: str, image_url: str, shop_type: st
             "is_duplicate": False,
             "message": "Duplicate check failed - proceeding with post creation"
         }
-
-async def update_deduplication_cache(content_hash: str, post_id: str, facebook_post_id: str):
-    """Update the deduplication cache with successful post info"""
-    try:
-        if content_hash in n8n_deduplication_cache:
-            n8n_deduplication_cache[content_hash]["post_id"] = post_id
-            n8n_deduplication_cache[content_hash]["facebook_post_id"] = facebook_post_id
-            print(f"✅ Updated deduplication cache for post: {post_id}")
-    except Exception as e:
-        print(f"⚠️ Error updating deduplication cache: {e}")
 
 async def create_product_post(request: ProductPublishRequest) -> dict:
     """Create a Facebook post for a product from n8n data"""
