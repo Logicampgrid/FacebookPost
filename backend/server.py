@@ -59,7 +59,7 @@ SHOP_PAGE_MAPPING = {
         "woocommerce_url": "https://logicampoutdoor.com"
     },
     "gizmobbs": {
-        "name": "Gizmobbs", 
+        "name": "Le Berger Blanc suisse", 
         "expected_id": None,  # To be identified
         "woocommerce_url": "https://gizmobbs.com"
     },
