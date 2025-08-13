@@ -1183,7 +1183,15 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             "comment_status": None,  
             "created_at": datetime.utcnow(),
             "published_at": datetime.utcnow(),
-            "source": "n8n_integration"  # Mark as n8n source
+            "source": "n8n_integration",  # Mark as n8n source
+            "shop_type": request.shop_type,  # Store shop type for history
+            "webhook_data": {  # Store original webhook data for history
+                "title": request.title,
+                "description": request.description,
+                "image_url": request.image_url,
+                "product_url": request.product_url,
+                "received_at": datetime.utcnow()
+            }
         }
         
         # Create Post object for Facebook API
