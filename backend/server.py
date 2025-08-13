@@ -1759,6 +1759,46 @@ async def webhook_info():
         "shop_mapping": SHOP_PAGE_MAPPING
     }
 
+@app.post("/api/webhook/debug")
+async def webhook_debug(request: Request):
+    """
+    Debug endpoint to capture exactly what N8N sends
+    """
+    try:
+        # Get raw body
+        body = await request.body()
+        
+        # Try to parse as JSON
+        try:
+            json_data = json.loads(body.decode('utf-8'))
+        except:
+            json_data = "Could not parse JSON"
+        
+        print(f"🐛 DEBUG - N8N Raw Request:")
+        print(f"📋 Method: {request.method}")
+        print(f"📋 Headers: {dict(request.headers)}")
+        print(f"📋 Raw Body: {body}")
+        print(f"📋 Parsed JSON: {json_data}")
+        print(f"📋 URL: {request.url}")
+        
+        return {
+            "debug_info": {
+                "method": request.method,
+                "headers": dict(request.headers),
+                "raw_body": body.decode('utf-8') if body else "Empty body",
+                "parsed_json": json_data,
+                "url": str(request.url),
+                "received_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "debug_error": str(e),
+            "method": request.method,
+            "url": str(request.url)
+        }
+
 @app.post("/api/webhook")
 async def webhook_endpoint(request: N8NWebhookRequest):
     """
