@@ -1548,14 +1548,26 @@ async def test_publish_product(request: ProductPublishRequest):
         except Exception as img_error:
             raise HTTPException(status_code=400, detail=f"Failed to download image: {str(img_error)}")
         
-        # Simulate finding user and page
+        # For test mode, use mock user/page if none exists
         try:
             user, target_page, access_token = await find_user_and_page_for_publishing(
                 request.user_id, request.page_id
             )
-            print(f"✅ Found user and page: {user.get('name')} -> {target_page['name']}")
+            print(f"✅ Found real user and page: {user.get('name')} -> {target_page['name']}")
         except Exception as user_error:
-            raise HTTPException(status_code=400, detail=f"User/Page error: {str(user_error)}")
+            print(f"⚠️ No real user found, using mock data for test: {user_error}")
+            # Create mock user and page for testing
+            user = {
+                "_id": "test_user_id", 
+                "name": "Mock Test User",
+                "facebook_id": "mock_facebook_id"
+            }
+            target_page = {
+                "id": "mock_page_id",
+                "name": "Mock Facebook Page",
+                "access_token": "mock_access_token"
+            }
+            access_token = "mock_access_token"
         
         # Create simulated post data
         post_content = f"{request.title}\n\n{request.description}"
