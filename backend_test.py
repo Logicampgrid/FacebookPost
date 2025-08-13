@@ -963,6 +963,369 @@ class FacebookPostManagerTester:
         
         return success
 
+    # NEW TESTS FOR WEBHOOK HISTORY AND SHOP TYPE FUNCTIONALITY
+
+    def test_webhook_history_endpoint(self):
+        """Test the new webhook history endpoint"""
+        success, response = self.run_test(
+            "Get Webhook History",
+            "GET",
+            "api/webhook-history",
+            200
+        )
+        
+        if success:
+            data = response.get("data", {})
+            webhook_posts = data.get("webhook_posts", [])
+            shop_types_available = data.get("shop_types_available", [])
+            shop_mapping = data.get("shop_mapping", {})
+            
+            print(f"   Found {len(webhook_posts)} webhook posts")
+            print(f"   Available shop types: {shop_types_available}")
+            print(f"   Shop mapping keys: {list(shop_mapping.keys())}")
+            
+            # Check if shop types are configured correctly
+            expected_shop_types = ["outdoor", "gizmobbs", "logicantiq"]
+            for shop_type in expected_shop_types:
+                if shop_type in shop_types_available:
+                    print(f"✅ Shop type '{shop_type}' available")
+                else:
+                    print(f"❌ Shop type '{shop_type}' missing")
+                    
+            # Check shop mapping structure
+            for shop_type, config in shop_mapping.items():
+                if "name" in config:
+                    print(f"✅ Shop '{shop_type}' has name: {config['name']}")
+                else:
+                    print(f"❌ Shop '{shop_type}' missing name")
+        
+        return success
+
+    def test_webhook_history_with_limit(self):
+        """Test webhook history endpoint with limit parameter"""
+        success, response = self.run_test(
+            "Get Webhook History (Limited)",
+            "GET",
+            "api/webhook-history?limit=10",
+            200
+        )
+        
+        if success:
+            data = response.get("data", {})
+            webhook_posts = data.get("webhook_posts", [])
+            print(f"   Limited to 10, got {len(webhook_posts)} posts")
+            
+            if len(webhook_posts) <= 10:
+                print("✅ Limit parameter working correctly")
+            else:
+                print(f"❌ Limit not respected: got {len(webhook_posts)} posts")
+        
+        return success
+
+    def test_publish_product_config_endpoint(self):
+        """Test the new publishProduct config endpoint"""
+        success, response = self.run_test(
+            "Get Publish Product Config",
+            "GET",
+            "api/publishProduct/config",
+            200
+        )
+        
+        if success:
+            users = response.get("users", [])
+            shop_types = response.get("shop_types", {})
+            usage_example = response.get("usage_example", {})
+            
+            print(f"   Found {len(users)} users with Facebook pages")
+            print(f"   Shop types configured: {list(shop_types.keys())}")
+            
+            # Check shop types structure
+            expected_shop_types = ["outdoor", "gizmobbs", "logicantiq"]
+            for shop_type in expected_shop_types:
+                if shop_type in shop_types:
+                    config = shop_types[shop_type]
+                    if "name" in config:
+                        print(f"✅ Shop type '{shop_type}' -> {config['name']}")
+                    else:
+                        print(f"❌ Shop type '{shop_type}' missing name")
+                else:
+                    print(f"❌ Shop type '{shop_type}' not configured")
+            
+            # Check usage example
+            if usage_example.get("body", {}).get("shop_type"):
+                print("✅ Usage example includes shop_type parameter")
+            else:
+                print("❌ Usage example missing shop_type parameter")
+        
+        return success
+
+    def test_setup_test_user_for_n8n(self):
+        """Test setting up test user for n8n integration"""
+        success, response = self.run_test(
+            "Setup Test User for N8N",
+            "POST",
+            "api/publishProduct/setup-test-user",
+            200
+        )
+        
+        if success:
+            user = response.get("user", {})
+            usage = response.get("usage", {})
+            
+            print(f"   Test user created: {user.get('name')}")
+            print(f"   User ID: {user.get('id')}")
+            print(f"   Pages: {len(user.get('pages', []))}")
+            
+            if user.get("facebook_id") == "test_user_n8n":
+                print("✅ Test user created with correct facebook_id")
+            else:
+                print(f"❌ Unexpected facebook_id: {user.get('facebook_id')}")
+                
+            # Store test user info for later tests
+            self.test_n8n_user_id = user.get("id")
+            self.test_n8n_facebook_id = user.get("facebook_id")
+        
+        return success
+
+    def test_publish_product_with_shop_type_outdoor(self):
+        """Test publishing product with shop_type 'outdoor'"""
+        product_data = {
+            "title": "Tente de camping 4 personnes",
+            "description": "Tente spacieuse et résistante pour vos aventures en plein air",
+            "image_url": "https://picsum.photos/400/300?random=1",
+            "product_url": "https://logicampoutdoor.com/tente-camping",
+            "shop_type": "outdoor"
+        }
+        
+        success, response = self.run_test(
+            "Publish Product (Shop Type: outdoor)",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            page_name = response.get("page_name")
+            shop_type_used = response.get("shop_type", "unknown")
+            
+            print(f"   Published to page: {page_name}")
+            print(f"   Shop type used: {shop_type_used}")
+            
+            # Check if it found the correct page for outdoor
+            if "outdoor" in page_name.lower() or "logicamp" in page_name.lower():
+                print("✅ Correct page selected for 'outdoor' shop type")
+            else:
+                print(f"⚠️  Page '{page_name}' may not match 'outdoor' shop type")
+        
+        return success
+
+    def test_publish_product_with_shop_type_gizmobbs(self):
+        """Test publishing product with shop_type 'gizmobbs'"""
+        product_data = {
+            "title": "Smartphone dernière génération",
+            "description": "Le smartphone le plus avancé avec toutes les dernières technologies",
+            "image_url": "https://picsum.photos/400/300?random=2",
+            "product_url": "https://gizmobbs.com/smartphone",
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "Publish Product (Shop Type: gizmobbs)",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            page_name = response.get("page_name")
+            shop_type_used = response.get("shop_type", "unknown")
+            
+            print(f"   Published to page: {page_name}")
+            print(f"   Shop type used: {shop_type_used}")
+            
+            # Check if it found the correct page for gizmobbs
+            if "gizmobbs" in page_name.lower():
+                print("✅ Correct page selected for 'gizmobbs' shop type")
+            else:
+                print(f"⚠️  Page '{page_name}' may not match 'gizmobbs' shop type")
+        
+        return success
+
+    def test_publish_product_with_shop_type_logicantiq(self):
+        """Test publishing product with shop_type 'logicantiq'"""
+        product_data = {
+            "title": "Vase antique en porcelaine",
+            "description": "Magnifique vase antique du 18ème siècle en parfait état",
+            "image_url": "https://picsum.photos/400/300?random=3",
+            "product_url": "https://logicantiq.com/vase-porcelaine",
+            "shop_type": "logicantiq"
+        }
+        
+        success, response = self.run_test(
+            "Publish Product (Shop Type: logicantiq)",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            page_name = response.get("page_name")
+            shop_type_used = response.get("shop_type", "unknown")
+            
+            print(f"   Published to page: {page_name}")
+            print(f"   Shop type used: {shop_type_used}")
+            
+            # Check if it found the correct page for logicantiq
+            if "logicantiq" in page_name.lower() or "antiq" in page_name.lower():
+                print("✅ Correct page selected for 'logicantiq' shop type")
+            else:
+                print(f"⚠️  Page '{page_name}' may not match 'logicantiq' shop type")
+        
+        return success
+
+    def test_publish_product_with_invalid_shop_type(self):
+        """Test publishing product with invalid shop_type (should use first available page)"""
+        product_data = {
+            "title": "Produit test avec shop_type invalide",
+            "description": "Test pour vérifier le comportement avec un shop_type invalide",
+            "image_url": "https://picsum.photos/400/300?random=4",
+            "product_url": "https://example.com/produit-test",
+            "shop_type": "invalid_shop_type"
+        }
+        
+        success, response = self.run_test(
+            "Publish Product (Invalid Shop Type)",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            page_name = response.get("page_name")
+            shop_type_used = response.get("shop_type", "unknown")
+            
+            print(f"   Published to page: {page_name}")
+            print(f"   Shop type used: {shop_type_used}")
+            
+            # Should fall back to first available page
+            if page_name:
+                print("✅ Fallback to first available page working")
+            else:
+                print("❌ No page selected for invalid shop type")
+        
+        return success
+
+    def test_publish_product_without_shop_type(self):
+        """Test publishing product without shop_type (should use first available page)"""
+        product_data = {
+            "title": "Produit test sans shop_type",
+            "description": "Test pour vérifier le comportement sans shop_type",
+            "image_url": "https://picsum.photos/400/300?random=5",
+            "product_url": "https://example.com/produit-test-2"
+            # No shop_type field
+        }
+        
+        success, response = self.run_test(
+            "Publish Product (No Shop Type)",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            page_name = response.get("page_name")
+            
+            print(f"   Published to page: {page_name}")
+            
+            # Should use first available page
+            if page_name:
+                print("✅ Default page selection working")
+            else:
+                print("❌ No page selected when shop_type not provided")
+        
+        return success
+
+    def test_publish_product_test_endpoint(self):
+        """Test the publishProduct/test endpoint for different shop types"""
+        test_cases = [
+            {"shop_type": "outdoor", "expected_page": "LogicampOutdoor"},
+            {"shop_type": "gizmobbs", "expected_page": "Gizmobbs"},
+            {"shop_type": "logicantiq", "expected_page": "LogicAntiq"},
+            {"shop_type": "invalid", "expected_page": None}  # Should use first available
+        ]
+        
+        all_passed = True
+        
+        for test_case in test_cases:
+            product_data = {
+                "title": f"Test produit pour {test_case['shop_type']}",
+                "description": f"Description test pour shop_type {test_case['shop_type']}",
+                "image_url": "https://picsum.photos/400/300?random=6",
+                "product_url": "https://example.com/test-product",
+                "shop_type": test_case["shop_type"]
+            }
+            
+            success, response = self.run_test(
+                f"Test Publish Product (Shop Type: {test_case['shop_type']})",
+                "POST",
+                "api/publishProduct/test",
+                200,
+                data=product_data
+            )
+            
+            if success:
+                page_name = response.get("page_name", "")
+                shop_type_used = response.get("shop_type", "unknown")
+                
+                print(f"   Shop type: {test_case['shop_type']} -> Page: {page_name}")
+                
+                if test_case["expected_page"]:
+                    if test_case["expected_page"].lower() in page_name.lower():
+                        print(f"✅ Correct page mapping for {test_case['shop_type']}")
+                    else:
+                        print(f"❌ Expected page containing '{test_case['expected_page']}', got '{page_name}'")
+                        all_passed = False
+                else:
+                    # Invalid shop_type should still select a page
+                    if page_name:
+                        print(f"✅ Fallback page selected for invalid shop_type: {page_name}")
+                    else:
+                        print("❌ No page selected for invalid shop_type")
+                        all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
+
+    def test_cleanup_test_user(self):
+        """Test cleaning up test user and test posts"""
+        success, response = self.run_test(
+            "Cleanup Test User",
+            "DELETE",
+            "api/publishProduct/cleanup-test-user",
+            200
+        )
+        
+        if success:
+            deleted = response.get("deleted", {})
+            users_deleted = deleted.get("users", 0)
+            posts_deleted = deleted.get("posts", 0)
+            
+            print(f"   Deleted {users_deleted} test users")
+            print(f"   Deleted {posts_deleted} test posts")
+            
+            if users_deleted > 0 or posts_deleted > 0:
+                print("✅ Cleanup successful")
+            else:
+                print("⚠️  No test data to cleanup (may be expected)")
+        
+        return success
+
     def test_facebook_posting_strategy_simulation(self):
         """Test Facebook posting strategy with different content types"""
         test_cases = [
