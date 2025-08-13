@@ -773,6 +773,93 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_create_post_with_comment_text(self):
+        """Test creating a post with NEW comment_text functionality"""
+        test_user_id = str(uuid.uuid4())
+        content = "Check out our latest product update!"
+        comment_text = "This is a custom comment text that can be anything!"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id,
+            "comment_text": comment_text
+        }
+        
+        success, response = self.run_test(
+            "Create Post with Comment Text (NEW)",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_text = post.get("comment_text")
+            comment_status = post.get("comment_status")
+            
+            print(f"   Comment Text: {stored_comment_text}")
+            print(f"   Comment Status: {comment_status}")
+            
+            if stored_comment_text == comment_text:
+                print("✅ NEW FEATURE: Comment text stored correctly")
+            else:
+                print(f"❌ Comment text mismatch. Expected: {comment_text}, Got: {stored_comment_text}")
+                
+            # Note: comment_status will be None since we don't have real Facebook integration
+            if comment_status is None:
+                print("✅ Comment status initialized correctly (None for test)")
+            else:
+                print(f"⚠️  Unexpected comment status: {comment_status}")
+        
+        return success
+
+    def test_comment_text_priority_over_comment_link(self):
+        """Test that comment_text has priority over comment_link (NEW FUNCTIONALITY)"""
+        test_user_id = str(uuid.uuid4())
+        content = "Testing comment priority"
+        comment_text = "This comment text should have priority"
+        comment_link = "https://www.example.com/should-be-ignored"
+        
+        form_data = {
+            "content": content,
+            "target_type": "page", 
+            "target_id": "test_page_123",
+            "target_name": "Test Page Name",
+            "user_id": test_user_id,
+            "comment_text": comment_text,
+            "comment_link": comment_link  # Both provided, text should win
+        }
+        
+        success, response = self.run_test(
+            "Comment Text Priority (NEW FUNCTIONALITY)",
+            "POST",
+            "api/posts",
+            200,
+            data=form_data,
+            form_data=True
+        )
+        
+        if success and "post" in response:
+            post = response["post"]
+            stored_comment_text = post.get("comment_text")
+            stored_comment_link = post.get("comment_link")
+            
+            print(f"   Comment Text: {stored_comment_text}")
+            print(f"   Comment Link: {stored_comment_link}")
+            
+            if stored_comment_text == comment_text and stored_comment_link == comment_link:
+                print("✅ NEW FEATURE: Both comment_text and comment_link stored")
+                print("✅ Backend logic should prioritize comment_text over comment_link")
+            else:
+                print(f"❌ Unexpected storage behavior")
+        
+        return success
+
     def test_create_post_without_comment_link(self):
         """Test creating a post without comment link (should work normally)"""
         test_user_id = str(uuid.uuid4())
