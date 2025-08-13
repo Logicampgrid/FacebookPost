@@ -65,11 +65,82 @@ class OptimizedStaticFiles(StaticFiles):
 app.mount("/api/uploads", OptimizedStaticFiles(directory="uploads"), name="uploads")
 
 # Image optimization functions
-def optimize_image(file_path: str, target_path: str = None, max_size: tuple = (1200, 1200), quality: int = 85):
+def optimize_image_for_instagram(file_path: str, target_path: str = None):
+    """Optimize image specifically for Instagram requirements (2025)"""
+    try:
+        if target_path is None:
+            target_path = file_path
+            
+        with Image.open(file_path) as img:
+            # Convert to RGB if necessary
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            # Instagram specific constraints
+            max_width = 1440
+            max_size = 8 * 1024 * 1024  # 8MB max file size
+            
+            original_width, original_height = img.size
+            aspect_ratio = original_width / original_height
+            
+            # Check and adjust aspect ratio for Instagram (4:5 to 1.91:1)
+            min_ratio = 4/5  # 0.8 (portrait)
+            max_ratio = 1.91  # 1.91 (landscape)
+            
+            if aspect_ratio < min_ratio:
+                # Too narrow, crop to 4:5
+                new_height = int(original_width / min_ratio)
+                if new_height < original_height:
+                    # Crop from center
+                    top = (original_height - new_height) // 2
+                    img = img.crop((0, top, original_width, top + new_height))
+                    print(f"📐 Cropped image to 4:5 ratio for Instagram")
+            elif aspect_ratio > max_ratio:
+                # Too wide, crop to 1.91:1
+                new_width = int(original_height * max_ratio)
+                if new_width < original_width:
+                    # Crop from center
+                    left = (original_width - new_width) // 2
+                    img = img.crop((left, 0, left + new_width, original_height))
+                    print(f"📐 Cropped image to 1.91:1 ratio for Instagram")
+            
+            # Resize if too large
+            if img.size[0] > max_width:
+                ratio = max_width / img.size[0]
+                new_size = (max_width, int(img.size[1] * ratio))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+                print(f"🔧 Resized image for Instagram: {new_size}")
+            
+            # Save with progressive JPEG for better loading
+            img.save(target_path, 'JPEG', optimize=True, quality=92, progressive=True)
+            
+            # Check file size
+            file_size = os.path.getsize(target_path)
+            if file_size > max_size:
+                # Reduce quality if file too large
+                quality = 85
+                while file_size > max_size and quality > 60:
+                    img.save(target_path, 'JPEG', optimize=True, quality=quality, progressive=True)
+                    file_size = os.path.getsize(target_path)
+                    quality -= 5
+                    print(f"🔄 Reduced quality to {quality} for Instagram size limit")
+            
+            print(f"📱 Image optimized for Instagram: {target_path} ({file_size} bytes, {img.size})")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Instagram image optimization failed for {file_path}: {e}")
+        return False
+
+def optimize_image(file_path: str, target_path: str = None, max_size: tuple = (1200, 1200), quality: int = 85, instagram_mode: bool = False):
     """Optimize image for social media platforms"""
     try:
         if target_path is None:
             target_path = file_path
+            
+        # Use Instagram-specific optimization if requested
+        if instagram_mode:
+            return optimize_image_for_instagram(file_path, target_path)
             
         with Image.open(file_path) as img:
             # Convert to RGB if necessary
