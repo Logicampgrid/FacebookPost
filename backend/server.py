@@ -1428,6 +1428,10 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         
         print(f"✅ Facebook post published: {facebook_post_id}")
         
+        # Update deduplication cache with successful post
+        if content_hash:
+            await update_deduplication_cache(content_hash, post_data["id"], facebook_post_id)
+        
         # Add comment with product link if configured
         if request.product_url and post_data.get("comment_text"):
             try:
