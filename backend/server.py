@@ -701,14 +701,21 @@ async def post_to_facebook(post: Post, page_access_token: str):
             except Exception as media_processing_error:
                 print(f"Media processing error: {media_processing_error}")
                 
-                # Final fallback - simple text post
-                data = {
-                    "access_token": page_access_token,
-                    "message": f"{post.content}\n\nMédia disponible: {full_media_url}" if post.content else f"📱 Contenu multimédia: {full_media_url}",
-                    "link": full_media_url
-                }
+                # Final fallback - simple text post with product link if available
+                if product_link:
+                    data = {
+                        "access_token": page_access_token,
+                        "message": f"{post.content}\n\n🛒 Voir le produit: {product_link}" if post.content else f"🛒 Découvrez ce produit: {product_link}",
+                        "link": product_link
+                    }
+                else:
+                    data = {
+                        "access_token": page_access_token,
+                        "message": f"{post.content}\n\nMédia disponible: {full_media_url}" if post.content else f"📱 Contenu multimédia: {full_media_url}",
+                        "link": full_media_url
+                    }
                 endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                print("📝 Using final text fallback")
+                print("📝 Using final text fallback with link")
                 
         # STRATEGY 2: Link posts (URL sharing) - Enhanced
         elif urls_in_content:
