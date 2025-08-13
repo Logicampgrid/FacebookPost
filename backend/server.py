@@ -281,38 +281,86 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with FIXED media priority"""
+    """Post content to Facebook page/group with CORRECTED media handling"""
     try:
-        data = {
-            "access_token": page_access_token
-        }
-        
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
         
-        # FIXED PRIORITY: 1. Uploaded media files (always use picture), 2. Link previews, 3. Text only
+        # CORRECTED PRIORITY: 1. Media upload via photos endpoint, 2. Link previews, 3. Text only
         
         if post.media_urls:
-            # Strategy 1: Uploaded media has ABSOLUTE priority - always use picture parameter
+            # Strategy 1: Upload media using /photos endpoint (CORRECT method)
             media_url = post.media_urls[0]
             
-            # Convert all uploaded media to picture parameter (not link!)
+            # Prepare the full media URL
             if media_url.startswith('http'):
-                # External URL - use picture parameter to force image display
-                data["picture"] = media_url
+                full_media_url = media_url
             else:
-                # Local uploaded file
-                data["picture"] = f"http://localhost:8001{media_url}"
+                full_media_url = f"http://localhost:8001{media_url}"
             
-            # Add text content as message
+            # Use /photos endpoint for media posts instead of /feed with picture parameter
+            photos_data = {
+                "access_token": page_access_token,
+                "url": full_media_url,
+                "published": "true"
+            }
+            
+            # Add caption if provided
             if post.content and post.content.strip():
-                data["message"] = post.content
+                photos_data["caption"] = post.content
             
-            print(f"📸 Using uploaded media with picture parameter: {data.get('picture')}")
+            # Determine the correct photos endpoint
+            if post.target_type == "group":
+                # For groups, we still need to use /feed but with correct parameters
+                data = {
+                    "access_token": page_access_token,
+                    "message": post.content if post.content and post.content.strip() else "📸 Photo partagée"
+                }
+                
+                # For groups, we can try using source parameter instead of picture
+                try:
+                    import requests
+                    # Download the image to upload it as multipart form data
+                    img_response = requests.get(full_media_url)
+                    if img_response.status_code == 200:
+                        files = {'source': ('image.jpg', img_response.content, 'image/jpeg')}
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
+                        
+                        response = requests.post(endpoint, data=photos_data, files=files)
+                        
+                        if response.status_code == 200:
+                            result = response.json()
+                            print(f"📸 Group photo uploaded successfully: {result}")
+                            return result
+                    
+                    # Fallback to feed endpoint for groups
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                    data["attachment_url"] = full_media_url
+                    
+                except Exception as group_error:
+                    print(f"Group photo upload failed, trying fallback: {group_error}")
+                    # Fallback for groups - just post as text
+                    data = {
+                        "access_token": page_access_token,
+                        "message": f"{post.content}\n\n📸 Image: {full_media_url}" if post.content else f"📸 Image: {full_media_url}"
+                    }
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+            else:
+                # For pages, use /photos endpoint
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
+                data = photos_data
+            
+            print(f"📸 Using media upload strategy for: {full_media_url}")
+            print(f"Endpoint: {endpoint}")
+            print(f"Data: {data}")
                     
         elif urls_in_content:
             # Strategy 2: Use link sharing for preview ONLY if no uploaded media
             primary_link = urls_in_content[0]
+            
+            data = {
+                "access_token": page_access_token
+            }
             
             # If content contains only a link (or link + short text), use link parameter
             content_without_links = post.content if post.content else ""
@@ -328,25 +376,35 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 data["message"] = post.content
                 data["link"] = primary_link  # Facebook will still show preview
             
+            # Choose endpoint based on target type
+            if post.target_type == "group":
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+            else:  # page
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+            
             print(f"🔗 Using link preview for: {primary_link}")
                 
         else:
             # Strategy 3: Text-only post
+            data = {
+                "access_token": page_access_token
+            }
+            
             if post.content and post.content.strip():
                 data["message"] = post.content
             else:
                 # This shouldn't happen due to frontend validation, but handle gracefully
                 data["message"] = "Post créé depuis Meta Publishing Platform"
             
+            # Choose endpoint based on target type
+            if post.target_type == "group":
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+            else:  # page
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+            
             print("📝 Text-only post")
         
         print(f"Facebook API request data: {data}")
-        
-        # Choose endpoint based on target type
-        if post.target_type == "group":
-            endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-        else:  # page
-            endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
         
         response = requests.post(endpoint, data=data)
         
