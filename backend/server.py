@@ -47,7 +47,7 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 
 # Create uploads directory
 os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Pydantic models
 class User(BaseModel):
