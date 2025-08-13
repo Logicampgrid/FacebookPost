@@ -1659,8 +1659,10 @@ def main():
         tester.test_facebook_posting_strategy_simulation,
         tester.test_create_post_with_links,
         
-        # Comment link functionality tests
+        # Comment link functionality tests (UPDATED)
         tester.test_create_post_with_comment_link,
+        tester.test_create_post_with_comment_text,
+        tester.test_comment_text_priority_over_comment_link,
         tester.test_create_post_without_comment_link,
         tester.test_create_post_with_empty_comment_link,
         tester.test_create_post_with_invalid_comment_link
