@@ -1088,6 +1088,7 @@ async def create_post(
             "media_urls": [],
             "link_metadata": link_metadata,
             "comment_link": comment_link,
+            "comment_text": comment_text,  # New field
             "target_type": target_type,
             "target_id": target_id,
             "target_name": target_name,
