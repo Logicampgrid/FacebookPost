@@ -594,6 +594,8 @@ function App() {
             onPublish={handlePostPublished}
             onRefresh={loadPosts}
           />
+        )}
+
         {activeTab === 'webhook' && selectedBusinessManager && (
           <WebhookHistory />
         )}
