@@ -58,7 +58,8 @@ def test_image_posting_fix():
     print(f"✅ Image uploaded successfully: {media_url}")
     
     # Step 3: Check if the local file exists
-    local_file_path = f"/app/backend{media_url}"
+    # Remove /api prefix and use correct path
+    local_file_path = media_url.replace('/api/', '/app/backend/')
     if os.path.exists(local_file_path):
         print(f"✅ Local file exists: {local_file_path}")
         file_size = os.path.getsize(local_file_path)
