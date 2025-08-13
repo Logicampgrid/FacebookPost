@@ -368,7 +368,7 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with ENHANCED media handling"""
+    """Post content to Facebook page/group with ENHANCED and OPTIMIZED media handling"""
     try:
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
@@ -377,7 +377,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         data = {"access_token": page_access_token}
         endpoint = ""
         
-        # STRATEGY 1: Media posts (images/videos) with IMPROVED handling
+        # STRATEGY 1: Media posts (images/videos) with OPTIMIZED handling
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -389,19 +389,14 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://berger-dog.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
-            print(f"📸 Processing media upload: {full_media_url}")
+            print(f"📸 Processing OPTIMIZED media upload: {full_media_url}")
             
-            # Try multiple Facebook media strategies
+            # Try multiple Facebook media strategies with optimization
             try:
-                # Download media to determine type and size
-                media_response = requests.get(full_media_url, timeout=15)
-                if media_response.status_code != 200:
-                    raise Exception(f"Failed to download media: HTTP {media_response.status_code}")
+                # Download and optimize media for Facebook
+                media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
                 
-                media_content = media_response.content
-                content_type = media_response.headers.get('content-type', '').lower()
-                
-                print(f"📊 Media info: size={len(media_content)} bytes, type={content_type}")
+                print(f"📊 Optimized media info: size={len(media_content)} bytes, type={content_type}")
                 
                 # Determine media type and file extension
                 is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
@@ -416,26 +411,26 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 if post.content and post.content.strip():
                     base_data["message"] = post.content
                 
-                # STRATEGY 1A: Direct multipart upload (preferred for both images and videos)
+                # STRATEGY 1A: Direct multipart upload with optimized content (preferred)
                 try:
                     if is_video:
                         # For videos, use /videos endpoint
                         files = {'source': ('video.mp4', media_content, 'video/mp4')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
-                        print(f"🎥 Uploading video to: {endpoint}")
+                        print(f"🎥 Uploading optimized video to: {endpoint}")
                     else:
-                        # For images, use /photos endpoint  
+                        # For images, use /photos endpoint with optimized content
                         files = {'source': ('image.jpg', media_content, 'image/jpeg')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                        print(f"📸 Uploading image to: {endpoint}")
+                        print(f"📸 Uploading optimized image to: {endpoint}")
                     
-                    response = requests.post(endpoint, data=base_data, files=files, timeout=30)
+                    response = requests.post(endpoint, data=base_data, files=files, timeout=60)  # Increased timeout
                     result = response.json()
                     
                     print(f"Facebook direct upload response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Direct media upload successful!")
+                        print("✅ Direct optimized media upload successful!")
                         return result
                     else:
                         print(f"❌ Direct upload failed: {result}")
@@ -444,9 +439,9 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 except Exception as direct_error:
                     print(f"Direct upload error: {direct_error}")
                     
-                    # STRATEGY 1B: Use URL-based posting with link parameter
+                    # STRATEGY 1B: Use URL-based posting with link parameter (fallback)
                     try:
-                        print("🔄 Trying URL-based media sharing...")
+                        print("🔄 Trying URL-based media sharing as fallback...")
                         
                         # Use the /feed endpoint with link parameter for better media display
                         feed_data = {
@@ -458,12 +453,12 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         if post.content and post.content.strip():
                             feed_data["message"] = post.content
                         else:
-                            feed_data["message"] = "📸 Média partagé" if is_image else "🎥 Vidéo partagée"
+                            feed_data["message"] = "📸 Média partagé (optimisé)" if is_image else "🎥 Vidéo partagée"
                         
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
                         print(f"🔗 Posting media link to: {endpoint}")
                         
-                        response = requests.post(endpoint, data=feed_data, timeout=15)
+                        response = requests.post(endpoint, data=feed_data, timeout=30)
                         result = response.json()
                         
                         print(f"Facebook link post response: {response.status_code} - {result}")
@@ -482,7 +477,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         print("🔄 Using optimized text fallback...")
                         
                         # Create a more engaging text post that encourages Facebook to fetch the media
-                        media_type_text = "🎥 Vidéo" if is_video else "📸 Image"
+                        media_type_text = "🎥 Vidéo" if is_video else "📸 Image optimisée"
                         
                         fallback_message = ""
                         if post.content and post.content.strip():
@@ -546,7 +541,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         print(f"🚀 Posting to: {endpoint}")
         print(f"📋 Request data: {data}")
         
-        response = requests.post(endpoint, data=data)
+        response = requests.post(endpoint, data=data, timeout=30)  # Increased timeout
         result = response.json()
         
         print(f"📡 Facebook API response: {response.status_code} - {result}")
