@@ -1778,13 +1778,13 @@ async def webhook_endpoint(request: N8NWebhookRequest):
         print(f"📋 Full request data: store={request.store}, title='{request.title}', description='{request.description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
         
         # Validate required fields
-        if not request.title or not request.title.strip():
-            print(f"❌ Validation failed: Empty title")
-            raise HTTPException(status_code=400, detail="Product title is required")
+        if not request.title or not request.title.strip() or request.title.lower() in ['null', 'undefined', 'none']:
+            print(f"❌ Validation failed: Invalid title: '{request.title}'")
+            raise HTTPException(status_code=400, detail="Product title is required and cannot be empty, null, or undefined")
         
-        if not request.description or not request.description.strip():
-            print(f"❌ Validation failed: Empty description") 
-            raise HTTPException(status_code=400, detail="Product description is required")
+        if not request.description or not request.description.strip() or request.description.lower() in ['null', 'undefined', 'none']:
+            print(f"❌ Validation failed: Invalid description: '{request.description}'") 
+            raise HTTPException(status_code=400, detail="Product description is required and cannot be empty, null, or undefined")
         
         if not request.image_url or not request.image_url.startswith('http'):
             print(f"❌ Validation failed: Invalid image URL: {request.image_url}")
