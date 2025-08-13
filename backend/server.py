@@ -1043,6 +1043,7 @@ async def create_post(
     business_manager_name: Optional[str] = Form(None),
     scheduled_time: Optional[str] = Form(None),
     comment_link: Optional[str] = Form(None),
+    comment_text: Optional[str] = Form(None),  # New field for any comment text
     cross_post_targets: Optional[str] = Form(None)  # JSON string of targets
 ):
     """Create and immediately publish a post to Meta platforms"""
