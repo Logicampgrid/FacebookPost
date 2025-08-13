@@ -1088,8 +1088,15 @@ async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = 
         target_page = None
         access_token = user.get("facebook_access_token")
         
-        # If page_id specified, find that specific page
-        if page_id:
+        # Priority 1: Shop type selection (new feature)
+        if shop_type:
+            target_page = await find_page_by_shop_type(user, shop_type)
+            if target_page:
+                access_token = target_page.get("access_token", access_token)
+                print(f"🏪 Using shop-specific page: {target_page['name']} for {shop_type}")
+        
+        # Priority 2: If page_id specified, find that specific page
+        if not target_page and page_id:
             # Check personal pages
             for page in user.get("facebook_pages", []):
                 if page["id"] == page_id:
