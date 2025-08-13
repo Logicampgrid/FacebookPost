@@ -635,7 +635,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 except Exception as direct_error:
                     print(f"Direct upload error: {direct_error}")
                     
-                    # STRATEGY 1B: Use URL-based posting with link parameter (fallback)
+                    # STRATEGY 1C: Use URL-based posting with link parameter (fallback)
                     try:
                         print("🔄 Trying URL-based media sharing as fallback...")
                         
