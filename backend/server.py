@@ -1213,12 +1213,18 @@ async def create_post(
                     post_data["platform_post_id"] = result["id"]
                     print(f"✅ Post published successfully to {platform} with ID: {result['id']}")
                     
-                    # Add comment with link if comment_link is provided (Facebook only)
-                    if comment_link and comment_link.strip() and platform == "facebook":
-                        print(f"Adding comment with link: {comment_link}")
+                    # Add comment if comment_text or comment_link is provided (Facebook only)
+                    comment_to_add = None
+                    if comment_text and comment_text.strip():
+                        comment_to_add = comment_text.strip()
+                    elif comment_link and comment_link.strip():
+                        comment_to_add = comment_link.strip()
+                    
+                    if comment_to_add and platform == "facebook":
+                        print(f"Adding comment: {comment_to_add}")
                         comment_result = await add_comment_to_facebook_post(
                             result["id"], 
-                            comment_link.strip(), 
+                            comment_to_add, 
                             page_access_token
                         )
                         
