@@ -1218,94 +1218,193 @@ async def publish_post(post_id: str):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Find the correct access token
-        access_token = user["facebook_access_token"]
-        platform = post.get("platform", "facebook")
-        
-        if post.get("business_manager_id"):
-            for bm in user.get("business_managers", []):
-                if bm["id"] == post["business_manager_id"]:
-                    for page in bm.get("pages", []):
-                        if page["id"] == post["target_id"]:
-                            access_token = page.get("access_token", access_token)
-                            break
-                    for ig in bm.get("instagram_accounts", []):
-                        if ig["id"] == post["target_id"]:
-                            access_token = access_token  # Instagram uses connected page token
-                            break
-                    break
-        else:
-            for page in user.get("facebook_pages", []):
-                if page["id"] == post["target_id"]:
-                    access_token = page["access_token"]
-                    break
-        
-        # Create Post object
-        post_obj = Post(**post)
-        
-        # Publish based on platform
-        if platform == "instagram":
-            result = await post_to_instagram(post_obj, access_token)
-        else:  # facebook
-            result = await post_to_facebook(post_obj, access_token)
-        
-        if result and "id" in result:
-            # Update post status
-            await db.posts.update_one(
-                {"id": post_id},
-                {
-                    "$set": {
-                        "status": "published",
-                        "published_at": datetime.utcnow(),
-                        "platform_post_id": result["id"]
+        # Handle cross-posting
+        if post.get("target_id") == "cross-post" and post.get("cross_post_targets"):
+            # Cross-posting to multiple platforms
+            results = []
+            
+            for target in post.get("cross_post_targets", []):
+                try:
+                    # Find the correct access token for this target
+                    access_token = user["facebook_access_token"]
+                    
+                    if post.get("business_manager_id"):
+                        for bm in user.get("business_managers", []):
+                            if bm["id"] == post["business_manager_id"]:
+                                for page in bm.get("pages", []):
+                                    if page["id"] == target["id"]:
+                                        access_token = page.get("access_token", access_token)
+                                        break
+                                for ig in bm.get("instagram_accounts", []):
+                                    if ig["id"] == target["id"]:
+                                        access_token = access_token  # Instagram uses connected page token
+                                        break
+                                break
+                    
+                    # Create post object for this target
+                    target_post = Post(
+                        **{**post, 
+                           "target_id": target["id"], 
+                           "target_name": target.get("name"),
+                           "target_type": target.get("type", "page"),
+                           "platform": target.get("platform", "facebook")}
+                    )
+                    
+                    print(f"🎯 Cross-posting to {target.get('name')} ({target['id']}) on {target.get('platform', 'facebook')}")
+                    
+                    # Publish based on platform
+                    if target.get("platform") == "instagram":
+                        result = await post_to_instagram(target_post, access_token)
+                    else:  # facebook
+                        result = await post_to_facebook(target_post, access_token)
+                    
+                    if result and "id" in result:
+                        results.append({
+                            "target_name": target.get("name"),
+                            "target_id": target["id"],
+                            "platform": target.get("platform", "facebook"),
+                            "status": "success",
+                            "post_id": result["id"]
+                        })
+                        print(f"✅ Successfully posted to {target.get('name')}: {result['id']}")
+                    else:
+                        results.append({
+                            "target_name": target.get("name"),
+                            "target_id": target["id"],
+                            "platform": target.get("platform", "facebook"),
+                            "status": "failed"
+                        })
+                        print(f"❌ Failed to post to {target.get('name')}")
+                        
+                except Exception as target_error:
+                    print(f"Error publishing to {target.get('name', 'unknown')}: {target_error}")
+                    results.append({
+                        "target_name": target.get("name"),
+                        "target_id": target.get("id"),
+                        "platform": target.get("platform", "facebook"),
+                        "status": "error",
+                        "error": str(target_error)
+                    })
+            
+            # Check if at least one publication succeeded
+            successful_posts = [r for r in results if r["status"] == "success"]
+            
+            if successful_posts:
+                # Update post status
+                await db.posts.update_one(
+                    {"id": post_id},
+                    {
+                        "$set": {
+                            "status": "published",
+                            "published_at": datetime.utcnow(),
+                            "cross_post_results": results
+                        }
                     }
-                }
-            )
-            
-            # Add comment if comment_text or comment_link is provided (Facebook only)
-            comment_to_add = None
-            if post.get("comment_text") and post["comment_text"].strip():
-                comment_to_add = post["comment_text"].strip()
-            elif post.get("comment_link") and post["comment_link"].strip():
-                comment_to_add = post["comment_link"].strip()
-            
-            if comment_to_add and platform == "facebook":
-                print(f"Adding comment: {comment_to_add}")
-                comment_result = await add_comment_to_facebook_post(
-                    result["id"], 
-                    comment_to_add, 
-                    access_token
                 )
                 
-                if comment_result and "id" in comment_result:
-                    await db.posts.update_one(
-                        {"id": post_id},
-                        {"$set": {"comment_status": "success"}}
-                    )
-                    print(f"✅ Comment added successfully with ID: {comment_result['id']}")
-                else:
-                    await db.posts.update_one(
-                        {"id": post_id},
-                        {"$set": {"comment_status": "failed"}}
-                    )
-                    print("❌ Failed to add comment to Facebook post")
-            
-            success_message = f"Post published successfully on {platform}"
-            if comment_to_add and platform == "facebook":
-                if post.get("comment_status") == "success":
-                    success_message += " with comment"
-                elif post.get("comment_status") == "failed":
-                    success_message += " but comment failed"
-            
-            return {"message": success_message, "platform_id": result["id"]}
+                success_count = len(successful_posts)
+                total_count = len(results)
+                return {"message": f"Cross-post publié avec succès sur {success_count}/{total_count} plateformes", "results": results}
+            else:
+                await db.posts.update_one(
+                    {"id": post_id},
+                    {"$set": {"status": "failed", "cross_post_results": results}}
+                )
+                raise HTTPException(status_code=400, detail=f"Échec de publication sur toutes les plateformes")
+        
         else:
-            await db.posts.update_one(
-                {"id": post_id},
-                {"$set": {"status": "failed"}}
-            )
-            raise HTTPException(status_code=400, detail=f"Failed to publish post on {platform}")
+            # Single platform posting
+            # Find the correct access token
+            access_token = user["facebook_access_token"]
+            platform = post.get("platform", "facebook")
+            
+            if post.get("business_manager_id"):
+                for bm in user.get("business_managers", []):
+                    if bm["id"] == post["business_manager_id"]:
+                        for page in bm.get("pages", []):
+                            if page["id"] == post["target_id"]:
+                                access_token = page.get("access_token", access_token)
+                                break
+                        for ig in bm.get("instagram_accounts", []):
+                            if ig["id"] == post["target_id"]:
+                                access_token = access_token  # Instagram uses connected page token
+                                break
+                        break
+            else:
+                for page in user.get("facebook_pages", []):
+                    if page["id"] == post["target_id"]:
+                        access_token = page["access_token"]
+                        break
+            
+            # Create Post object
+            post_obj = Post(**post)
+            
+            print(f"🎯 Publishing to {post.get('target_name')} ({post['target_id']}) on {platform}")
+            
+            # Publish based on platform
+            if platform == "instagram":
+                result = await post_to_instagram(post_obj, access_token)
+            else:  # facebook
+                result = await post_to_facebook(post_obj, access_token)
+            
+            if result and "id" in result:
+                # Update post status
+                await db.posts.update_one(
+                    {"id": post_id},
+                    {
+                        "$set": {
+                            "status": "published",
+                            "published_at": datetime.utcnow(),
+                            "platform_post_id": result["id"]
+                        }
+                    }
+                )
+                
+                # Add comment if comment_text or comment_link is provided (Facebook only)
+                comment_to_add = None
+                if post.get("comment_text") and post["comment_text"].strip():
+                    comment_to_add = post["comment_text"].strip()
+                elif post.get("comment_link") and post["comment_link"].strip():
+                    comment_to_add = post["comment_link"].strip()
+                
+                if comment_to_add and platform == "facebook":
+                    print(f"Adding comment: {comment_to_add}")
+                    comment_result = await add_comment_to_facebook_post(
+                        result["id"], 
+                        comment_to_add, 
+                        access_token
+                    )
+                    
+                    if comment_result and "id" in comment_result:
+                        await db.posts.update_one(
+                            {"id": post_id},
+                            {"$set": {"comment_status": "success"}}
+                        )
+                        print(f"✅ Comment added successfully with ID: {comment_result['id']}")
+                    else:
+                        await db.posts.update_one(
+                            {"id": post_id},
+                            {"$set": {"comment_status": "failed"}}
+                        )
+                        print("❌ Failed to add comment to Facebook post")
+                
+                success_message = f"Post published successfully on {platform}"
+                if comment_to_add and platform == "facebook":
+                    if post.get("comment_status") == "success":
+                        success_message += " with comment"
+                    elif post.get("comment_status") == "failed":
+                        success_message += " but comment failed"
+                
+                return {"message": success_message, "platform_id": result["id"]}
+            else:
+                await db.posts.update_one(
+                    {"id": post_id},
+                    {"$set": {"status": "failed"}}
+                )
+                raise HTTPException(status_code=400, detail=f"Failed to publish post on {platform}")
             
     except Exception as e:
+        print(f"💥 Error in publish_post: {e}")
         raise HTTPException(status_code=500, detail=f"Error publishing post: {str(e)}")
 
 @app.delete("/api/posts/{post_id}")
