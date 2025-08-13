@@ -303,6 +303,14 @@ class ProductPublishRequest(BaseModel):
     shop_type: Optional[str] = None  # Target shop: "outdoor", "gizmobbs", "logicantiq"
     api_key: Optional[str] = None  # Optional API key for authentication
 
+# N8N Webhook Models - For direct webhook from N8N transformations
+class N8NWebhookRequest(BaseModel):
+    store: str  # "outdoor", "gizmobbs", "logicantiq"
+    title: str
+    description: str
+    product_url: str
+    image_url: str
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
