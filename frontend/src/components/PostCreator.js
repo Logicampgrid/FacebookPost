@@ -233,6 +233,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
       setMediaFiles([]);
       setScheduledTime('');
       setCommentLink('');
+      setCommentText('');  // Reset comment text
       setSelectedCrossTargets([]);
       setCrossPostMode(false);
       resetRemovedLinks();
