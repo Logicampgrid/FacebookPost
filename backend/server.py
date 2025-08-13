@@ -281,6 +281,7 @@ class ProductPublishRequest(BaseModel):
     product_url: str
     user_id: Optional[str] = None  # Facebook user ID or MongoDB user ID
     page_id: Optional[str] = None  # Specific Facebook page ID to post to
+    shop_type: Optional[str] = None  # Target shop: "outdoor", "gizmobbs", "logicantiq"
     api_key: Optional[str] = None  # Optional API key for authentication
 
 # Facebook/Meta API functions
