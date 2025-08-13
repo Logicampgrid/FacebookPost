@@ -1073,12 +1073,12 @@ async def create_post(
                 print(f"Error extracting metadata for {url}: {e}")
                 continue
         
-        # Determine initial status - if scheduled, keep as scheduled, otherwise publish immediately
+        # Determine initial status - if there are media files to upload, start as draft
         if scheduled_time:
             status = "scheduled"
             scheduled_dt = datetime.fromisoformat(scheduled_time)
         else:
-            status = "published"  # Changed from "draft" to "published"
+            status = "draft"  # Start as draft, will be published after media upload if needed
             scheduled_dt = None
         
         post_data = {
