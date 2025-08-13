@@ -450,27 +450,64 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
             )}
           </div>
 
-          {/* Comment Link - Facebook only */}
+          {/* Comment Section - Facebook only */}
           {((!crossPostMode && selectedPlatform?.platform === 'facebook') || 
             (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Link className="w-4 h-4 inline mr-1" />
-                Lien en commentaire (Facebook uniquement)
-              </label>
-              <input
-                type="url"
-                value={commentLink}
-                onChange={(e) => setCommentLink(e.target.value)}
-                placeholder="https://exemple.com - Sera ajouté automatiquement en commentaire Facebook"
-                className="facebook-input w-full"
-                disabled={loading}
-              />
-              {commentLink && (
-                <div className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                  💡 <strong>Stratégie :</strong> Ce lien sera ajouté automatiquement en commentaire sur Facebook pour maximiser la portée organique
+            <div className="space-y-4">
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Commentaire automatique (Facebook uniquement)
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  💡 <strong>Stratégie :</strong> Ajoutez automatiquement un commentaire après la publication pour maximiser l'engagement et la portée organique sur Facebook
+                </p>
+                
+                {/* Comment Text */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Texte du commentaire
+                  </label>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Écrivez votre commentaire ici... (question, call-to-action, information supplémentaire)"
+                    className="facebook-textarea h-20 text-sm"
+                    disabled={loading}
+                  />
+                  <div className="mt-1 text-xs text-gray-500">
+                    {commentText.length}/500 caractères
+                  </div>
                 </div>
-              )}
+                
+                {/* Comment Link - Legacy support */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Link className="w-4 h-4 inline mr-1" />
+                    Ou un lien en commentaire
+                  </label>
+                  <input
+                    type="url"
+                    value={commentLink}
+                    onChange={(e) => setCommentLink(e.target.value)}
+                    placeholder="https://exemple.com - Sera ajouté en commentaire si aucun texte ci-dessus"
+                    className="facebook-input w-full text-sm"
+                    disabled={loading}
+                  />
+                </div>
+                
+                {(commentText || commentLink) && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800 font-medium mb-1">📝 Aperçu du commentaire :</p>
+                    <div className="text-sm text-blue-700 bg-white p-2 rounded border">
+                      {commentText || commentLink}
+                    </div>
+                    <p className="text-xs text-blue-600 mt-2">
+                      ✨ Ce commentaire sera automatiquement ajouté après la publication sur Facebook
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
