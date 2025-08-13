@@ -518,7 +518,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 local_file_path = None
             else:
                 # Use public domain for sharing links
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://data-enhancer.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://link-image-debug.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
@@ -741,7 +741,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 full_media_url = media_url
             else:
                 # Use public URL instead of localhost
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://data-enhancer.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://link-image-debug.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             # Determine media type
