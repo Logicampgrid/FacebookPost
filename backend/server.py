@@ -81,7 +81,7 @@ SHOP_PAGE_MAPPING = {
     },
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
-        "expected_id": "100092995904169",  # Specific page ID provided
+        "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
         "woocommerce_url": "https://gizmobbs.com"
     },
     "logicantiq": {
