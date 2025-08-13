@@ -279,7 +279,7 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with enhanced link handling and media priority"""
+    """Post content to Facebook page/group with FIXED media priority"""
     try:
         data = {
             "access_token": page_access_token
@@ -288,25 +288,28 @@ async def post_to_facebook(post: Post, page_access_token: str):
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
         
-        # Determine the best posting strategy based on content type
-        # PRIORITY: 1. Uploaded media files, 2. Link images, 3. Text only
+        # FIXED PRIORITY: 1. Uploaded media files (always use picture), 2. Link previews, 3. Text only
         
         if post.media_urls:
-            # Strategy 1: Uploaded media takes highest priority
+            # Strategy 1: Uploaded media has ABSOLUTE priority - always use picture parameter
             media_url = post.media_urls[0]
+            
+            # Convert all uploaded media to picture parameter (not link!)
             if media_url.startswith('http'):
-                data["link"] = media_url
-                if post.content and post.content.strip():
-                    data["message"] = post.content
+                # External URL - use picture parameter to force image display
+                data["picture"] = media_url
             else:
-                # Handle local uploaded files
+                # Local uploaded file
                 data["picture"] = f"http://localhost:8001{media_url}"
-                if post.content and post.content.strip():
-                    data["message"] = post.content
+            
+            # Add text content as message
+            if post.content and post.content.strip():
+                data["message"] = post.content
+            
+            print(f"📸 Using uploaded media with picture parameter: {data.get('picture')}")
                     
         elif urls_in_content:
-            # Strategy 2: Use link sharing for better preview (only if no uploaded media)
-            # Facebook's link sharing provides better image/metadata handling
+            # Strategy 2: Use link sharing for preview ONLY if no uploaded media
             primary_link = urls_in_content[0]
             
             # If content contains only a link (or link + short text), use link parameter
@@ -322,16 +325,20 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Long text with embedded links - use message only
                 data["message"] = post.content
                 data["link"] = primary_link  # Facebook will still show preview
+            
+            print(f"🔗 Using link preview for: {primary_link}")
                 
         else:
-            # Strategy 3: Text-only post (or empty content with no media - should not happen due to validation)
+            # Strategy 3: Text-only post
             if post.content and post.content.strip():
                 data["message"] = post.content
             else:
                 # This shouldn't happen due to frontend validation, but handle gracefully
                 data["message"] = "Post créé depuis Meta Publishing Platform"
+            
+            print("📝 Text-only post")
         
-        print(f"Posting to Facebook with strategy: {data}")
+        print(f"Facebook API request data: {data}")
         
         # Choose endpoint based on target type
         if post.target_type == "group":
