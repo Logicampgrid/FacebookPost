@@ -281,7 +281,7 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with FIXED media handling"""
+    """Post content to Facebook page/group with ENHANCED media handling"""
     try:
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
@@ -290,7 +290,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         data = {"access_token": page_access_token}
         endpoint = ""
         
-        # STRATEGY 1: Media posts (images/videos)
+        # STRATEGY 1: Media posts (images/videos) with IMPROVED handling
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -304,59 +304,124 @@ async def post_to_facebook(post: Post, page_access_token: str):
             
             print(f"📸 Processing media upload: {full_media_url}")
             
-            # For media posts, we need to use the correct Facebook API approach
-            # Facebook doesn't allow direct URL posting via /photos for external URLs
-            # We need to use the /feed endpoint with proper media handling
-            
-            data = {
-                "access_token": page_access_token
-            }
-            
-            # Add message/caption
-            if post.content and post.content.strip():
-                data["message"] = post.content
-            else:
-                data["message"] = "📸 Photo partagée"
-            
-            # Try to download and upload media as multipart
+            # Try multiple Facebook media strategies
             try:
-                img_response = requests.get(full_media_url, timeout=10)
-                if img_response.status_code == 200:
-                    # Use multipart upload for media
-                    files = {'source': ('image.jpg', img_response.content, 'image/jpeg')}
-                    
-                    # Choose correct endpoint
-                    if post.target_type == "group":
+                # Download media to determine type and size
+                media_response = requests.get(full_media_url, timeout=15)
+                if media_response.status_code != 200:
+                    raise Exception(f"Failed to download media: HTTP {media_response.status_code}")
+                
+                media_content = media_response.content
+                content_type = media_response.headers.get('content-type', '').lower()
+                
+                print(f"📊 Media info: size={len(media_content)} bytes, type={content_type}")
+                
+                # Determine media type and file extension
+                is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+                is_image = content_type.startswith('image/') or media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+                
+                # Prepare base data
+                base_data = {
+                    "access_token": page_access_token
+                }
+                
+                # Add message/caption if provided
+                if post.content and post.content.strip():
+                    base_data["message"] = post.content
+                
+                # STRATEGY 1A: Direct multipart upload (preferred for both images and videos)
+                try:
+                    if is_video:
+                        # For videos, use /videos endpoint
+                        files = {'source': ('video.mp4', media_content, 'video/mp4')}
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
+                        print(f"🎥 Uploading video to: {endpoint}")
+                    else:
+                        # For images, use /photos endpoint  
+                        files = {'source': ('image.jpg', media_content, 'image/jpeg')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                    else:  # page
-                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
+                        print(f"📸 Uploading image to: {endpoint}")
                     
-                    print(f"📸 Uploading media to: {endpoint}")
-                    response = requests.post(endpoint, data=data, files=files)
-                    
+                    response = requests.post(endpoint, data=base_data, files=files, timeout=30)
                     result = response.json()
-                    print(f"Facebook API response: {response.status_code} - {result}")
                     
-                    if response.status_code == 200:
+                    print(f"Facebook direct upload response: {response.status_code} - {result}")
+                    
+                    if response.status_code == 200 and 'id' in result:
+                        print("✅ Direct media upload successful!")
                         return result
                     else:
-                        print(f"Media upload failed: {result}")
-                        # Fall back to text post with link to media
-                        raise Exception("Media upload failed, falling back")
+                        print(f"❌ Direct upload failed: {result}")
+                        raise Exception("Direct upload failed")
                         
-                else:
-                    print(f"Failed to download media: {img_response.status_code}")
-                    raise Exception("Media download failed")
+                except Exception as direct_error:
+                    print(f"Direct upload error: {direct_error}")
                     
-            except Exception as media_error:
-                print(f"Media processing error: {media_error}")
-                # Fallback: Post as text with media link mention
+                    # STRATEGY 1B: Use URL-based posting with link parameter
+                    try:
+                        print("🔄 Trying URL-based media sharing...")
+                        
+                        # Use the /feed endpoint with link parameter for better media display
+                        feed_data = {
+                            "access_token": page_access_token,
+                            "link": full_media_url
+                        }
+                        
+                        # Add message
+                        if post.content and post.content.strip():
+                            feed_data["message"] = post.content
+                        else:
+                            feed_data["message"] = "📸 Média partagé" if is_image else "🎥 Vidéo partagée"
+                        
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                        print(f"🔗 Posting media link to: {endpoint}")
+                        
+                        response = requests.post(endpoint, data=feed_data, timeout=15)
+                        result = response.json()
+                        
+                        print(f"Facebook link post response: {response.status_code} - {result}")
+                        
+                        if response.status_code == 200 and 'id' in result:
+                            print("✅ URL-based media sharing successful!")
+                            return result
+                        else:
+                            print(f"❌ URL-based sharing failed: {result}")
+                            raise Exception("URL-based sharing failed")
+                            
+                    except Exception as link_error:
+                        print(f"URL-based sharing error: {link_error}")
+                        
+                        # STRATEGY 1C: Last resort - Optimized text post with media information
+                        print("🔄 Using optimized text fallback...")
+                        
+                        # Create a more engaging text post that encourages Facebook to fetch the media
+                        media_type_text = "🎥 Vidéo" if is_video else "📸 Image"
+                        
+                        fallback_message = ""
+                        if post.content and post.content.strip():
+                            fallback_message = f"{post.content}\n\n{media_type_text}: {full_media_url}"
+                        else:
+                            fallback_message = f"{media_type_text} à découvrir : {full_media_url}"
+                        
+                        data = {
+                            "access_token": page_access_token,
+                            "message": fallback_message,
+                            "link": full_media_url  # Add link parameter to encourage preview
+                        }
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                        print("📝 Using enhanced text fallback with link preview")
+                        
+            except Exception as media_processing_error:
+                print(f"Media processing error: {media_processing_error}")
+                
+                # Final fallback - simple text post
                 data = {
                     "access_token": page_access_token,
-                    "message": f"{post.content}\n\n📸 Media: {full_media_url}" if post.content else f"📸 Media: {full_media_url}"
+                    "message": f"{post.content}\n\nMédia disponible: {full_media_url}" if post.content else f"📱 Contenu multimédia: {full_media_url}",
+                    "link": full_media_url
                 }
                 endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                print("📝 Falling back to text post with media mention")
+                print("📝 Using final text fallback")
                 
         # STRATEGY 2: Link posts (URL sharing)
         elif urls_in_content:
