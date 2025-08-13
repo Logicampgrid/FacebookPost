@@ -1325,6 +1325,34 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
     try:
         print(f"🛍️ Creating product post: {request.title}")
         
+        # Check for duplicate posts to avoid multiple posts for same product
+        duplicate_check = await check_duplicate_product_post(
+            request.title, 
+            request.image_url, 
+            request.shop_type or "unknown"
+        )
+        
+        if duplicate_check["is_duplicate"]:
+            print(f"⚠️ {duplicate_check['message']}")
+            # Return the existing post info instead of creating a new one
+            existing_post = duplicate_check["existing_post"]
+            return {
+                "success": True,
+                "message": f"Product '{request.title}' already posted recently - returning existing post",
+                "facebook_post_id": existing_post.get("facebook_post_id", "unknown"),
+                "post_id": existing_post.get("post_id", "unknown"),
+                "page_name": "Cached Page",
+                "page_id": "cached",
+                "user_name": "System",
+                "media_url": request.image_url,
+                "comment_status": "skipped",
+                "published_at": existing_post.get("created_at", datetime.utcnow()).isoformat(),
+                "duplicate_skipped": True
+            }
+        
+        print(f"✅ {duplicate_check['message']}")
+        content_hash = duplicate_check.get("content_hash")
+        
         # Find user and page for publishing
         user, target_page, access_token = await find_user_and_page_for_publishing(
             request.user_id, request.page_id, request.shop_type
