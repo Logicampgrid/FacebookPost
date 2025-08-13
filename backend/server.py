@@ -507,7 +507,14 @@ async def post_to_facebook(post: Post, page_access_token: str):
         data = {"access_token": page_access_token}
         endpoint = ""
         
-        # STRATEGY 1: Media posts (images/videos) with OPTIMIZED handling
+        # Check if we have a product link to make images clickable
+        product_link = None
+        if post.link_metadata and len(post.link_metadata) > 0:
+            product_link = post.link_metadata[0].get("url")
+        elif post.comment_link:
+            product_link = post.comment_link
+        
+        # STRATEGY 1: Media posts (images/videos) with OPTIMIZED handling and CLICKABLE LINKS
         if post.media_urls:
             media_url = post.media_urls[0]
             
