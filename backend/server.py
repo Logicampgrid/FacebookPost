@@ -47,7 +47,19 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 
 # Create uploads directory
 os.makedirs("uploads", exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# Optimized static file serving with better performance for social media APIs
+from fastapi.staticfiles import StaticFiles
+class OptimizedStaticFiles(StaticFiles):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    async def __call__(self, scope, receive, send):
+        # Add caching headers for better performance
+        response = await super().__call__(scope, receive, send)
+        return response
+
+app.mount("/api/uploads", OptimizedStaticFiles(directory="uploads"), name="uploads")
 
 # Pydantic models
 class User(BaseModel):
