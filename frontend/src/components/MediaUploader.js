@@ -78,7 +78,7 @@ const MediaUploader = ({ files, onFilesChange, disabled }) => {
             {isDragActive ? 'Déposez les fichiers ici...' : 'Cliquez ou glissez des images/vidéos'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Maximum 4 fichiers • PNG, JPG, GIF, MP4, MOV
+            Maximum 4 fichiers • PNG, JPG, GIF, WebP, MP4, MOV, AVI • Max 100MB par fichier
           </p>
         </div>
       </div>
