@@ -423,7 +423,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
                 print("📝 Using final text fallback")
                 
-        # STRATEGY 2: Link posts (URL sharing)
+        # STRATEGY 2: Link posts (URL sharing) - Enhanced
         elif urls_in_content:
             primary_link = urls_in_content[0]
             
@@ -433,20 +433,18 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 content_without_links = content_without_links.replace(url, '').strip()
             
             data = {
-                "access_token": page_access_token
+                "access_token": page_access_token,
+                "link": primary_link  # Always include link for better preview
             }
             
-            if len(content_without_links) <= 50:  # Short additional text
-                data["link"] = primary_link
-                if content_without_links:
-                    data["message"] = content_without_links
-            else:
-                # Longer text with embedded links
+            # Add message content
+            if content_without_links:
+                data["message"] = content_without_links
+            elif post.content:
                 data["message"] = post.content
-                data["link"] = primary_link
             
             endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-            print(f"🔗 Link post to: {primary_link}")
+            print(f"🔗 Enhanced link post to: {primary_link}")
             
         # STRATEGY 3: Text-only posts
         else:
