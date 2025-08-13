@@ -60,7 +60,7 @@ Votre application FacebookPost a été **étendue avec succès** pour recevoir d
 1. Ajoutez un nœud **HTTP Request** dans votre workflow n8n
 2. Configurez les paramètres :
    - **Method** : `POST`
-   - **URL** : `https://link-image-debug.preview.emergentagent.com/api/publishProduct`
+   - **URL** : `https://keep-going-235.preview.emergentagent.com/api/publishProduct`
    - **Headers** : 
      ```json
      {
@@ -124,7 +124,7 @@ Le post généré contiendra :
 
 Pour voir les utilisateurs et pages disponibles :
 ```bash
-GET https://link-image-debug.preview.emergentagent.com/api/publishProduct/config
+GET https://keep-going-235.preview.emergentagent.com/api/publishProduct/config
 ```
 
 ### **Sélection Automatique**
@@ -137,7 +137,7 @@ Si `user_id` et `page_id` ne sont pas spécifiés :
 
 ⚠️ **Important** : Les tokens Facebook expirent régulièrement. Si vous obtenez une erreur `token expired` :
 
-1. Connectez-vous à https://link-image-debug.preview.emergentagent.com
+1. Connectez-vous à https://keep-going-235.preview.emergentagent.com
 2. Reconnectez-vous avec Facebook
 3. Les nouveaux tokens seront automatiquement enregistrés
 
@@ -145,7 +145,7 @@ Si `user_id` et `page_id` ne sont pas spécifiés :
 
 ### **Test Simple**
 ```bash
-curl -X POST "https://link-image-debug.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://keep-going-235.preview.emergentagent.com/api/publishProduct/test" \
 -H "Content-Type: application/json" \
 -d '{
   "title": "Test Produit",
@@ -157,7 +157,7 @@ curl -X POST "https://link-image-debug.preview.emergentagent.com/api/publishProd
 
 ### **Test Complet avec Publication**
 ```bash
-curl -X POST "https://link-image-debug.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://keep-going-235.preview.emergentagent.com/api/publishProduct" \
 -H "Content-Type: application/json" \
 -d '{
   "title": "Chaise Design Premium",
@@ -219,7 +219,7 @@ tail -f /var/log/supervisor/backend.out.log | grep "Product"
 ```json
 {
   "method": "POST",
-  "url": "https://link-image-debug.preview.emergentagent.com/api/publishProduct",
+  "url": "https://keep-going-235.preview.emergentagent.com/api/publishProduct",
   "headers": {
     "Content-Type": "application/json"
   },

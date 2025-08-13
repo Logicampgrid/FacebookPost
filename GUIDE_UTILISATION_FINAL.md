@@ -26,7 +26,7 @@ Votre application FacebookPost a été **AMÉLIORÉE AVEC SUCCÈS** avec toutes 
 
 ### **Endpoint Principal (INCHANGÉ)**
 ```
-POST https://link-image-debug.preview.emergentagent.com/api/publishProduct
+POST https://keep-going-235.preview.emergentagent.com/api/publishProduct
 ```
 
 ### **🆕 NOUVEAU : Sélection Automatique de Page**
@@ -115,14 +115,14 @@ Pour que la sélection automatique fonctionne parfaitement, vous devez :
 ## 📊 **ACCÈS À L'HISTORIQUE WEBHOOK**
 
 ### **Interface Web**
-1. Connectez-vous à https://link-image-debug.preview.emergentagent.com
+1. Connectez-vous à https://keep-going-235.preview.emergentagent.com
 2. Authentifiez-vous avec Facebook
 3. Sélectionnez votre Business Manager
 4. Cliquez sur l'onglet **"Historique Webhook"**
 
 ### **API Directe**
 ```bash
-GET https://link-image-debug.preview.emergentagent.com/api/webhook-history?limit=100
+GET https://keep-going-235.preview.emergentagent.com/api/webhook-history?limit=100
 ```
 
 L'historique affiche :
@@ -157,7 +157,7 @@ L'historique affiche :
 
 ### **Test Simple**
 ```bash
-curl -X POST "https://link-image-debug.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://keep-going-235.preview.emergentagent.com/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Test Produit",
@@ -170,7 +170,7 @@ curl -X POST "https://link-image-debug.preview.emergentagent.com/api/publishProd
 
 ### **Vérification Configuration**
 ```bash
-curl -s "https://link-image-debug.preview.emergentagent.com/api/publishProduct/config" | jq '.shop_types'
+curl -s "https://keep-going-235.preview.emergentagent.com/api/publishProduct/config" | jq '.shop_types'
 ```
 
 ---
