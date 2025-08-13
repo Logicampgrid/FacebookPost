@@ -1104,11 +1104,21 @@ async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = 
             if not user:
                 user = await db.users.find_one({"facebook_id": user_id})
         
-        # If no user specified or found, get the first available user
+        # If no user specified or found, get the first real (non-test) user
         if not user:
-            user = await db.users.find_one({})
+            # First try to find a non-test user with real Facebook access
+            user = await db.users.find_one({
+                "test_user": {"$ne": True},
+                "facebook_access_token": {"$exists": True, "$ne": None}
+            })
+            
             if user:
-                print(f"⚠️ No user specified, using first available user: {user.get('name')}")
+                print(f"✅ Using real Facebook user: {user.get('name')}")
+            else:
+                # Fallback to any user including test users
+                user = await db.users.find_one({})
+                if user:
+                    print(f"⚠️ No real user found, using test user: {user.get('name')}")
         
         if not user:
             raise Exception("No user found for publishing")
