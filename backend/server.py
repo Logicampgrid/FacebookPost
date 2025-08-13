@@ -2004,7 +2004,26 @@ async def webhook_endpoint(request: N8NWebhookRequest):
         # Create and publish the product post using existing logic
         result = await create_product_post(product_request)
         
-        # Return webhook-friendly response
+        # Check if this was a duplicate post
+        if result.get("duplicate_skipped"):
+            return {
+                "success": True,
+                "status": "duplicate_skipped",
+                "message": f"Product '{request.title}' already posted recently - duplicate skipped",
+                "data": {
+                    "facebook_post_id": result["facebook_post_id"],
+                    "post_id": result["post_id"],
+                    "page_name": result.get("page_name", "Cached Page"),
+                    "page_id": result.get("page_id", "cached"),
+                    "store": request.store,
+                    "published_at": result["published_at"],
+                    "comment_added": False,
+                    "duplicate_skipped": True,
+                    "webhook_processed_at": datetime.utcnow().isoformat()
+                }
+            }
+        
+        # Return webhook-friendly response for new posts
         return {
             "success": True,
             "status": "published",
@@ -2017,6 +2036,7 @@ async def webhook_endpoint(request: N8NWebhookRequest):
                 "store": request.store,
                 "published_at": result["published_at"],
                 "comment_added": result["comment_status"] == "success",
+                "duplicate_skipped": False,
                 "webhook_processed_at": datetime.utcnow().isoformat()
             }
         }
