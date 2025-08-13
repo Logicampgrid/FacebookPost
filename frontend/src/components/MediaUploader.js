@@ -13,10 +13,11 @@ const MediaUploader = ({ files, onFilesChange, disabled }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
-      'video/*': ['.mp4', '.mov', '.avi']
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+      'video/*': ['.mp4', '.mov', '.avi', '.mkv', '.webm']
     },
     maxFiles: 4,
+    maxSize: 100 * 1024 * 1024, // 100MB max per file
     disabled
   });
 
