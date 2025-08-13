@@ -1252,9 +1252,9 @@ async def create_post(
                 message = f"Cross-post créé avec succès sur {successful_count}/{len(cross_targets)} plateformes !"
             else:
                 message = f"Post créé et publié avec succès sur {platform.title()} !"
-                if comment_link and post_data.get("comment_status") == "success":
-                    message += " Commentaire avec lien ajouté !"
-                elif comment_link and post_data.get("comment_status") == "failed":
+                if (comment_text or comment_link) and post_data.get("comment_status") == "success":
+                    message += " Commentaire ajouté !"
+                elif (comment_text or comment_link) and post_data.get("comment_status") == "failed":
                     message += " Mais échec de l'ajout du commentaire."
         elif post_data["status"] == "scheduled":
             message = f"Post programmé avec succès pour {scheduled_dt.strftime('%Y-%m-%d %H:%M')}"
