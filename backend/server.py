@@ -64,6 +64,78 @@ class OptimizedStaticFiles(StaticFiles):
 
 app.mount("/api/uploads", OptimizedStaticFiles(directory="uploads"), name="uploads")
 
+# Image optimization functions
+def optimize_image(file_path: str, target_path: str = None, max_size: tuple = (1200, 1200), quality: int = 85):
+    """Optimize image for social media platforms"""
+    try:
+        if target_path is None:
+            target_path = file_path
+            
+        with Image.open(file_path) as img:
+            # Convert to RGB if necessary
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            # Resize if too large
+            if img.size[0] > max_size[0] or img.size[1] > max_size[1]:
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+            
+            # Save with optimization
+            img.save(target_path, 'JPEG', optimize=True, quality=quality)
+            print(f"📈 Image optimized: {file_path} -> {os.path.getsize(target_path)} bytes")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Image optimization failed for {file_path}: {e}")
+        return False
+
+async def download_and_optimize_for_facebook(media_url: str) -> tuple:
+    """Download media and optimize it specifically for Facebook requirements"""
+    try:
+        print(f"🔄 Downloading and optimizing media: {media_url}")
+        
+        # Download the media
+        response = requests.get(media_url, timeout=30)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download media: HTTP {response.status_code}")
+        
+        media_content = response.content
+        content_type = response.headers.get('content-type', '').lower()
+        
+        # Determine media type
+        is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+        is_image = content_type.startswith('image/') or media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+        
+        if is_image:
+            # Optimize image in memory
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                # Save original
+                temp_file.write(media_content)
+                temp_file.flush()
+                
+                # Optimize
+                optimized_path = temp_file.name + '.optimized.jpg'
+                if optimize_image(temp_file.name, optimized_path, max_size=(1200, 1200), quality=90):
+                    with open(optimized_path, 'rb') as f:
+                        optimized_content = f.read()
+                    
+                    # Clean up temp files
+                    os.unlink(temp_file.name)
+                    os.unlink(optimized_path)
+                    
+                    return optimized_content, 'image/jpeg'
+                else:
+                    # Clean up and return original
+                    os.unlink(temp_file.name)
+                    return media_content, content_type
+        else:
+            # Return video as-is (might need video optimization in the future)
+            return media_content, content_type
+            
+    except Exception as e:
+        print(f"❌ Download and optimization failed: {e}")
+        raise e
+
 # Pydantic models
 class User(BaseModel):
     id: Optional[str] = None
