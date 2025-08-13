@@ -1761,6 +1761,7 @@ async def get_publish_config():
                     "description": "Une chaise design moderne et confortable",
                     "image_url": "https://mon-site.com/images/chaise.jpg",
                     "product_url": "https://mon-site.com/produit/chaise-design",
+                    "shop_type": "logicantiq",
                     "user_id": "optional_user_id",
                     "page_id": "optional_page_id",
                     "api_key": "optional_api_key"
