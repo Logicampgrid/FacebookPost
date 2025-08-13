@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -32,6 +32,27 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    # Log webhook requests specifically
+    if request.url.path == "/api/webhook":
+        method = request.method
+        headers = dict(request.headers)
+        print(f"🌐 Webhook request: {method} {request.url}")
+        print(f"📋 Headers: {headers}")
+        
+        if method == "POST":
+            # For POST requests, we'll let the endpoint handle it
+            pass
+        elif method == "GET":
+            print(f"ℹ️  GET request to webhook endpoint - will return info")
+        else:
+            print(f"⚠️  Unexpected method {method} to webhook endpoint")
+    
+    response = await call_next(request)
+    return response
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
