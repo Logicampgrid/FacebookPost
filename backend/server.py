@@ -475,7 +475,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         return None
 
 async def post_to_instagram(post: Post, page_access_token: str):
-    """Post content to Instagram Business account with media priority"""
+    """Post content to Instagram Business account with enhanced media support (images + videos)"""
     try:
         # Instagram posting requires a two-step process:
         # 1. Create media container
@@ -492,44 +492,62 @@ async def post_to_instagram(post: Post, page_access_token: str):
         
         # Handle media - PRIORITY: uploaded files over link images
         media_url = None
+        media_type = "image"  # default
         
         if post.media_urls:
             # Use uploaded media first (highest priority)
             media_url = post.media_urls[0]
             if media_url.startswith('http'):
-                container_data["image_url"] = media_url
+                full_media_url = media_url
             else:
                 # Use public URL instead of localhost
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-simple-17.preview.emergentagent.com")
-                container_data["image_url"] = f"{base_url}{media_url}"
+                full_media_url = f"{base_url}{media_url}"
+            
+            # Determine media type
+            if media_url.lower().endswith(('.mp4', '.mov', '.avi')):
+                media_type = "video"
+                container_data["media_type"] = "VIDEO"
+                container_data["video_url"] = full_media_url
+                print(f"🎥 Instagram video: {full_media_url}")
+            else:
+                media_type = "image"
+                container_data["image_url"] = full_media_url
+                print(f"📸 Instagram image: {full_media_url}")
+                
         elif post.link_metadata:
             # Use link image as fallback if no uploaded media
             for link in post.link_metadata:
                 if link.get("image"):
                     container_data["image_url"] = link["image"]
+                    print(f"🔗 Instagram using link image: {link['image']}")
                     break
         
-        if not container_data.get("image_url"):
-            # Instagram requires media, so we'll skip posts without images
-            print("Instagram requires media - skipping post without images")
+        if not container_data.get("image_url") and not container_data.get("video_url"):
+            # Instagram requires media, so we'll skip posts without images/videos
+            print("❌ Instagram requires media - skipping post without images or videos")
             return None
         
         # Create media container
+        print(f"📱 Creating Instagram media container: {container_data}")
         container_response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
-            data=container_data
+            data=container_data,
+            timeout=30
         )
         
         if container_response.status_code != 200:
-            print(f"Failed to create Instagram media container: {container_response.json()}")
+            print(f"❌ Failed to create Instagram media container: {container_response.json()}")
             return None
         
         container_result = container_response.json()
         container_id = container_result.get("id")
         
         if not container_id:
-            print("No container ID returned from Instagram API")
+            print("❌ No container ID returned from Instagram API")
             return None
+        
+        print(f"✅ Instagram container created: {container_id}")
         
         # Step 2: Publish the container
         publish_data = {
@@ -537,22 +555,25 @@ async def post_to_instagram(post: Post, page_access_token: str):
             "creation_id": container_id
         }
         
+        print("📡 Publishing Instagram container...")
         publish_response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish",
-            data=publish_data
+            data=publish_data,
+            timeout=30
         )
         
         result = publish_response.json()
         print(f"Instagram publish response: {publish_response.status_code} - {result}")
         
         if publish_response.status_code == 200:
+            print("✅ Instagram post published successfully!")
             return result
         else:
-            print(f"Instagram publish error: {result}")
+            print(f"❌ Instagram publish error: {result}")
             return None
             
     except Exception as e:
-        print(f"Error posting to Instagram: {e}")
+        print(f"💥 Error posting to Instagram: {e}")
         return None
 
 async def cross_post_to_meta(post: Post, access_tokens: dict):
