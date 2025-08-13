@@ -1519,6 +1519,76 @@ async def get_publish_config():
         print(f"❌ Error getting publish config: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting configuration: {str(e)}")
 
+@app.post("/api/publishProduct/test")
+async def test_publish_product(request: ProductPublishRequest):
+    """
+    Test endpoint for n8n integration - simulates publishing without actually posting to Facebook
+    Useful for testing the workflow without requiring valid Facebook tokens
+    """
+    try:
+        print(f"🧪 TEST MODE: Product Publishing Request: {request.title}")
+        
+        # Validate required fields (same as real endpoint)
+        if not request.title or not request.title.strip():
+            raise HTTPException(status_code=400, detail="Product title is required")
+        
+        if not request.description or not request.description.strip():
+            raise HTTPException(status_code=400, detail="Product description is required")
+        
+        if not request.image_url or not request.image_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product image URL is required")
+        
+        if not request.product_url or not request.product_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product URL is required")
+        
+        # Test image download
+        try:
+            media_url = await download_product_image(request.image_url)
+            print(f"✅ Image downloaded successfully: {media_url}")
+        except Exception as img_error:
+            raise HTTPException(status_code=400, detail=f"Failed to download image: {str(img_error)}")
+        
+        # Simulate finding user and page
+        try:
+            user, target_page, access_token = await find_user_and_page_for_publishing(
+                request.user_id, request.page_id
+            )
+            print(f"✅ Found user and page: {user.get('name')} -> {target_page['name']}")
+        except Exception as user_error:
+            raise HTTPException(status_code=400, detail=f"User/Page error: {str(user_error)}")
+        
+        # Create simulated post data
+        post_content = f"{request.title}\n\n{request.description}"
+        fake_facebook_post_id = f"test_{uuid.uuid4().hex[:8]}"
+        
+        # Simulate success response
+        return {
+            "status": "success",
+            "message": f"TEST MODE: Product '{request.title}' would be published successfully to Facebook",
+            "test_mode": True,
+            "data": {
+                "facebook_post_id": fake_facebook_post_id,
+                "post_id": str(uuid.uuid4()),
+                "page_name": target_page["name"],
+                "page_id": target_page["id"],
+                "user_name": user.get("name"),
+                "published_at": datetime.utcnow().isoformat(),
+                "comment_added": True,
+                "product_title": request.title,
+                "product_url": request.product_url,
+                "media_url": media_url,
+                "post_content": post_content,
+                "warning": "This was a test - no actual Facebook post was created"
+            }
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Error in test_publish_product: {e}")
+        raise HTTPException(status_code=500, detail=f"Test error: {str(e)}")
+
 @app.post("/api/auth/facebook")
 async def facebook_auth(auth_request: FacebookAuthRequest):
     """Authenticate user with Facebook and load all Meta platforms"""
