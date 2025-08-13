@@ -16,6 +16,9 @@ import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from bson import ObjectId
+from PIL import Image
+import io
+import tempfile
 
 load_dotenv()
 
