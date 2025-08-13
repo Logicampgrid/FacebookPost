@@ -226,6 +226,26 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
             headers: { 'Content-Type': 'multipart/form-data' }
           });
         }
+        
+        // Publish the post after media upload (if not scheduled)
+        if (!scheduledTime) {
+          try {
+            const publishResponse = await axios.post(`${API_BASE}/api/posts/${newPost.id}/publish`);
+            console.log('Post published after media upload:', publishResponse.data);
+          } catch (publishError) {
+            console.error('Error publishing post after media upload:', publishError);
+            alert('Post créé avec médias mais échec de publication: ' + (publishError.response?.data?.detail || 'Erreur inconnue'));
+          }
+        }
+      } else if (!scheduledTime) {
+        // No media files, publish immediately
+        try {
+          const publishResponse = await axios.post(`${API_BASE}/api/posts/${newPost.id}/publish`);
+          console.log('Post published immediately:', publishResponse.data);
+        } catch (publishError) {
+          console.error('Error publishing post:', publishError);
+          alert('Post créé mais échec de publication: ' + (publishError.response?.data?.detail || 'Erreur inconnue'));
+        }
       }
 
       // Reset form
