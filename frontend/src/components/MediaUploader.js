@@ -37,29 +37,45 @@ const MediaUploader = ({ files, onFilesChange, disabled }) => {
 
   const getFilePreview = (file) => {
     const url = URL.createObjectURL(file);
+    const fileSize = (file.size / (1024 * 1024)).toFixed(1); // Size in MB
     
     if (file.type.startsWith('image/')) {
       return (
-        <img 
-          src={url} 
-          alt="Preview" 
-          className="w-full h-20 object-cover rounded"
-          onLoad={() => URL.revokeObjectURL(url)}
-        />
+        <div className="relative">
+          <img 
+            src={url} 
+            alt="Preview" 
+            className="w-full h-20 object-cover rounded"
+            onLoad={() => URL.revokeObjectURL(url)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b">
+            📸 {fileSize}MB
+          </div>
+        </div>
       );
     } else if (file.type.startsWith('video/')) {
       return (
-        <video 
-          src={url} 
-          className="w-full h-20 object-cover rounded"
-          onLoad={() => URL.revokeObjectURL(url)}
-        />
+        <div className="relative">
+          <video 
+            src={url} 
+            className="w-full h-20 object-cover rounded"
+            onLoadedData={() => URL.revokeObjectURL(url)}
+            muted
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center rounded">
+            <Video className="w-6 h-6 text-white" />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b">
+            🎥 {fileSize}MB
+          </div>
+        </div>
       );
     }
     
     return (
-      <div className="w-full h-20 bg-gray-100 rounded flex items-center justify-center">
+      <div className="w-full h-20 bg-gray-100 rounded flex items-center justify-center flex-col">
         {getFileIcon(file)}
+        <span className="text-xs text-gray-500 mt-1">{fileSize}MB</span>
       </div>
     );
   };
