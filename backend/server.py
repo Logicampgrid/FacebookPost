@@ -1559,6 +1559,69 @@ async def cleanup_test_user():
         print(f"❌ Error cleaning up test data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to cleanup test data: {str(e)}")
 
+@app.get("/api/webhook-history")
+async def get_webhook_history(limit: int = 50):
+    """
+    Get history of webhook publications from N8N
+    Returns the latest webhook publications with details
+    """
+    try:
+        print(f"📊 Fetching webhook history (limit: {limit})")
+        
+        # Query posts from n8n integration, sorted by creation date (newest first)
+        cursor = db.posts.find(
+            {"source": "n8n_integration"},
+            {
+                "id": 1,
+                "content": 1,
+                "target_name": 1,
+                "platform": 1,
+                "status": 1,
+                "comment_status": 1,
+                "created_at": 1,
+                "published_at": 1,
+                "shop_type": 1,
+                "webhook_data": 1,
+                "facebook_post_id": 1,
+                "_id": 0
+            }
+        ).sort("created_at", -1).limit(limit)
+        
+        webhook_posts = []
+        async for post in cursor:
+            webhook_data = post.get("webhook_data", {})
+            
+            webhook_posts.append({
+                "id": post.get("id"),
+                "title": webhook_data.get("title", "No title"),
+                "description": webhook_data.get("description", "No description"),
+                "product_url": webhook_data.get("product_url"),
+                "image_url": webhook_data.get("image_url"),
+                "shop_type": post.get("shop_type", "unknown"),
+                "page_name": post.get("target_name"),
+                "platform": post.get("platform", "facebook"),
+                "status": post.get("status", "unknown"),
+                "comment_added": post.get("comment_status") == "success",
+                "facebook_post_id": post.get("facebook_post_id"),
+                "received_at": webhook_data.get("received_at", post.get("created_at")),
+                "published_at": post.get("published_at")
+            })
+        
+        return {
+            "status": "success",
+            "message": f"Found {len(webhook_posts)} webhook publications",
+            "data": {
+                "webhook_posts": webhook_posts,
+                "total_count": len(webhook_posts),
+                "shop_types_available": list(SHOP_PAGE_MAPPING.keys()),
+                "shop_mapping": SHOP_PAGE_MAPPING
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fetching webhook history: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching webhook history: {str(e)}")
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
