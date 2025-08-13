@@ -1465,7 +1465,9 @@ async def cleanup_test_user():
         print(f"❌ Error cleaning up test data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to cleanup test data: {str(e)}")
 
-# N8N Integration Endpoint
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow()}
 @app.post("/api/publishProduct")
 async def publish_product_from_n8n(request: ProductPublishRequest):
     """
