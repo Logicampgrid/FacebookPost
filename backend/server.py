@@ -642,14 +642,17 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         # Use the /feed endpoint with link parameter for better media display
                         feed_data = {
                             "access_token": page_access_token,
-                            "link": full_media_url
+                            "link": product_link if product_link else full_media_url
                         }
                         
                         # Add message
                         if post.content and post.content.strip():
                             feed_data["message"] = post.content
                         else:
-                            feed_data["message"] = "📸 Média partagé (optimisé)" if is_image else "🎥 Vidéo partagée"
+                            if product_link:
+                                feed_data["message"] = "📸 Découvrez ce produit" if is_image else "🎥 Regardez cette vidéo"
+                            else:
+                                feed_data["message"] = "📸 Média partagé (optimisé)" if is_image else "🎥 Vidéo partagée"
                         
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
                         print(f"🔗 Posting media link to: {endpoint}")
