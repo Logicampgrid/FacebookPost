@@ -1015,7 +1015,49 @@ async def download_product_image(image_url: str) -> str:
         print(f"❌ Error downloading product image: {e}")
         raise Exception(f"Failed to download product image: {str(e)}")
 
-async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = None):
+async def find_page_by_shop_type(user, shop_type: str):
+    """Find the appropriate Facebook page based on shop type"""
+    try:
+        if not shop_type or shop_type not in SHOP_PAGE_MAPPING:
+            return None
+            
+        shop_config = SHOP_PAGE_MAPPING[shop_type]
+        expected_name = shop_config["name"]
+        expected_id = shop_config.get("expected_id")
+        
+        print(f"🔍 Looking for page: {expected_name} (shop_type: {shop_type})")
+        
+        # Search in user's personal pages first
+        for page in user.get("facebook_pages", []):
+            # Check by ID if available
+            if expected_id and page["id"] == expected_id:
+                print(f"✅ Found page by ID in personal pages: {page['name']} ({page['id']})")
+                return page
+            # Check by name (case insensitive, partial match)
+            if expected_name.lower() in page["name"].lower():
+                print(f"✅ Found page by name in personal pages: {page['name']} ({page['id']})")
+                return page
+        
+        # Search in business manager pages
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                # Check by ID if available
+                if expected_id and page["id"] == expected_id:
+                    print(f"✅ Found page by ID in business pages: {page['name']} ({page['id']})")
+                    return page
+                # Check by name (case insensitive, partial match)
+                if expected_name.lower() in page["name"].lower():
+                    print(f"✅ Found page by name in business pages: {page['name']} ({page['id']})")
+                    return page
+        
+        print(f"❌ Page not found for shop_type '{shop_type}' (looking for: {expected_name})")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Error finding page by shop type: {e}")
+        return None
+
+async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = None, shop_type: str = None):
     """Find user and determine which page to publish to"""
     try:
         # Try to find user by different methods
