@@ -1491,7 +1491,7 @@ async def setup_test_user():
                 }
             }
         
-        # Create test user with mock Facebook pages
+        # Create test user with mock Facebook pages matching our shop types
         test_user = {
             "name": "Test User N8N Integration",
             "email": "test-n8n@example.com", 
@@ -1499,16 +1499,22 @@ async def setup_test_user():
             "facebook_access_token": "test_access_token_n8n",
             "facebook_pages": [
                 {
-                    "id": "test_page_n8n_1",
-                    "name": "Test Page N8N - Produits",
-                    "access_token": "test_page_token_n8n_1",
+                    "id": "test_page_gizmobbs",
+                    "name": "Gizmobbs",  # Exact match for shop mapping
+                    "access_token": "test_page_token_gizmobbs",
+                    "category": "Shopping & Retail"
+                },
+                {
+                    "id": "test_page_logicantiq",
+                    "name": "LogicAntiq",  # Exact match for shop mapping
+                    "access_token": "test_page_token_logicantiq",
                     "category": "Product/Service"
                 },
                 {
-                    "id": "test_page_n8n_2", 
-                    "name": "Test Page N8N - E-commerce",
-                    "access_token": "test_page_token_n8n_2",
-                    "category": "Shopping & Retail"
+                    "id": "test_page_outdoor",
+                    "name": "LogicampOutdoor",  # Exact match for shop mapping
+                    "access_token": "test_page_token_outdoor",
+                    "category": "Outdoor Gear"
                 }
             ],
             "facebook_groups": [],
