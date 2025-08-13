@@ -1115,7 +1115,7 @@ async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = 
                     if target_page:
                         break
         
-        # If no specific page or page not found, use first available page
+        # Priority 3: If no specific page or page not found, use first available page
         if not target_page:
             # Try business manager pages first
             for bm in user.get("business_managers", []):
