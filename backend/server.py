@@ -1102,142 +1102,10 @@ async def create_post(
             "created_at": datetime.utcnow()
         }
         
-        # If not scheduled, publish immediately
+        # If not scheduled and no media files expected, publish immediately
         if not scheduled_time:
-            print(f"Publishing immediately to {platform}...")
-            
-            # Get user to find access token
-            try:
-                if len(user_id) == 24:
-                    user = await db.users.find_one({"_id": ObjectId(user_id)})
-                else:
-                    user = await db.users.find_one({"_id": user_id})
-            except Exception:
-                user = await db.users.find_one({"_id": user_id}) or await db.users.find_one({"facebook_id": user_id})
-                
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            
-            # Find the correct access token
-            access_token = user["facebook_access_token"]
-            
-            # If cross-posting, handle multiple platforms
-            if cross_targets:
-                # Build access tokens dict for cross-posting
-                access_tokens = {}
-                
-                for target in cross_targets:
-                    target_id_cross = target.get("id")
-                    target_type_cross = target.get("type")
-                    
-                    if business_manager_id:
-                        # Look in business manager assets
-                        for bm in user.get("business_managers", []):
-                            if bm["id"] == business_manager_id:
-                                # Check pages
-                                for page in bm.get("pages", []):
-                                    if page["id"] == target_id_cross:
-                                        access_tokens[target_id_cross] = page.get("access_token", access_token)
-                                        break
-                                # Check Instagram accounts
-                                for ig in bm.get("instagram_accounts", []):
-                                    if ig["id"] == target_id_cross:
-                                        # Instagram uses the connected page's token
-                                        access_tokens[target_id_cross] = access_token
-                                        break
-                                break
-                    else:
-                        # Look in personal assets
-                        for page in user.get("facebook_pages", []):
-                            if page["id"] == target_id_cross:
-                                access_tokens[target_id_cross] = page["access_token"]
-                                break
-                
-                # Create Post object for cross-posting
-                post_obj = Post(**post_data)
-                
-                # Cross-post to multiple platforms
-                cross_results = await cross_post_to_meta(post_obj, access_tokens)
-                
-                successful_posts = [r for r in cross_results if r["status"] == "success"]
-                failed_posts = [r for r in cross_results if r["status"] != "success"]
-                
-                if successful_posts:
-                    post_data["status"] = "published"
-                    post_data["published_at"] = datetime.utcnow()
-                    post_data["cross_post_results"] = cross_results
-                    print(f"✅ Cross-posted successfully to {len(successful_posts)} platforms")
-                else:
-                    post_data["status"] = "failed"
-                    post_data["cross_post_results"] = cross_results
-                    print("❌ All cross-posts failed")
-                    
-            else:
-                # Single platform posting
-                # Find the correct page access token
-                page_access_token = access_token
-                
-                if business_manager_id:
-                    for bm in user.get("business_managers", []):
-                        if bm["id"] == business_manager_id:
-                            # Check pages
-                            for page in bm.get("pages", []):
-                                if page["id"] == target_id:
-                                    page_access_token = page.get("access_token", access_token)
-                                    break
-                            # Check Instagram accounts
-                            for ig in bm.get("instagram_accounts", []):
-                                if ig["id"] == target_id:
-                                    page_access_token = access_token  # Instagram uses connected page token
-                                    break
-                            break
-                else:
-                    # Look in personal assets
-                    for page in user.get("facebook_pages", []):
-                        if page["id"] == target_id:
-                            page_access_token = page["access_token"]
-                            break
-                
-                # Create Post object
-                post_obj = Post(**post_data)
-                
-                # Publish based on platform
-                if platform == "instagram":
-                    result = await post_to_instagram(post_obj, page_access_token)
-                else:  # facebook (pages or groups)
-                    result = await post_to_facebook(post_obj, page_access_token)
-                
-                if result and "id" in result:
-                    post_data["status"] = "published"
-                    post_data["published_at"] = datetime.utcnow()
-                    post_data["platform_post_id"] = result["id"]
-                    print(f"✅ Post published successfully to {platform} with ID: {result['id']}")
-                    
-                    # Add comment if comment_text or comment_link is provided (Facebook only)
-                    comment_to_add = None
-                    if comment_text and comment_text.strip():
-                        comment_to_add = comment_text.strip()
-                    elif comment_link and comment_link.strip():
-                        comment_to_add = comment_link.strip()
-                    
-                    if comment_to_add and platform == "facebook":
-                        print(f"Adding comment: {comment_to_add}")
-                        comment_result = await add_comment_to_facebook_post(
-                            result["id"], 
-                            comment_to_add, 
-                            page_access_token
-                        )
-                        
-                        if comment_result and "id" in comment_result:
-                            post_data["comment_status"] = "success"
-                            print(f"✅ Comment added successfully with ID: {comment_result['id']}")
-                        else:
-                            post_data["comment_status"] = "failed"
-                            print("❌ Failed to add comment to Facebook post")
-                            
-                else:
-                    post_data["status"] = "failed"
-                    print(f"❌ Failed to publish post to {platform}")
+            # For now, just save as draft - will be published via separate endpoint or after media upload
+            print(f"Post created as draft, will be published after media upload or via publish endpoint")
         
         # Save to database
         result = await db.posts.insert_one(post_data)
@@ -1246,20 +1114,10 @@ async def create_post(
         print(f"Post created with {len(link_metadata)} link metadata entries")
         
         # Return appropriate message based on status
-        if post_data["status"] == "published":
-            if cross_targets:
-                successful_count = len([r for r in post_data.get("cross_post_results", []) if r["status"] == "success"])
-                message = f"Cross-post créé avec succès sur {successful_count}/{len(cross_targets)} plateformes !"
-            else:
-                message = f"Post créé et publié avec succès sur {platform.title()} !"
-                if (comment_text or comment_link) and post_data.get("comment_status") == "success":
-                    message += " Commentaire ajouté !"
-                elif (comment_text or comment_link) and post_data.get("comment_status") == "failed":
-                    message += " Mais échec de l'ajout du commentaire."
-        elif post_data["status"] == "scheduled":
+        if post_data["status"] == "scheduled":
             message = f"Post programmé avec succès pour {scheduled_dt.strftime('%Y-%m-%d %H:%M')}"
         else:
-            message = f"Post créé mais échec de publication sur {platform}"
+            message = f"Post créé avec succès ! Utilisez le bouton de publication pour le publier."
         
         return {"message": message, "post": post_data}
         
