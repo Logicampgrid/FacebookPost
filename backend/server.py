@@ -51,6 +51,25 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 # Create uploads directory
 os.makedirs("uploads", exist_ok=True)
 
+# Shop Type to Page Mapping Configuration
+SHOP_PAGE_MAPPING = {
+    "outdoor": {
+        "name": "LogicampOutdoor",
+        "expected_id": None,  # To be configured when page is added
+        "woocommerce_url": "https://logicampoutdoor.com"
+    },
+    "gizmobbs": {
+        "name": "Gizmobbs", 
+        "expected_id": None,  # To be identified
+        "woocommerce_url": "https://gizmobbs.com"
+    },
+    "logicantiq": {
+        "name": "LogicAntiq",
+        "expected_id": "210654558802531",  # Existing page ID
+        "woocommerce_url": "https://logicantiq.com"
+    }
+}
+
 # Optimized static file serving with better performance for social media APIs
 from fastapi.staticfiles import StaticFiles
 class OptimizedStaticFiles(StaticFiles):
