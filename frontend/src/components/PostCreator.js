@@ -13,6 +13,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
   const [mediaFiles, setMediaFiles] = useState([]);
   const [scheduledTime, setScheduledTime] = useState('');
   const [commentLink, setCommentLink] = useState('');
+  const [commentText, setCommentText] = useState('');  // New state for comment text
   const [crossPostMode, setCrossPostMode] = useState(false);
   const [selectedCrossTargets, setSelectedCrossTargets] = useState([]);
   const [loading, setLoading] = useState(false);
