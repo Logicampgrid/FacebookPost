@@ -1750,6 +1750,7 @@ async def get_publish_config():
             "users": users,
             "total_pages": sum(len(user["pages"]) for user in users),
             "endpoint_url": "/api/publishProduct",
+            "shop_types": SHOP_PAGE_MAPPING,
             "usage_example": {
                 "method": "POST",
                 "url": "/api/publishProduct",
