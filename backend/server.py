@@ -576,7 +576,38 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 if post.content and post.content.strip():
                     base_data["message"] = post.content
                 
-                # STRATEGY 1A: Direct multipart upload with optimized content (preferred)
+                # STRATEGY 1A: Clickable media post using feed endpoint (preferred for product links)
+                if product_link and is_image:
+                    try:
+                        print(f"🔗 Creating clickable image post with product link: {product_link}")
+                        
+                        # Use feed endpoint with link to make image clickable
+                        feed_data = {
+                            "access_token": page_access_token,
+                            "link": product_link,
+                            "message": post.content if post.content and post.content.strip() else f"📸 Découvrez ce produit"
+                        }
+                        
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                        print(f"🔗 Creating clickable post to: {endpoint}")
+                        
+                        response = requests.post(endpoint, data=feed_data, timeout=60)
+                        result = response.json()
+                        
+                        print(f"Facebook clickable post response: {response.status_code} - {result}")
+                        
+                        if response.status_code == 200 and 'id' in result:
+                            print("✅ Clickable image post created successfully!")
+                            return result
+                        else:
+                            print(f"❌ Clickable post failed: {result}")
+                            raise Exception("Clickable post failed")
+                            
+                    except Exception as clickable_error:
+                        print(f"Clickable post error: {clickable_error}")
+                        print("🔄 Falling back to direct upload...")
+                
+                # STRATEGY 1B: Direct multipart upload (fallback or for videos)
                 try:
                     if is_video:
                         # For videos, use /videos endpoint
