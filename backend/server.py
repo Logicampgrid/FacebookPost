@@ -1371,6 +1371,84 @@ async def debug_facebook_config():
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
 
+# N8N Integration Endpoint
+@app.post("/api/publishProduct")
+async def publish_product_from_n8n(request: ProductPublishRequest):
+    """
+    Publish a product to Facebook from n8n integration
+    
+    This endpoint receives product data from n8n and automatically publishes it to Facebook.
+    The post will include the product image, title, description, and a link to the product page.
+    """
+    try:
+        print(f"🚀 N8N Product Publishing Request: {request.title}")
+        
+        # Validate required fields
+        if not request.title or not request.title.strip():
+            raise HTTPException(status_code=400, detail="Product title is required")
+        
+        if not request.description or not request.description.strip():
+            raise HTTPException(status_code=400, detail="Product description is required")
+        
+        if not request.image_url or not request.image_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product image URL is required")
+        
+        if not request.product_url or not request.product_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product URL is required")
+        
+        # Optional API key validation (you can implement your own logic here)
+        if request.api_key:
+            # Add your API key validation logic here
+            # For now, we'll accept any API key, but you can implement proper validation
+            print(f"🔑 API Key provided: {request.api_key[:10]}...")
+        
+        # Create and publish the product post
+        result = await create_product_post(request)
+        
+        # Return success response
+        return {
+            "status": "success",
+            "message": result["message"],
+            "data": {
+                "facebook_post_id": result["facebook_post_id"],
+                "post_id": result["post_id"],
+                "page_name": result["page_name"],
+                "page_id": result["page_id"],
+                "user_name": result["user_name"],
+                "published_at": result["published_at"],
+                "comment_added": result["comment_status"] == "success",
+                "product_title": request.title,
+                "product_url": request.product_url
+            }
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Error in publish_product_from_n8n: {e}")
+        
+        # Return detailed error information
+        error_message = str(e)
+        error_type = "unknown_error"
+        
+        if "Failed to download" in error_message:
+            error_type = "image_download_error"
+        elif "No user found" in error_message or "No Facebook page" in error_message:
+            error_type = "authentication_error"
+        elif "Facebook" in error_message:
+            error_type = "facebook_api_error"
+        
+        raise HTTPException(
+            status_code=500, 
+            detail={
+                "error": error_message,
+                "error_type": error_type,
+                "product_title": request.title if hasattr(request, 'title') else "Unknown",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
 @app.post("/api/auth/facebook")
 async def facebook_auth(auth_request: FacebookAuthRequest):
     """Authenticate user with Facebook and load all Meta platforms"""
