@@ -672,7 +672,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     except Exception as link_error:
                         print(f"URL-based sharing error: {link_error}")
                         
-                        # STRATEGY 1C: Last resort - Optimized text post with media information
+                        # STRATEGY 1D: Last resort - Optimized text post with media information
                         print("🔄 Using optimized text fallback...")
                         
                         # Create a more engaging text post that encourages Facebook to fetch the media
@@ -680,14 +680,20 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         
                         fallback_message = ""
                         if post.content and post.content.strip():
-                            fallback_message = f"{post.content}\n\n{media_type_text}: {full_media_url}"
+                            if product_link:
+                                fallback_message = f"{post.content}\n\n🛒 Voir le produit: {product_link}"
+                            else:
+                                fallback_message = f"{post.content}\n\n{media_type_text}: {full_media_url}"
                         else:
-                            fallback_message = f"{media_type_text} à découvrir : {full_media_url}"
+                            if product_link:
+                                fallback_message = f"{media_type_text} - 🛒 Voir le produit : {product_link}"
+                            else:
+                                fallback_message = f"{media_type_text} à découvrir : {full_media_url}"
                         
                         data = {
                             "access_token": page_access_token,
                             "message": fallback_message,
-                            "link": full_media_url  # Add link parameter to encourage preview
+                            "link": product_link if product_link else full_media_url  # Add link parameter to encourage preview
                         }
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
                         print("📝 Using enhanced text fallback with link preview")
