@@ -1449,6 +1449,76 @@ async def publish_product_from_n8n(request: ProductPublishRequest):
             }
         )
 
+@app.get("/api/publishProduct/config")
+async def get_publish_config():
+    """
+    Get configuration information for n8n integration
+    Returns available users and their Facebook pages for publishing
+    """
+    try:
+        users = []
+        
+        # Get all users with Facebook integration
+        async for user in db.users.find({}):
+            user_info = {
+                "user_id": str(user["_id"]),
+                "facebook_id": user.get("facebook_id"),
+                "name": user.get("name"),
+                "email": user.get("email", ""),
+                "pages": []
+            }
+            
+            # Add personal pages
+            for page in user.get("facebook_pages", []):
+                user_info["pages"].append({
+                    "id": page["id"],
+                    "name": page["name"],
+                    "category": page.get("category", "Personal Page"),
+                    "type": "personal"
+                })
+            
+            # Add business manager pages
+            for bm in user.get("business_managers", []):
+                for page in bm.get("pages", []):
+                    user_info["pages"].append({
+                        "id": page["id"],
+                        "name": page["name"],
+                        "category": page.get("category", "Business Page"),
+                        "type": "business",
+                        "business_manager": bm["name"]
+                    })
+            
+            if user_info["pages"]:  # Only include users with pages
+                users.append(user_info)
+        
+        return {
+            "status": "success",
+            "message": f"Found {len(users)} users with Facebook pages",
+            "users": users,
+            "total_pages": sum(len(user["pages"]) for user in users),
+            "endpoint_url": "/api/publishProduct",
+            "usage_example": {
+                "method": "POST",
+                "url": "/api/publishProduct",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "title": "Chaise design",
+                    "description": "Une chaise design moderne et confortable",
+                    "image_url": "https://mon-site.com/images/chaise.jpg",
+                    "product_url": "https://mon-site.com/produit/chaise-design",
+                    "user_id": "optional_user_id",
+                    "page_id": "optional_page_id",
+                    "api_key": "optional_api_key"
+                }
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting publish config: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting configuration: {str(e)}")
+
 @app.post("/api/auth/facebook")
 async def facebook_auth(auth_request: FacebookAuthRequest):
     """Authenticate user with Facebook and load all Meta platforms"""
