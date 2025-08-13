@@ -1343,10 +1343,10 @@ async def create_post(
 
 @app.post("/api/posts/{post_id}/media")
 async def upload_media(post_id: str, file: UploadFile = File(...)):
-    """Upload media for a post"""
+    """Upload and optimize media for a post"""
     try:
         # Generate unique filename
-        file_extension = file.filename.split(".")[-1]
+        file_extension = file.filename.split(".")[-1].lower()
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         file_path = f"uploads/{unique_filename}"
         
@@ -1355,6 +1355,21 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
             content = await file.read()
             await f.write(content)
         
+        # Optimize image if it's an image file
+        if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+            print(f"🔧 Optimizing uploaded image: {file_path}")
+            optimized_filename = f"{uuid.uuid4()}.jpg"
+            optimized_path = f"uploads/{optimized_filename}"
+            
+            if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
+                # Remove original and use optimized version
+                os.remove(file_path)
+                file_path = optimized_path
+                unique_filename = optimized_filename
+                print(f"✅ Image optimized and saved as: {unique_filename}")
+            else:
+                print(f"⚠️ Image optimization failed, using original: {unique_filename}")
+        
         # Update post with media URL
         media_url = f"/api/uploads/{unique_filename}"
         await db.posts.update_one(
@@ -1362,8 +1377,13 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
             {"$push": {"media_urls": media_url}}
         )
         
-        return {"message": "Media uploaded successfully", "url": media_url}
+        # Get file size for logging
+        file_size = os.path.getsize(file_path)
+        print(f"📁 Media uploaded: {unique_filename} ({file_size} bytes)")
+        
+        return {"message": "Media uploaded and optimized successfully", "url": media_url, "size": file_size}
     except Exception as e:
+        print(f"❌ Error uploading media: {e}")
         raise HTTPException(status_code=500, detail=f"Error uploading media: {str(e)}")
 
 @app.post("/api/posts/{post_id}/publish")
