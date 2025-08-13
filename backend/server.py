@@ -457,7 +457,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 full_media_url = media_url
             else:
                 # Use public domain instead of localhost for Facebook API access
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://berger-dog.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://just-ok-3.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             print(f"📸 Processing OPTIMIZED media upload: {full_media_url}")
@@ -654,7 +654,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 full_media_url = media_url
             else:
                 # Use public URL instead of localhost
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://berger-dog.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://just-ok-3.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             # Determine media type
