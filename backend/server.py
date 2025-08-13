@@ -294,11 +294,13 @@ async def post_to_facebook(post: Post, page_access_token: str):
         if post.media_urls:
             media_url = post.media_urls[0]
             
-            # Get full media URL
+            # Get full media URL - use environment variable or construct proper public URL
             if media_url.startswith('http'):
                 full_media_url = media_url
             else:
-                full_media_url = f"http://localhost:8001{media_url}"
+                # Use public domain instead of localhost for Facebook API access
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://social-media-share.preview.emergentagent.com")
+                full_media_url = f"{base_url}{media_url}"
             
             print(f"📸 Processing media upload: {full_media_url}")
             
