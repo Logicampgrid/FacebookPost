@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Calendar, Send, Building2, Instagram, MessageSquare } from 'lucide-react';
+import { Users, Calendar, Send, Building2, Instagram, MessageSquare, Package } from 'lucide-react';
 import PostCreator from './components/PostCreator';
 import PostList from './components/PostList';
 import FacebookLogin from './components/FacebookLogin';
 import PlatformSelector from './components/PlatformSelector';
 import BusinessManagerSelector from './components/BusinessManagerSelector';
+import WebhookHistory from './components/WebhookHistory';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
