@@ -466,6 +466,23 @@ function App() {
                 <span>Mes Posts ({posts.length})</span>
               </div>
             </button>
+            
+            <button
+              onClick={() => setActiveTab('webhook')}
+              disabled={!selectedBusinessManager}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'webhook'
+                  ? 'text-facebook-primary border-b-2 border-facebook-primary'
+                  : selectedBusinessManager 
+                    ? 'text-gray-600 hover:text-facebook-primary'
+                    : 'text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Package className="w-4 h-4" />
+                <span>Historique Webhook</span>
+              </div>
+            </button>
           </div>
         </div>
 
