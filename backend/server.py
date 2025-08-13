@@ -273,6 +273,16 @@ class LinkPreviewRequest(BaseModel):
 class BusinessManagerSelectRequest(BaseModel):
     business_manager_id: str
 
+# N8N Integration Models
+class ProductPublishRequest(BaseModel):
+    title: str
+    description: str
+    image_url: str
+    product_url: str
+    user_id: Optional[str] = None  # Facebook user ID or MongoDB user ID
+    page_id: Optional[str] = None  # Specific Facebook page ID to post to
+    api_key: Optional[str] = None  # Optional API key for authentication
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
