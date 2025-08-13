@@ -557,7 +557,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         return None
 
 async def post_to_instagram(post: Post, page_access_token: str):
-    """Post content to Instagram Business account with enhanced media support (images + videos)"""
+    """Post content to Instagram Business account with enhanced and optimized media support"""
     try:
         # Instagram posting requires a two-step process:
         # 1. Create media container
@@ -595,7 +595,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
             else:
                 media_type = "image"
                 container_data["image_url"] = full_media_url
-                print(f"📸 Instagram image: {full_media_url}")
+                print(f"📸 Instagram optimized image: {full_media_url}")
                 
         elif post.link_metadata:
             # Use link image as fallback if no uploaded media
@@ -610,12 +610,12 @@ async def post_to_instagram(post: Post, page_access_token: str):
             print("❌ Instagram requires media - skipping post without images or videos")
             return None
         
-        # Create media container
+        # Create media container with extended timeout
         print(f"📱 Creating Instagram media container: {container_data}")
         container_response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
             data=container_data,
-            timeout=30
+            timeout=60  # Increased timeout for optimized images
         )
         
         if container_response.status_code != 200:
@@ -641,7 +641,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
         publish_response = requests.post(
             f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish",
             data=publish_data,
-            timeout=30
+            timeout=60  # Increased timeout
         )
         
         result = publish_response.json()
