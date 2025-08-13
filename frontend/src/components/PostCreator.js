@@ -194,7 +194,15 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
         formData.append('scheduled_time', scheduledTime);
       }
       
-      // Add comment link if provided (Facebook only)
+      // Add comment text if provided (Facebook only)
+      if (commentText.trim() && (
+        !crossPostMode && selectedPlatform.platform === 'facebook' ||
+        crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook')
+      )) {
+        formData.append('comment_text', commentText.trim());
+      }
+      
+      // Add comment link if provided (Facebook only) - for backward compatibility
       if (commentLink.trim() && (
         !crossPostMode && selectedPlatform.platform === 'facebook' ||
         crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook')
