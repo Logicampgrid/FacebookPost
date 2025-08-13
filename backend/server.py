@@ -455,17 +455,45 @@ async def post_to_facebook(post: Post, page_access_token: str):
             # Get full media URL - use environment variable or construct proper public URL
             if media_url.startswith('http'):
                 full_media_url = media_url
+                # Try to extract local path for direct upload
+                local_file_path = None
             else:
-                # Use public domain instead of localhost for Facebook API access
+                # Use public domain for sharing links
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://just-ok-3.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
+                # Extract local file path for direct upload
+                local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
             print(f"📸 Processing OPTIMIZED media upload: {full_media_url}")
+            print(f"📁 Local file path: {local_file_path}")
             
             # Try multiple Facebook media strategies with optimization
             try:
-                # Download and optimize media for Facebook
-                media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
+                # Use local file for better performance if available
+                if local_file_path and os.path.exists(local_file_path):
+                    print(f"✅ Using local file for Facebook upload: {local_file_path}")
+                    # Read local file content
+                    with open(local_file_path, 'rb') as f:
+                        media_content = f.read()
+                    
+                    # Determine content type from file extension
+                    file_ext = local_file_path.lower().split('.')[-1]
+                    if file_ext in ['jpg', 'jpeg']:
+                        content_type = 'image/jpeg'
+                    elif file_ext == 'png':
+                        content_type = 'image/png'
+                    elif file_ext == 'gif':
+                        content_type = 'image/gif'
+                    elif file_ext in ['mp4', 'mov', 'avi']:
+                        content_type = 'video/mp4'
+                    else:
+                        content_type = 'application/octet-stream'
+                        
+                    print(f"📊 Local media info: size={len(media_content)} bytes, type={content_type}")
+                else:
+                    print(f"⚠️ Local file not found, downloading from URL: {full_media_url}")
+                    # Fallback to download method
+                    media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
                 
                 print(f"📊 Optimized media info: size={len(media_content)} bytes, type={content_type}")
                 
