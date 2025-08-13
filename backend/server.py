@@ -939,6 +939,238 @@ def extract_urls_from_text(text: str):
     urls = re.findall(url_pattern, text)
     return list(set(urls))  # Remove duplicates
 
+async def download_product_image(image_url: str) -> str:
+    """Download product image from URL and save locally"""
+    try:
+        print(f"📥 Downloading product image: {image_url}")
+        
+        # Download the image
+        response = requests.get(image_url, timeout=30)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download image: HTTP {response.status_code}")
+        
+        # Get content type
+        content_type = response.headers.get('content-type', '').lower()
+        
+        # Determine file extension
+        if 'jpeg' in content_type or 'jpg' in content_type:
+            ext = 'jpg'
+        elif 'png' in content_type:
+            ext = 'png'
+        elif 'gif' in content_type:
+            ext = 'gif'
+        elif 'webp' in content_type:
+            ext = 'webp'
+        else:
+            # Default to jpg if we can't determine
+            ext = 'jpg'
+        
+        # Generate unique filename
+        unique_filename = f"{uuid.uuid4()}.{ext}"
+        file_path = f"uploads/{unique_filename}"
+        
+        # Save original image
+        with open(file_path, 'wb') as f:
+            f.write(response.content)
+        
+        print(f"📁 Image downloaded: {file_path} ({len(response.content)} bytes)")
+        
+        # Optimize image for Facebook
+        if ext in ['jpg', 'jpeg', 'png', 'webp']:
+            optimized_filename = f"{uuid.uuid4()}.jpg"
+            optimized_path = f"uploads/{optimized_filename}"
+            
+            if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
+                # Remove original and use optimized version
+                os.remove(file_path)
+                file_path = optimized_path
+                unique_filename = optimized_filename
+                print(f"✅ Image optimized: {unique_filename}")
+            else:
+                print(f"⚠️ Image optimization failed, using original: {unique_filename}")
+        
+        return f"/api/uploads/{unique_filename}"
+        
+    except Exception as e:
+        print(f"❌ Error downloading product image: {e}")
+        raise Exception(f"Failed to download product image: {str(e)}")
+
+async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = None):
+    """Find user and determine which page to publish to"""
+    try:
+        # Try to find user by different methods
+        user = None
+        
+        if user_id:
+            # Try MongoDB ObjectId first
+            try:
+                if len(user_id) == 24:
+                    user = await db.users.find_one({"_id": ObjectId(user_id)})
+            except:
+                pass
+            
+            # Try by facebook_id if ObjectId failed
+            if not user:
+                user = await db.users.find_one({"facebook_id": user_id})
+        
+        # If no user specified or found, get the first available user
+        if not user:
+            user = await db.users.find_one({})
+            if user:
+                print(f"⚠️ No user specified, using first available user: {user.get('name')}")
+        
+        if not user:
+            raise Exception("No user found for publishing")
+        
+        # Find target page
+        target_page = None
+        access_token = user.get("facebook_access_token")
+        
+        # If page_id specified, find that specific page
+        if page_id:
+            # Check personal pages
+            for page in user.get("facebook_pages", []):
+                if page["id"] == page_id:
+                    target_page = page
+                    access_token = page.get("access_token", access_token)
+                    break
+            
+            # Check business manager pages if not found
+            if not target_page:
+                for bm in user.get("business_managers", []):
+                    for page in bm.get("pages", []):
+                        if page["id"] == page_id:
+                            target_page = page
+                            access_token = page.get("access_token", access_token)
+                            break
+                    if target_page:
+                        break
+        
+        # If no specific page or page not found, use first available page
+        if not target_page:
+            # Try business manager pages first
+            for bm in user.get("business_managers", []):
+                if bm.get("pages"):
+                    target_page = bm["pages"][0]
+                    access_token = target_page.get("access_token", access_token)
+                    print(f"📄 Using business page: {target_page.get('name')}")
+                    break
+            
+            # If no business pages, try personal pages
+            if not target_page and user.get("facebook_pages"):
+                target_page = user["facebook_pages"][0]
+                access_token = target_page.get("access_token", access_token)
+                print(f"📄 Using personal page: {target_page.get('name')}")
+        
+        if not target_page:
+            raise Exception("No Facebook page available for publishing")
+        
+        return user, target_page, access_token
+        
+    except Exception as e:
+        print(f"❌ Error finding user and page: {e}")
+        raise Exception(f"Failed to find user and page for publishing: {str(e)}")
+
+async def create_product_post(request: ProductPublishRequest) -> dict:
+    """Create a Facebook post for a product from n8n data"""
+    try:
+        print(f"🛍️ Creating product post: {request.title}")
+        
+        # Find user and page for publishing
+        user, target_page, access_token = await find_user_and_page_for_publishing(
+            request.user_id, request.page_id
+        )
+        
+        # Download and optimize product image
+        media_url = await download_product_image(request.image_url)
+        
+        # Create post content combining title and description
+        post_content = f"{request.title}\n\n{request.description}"
+        
+        # Create post object
+        post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+            "content": post_content,
+            "media_urls": [media_url],
+            "link_metadata": [{
+                "url": request.product_url,
+                "title": request.title,
+                "description": request.description,
+                "image": request.image_url,
+                "type": "product"
+            }],
+            "comment_link": request.product_url,  # Add product URL as comment
+            "comment_text": f"🛒 Voir le produit: {request.product_url}",
+            "target_type": "page",
+            "target_id": target_page["id"],
+            "target_name": target_page["name"],
+            "platform": "facebook",
+            "business_manager_id": None,
+            "business_manager_name": None,
+            "cross_post_targets": [],
+            "scheduled_time": None,
+            "status": "published",
+            "comment_status": None,  
+            "created_at": datetime.utcnow(),
+            "published_at": datetime.utcnow(),
+            "source": "n8n_integration"  # Mark as n8n source
+        }
+        
+        # Create Post object for Facebook API
+        post_obj = Post(**post_data)
+        
+        # Publish to Facebook
+        print(f"📤 Publishing to Facebook page: {target_page['name']} ({target_page['id']})")
+        facebook_result = await post_to_facebook(post_obj, access_token)
+        
+        if not facebook_result or "id" not in facebook_result:
+            raise Exception("Facebook publishing failed")
+        
+        facebook_post_id = facebook_result["id"]
+        post_data["facebook_post_id"] = facebook_post_id
+        
+        print(f"✅ Facebook post published: {facebook_post_id}")
+        
+        # Add comment with product link if configured
+        if request.product_url and post_data.get("comment_text"):
+            try:
+                comment_result = await add_comment_to_facebook_post(
+                    facebook_post_id, 
+                    post_data["comment_text"], 
+                    access_token
+                )
+                if comment_result:
+                    post_data["comment_status"] = "success"
+                    print(f"✅ Product link comment added")
+                else:
+                    post_data["comment_status"] = "failed"
+                    print(f"⚠️ Failed to add product link comment")
+            except Exception as comment_error:
+                print(f"⚠️ Comment error: {comment_error}")
+                post_data["comment_status"] = "failed"
+        
+        # Save to database
+        result = await db.posts.insert_one(post_data)
+        post_data["_id"] = str(result.inserted_id)
+        
+        return {
+            "success": True,
+            "message": f"Product '{request.title}' published successfully to Facebook",
+            "facebook_post_id": facebook_post_id,
+            "post_id": post_data["id"],
+            "page_name": target_page["name"],
+            "page_id": target_page["id"],
+            "user_name": user.get("name"),
+            "media_url": media_url,
+            "comment_status": post_data.get("comment_status"),
+            "published_at": post_data["published_at"].isoformat()
+        }
+        
+    except Exception as e:
+        print(f"💥 Error creating product post: {e}")
+        raise Exception(f"Failed to create product post: {str(e)}")
+
 # API Routes
 
 @app.get("/api/facebook/auth-url")
