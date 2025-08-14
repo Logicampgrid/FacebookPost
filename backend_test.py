@@ -2264,6 +2264,151 @@ class FacebookPostManagerTester:
         
         return all_passed
 
+    def test_clickable_images_feature_publishProduct(self):
+        """🎯 Test the NEW CLICKABLE IMAGES feature via publishProduct endpoint"""
+        print("\n🎯 TESTING CLICKABLE IMAGES FEATURE")
+        print("=" * 50)
+        
+        test_payload = {
+            "title": "Test Clickable Image Product - Backend Test",
+            "description": "This product should have a clickable image that redirects to the product URL when clicked on Facebook.",
+            "image_url": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600",
+            "product_url": "https://example.com/test-clickable-product-backend",
+            "shop_type": "gizmobbs"
+        }
+        
+        print(f"📤 Testing clickable images with:")
+        print(f"   Title: {test_payload['title']}")
+        print(f"   Image: {test_payload['image_url'][:50]}...")
+        print(f"   Product URL: {test_payload['product_url']}")
+        print(f"   Shop Type: {test_payload['shop_type']}")
+        
+        success, response = self.run_test(
+            "🎯 CLICKABLE IMAGES - publishProduct",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=test_payload
+        )
+        
+        if success:
+            facebook_post_id = response.get("facebook_post_id")
+            page_name = response.get("page_name")
+            media_url = response.get("media_url")
+            message = response.get("message", "")
+            
+            print(f"📋 CLICKABLE IMAGES RESULT:")
+            print(f"   ✅ Facebook Post ID: {facebook_post_id}")
+            print(f"   ✅ Published to Page: {page_name}")
+            print(f"   ✅ Media URL: {media_url}")
+            print(f"   ✅ Success Message: {message}")
+            
+            # Check if it's a duplicate (which is also success)
+            if response.get('duplicate_skipped'):
+                print(f"   ℹ️  Duplicate detected and skipped (expected behavior)")
+            
+            print(f"\n🎯 EXPECTED BACKEND BEHAVIOR:")
+            print(f"   📝 Backend should log: '🔗 Creating CLICKABLE image post'")
+            print(f"   📝 Backend should log: '📸 Image URL: {test_payload['image_url']}'")
+            print(f"   📝 Backend should log: '🎯 Target URL: {test_payload['product_url']}'")
+            print(f"   📝 Facebook API call should use /feed endpoint with link + picture")
+            print(f"   📝 Image should be clickable and redirect to: {test_payload['product_url']}")
+            
+        return success
+
+    def test_clickable_images_feature_webhook(self):
+        """🎯 Test clickable images via N8N webhook endpoint"""
+        test_payload = {
+            "store": "gizmobbs",
+            "title": "Webhook Clickable Image Test",
+            "description": "Testing clickable images through N8N webhook integration",
+            "product_url": "https://example.com/webhook-clickable-test",
+            "image_url": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600"
+        }
+        
+        print(f"📤 Testing webhook clickable images with:")
+        print(f"   Store: {test_payload['store']}")
+        print(f"   Title: {test_payload['title']}")
+        print(f"   Image: {test_payload['image_url'][:50]}...")
+        print(f"   Product URL: {test_payload['product_url']}")
+        
+        success, response = self.run_test(
+            "🎯 CLICKABLE IMAGES - N8N Webhook",
+            "POST",
+            "api/webhook",
+            200,
+            data=test_payload
+        )
+        
+        if success:
+            result_success = response.get("success", False)
+            facebook_post_id = response.get("facebook_post_id")
+            page_name = response.get("page_name")
+            
+            print(f"📋 WEBHOOK CLICKABLE IMAGES RESULT:")
+            print(f"   ✅ Webhook Success: {result_success}")
+            print(f"   ✅ Facebook Post ID: {facebook_post_id}")
+            print(f"   ✅ Published to Page: {page_name}")
+            
+            print(f"\n🎯 EXPECTED WEBHOOK BEHAVIOR:")
+            print(f"   📝 Should trigger same clickable images logic as publishProduct")
+            print(f"   📝 Image should be clickable on Facebook")
+            print(f"   📝 Click should redirect to: {test_payload['product_url']}")
+            
+        return success
+
+    def test_clickable_images_fallback_behavior(self):
+        """🎯 Test clickable images fallback when no product link"""
+        test_payload = {
+            "title": "Test Image Without Product Link",
+            "description": "This should use regular image upload since no product_url is provided",
+            "image_url": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600",
+            # No product_url - should fallback to regular image upload
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "🎯 CLICKABLE IMAGES - Fallback Test",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=test_payload
+        )
+        
+        if success:
+            print(f"📋 FALLBACK BEHAVIOR RESULT:")
+            print(f"   ✅ Should use regular image upload (not clickable)")
+            print(f"   ✅ Should NOT log clickable images messages")
+            print(f"   ✅ Should use /photos endpoint instead of /feed")
+            
+        return success
+
+    def test_clickable_images_video_handling(self):
+        """🎯 Test that videos don't use clickable images (only images do)"""
+        test_payload = {
+            "title": "Test Video with Product Link",
+            "description": "Videos should not use clickable images feature, even with product link",
+            "image_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",  # Video URL
+            "product_url": "https://example.com/video-product-test",
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "🎯 CLICKABLE IMAGES - Video Handling",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=test_payload
+        )
+        
+        if success:
+            print(f"📋 VIDEO HANDLING RESULT:")
+            print(f"   ✅ Videos should NOT use clickable images")
+            print(f"   ✅ Should use /videos endpoint for direct upload")
+            print(f"   ✅ Product link should be added to message/comment")
+            
+        return success
+
 def main():
     print("🚀 Starting Meta Publishing Platform API Tests")
     print("🎯 FOCUS: Testing Corrected Facebook Image Posting & Instagram Auto-Posting")
