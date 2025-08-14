@@ -1065,10 +1065,17 @@ async def download_product_image(image_url: str) -> str:
     try:
         print(f"📥 Downloading product image: {image_url}")
         
-        # Download the image
-        response = requests.get(image_url, timeout=30)
-        if response.status_code != 200:
-            raise Exception(f"Failed to download image: HTTP {response.status_code}")
+        # Download the image with better error handling
+        try:
+            response = requests.get(image_url, timeout=60, allow_redirects=True)
+            if response.status_code != 200:
+                raise Exception(f"Failed to download image: HTTP {response.status_code}")
+        except requests.exceptions.Timeout:
+            raise Exception(f"Image download timeout after 60 seconds: {image_url}")
+        except requests.exceptions.ConnectionError:
+            raise Exception(f"Connection error downloading image: {image_url}")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request error downloading image: {str(e)}")
         
         # Get content type
         content_type = response.headers.get('content-type', '').lower()
