@@ -1390,29 +1390,8 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         
         print(f"✅ Facebook post published: {facebook_post_id}")
         
-        # Add comment with product link if configured
-        if request.product_url and post_data.get("comment_text"):
-            try:
-                # Simulate comment for test tokens
-                if access_token.startswith("test_"):
-                    print("🧪 Test token - simulating comment addition")
-                    comment_result = {"id": f"test_comment_{uuid.uuid4().hex[:8]}"}
-                else:
-                    comment_result = await add_comment_to_facebook_post(
-                        facebook_post_id, 
-                        post_data["comment_text"], 
-                        access_token
-                    )
-                    
-                if comment_result:
-                    post_data["comment_status"] = "success"
-                    print(f"✅ Product link comment added")
-                else:
-                    post_data["comment_status"] = "failed"
-                    print(f"⚠️ Failed to add product link comment")
-            except Exception as comment_error:
-                print(f"⚠️ Comment error: {comment_error}")
-                post_data["comment_status"] = "failed"
+        # No comment needed - product link is now integrated in post content
+        print("📝 Product link integrated in post content - no comment needed")
         
         # Save to database
         result = await db.posts.insert_one(post_data)
