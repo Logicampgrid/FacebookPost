@@ -2699,7 +2699,79 @@ async def publish_post(post_id: str):
                             {"id": post_id},
                             {"$set": {"comment_status": "failed"}}
                         )
-                        print("❌ Failed to add comment to Facebook post")
+                        print(f"❌ Failed to add comment")
+                
+                # NOUVEAU: Publication automatique sur Instagram quand on publie sur Facebook
+                instagram_result = None
+                if platform == "facebook" and post_obj.media_urls:  # Seulement si Facebook et qu'il y a des médias
+                    try:
+                        print("🔄 Recherche du compte Instagram associé pour publication automatique...")
+                        
+                        # Chercher le compte Instagram associé à cette page Facebook
+                        instagram_account = None
+                        current_page_id = post["target_id"]
+                        
+                        if post.get("business_manager_id"):
+                            # Chercher dans les comptes Instagram du Business Manager
+                            for bm in user.get("business_managers", []):
+                                if bm["id"] == post["business_manager_id"]:
+                                    for ig in bm.get("instagram_accounts", []):
+                                        if ig.get("connected_page_id") == current_page_id:
+                                            instagram_account = ig
+                                            print(f"✅ Compte Instagram trouvé: {ig.get('username', 'Unknown')} connecté à la page Facebook")
+                                            break
+                                    break
+                        
+                        if instagram_account:
+                            print(f"📸 Publication automatique sur Instagram: @{instagram_account.get('username', 'unknown')}")
+                            
+                            # Créer un post Instagram avec le même contenu
+                            instagram_post = Post(
+                                **{**post, 
+                                   "target_id": instagram_account["id"], 
+                                   "target_name": instagram_account.get("username", "Instagram Account"),
+                                   "target_type": "instagram",
+                                   "platform": "instagram"}
+                            )
+                            
+                            # Publier sur Instagram
+                            instagram_result = await post_to_instagram(instagram_post, access_token)
+                            
+                            if instagram_result and "id" in instagram_result:
+                                print(f"✅ Post publié automatiquement sur Instagram: {instagram_result['id']}")
+                                
+                                # Sauvegarder le résultat Instagram dans la base
+                                await db.posts.update_one(
+                                    {"id": post_id},
+                                    {
+                                        "$set": {
+                                            "instagram_post_id": instagram_result["id"],
+                                            "instagram_account": {
+                                                "id": instagram_account["id"],
+                                                "username": instagram_account.get("username"),
+                                                "name": instagram_account.get("name")
+                                            }
+                                        }
+                                    }
+                                )
+                            else:
+                                print(f"❌ Échec de la publication automatique sur Instagram")
+                        else:
+                            print("ℹ️ Aucun compte Instagram connecté trouvé pour cette page Facebook")
+                            
+                    except Exception as ig_error:
+                        print(f"❌ Erreur lors de la publication automatique sur Instagram: {ig_error}")
+                
+                # Déterminer le message de succès
+                if instagram_result and "id" in instagram_result:
+                    success_message = f"Post publié avec succès sur Facebook et automatiquement sur Instagram ! ID Facebook: {result['id']}, ID Instagram: {instagram_result['id']}"
+                else:
+                    success_message = f"Post publié avec succès sur {platform} ! ID: {result['id']}"
+                
+                if comment_to_add and platform == "facebook":
+                    success_message += " Comment ajouté !"
+                    
+                return {"message": success_message, "facebook_post_id": result["id"], "instagram_post_id": instagram_result.get("id") if instagram_result else None}
                 
                 success_message = f"Post published successfully on {platform}"
                 if comment_to_add and platform == "facebook":
