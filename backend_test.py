@@ -2266,19 +2266,29 @@ class FacebookPostManagerTester:
 
 def main():
     print("🚀 Starting Meta Publishing Platform API Tests")
-    print("=" * 60)
+    print("🎯 FOCUS: Testing Corrected Facebook Image Posting & Instagram Auto-Posting")
+    print("=" * 80)
     
     tester = FacebookPostManagerTester()
     
-    # Run all tests
-    tests = [
-        # Core functionality tests
+    # PRIORITY TESTS FOR CORRECTED FUNCTIONALITY (REVIEW REQUEST FOCUS)
+    priority_tests = [
         tester.test_health_check,
         tester.test_uploads_directory_exists,
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         
-        # NEW WEBHOOK HISTORY AND SHOP TYPE TESTS (PRIORITY)
+        # CORRECTED FUNCTIONALITY TESTS (MAIN FOCUS)
+        tester.test_facebook_image_posting_corrected,
+        tester.test_instagram_auto_posting_logic,
+        tester.test_corrected_post_to_facebook_function,
+        tester.test_simplified_facebook_media_strategy,
+        tester.test_facebook_image_fallback_logic,
+    ]
+    
+    # ADDITIONAL COMPREHENSIVE TESTS
+    additional_tests = [
+        # NEW WEBHOOK HISTORY AND SHOP TYPE TESTS
         tester.test_webhook_history_endpoint,
         tester.test_webhook_history_with_limit,
         tester.test_publish_product_config_endpoint,
@@ -2356,29 +2366,54 @@ def main():
         tester.test_create_post_with_invalid_comment_link
     ]
     
-    for test in tests:
+    print("🔥 PRIORITY TESTS (Corrected Functionality):")
+    print("-" * 50)
+    
+    # Run priority tests first
+    for test in priority_tests:
         try:
             test()
         except Exception as e:
-            print(f"❌ Test {test.__name__} crashed: {e}")
+            print(f"💥 Test {test.__name__} crashed: {e}")
             tester.tests_run += 1
+        
+        print("-" * 40)
+    
+    print("\n📋 ADDITIONAL COMPREHENSIVE TESTS:")
+    print("-" * 50)
+    
+    # Run additional tests
+    for test in additional_tests:
+        try:
+            test()
+        except Exception as e:
+            print(f"💥 Test {test.__name__} crashed: {e}")
+            tester.tests_run += 1
+        
+        print("-" * 40)
     
     # Print final results
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
         print("🎉 All Meta Publishing Platform tests passed!")
+        print("✅ Corrected Facebook image posting logic is working")
+        print("✅ Instagram auto-posting functionality is integrated")
         return 0
     else:
         failed_count = tester.tests_run - tester.tests_passed
         print(f"⚠️  {failed_count} tests failed")
         
+        # Calculate success rate
+        success_rate = (tester.tests_passed / tester.tests_run) * 100
+        print(f"📈 Success rate: {success_rate:.1f}%")
+        
         if failed_count > tester.tests_run * 0.5:  # More than 50% failed
             print("❌ More than 50% of tests failed - major issues detected")
             return 2
         else:
-            print("⚠️  Minor issues detected - proceed with caution")
+            print("✅ Most functionality is working - minor issues detected")
             return 1
 
 if __name__ == "__main__":
