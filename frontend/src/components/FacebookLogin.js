@@ -45,7 +45,11 @@ const FacebookLogin = ({ onLogin, loading }) => {
       setExchangingCode(true);
       setError('');
       
-      const redirectUri = window.location.origin + window.location.pathname;
+      // Use the configured backend URL as base for redirect URI
+      const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+      const redirectUri = baseUrl + window.location.pathname;
+      
+      console.log('Exchange redirect URI:', redirectUri);
       
       const response = await axios.post(`${API_BASE}/api/auth/facebook/exchange-code`, {
         code: code,
