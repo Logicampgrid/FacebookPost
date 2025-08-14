@@ -2423,7 +2423,13 @@ def main():
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         
-        # CORRECTED FUNCTIONALITY TESTS (MAIN FOCUS)
+        # 🎯 CLICKABLE IMAGES FEATURE TESTS (NEW - MAIN FOCUS)
+        tester.test_clickable_images_feature_publishProduct,
+        tester.test_clickable_images_feature_webhook,
+        tester.test_clickable_images_fallback_behavior,
+        tester.test_clickable_images_video_handling,
+        
+        # CORRECTED FUNCTIONALITY TESTS (EXISTING)
         tester.test_facebook_image_posting_corrected,
         tester.test_instagram_auto_posting_logic,
         tester.test_corrected_post_to_facebook_function,
