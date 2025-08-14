@@ -510,7 +510,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: CLICKABLE IMAGES - Use link post with picture when product_link exists
+        # STRATEGY 1: CLICKABLE IMAGES - Enhanced implementation like Facebook Share
         if post.media_urls and product_link:
             media_url = post.media_urls[0]
             
@@ -532,25 +532,27 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 print(f"⚠️ Could not verify image accessibility: {img_error}")
                 # Continue anyway
             
-            print(f"🔗 Creating CLICKABLE image post: {full_media_url} -> {product_link}")
+            print(f"🔗 Creating CLICKABLE image post (like Facebook Share): {full_media_url} -> {product_link}")
             
             # Determine media type
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
-            # For clickable images, use /feed endpoint with link + picture parameters
+            # For clickable images, use /feed endpoint with link + picture parameters (Facebook Share style)
             if is_image:  # Only images can be made clickable this way
                 try:
-                    # Create link post with clickable image
+                    # Create link post with clickable image - exactly like Facebook Share functionality
                     data = {
                         "access_token": page_access_token,
-                        "link": product_link,  # This makes the image clickable
-                        "picture": full_media_url,  # This is the image to display
+                        "link": product_link,  # This makes the image clickable and creates the external redirect
+                        "picture": full_media_url,  # This is the image that will be displayed
+                        "name": post.link_metadata[0].get("title", "Voir ce produit") if post.link_metadata else "Voir ce produit",
+                        "description": post.link_metadata[0].get("description", "Cliquez pour découvrir ce produit") if post.link_metadata else "Cliquez pour découvrir ce produit"
                     }
                     
-                    # Add message/caption if provided
+                    # Add enhanced message/caption if provided
                     if post.content and post.content.strip():
-                        # Remove product link from message since it's now in the link
+                        # Clean the message - remove product link since it's now in the link parameter
                         message = post.content
                         if product_link in message:
                             message = message.replace(product_link, '').strip()
@@ -559,10 +561,12 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         data["message"] = message
                     
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                    print(f"🔗 Creating clickable image post to: {endpoint}")
+                    print(f"🔗 Creating clickable image post (Facebook Share style) to: {endpoint}")
                     print(f"📸 Image URL: {full_media_url}")
-                    print(f"🎯 Target URL: {product_link}")
-                    print(f"💬 Message: {data.get('message', 'No message')}")
+                    print(f"🎯 Target URL (clickable): {product_link}")
+                    print(f"📝 Link Title: {data.get('name')}")
+                    print(f"📄 Link Description: {data.get('description')}")
+                    print(f"💬 Post Message: {data.get('message', 'No message')}")
                     
                     response = requests.post(endpoint, data=data, timeout=30)
                     result = response.json()
@@ -570,7 +574,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     print(f"Facebook clickable image response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Clickable image post created successfully!")
+                        print("✅ Clickable image post created successfully! (Facebook Share style - image redirects to external page)")
                         return result
                     else:
                         print(f"❌ Clickable image post failed: {result}")
