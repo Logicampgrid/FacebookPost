@@ -469,23 +469,51 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
               </div>
             )}
             
-            {/* Clickable Images Indicator */}
+            {/* Enhanced Clickable Images Indicator */}
             {mediaFiles.length > 0 && (detectedLinks.length > 0 || commentLink) && (
               (!crossPostMode && selectedPlatform?.platform === 'facebook') || 
               (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))
             ) && (
-              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Target className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">Images cliquables activées</span>
+              <div className="mt-2 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-400 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Target className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-bold text-green-800">🎯 Images cliquables activées - Comme Facebook Share!</span>
                 </div>
-                <p className="text-xs text-green-700 mt-1">
-                  🎯 <strong>Nouveau :</strong> Vos images seront cliquables sur Facebook et redirigeront vers{' '}
-                  {detectedLinks.length > 0 ? 
-                    `le lien détecté (${detectedLinks[0].url.substring(0, 30)}...)` : 
-                    'le lien du commentaire'
-                  } comme un partage Facebook !
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-green-700">
+                    <strong>✨ Fonctionnalité premium :</strong> Vos images seront cliquables sur Facebook et redirigeront automatiquement vers {' '}
+                    {detectedLinks.length > 0 ? (
+                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-xs">
+                        {detectedLinks[0].url.length > 40 ? 
+                          `${detectedLinks[0].url.substring(0, 40)}...` : 
+                          detectedLinks[0].url
+                        }
+                      </span>
+                    ) : (
+                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-xs">
+                        le lien du commentaire
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 flex items-center">
+                    <span className="mr-2">🔗</span>
+                    Exactement comme quand vous partagez un lien sur Facebook - cliquer sur l'image redirige vers la page externe
+                  </p>
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                      Image grande taille
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
+                      Redirection automatique
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>
+                      Optimisé pour l'engagement
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
