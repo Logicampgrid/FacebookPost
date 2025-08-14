@@ -1695,6 +1695,26 @@ def get_permission_recommendations(granted_permissions):
 async def debug_facebook_token(token: str):
     """Debug Facebook token for troubleshooting"""
     try:
+        # Validate token format first
+        if not token or len(token) < 20:
+            raise HTTPException(status_code=400, detail="Invalid token format - too short")
+        
+        # Check if someone passed a URL instead of a token
+        if token.startswith(('http://', 'https://', 'www.')):
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid token - you provided a URL instead of a Facebook access token. Please paste only the access token from Facebook Graph API Explorer."
+            )
+        
+        # Check for obvious non-token patterns
+        if '/' in token and len(token.split('/')) > 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid token format - this appears to be a URL or path, not a Facebook access token"
+            )
+        
+        print(f"🔍 Debugging Facebook token: {token[:20]}...")
+        
         # Test with Facebook Graph API
         response = requests.get(
             f"{FACEBOOK_GRAPH_URL}/me",
