@@ -519,7 +519,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 full_media_url = media_url
             else:
                 # Use public domain for sharing links - ensure it's accessible externally
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-demo-4.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             # Verify the image URL is accessible before creating clickable post
@@ -591,7 +591,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 local_file_path = None
             else:
                 # Use public domain for sharing links
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-demo-4.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
@@ -823,7 +823,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 full_media_url = media_url
             else:
                 # Use public URL instead of localhost
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-demo-4.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             # Determine media type
@@ -3190,7 +3190,7 @@ async def test_clickable_and_instagram(request: dict):
         
         # Test 3: Check image access
         test_image_path = "/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-demo-4.preview.emergentagent.com")
         full_image_url = f"{base_url}{test_image_path}"
         
         # Test 4: Prepare test data
