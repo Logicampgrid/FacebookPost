@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-PUBLIC_BASE_URL = "https://ok-minimal.preview.emergentagent.com"
+PUBLIC_BASE_URL = "https://ok-acknowledge.preview.emergentagent.com"
 
 def test_clickable_images():
     """Test des images cliquables avec lien externe"""
