@@ -2864,7 +2864,8 @@ class FacebookPostManagerTester:
 
 def main():
     print("🚀 Starting Meta Publishing Platform API Tests")
-    print("🎯 FOCUS: Testing Corrected Facebook Image Posting & Instagram Auto-Posting")
+    print("🎯 FOCUS: Testing ENHANCED Facebook/Instagram Publishing System")
+    print("✨ NEW: Clickable Images + Automatic Instagram Cross-Posting")
     print("=" * 80)
     
     tester = FacebookPostManagerTester()
