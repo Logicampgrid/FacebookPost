@@ -115,7 +115,12 @@ const FacebookLogin = ({ onLogin, loading }) => {
     if (loading || exchangingCode) return;
     setError('');
     
-    const redirectUri = window.location.origin + window.location.pathname;
+    // Use the configured backend URL as base for redirect URI
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const redirectUri = baseUrl + window.location.pathname;
+    
+    console.log('Redirect URI:', redirectUri);
+    
     const facebookAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
       `client_id=5664227323683118&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
