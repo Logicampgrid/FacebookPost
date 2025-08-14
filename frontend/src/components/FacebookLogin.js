@@ -158,13 +158,11 @@ const FacebookLogin = ({ onLogin, loading }) => {
       console.log('Testing token:', manualToken.substring(0, 20) + '...');
       
       // Test the token first with better error handling
-      const testResponse = await fetch(`${API_BASE}/api/debug/facebook-token/${encodeURIComponent(manualToken)}`);
+      const testResponse = await axios.post(`${API_BASE}/api/debug/facebook-token`, {
+        token: manualToken
+      });
       
-      if (!testResponse.ok) {
-        throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
-      }
-      
-      const testData = await testResponse.json();
+      const testData = testResponse.data;
       console.log('Token validation response:', testData);
       
       if (testData.status !== 'valid') {
