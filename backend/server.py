@@ -514,7 +514,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: Media posts (images/videos) with OPTIMIZED handling and CLICKABLE LINKS
+        # STRATEGY 1: Media posts with CLICKABLE LINKS (prioritize clickable images)
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -530,10 +530,47 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 Processing OPTIMIZED media upload: {full_media_url}")
+            print(f"📸 Processing media for CLICKABLE post: {full_media_url}")
             print(f"📁 Local file path: {local_file_path}")
             
-            # Try multiple Facebook media strategies with optimization
+            # Determine media type
+            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+            is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+            
+            # STRATEGY 1A: Clickable link post with image preview (PREFERRED for clickable images)
+            if product_link and is_image:
+                try:
+                    print(f"🔗 Creating CLICKABLE image post with product link: {product_link}")
+                    
+                    # Use feed endpoint with link and picture for clickable image
+                    feed_data = {
+                        "access_token": page_access_token,
+                        "link": product_link,
+                        "picture": full_media_url,  # This makes the image clickable
+                        "message": post.content if post.content and post.content.strip() else f"📸 Découvrez ce produit"
+                    }
+                    
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                    print(f"🔗 Creating clickable post to: {endpoint}")
+                    print(f"📋 Feed data: {feed_data}")
+                    
+                    response = requests.post(endpoint, data=feed_data, timeout=60)
+                    result = response.json()
+                    
+                    print(f"Facebook clickable post response: {response.status_code} - {result}")
+                    
+                    if response.status_code == 200 and 'id' in result:
+                        print("✅ Clickable image post created successfully!")
+                        return result
+                    else:
+                        print(f"❌ Clickable post failed: {result}")
+                        raise Exception("Clickable post failed")
+                        
+                except Exception as clickable_error:
+                    print(f"Clickable post error: {clickable_error}")
+                    print("🔄 Falling back to direct upload...")
+            
+            # STRATEGY 1B: Direct multipart upload (fallback when no product link or for videos)
             try:
                 # Use local file for better performance if available
                 if local_file_path and os.path.exists(local_file_path):
@@ -563,7 +600,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 
                 print(f"📊 Optimized media info: size={len(media_content)} bytes, type={content_type}")
                 
-                # Determine media type and file extension
+                # Determine media type and file extension  
                 is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
                 is_image = content_type.startswith('image/') or media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
                 
@@ -575,9 +612,6 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Add message/caption if provided
                 if post.content and post.content.strip():
                     base_data["message"] = post.content
-                
-                # STRATEGY 1A: Direct multipart upload (PREFERRED for reliable image display)
-                # Facebook shows images more reliably when uploaded directly
                 
                 # STRATEGY 1B: Direct multipart upload with message and link integration
                 try:
