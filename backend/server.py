@@ -579,8 +579,19 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # STRATEGY 1A: Direct multipart upload (PREFERRED for reliable image display)
                 # Facebook shows images more reliably when uploaded directly
                 
-                # STRATEGY 1B: Direct multipart upload (fallback or for videos)
+                # STRATEGY 1B: Direct multipart upload with message and link integration
                 try:
+                    # Add product link to message for clickability while keeping image visible
+                    enhanced_message = base_data.get("message", "")
+                    if product_link:
+                        if enhanced_message:
+                            enhanced_message += f"\n\n🛒 Voir le produit: {product_link}"
+                        else:
+                            enhanced_message = f"📸 Découvrez ce produit: {product_link}"
+                        base_data["message"] = enhanced_message
+                        # Also add link parameter for Facebook to create rich link preview in comments
+                        base_data["link"] = product_link
+                    
                     if is_video:
                         # For videos, use /videos endpoint
                         files = {'source': ('video.mp4', media_content, 'video/mp4')}
@@ -591,6 +602,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         files = {'source': ('image.jpg', media_content, 'image/jpeg')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
                         print(f"📸 Uploading optimized image to: {endpoint}")
+                        print(f"💬 With message: {base_data.get('message', 'No message')}")
                     
                     response = requests.post(endpoint, data=base_data, files=files, timeout=60)  # Increased timeout
                     result = response.json()
