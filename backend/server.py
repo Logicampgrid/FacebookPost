@@ -619,39 +619,47 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 except Exception as direct_error:
                     print(f"Direct upload error: {direct_error}")
                     
-                    # STRATEGY 1C: Use URL-based posting with link parameter (fallback)
+                    # STRATEGY 1C: Enhanced link-based posting with better image preview
                     try:
-                        print("🔄 Trying URL-based media sharing as fallback...")
+                        print("🔄 Trying enhanced link-based media sharing...")
                         
-                        # Use the /feed endpoint with link parameter for better media display
+                        # Create rich content that encourages Facebook to fetch media
+                        rich_message = ""
+                        if post.content and post.content.strip():
+                            rich_message = post.content
+                        else:
+                            rich_message = "📸 Nouveau produit disponible !" if is_image else "🎥 Découvrez cette vidéo"
+                        
+                        # Add product link to message
+                        if product_link:
+                            rich_message += f"\n\n🛒 Voir le produit: {product_link}"
+                        
+                        # Use feed endpoint with both message and link for rich preview
                         feed_data = {
                             "access_token": page_access_token,
-                            "link": product_link if product_link else full_media_url
+                            "message": rich_message,
+                            "link": product_link if product_link else full_media_url,
+                            "picture": full_media_url if is_image else None  # Explicitly specify picture URL
                         }
                         
-                        # Add message
-                        if post.content and post.content.strip():
-                            feed_data["message"] = post.content
-                        else:
-                            if product_link:
-                                feed_data["message"] = "📸 Découvrez ce produit" if is_image else "🎥 Regardez cette vidéo"
-                            else:
-                                feed_data["message"] = "📸 Média partagé (optimisé)" if is_image else "🎥 Vidéo partagée"
+                        # Remove None values
+                        feed_data = {k: v for k, v in feed_data.items() if v is not None}
                         
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                        print(f"🔗 Posting media link to: {endpoint}")
+                        print(f"🔗 Posting enhanced media link to: {endpoint}")
+                        print(f"📋 Feed data: {feed_data}")
                         
                         response = requests.post(endpoint, data=feed_data, timeout=30)
                         result = response.json()
                         
-                        print(f"Facebook link post response: {response.status_code} - {result}")
+                        print(f"Facebook enhanced link post response: {response.status_code} - {result}")
                         
                         if response.status_code == 200 and 'id' in result:
-                            print("✅ URL-based media sharing successful!")
+                            print("✅ Enhanced link-based media sharing successful!")
                             return result
                         else:
-                            print(f"❌ URL-based sharing failed: {result}")
-                            raise Exception("URL-based sharing failed")
+                            print(f"❌ Enhanced link sharing failed: {result}")
+                            raise Exception("Enhanced link sharing failed")
                             
                     except Exception as link_error:
                         print(f"URL-based sharing error: {link_error}")
