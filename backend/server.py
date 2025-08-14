@@ -1373,6 +1373,88 @@ async def check_duplicate_product_post(title: str, image_url: str, shop_type: st
             "message": "Duplicate check failed - proceeding with post creation"
         }
 
+def generate_enhanced_product_description(title: str, description: str, shop_type: str = None, platform: str = "facebook") -> str:
+    """
+    Generate enhanced product descriptions for social media posts
+    
+    Args:
+        title: Product title
+        description: Product description  
+        shop_type: Type of shop (outdoor, gizmobbs, logicantiq)
+        platform: Target platform (facebook, instagram)
+    
+    Returns:
+        Enhanced product description optimized for the platform
+    """
+    try:
+        # Clean the title and description
+        clean_title = title.strip() if title else "Produit"
+        clean_description = description.strip() if description else ""
+        
+        # Remove HTML tags if present
+        from bs4 import BeautifulSoup
+        if '<' in clean_description and '>' in clean_description:
+            clean_description = BeautifulSoup(clean_description, 'html.parser').get_text()
+        
+        # Format description with better structure
+        if platform == "facebook":
+            # Facebook: Clean and professional, optimized for clickable images
+            content = f"✨ {clean_title}\n\n"
+            
+            if clean_description:
+                # Add paragraphs for better readability
+                if len(clean_description) > 100:
+                    # Split long descriptions into paragraphs
+                    sentences = clean_description.split('. ')
+                    if len(sentences) > 1:
+                        mid_point = len(sentences) // 2
+                        first_part = '. '.join(sentences[:mid_point]) + '.'
+                        second_part = '. '.join(sentences[mid_point:])
+                        content += f"{first_part}\n\n{second_part}"
+                    else:
+                        content += clean_description
+                else:
+                    content += clean_description
+            
+            # Note: Product link will be handled by clickable image functionality
+            
+        elif platform == "instagram":
+            # Instagram: More visual, with hashtags and engagement-focused
+            content = f"✨ {clean_title}\n\n"
+            
+            if clean_description:
+                # Shorter, more punchy for Instagram
+                if len(clean_description) > 150:
+                    content += clean_description[:147] + "..."
+                else:
+                    content += clean_description
+            
+            content += "\n\n🛒 Lien en bio pour plus d'infos!"
+            
+            # Add shop-specific hashtags
+            hashtags = []
+            if shop_type == "outdoor":
+                hashtags = ["#outdoor", "#camping", "#nature", "#aventure", "#logicampoutdoor"]
+            elif shop_type == "gizmobbs":  
+                hashtags = ["#bergerblancsuisse", "#chien", "#dog", "#animaux", "#gizmobbs"]
+            elif shop_type == "logicantiq":
+                hashtags = ["#antique", "#vintage", "#collection", "#logicantiq"]
+            else:
+                hashtags = ["#produit", "#qualité", "#shopping"]
+            
+            if hashtags:
+                content += f"\n\n{' '.join(hashtags)}"
+        
+        return content.strip()
+        
+    except Exception as e:
+        print(f"❌ Error generating enhanced description: {e}")
+        # Fallback to basic content
+        if platform == "instagram":
+            return f"{title}\n\n{description}\n\n🛒 Lien en bio pour plus d'infos!"
+        else:
+            return f"{title}\n\n{description}"
+
 async def create_product_post(request: ProductPublishRequest) -> dict:
     """Create a Facebook post for a product from n8n data with Instagram cross-posting"""
     try:
