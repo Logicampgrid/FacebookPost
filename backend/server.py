@@ -1301,9 +1301,9 @@ async def check_duplicate_product_post(title: str, image_url: str, shop_type: st
         }
 
 async def create_product_post(request: ProductPublishRequest) -> dict:
-    """Create a Facebook post for a product from n8n data"""
+    """Create a Facebook post for a product from n8n data with Instagram cross-posting"""
     try:
-        print(f"🛍️ Creating product post: {request.title}")
+        print(f"🛍️ Creating product post with cross-posting: {request.title}")
         
         # Check for duplicate posts to avoid multiple posts for same product
         duplicate_check = await check_duplicate_product_post(
@@ -1320,6 +1320,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "success": True,
                 "message": f"Product '{request.title}' already posted recently - returning existing post",
                 "facebook_post_id": existing_post.get("facebook_post_id", "unknown"),
+                "instagram_post_id": existing_post.get("instagram_post_id", "not_posted"),
                 "post_id": existing_post.get("post_id", "unknown"),
                 "page_name": "Cached Page",
                 "page_id": "cached",
@@ -1341,14 +1342,18 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        # Create post content combining title, description, and product link
-        post_content = f"{request.title}\n\n{request.description}\n\n🛒 Voir le produit: {request.product_url}"
+        # Create post content for Facebook (with product link for CLICKABLE IMAGES)
+        facebook_content = f"{request.title}\n\n{request.description}"
+        # Note: product link will be used as clickable link parameter, not in content
         
-        # Create post object
-        post_data = {
+        # Create post content for Instagram (links don't work well in Instagram posts)
+        instagram_content = f"{request.title}\n\n{request.description}\n\n🛒 Lien en bio pour plus d'infos!"
+        
+        # Create post object for Facebook (with enhanced clickable image setup)
+        facebook_post_data = {
             "id": str(uuid.uuid4()),
             "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
-            "content": post_content,
+            "content": facebook_content,
             "media_urls": [media_url],
             "link_metadata": [{
                 "url": request.product_url,
@@ -1357,8 +1362,8 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "image": request.image_url,
                 "type": "product"
             }],
-            "comment_link": None,  # No longer adding comment - link is in content
-            "comment_text": None,  # No longer adding comment - link is in content
+            "comment_link": request.product_url,  # This ensures clickable image functionality
+            "comment_text": None,
             "target_type": "page",
             "target_id": target_page["id"],
             "target_name": target_page["name"],
@@ -1371,9 +1376,9 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             "comment_status": None,  
             "created_at": datetime.utcnow(),
             "published_at": datetime.utcnow(),
-            "source": "n8n_integration",  # Mark as n8n source
-            "shop_type": request.shop_type,  # Store shop type for history
-            "webhook_data": {  # Store original webhook data for history
+            "source": "n8n_integration",
+            "shop_type": request.shop_type,
+            "webhook_data": {
                 "title": request.title,
                 "description": request.description,
                 "image_url": request.image_url,
@@ -1382,11 +1387,11 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             }
         }
         
-        # Create Post object for Facebook API
-        post_obj = Post(**post_data)
+        # Create Facebook Post object
+        facebook_post_obj = Post(**facebook_post_data)
         
-        # Publish to Facebook (with test mode detection)
-        print(f"📤 Publishing to Facebook page: {target_page['name']} ({target_page['id']})")
+        # Publish to Facebook with ENHANCED CLICKABLE IMAGE
+        print(f"📤 Publishing to Facebook page: {target_page['name']} ({target_page['id']}) with clickable image")
         
         # Check if this is a test token - if so, simulate success
         if access_token.startswith("test_"):
@@ -1397,35 +1402,110 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             }
             print(f"✅ Simulated Facebook post: {facebook_result['id']}")
         else:
-            # Real Facebook API call
-            facebook_result = await post_to_facebook(post_obj, access_token)
+            # Real Facebook API call with enhanced clickable image handling
+            facebook_result = await post_to_facebook(facebook_post_obj, access_token)
         
         if not facebook_result or "id" not in facebook_result:
             raise Exception("Facebook publishing failed")
         
         facebook_post_id = facebook_result["id"]
-        post_data["facebook_post_id"] = facebook_post_id
+        facebook_post_data["facebook_post_id"] = facebook_post_id
         
-        print(f"✅ Facebook post published: {facebook_post_id}")
+        print(f"✅ Facebook post published with clickable image: {facebook_post_id}")
         
-        # No comment needed - product link is now integrated in post content
-        print("📝 Product link integrated in post content - no comment needed")
+        # NOW PUBLISH TO INSTAGRAM AUTOMATICALLY
+        instagram_result = None
+        instagram_post_id = None
+        instagram_error = None
         
-        # Save to database
-        result = await db.posts.insert_one(post_data)
-        post_data["_id"] = str(result.inserted_id)
+        try:
+            # Find connected Instagram account for this page
+            instagram_account = None
+            
+            # Look for Instagram account connected to this page
+            for bm in user.get("business_managers", []):
+                for ig_account in bm.get("instagram_accounts", []):
+                    if ig_account.get("connected_page_id") == target_page["id"]:
+                        instagram_account = ig_account
+                        print(f"📸 Found connected Instagram account: {ig_account.get('username')} for page {target_page['name']}")
+                        break
+                if instagram_account:
+                    break
+            
+            if instagram_account:
+                # Create Instagram post object
+                instagram_post_data = facebook_post_data.copy()
+                instagram_post_data.update({
+                    "id": str(uuid.uuid4()),
+                    "content": instagram_content,
+                    "target_type": "instagram",
+                    "target_id": instagram_account["id"],
+                    "target_name": instagram_account.get("username", "Instagram Account"),
+                    "platform": "instagram",
+                    "comment_link": None,  # Instagram doesn't support clickable links in posts
+                })
+                
+                instagram_post_obj = Post(**instagram_post_data)
+                
+                print(f"📤 Publishing to Instagram: {instagram_account.get('username')} ({instagram_account['id']})")
+                
+                if access_token.startswith("test_"):
+                    # Test mode for Instagram too
+                    instagram_result = {
+                        "id": f"test_ig_post_{uuid.uuid4().hex[:8]}"
+                    }
+                    print(f"✅ Simulated Instagram post: {instagram_result['id']}")
+                else:
+                    # Real Instagram API call
+                    instagram_result = await post_to_instagram(instagram_post_obj, access_token)
+                
+                if instagram_result and "id" in instagram_result:
+                    instagram_post_id = instagram_result["id"]
+                    facebook_post_data["instagram_post_id"] = instagram_post_id
+                    facebook_post_data["cross_posted_to"] = [{
+                        "platform": "instagram",
+                        "account_name": instagram_account.get("username"),
+                        "account_id": instagram_account["id"],
+                        "post_id": instagram_post_id
+                    }]
+                    print(f"✅ Instagram post published: {instagram_post_id}")
+                else:
+                    instagram_error = "Instagram publishing failed - no ID returned"
+                    print(f"❌ {instagram_error}")
+                    
+            else:
+                instagram_error = f"No Instagram account connected to page {target_page['name']}"
+                print(f"⚠️ {instagram_error}")
+                
+        except Exception as ig_error:
+            instagram_error = str(ig_error)
+            print(f"❌ Instagram publishing error: {instagram_error}")
+        
+        # Save to database with both Facebook and Instagram results
+        result = await db.posts.insert_one(facebook_post_data)
+        facebook_post_data["_id"] = str(result.inserted_id)
+        
+        # Prepare success message
+        success_message = f"Product '{request.title}' published successfully to Facebook"
+        if instagram_post_id:
+            success_message += f" and Instagram"
+        elif instagram_error:
+            success_message += f" (Instagram failed: {instagram_error})"
         
         return {
             "success": True,
-            "message": f"Product '{request.title}' published successfully to Facebook",
+            "message": success_message,
             "facebook_post_id": facebook_post_id,
-            "post_id": post_data["id"],
+            "instagram_post_id": instagram_post_id,
+            "instagram_error": instagram_error,
+            "post_id": facebook_post_data["id"],
             "page_name": target_page["name"],
             "page_id": target_page["id"],
             "user_name": user.get("name"),
             "media_url": media_url,
-            "comment_status": post_data.get("comment_status"),
-            "published_at": post_data["published_at"].isoformat()
+            "comment_status": facebook_post_data.get("comment_status"),
+            "published_at": facebook_post_data["published_at"].isoformat(),
+            "cross_posted": instagram_post_id is not None
         }
         
     except Exception as e:
