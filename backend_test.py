@@ -2869,14 +2869,23 @@ def main():
     
     tester = FacebookPostManagerTester()
     
-    # PRIORITY TESTS FOR CORRECTED FUNCTIONALITY (REVIEW REQUEST FOCUS)
+    # PRIORITY TESTS FOR ENHANCED FUNCTIONALITY (REVIEW REQUEST FOCUS)
     priority_tests = [
         tester.test_health_check,
         tester.test_uploads_directory_exists,
         tester.test_cors_headers,
         tester.test_facebook_config_debug,
         
-        # 🎯 CLICKABLE IMAGES FEATURE TESTS (NEW - MAIN FOCUS)
+        # 🎯 NEW ENHANCED TESTS (MAIN FOCUS - CLICKABLE IMAGES + INSTAGRAM CROSS-POSTING)
+        tester.test_enhanced_product_post_endpoint,
+        tester.test_enhanced_product_post_outdoor_shop,
+        tester.test_enhanced_product_post_logicantiq_shop,
+        tester.test_enhanced_product_post_missing_fields,
+        tester.test_actual_enhanced_product_publishing,
+        tester.test_didier_user_identification,
+        tester.test_content_adaptation_for_platforms,
+        
+        # 🎯 CLICKABLE IMAGES FEATURE TESTS (EXISTING)
         tester.test_clickable_images_feature_publishProduct,
         tester.test_clickable_images_feature_webhook,
         tester.test_clickable_images_fallback_behavior,
