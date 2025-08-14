@@ -1323,8 +1323,8 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        # Create post content combining title and description
-        post_content = f"{request.title}\n\n{request.description}"
+        # Create post content combining title, description, and product link
+        post_content = f"{request.title}\n\n{request.description}\n\n🛒 Voir le produit: {request.product_url}"
         
         # Create post object
         post_data = {
@@ -1339,8 +1339,8 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "image": request.image_url,
                 "type": "product"
             }],
-            "comment_link": request.product_url,  # Add product URL as comment
-            "comment_text": f"🛒 Voir le produit: {request.product_url}",
+            "comment_link": None,  # No longer adding comment - link is in content
+            "comment_text": None,  # No longer adding comment - link is in content
             "target_type": "page",
             "target_id": target_page["id"],
             "target_name": target_page["name"],
