@@ -686,19 +686,39 @@ async def post_to_facebook(post: Post, page_access_token: str):
             endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
             print("📝 Text-only post")
         
-        # Make the API call
-        print(f"🚀 Posting to: {endpoint}")
-        print(f"📋 Request data: {data}")
+        # Make the API call (for link and text posts)
+        if not post.media_urls:  # Only if we haven't already handled media posts
+            print(f"🚀 Posting to: {endpoint}")
+            print(f"📋 Request data: {data}")
+            
+            response = requests.post(endpoint, data=data, timeout=30)
+            result = response.json()
+            
+            print(f"📡 Facebook API response: {response.status_code} - {result}")
+            
+            if response.status_code == 200:
+                return result
+            else:
+                print(f"❌ Facebook API error: {result}")
+                return None
         
-        response = requests.post(endpoint, data=data, timeout=30)  # Increased timeout
+        # If we get here from media posts fallback, make a simple text post
+        data = {
+            "access_token": page_access_token,
+            "message": post.content if post.content and post.content.strip() else "Post créé depuis Meta Publishing Platform"
+        }
+        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+        print("📝 Final fallback: Text-only post")
+        
+        response = requests.post(endpoint, data=data, timeout=30)
         result = response.json()
         
-        print(f"📡 Facebook API response: {response.status_code} - {result}")
+        print(f"📡 Facebook final fallback response: {response.status_code} - {result}")
         
         if response.status_code == 200:
             return result
         else:
-            print(f"❌ Facebook API error: {result}")
+            print(f"❌ Facebook final fallback error: {result}")
             return None
             
     except Exception as e:
