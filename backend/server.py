@@ -518,9 +518,19 @@ async def post_to_facebook(post: Post, page_access_token: str):
             if media_url.startswith('http'):
                 full_media_url = media_url
             else:
-                # Use public domain for sharing links
+                # Use public domain for sharing links - ensure it's accessible externally
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
+            
+            # Verify the image URL is accessible before creating clickable post
+            try:
+                img_check = requests.head(full_media_url, timeout=10)
+                if img_check.status_code != 200:
+                    print(f"⚠️ Image URL not accessible: {full_media_url} (status: {img_check.status_code})")
+                    # Continue anyway, Facebook might be able to access it
+            except Exception as img_error:
+                print(f"⚠️ Could not verify image accessibility: {img_error}")
+                # Continue anyway
             
             print(f"🔗 Creating CLICKABLE image post: {full_media_url} -> {product_link}")
             
