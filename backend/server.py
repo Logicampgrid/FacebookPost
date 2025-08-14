@@ -3236,7 +3236,101 @@ async def test_clickable_and_instagram(request: dict):
             "message": f"Diagnostic failed: {str(e)}",
             "timestamp": datetime.utcnow().isoformat()
         }
-@app.post("/api/test/product-post-enhanced")
+
+# Direct test endpoint for posting with real token
+@app.post("/api/test/post-direct")
+async def test_direct_posting(request: dict):
+    """Direct posting test with real Facebook token"""
+    try:
+        access_token = request.get("access_token")
+        test_type = request.get("test_type", "clickable")  # "clickable" or "instagram"
+        
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Access token is required")
+        
+        # Validate token
+        user_info = await get_facebook_user_info(access_token)
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Invalid access token")
+        
+        print(f"🧪 Direct posting test for user: {user_info.get('name')}")
+        
+        if test_type == "clickable":
+            # Test clickable image post
+            post_data = Post(
+                id=str(uuid.uuid4()),
+                user_id=user_info.get("id"),
+                content="🧪 Test image cliquable - Cliquez sur l'image pour voir le produit !",
+                media_urls=["/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"],
+                comment_link="https://logicampoutdoor.com/product/test-clickable-123",
+                target_type="page",
+                target_id="102401876209415",  # From logs
+                target_name="Le Berger Blanc Suisse",
+                platform="facebook",
+                status="published",
+                created_at=datetime.utcnow(),
+                published_at=datetime.utcnow()
+            )
+            
+            # Try to post to Facebook
+            result = await post_to_facebook(post_data, access_token)
+            
+            if result:
+                return {
+                    "status": "success",
+                    "message": "Clickable image post created successfully!",
+                    "facebook_post_id": result.get("id"),
+                    "test_type": "clickable_image",
+                    "result": result
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "Failed to create clickable image post",
+                    "test_type": "clickable_image"
+                }
+                
+        elif test_type == "instagram":
+            # Test Instagram post
+            post_data = Post(
+                id=str(uuid.uuid4()),
+                user_id=user_info.get("id"),
+                content="🧪 Test Instagram automatique ! 📸 #test #api",
+                media_urls=["/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"],
+                target_type="instagram",
+                target_id="17841459952999804",  # From logs
+                target_name="logicamp_berger",
+                platform="instagram",
+                status="published",
+                created_at=datetime.utcnow(),
+                published_at=datetime.utcnow()
+            )
+            
+            # Try to post to Instagram
+            result = await post_to_instagram(post_data, access_token)
+            
+            if result:
+                return {
+                    "status": "success", 
+                    "message": "Instagram post created successfully!",
+                    "instagram_post_id": result.get("id"),
+                    "test_type": "instagram",
+                    "result": result
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "Failed to create Instagram post", 
+                    "test_type": "instagram"
+                }
+        
+    except Exception as e:
+        print(f"❌ Direct posting test error: {e}")
+        return {
+            "status": "error",
+            "message": f"Direct posting test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
 async def test_enhanced_product_posting(request: ProductPublishRequest):
     """Test endpoint to verify enhanced product posting with clickable images and Instagram cross-posting"""
     try:
