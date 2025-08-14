@@ -498,7 +498,7 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with SIMPLIFIED and RELIABLE media handling"""
+    """Post content to Facebook page/group with CLICKABLE IMAGES feature"""
     try:
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
@@ -510,7 +510,68 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: Media posts with direct upload (SIMPLIFIED)
+        # STRATEGY 1: CLICKABLE IMAGES - Use link post with picture when product_link exists
+        if post.media_urls and product_link:
+            media_url = post.media_urls[0]
+            
+            # Get full media URL for picture parameter
+            if media_url.startswith('http'):
+                full_media_url = media_url
+            else:
+                # Use public domain for sharing links
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-acknowledge.preview.emergentagent.com")
+                full_media_url = f"{base_url}{media_url}"
+            
+            print(f"🔗 Creating CLICKABLE image post: {full_media_url} -> {product_link}")
+            
+            # Determine media type
+            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+            is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+            
+            # For clickable images, use /feed endpoint with link + picture parameters
+            if is_image:  # Only images can be made clickable this way
+                try:
+                    # Create link post with clickable image
+                    data = {
+                        "access_token": page_access_token,
+                        "link": product_link,  # This makes the image clickable
+                        "picture": full_media_url,  # This is the image to display
+                    }
+                    
+                    # Add message/caption if provided
+                    if post.content and post.content.strip():
+                        # Remove product link from message since it's now in the link
+                        message = post.content
+                        if product_link in message:
+                            message = message.replace(product_link, '').strip()
+                            message = message.replace('🛒 Voir le produit:', '').strip()
+                            message = message.replace('\n\n', '\n').strip()
+                        data["message"] = message
+                    
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                    print(f"🔗 Creating clickable image post to: {endpoint}")
+                    print(f"📸 Image URL: {full_media_url}")
+                    print(f"🎯 Target URL: {product_link}")
+                    print(f"💬 Message: {data.get('message', 'No message')}")
+                    
+                    response = requests.post(endpoint, data=data, timeout=30)
+                    result = response.json()
+                    
+                    print(f"Facebook clickable image response: {response.status_code} - {result}")
+                    
+                    if response.status_code == 200 and 'id' in result:
+                        print("✅ Clickable image post created successfully!")
+                        return result
+                    else:
+                        print(f"❌ Clickable image post failed: {result}")
+                        # Fall back to direct upload for videos or if link post fails
+                        raise Exception("Clickable image post failed")
+                        
+                except Exception as clickable_error:
+                    print(f"Clickable image error: {clickable_error}")
+                    print("🔄 Falling back to direct upload method...")
+        
+        # STRATEGY 2: Direct media upload (for videos or when no product link)
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -525,14 +586,14 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 Processing media for Facebook: {full_media_url}")
+            print(f"📸 Processing media for Facebook (direct upload): {full_media_url}")
             print(f"📁 Local file path: {local_file_path}")
             
             # Determine media type
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
-            # Direct multipart upload - PRIORITIZED approach
+            # Direct multipart upload
             try:
                 # Use local file for better performance if available
                 if local_file_path and os.path.exists(local_file_path):
@@ -588,7 +649,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
                     print(f"🎥 Uploading video to: {endpoint}")
                 else:
-                    # For images, use /photos endpoint
+                    # For images, use /photos endpoint (when no clickable link needed)
                     files = {'source': ('image.jpg', media_content, content_type)}
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
                     print(f"📸 Uploading image to: {endpoint}")
