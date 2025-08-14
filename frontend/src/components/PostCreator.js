@@ -468,6 +468,26 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
                 <span className="font-medium">📸 Priorité :</span> Vos images uploadées seront utilisées à la place des images des liens détectés
               </div>
             )}
+            
+            {/* Clickable Images Indicator */}
+            {mediaFiles.length > 0 && (detectedLinks.length > 0 || commentLink) && (
+              (!crossPostMode && selectedPlatform?.platform === 'facebook') || 
+              (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))
+            ) && (
+              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Target className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Images cliquables activées</span>
+                </div>
+                <p className="text-xs text-green-700 mt-1">
+                  🎯 <strong>Nouveau :</strong> Vos images seront cliquables sur Facebook et redirigeront vers{' '}
+                  {detectedLinks.length > 0 ? 
+                    `le lien détecté (${detectedLinks[0].url.substring(0, 30)}...)` : 
+                    'le lien du commentaire'
+                  } comme un partage Facebook !
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Comment Section - Facebook only */}
