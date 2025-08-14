@@ -1087,6 +1087,38 @@ async def add_comment_to_facebook_post(facebook_post_id: str, comment_text: str,
         print(f"Error adding comment to Facebook post: {e}")
         return None
 
+def generate_enhanced_product_description(title: str, description: str, shop_type: str = None, platform: str = "facebook") -> str:
+    """Generate enhanced product description based on shop type and platform"""
+    try:
+        # Base content
+        content = f"{title}\n\n{description}"
+        
+        # Add platform-specific enhancements
+        if platform == "instagram":
+            # Instagram-specific content
+            content += "\n\n🛒 Lien en bio pour plus d'infos!"
+            
+            # Add relevant hashtags based on shop type
+            if shop_type == "outdoor":
+                content += "\n\n#outdoor #camping #nature #aventure #logicampoutdoor"
+            elif shop_type == "gizmobbs":
+                content += "\n\n#bergerblancsuisse #chien #dog #animaux #gizmobbs"
+            elif shop_type == "logicantiq":
+                content += "\n\n#antique #vintage #collection #logicantiq"
+            else:
+                content += "\n\n#produit #qualité #shopping"
+        else:
+            # Facebook-specific content - keep it clean for clickable images
+            # The product link will be handled separately as a clickable parameter
+            pass
+            
+        return content
+        
+    except Exception as e:
+        print(f"❌ Error generating enhanced description: {e}")
+        # Fallback to basic content
+        return f"{title}\n\n{description}"
+
 def extract_urls_from_text(text: str):
     """Extract URLs from text content"""
     # Regex pattern for URLs
