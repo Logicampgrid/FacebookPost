@@ -3128,7 +3128,114 @@ async def extract_links_from_text_content(text_content: dict):
         print(f"Error extracting links: {e}")
         raise HTTPException(status_code=500, detail=f"Error extracting links: {str(e)}")
 
-# Test endpoint for debugging enhanced product posting
+# Enhanced diagnostic endpoint for clickable images and Instagram
+@app.post("/api/test/clickable-instagram")
+async def test_clickable_and_instagram(request: dict):
+    """Test endpoint for diagnosing clickable images and Instagram issues"""
+    try:
+        access_token = request.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Access token is required")
+        
+        print(f"🧪 Testing clickable images and Instagram functionality...")
+        
+        # Test 1: Validate token and get user info
+        user_info = await get_facebook_user_info(access_token)
+        if not user_info:
+            return {"status": "error", "message": "Invalid access token"}
+        
+        print(f"✅ Token valid for user: {user_info.get('name')}")
+        
+        # Test 2: Get user's pages and Instagram accounts
+        pages = await get_facebook_pages(access_token)
+        business_managers = await get_facebook_business_managers(access_token)
+        
+        instagram_accounts = []
+        for bm in business_managers:
+            ig_accounts = await get_business_manager_instagram_accounts(access_token, bm["id"])
+            instagram_accounts.extend(ig_accounts)
+        
+        print(f"📊 Found {len(pages)} personal pages, {len(business_managers)} business managers, {len(instagram_accounts)} Instagram accounts")
+        
+        # Test 3: Check image access
+        test_image_path = "/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-confirm-4.preview.emergentagent.com")
+        full_image_url = f"{base_url}{test_image_path}"
+        
+        # Test 4: Prepare test data
+        clickable_test_data = None
+        instagram_test_data = None
+        
+        if pages or business_managers:
+            # Prepare Facebook clickable image test
+            target_page = None
+            if business_managers:
+                for bm in business_managers:
+                    bm_pages = await get_business_manager_pages(access_token, bm["id"])
+                    if bm_pages:
+                        target_page = bm_pages[0]
+                        break
+            elif pages:
+                target_page = pages[0]
+            
+            if target_page:
+                clickable_test_data = {
+                    "method": "clickable_image_post",
+                    "target": {
+                        "id": target_page["id"],
+                        "name": target_page["name"],
+                        "type": "page"
+                    },
+                    "image_url": full_image_url,
+                    "product_url": "https://logicampoutdoor.com/product/test-clickable-123",
+                    "content": "🧪 Test image cliquable - Cliquez sur l'image pour voir le produit !",
+                    "strategy": "link_post_with_picture"
+                }
+        
+        if instagram_accounts:
+            # Prepare Instagram test
+            instagram_test_data = {
+                "method": "instagram_media_post", 
+                "target": {
+                    "id": instagram_accounts[0]["id"],
+                    "username": instagram_accounts[0].get("username", "unknown"),
+                    "name": instagram_accounts[0].get("name", "Instagram Account")
+                },
+                "image_url": full_image_url,
+                "content": "🧪 Test Instagram automatique ! 📸 #test #api",
+                "process": "two_step_container_publish"
+            }
+        
+        return {
+            "status": "success",
+            "message": "Diagnostic completed - ready for testing",
+            "user": {
+                "name": user_info.get("name"),
+                "id": user_info.get("id")
+            },
+            "available_targets": {
+                "facebook_pages": len(pages),
+                "business_managers": len(business_managers),
+                "instagram_accounts": len(instagram_accounts)
+            },
+            "test_preparations": {
+                "clickable_images": clickable_test_data,
+                "instagram_posting": instagram_test_data
+            },
+            "next_steps": [
+                "Use prepared test data to make actual API calls",
+                "Monitor backend logs for detailed error messages",
+                "Check Facebook permissions if posts fail"
+            ]
+        }
+        
+    except Exception as e:
+        print(f"❌ Diagnostic test error: {e}")
+        return {
+            "status": "error", 
+            "message": f"Diagnostic failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
 @app.post("/api/test/product-post-enhanced")
 async def test_enhanced_product_posting(request: ProductPublishRequest):
     """Test endpoint to verify enhanced product posting with clickable images and Instagram cross-posting"""
