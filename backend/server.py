@@ -1415,12 +1415,11 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        # Create post content for Facebook (with product link for CLICKABLE IMAGES)
-        facebook_content = f"{request.title}\n\n{request.description}"
-        # Note: product link will be used as clickable link parameter, not in content
+        # Enhanced product description generation
+        facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type)
         
         # Create post content for Instagram (links don't work well in Instagram posts)
-        instagram_content = f"{request.title}\n\n{request.description}\n\n🛒 Lien en bio pour plus d'infos!"
+        instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
         
         # Create post object for Facebook (with enhanced clickable image setup)
         facebook_post_data = {
