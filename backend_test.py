@@ -1326,6 +1326,459 @@ class FacebookPostManagerTester:
         
         return success
 
+    # NEW ENHANCED TESTS FOR CLICKABLE IMAGES AND INSTAGRAM CROSS-POSTING
+
+    def test_enhanced_product_post_endpoint(self):
+        """Test the new enhanced product post endpoint for clickable images + Instagram"""
+        product_data = {
+            "title": "Smartphone Premium 2025",
+            "description": "Le dernier smartphone avec toutes les fonctionnalités avancées pour une expérience utilisateur exceptionnelle",
+            "image_url": "https://picsum.photos/800/600?random=enhanced1",
+            "product_url": "https://gizmobbs.com/smartphone-premium-2025",
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "Enhanced Product Post Test (Clickable Images + Instagram)",
+            "POST",
+            "api/test/product-post-enhanced",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            status = response.get("status")
+            test_data = response.get("test_data", {})
+            features_tested = response.get("features_tested", [])
+            next_steps = response.get("next_steps", [])
+            
+            print(f"   Status: {status}")
+            print(f"   User: {test_data.get('user_name')}")
+            
+            # Check Facebook page identification
+            facebook_page = test_data.get("facebook_page", {})
+            if facebook_page.get("name"):
+                print(f"✅ Facebook page identified: {facebook_page['name']} ({facebook_page['id']})")
+                
+                # For gizmobbs shop type, should find "Le Berger Blanc Suisse"
+                if "berger" in facebook_page["name"].lower() or "blanc" in facebook_page["name"].lower():
+                    print("✅ Correct page mapping for gizmobbs -> Le Berger Blanc Suisse")
+                else:
+                    print(f"⚠️  Expected 'Le Berger Blanc Suisse' page, got: {facebook_page['name']}")
+            else:
+                print("❌ No Facebook page identified")
+            
+            # Check Instagram account detection
+            instagram_account = test_data.get("instagram_account", {})
+            if instagram_account.get("connected"):
+                print(f"✅ Instagram account connected: @{instagram_account.get('username')} ({instagram_account.get('id')})")
+                
+                # Should find @logicamp_berger for Le Berger Blanc Suisse page
+                if "logicamp" in instagram_account.get("username", "").lower():
+                    print("✅ Correct Instagram account: @logicamp_berger")
+                else:
+                    print(f"⚠️  Expected @logicamp_berger, got: @{instagram_account.get('username')}")
+            else:
+                print("⚠️  No Instagram account connected to the page")
+            
+            # Check content preparation
+            content_prepared = test_data.get("content_prepared", {})
+            facebook_content = content_prepared.get("facebook_content", "")
+            instagram_content = content_prepared.get("instagram_content", "")
+            clickable_link = content_prepared.get("clickable_link", "")
+            
+            if facebook_content and instagram_content:
+                print("✅ Content prepared for both platforms")
+                print(f"   Facebook content length: {len(facebook_content)} chars")
+                print(f"   Instagram content length: {len(instagram_content)} chars")
+                
+                # Instagram content should have "Lien en bio"
+                if "lien en bio" in instagram_content.lower():
+                    print("✅ Instagram content adapted with 'Lien en bio'")
+                else:
+                    print("⚠️  Instagram content missing 'Lien en bio' adaptation")
+            else:
+                print("❌ Content preparation failed")
+            
+            # Check clickable link setup
+            if clickable_link == product_data["product_url"]:
+                print("✅ Clickable link correctly set for Facebook images")
+            else:
+                print(f"❌ Clickable link mismatch: expected {product_data['product_url']}, got {clickable_link}")
+            
+            # Check features tested
+            expected_features = [
+                "Image download and optimization",
+                "Facebook page identification", 
+                "Instagram account detection",
+                "Clickable image data preparation",
+                "Cross-posting content preparation"
+            ]
+            
+            features_found = 0
+            for expected in expected_features:
+                if any(expected.lower() in feature.lower() for feature in features_tested):
+                    features_found += 1
+                    print(f"✅ Feature tested: {expected}")
+                else:
+                    print(f"❌ Feature not tested: {expected}")
+            
+            if features_found == len(expected_features):
+                print("✅ All enhanced features tested successfully")
+            else:
+                print(f"⚠️  Only {features_found}/{len(expected_features)} features tested")
+        
+        return success
+
+    def test_enhanced_product_post_outdoor_shop(self):
+        """Test enhanced endpoint with outdoor shop type"""
+        product_data = {
+            "title": "Tente 4 Saisons Ultra-Légère",
+            "description": "Tente de randonnée professionnelle résistante aux conditions extrêmes",
+            "image_url": "https://picsum.photos/800/600?random=outdoor1",
+            "product_url": "https://logicampoutdoor.com/tente-4-saisons",
+            "shop_type": "outdoor"
+        }
+        
+        success, response = self.run_test(
+            "Enhanced Product Post (Outdoor Shop)",
+            "POST",
+            "api/test/product-post-enhanced",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            test_data = response.get("test_data", {})
+            facebook_page = test_data.get("facebook_page", {})
+            
+            if facebook_page.get("name"):
+                print(f"   Page selected: {facebook_page['name']}")
+                
+                # Should find LogicampOutdoor page
+                if "logicamp" in facebook_page["name"].lower() and "outdoor" in facebook_page["name"].lower():
+                    print("✅ Correct page mapping for outdoor -> LogicampOutdoor")
+                else:
+                    print(f"⚠️  Expected LogicampOutdoor page, got: {facebook_page['name']}")
+        
+        return success
+
+    def test_enhanced_product_post_logicantiq_shop(self):
+        """Test enhanced endpoint with logicantiq shop type"""
+        product_data = {
+            "title": "Commode Louis XVI Authentique",
+            "description": "Magnifique commode d'époque Louis XVI en marqueterie, parfaitement restaurée",
+            "image_url": "https://picsum.photos/800/600?random=antique1",
+            "product_url": "https://logicantiq.com/commode-louis-xvi",
+            "shop_type": "logicantiq"
+        }
+        
+        success, response = self.run_test(
+            "Enhanced Product Post (LogicAntiq Shop)",
+            "POST",
+            "api/test/product-post-enhanced",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            test_data = response.get("test_data", {})
+            facebook_page = test_data.get("facebook_page", {})
+            
+            if facebook_page.get("name"):
+                print(f"   Page selected: {facebook_page['name']}")
+                
+                # Should find LogicAntiq page
+                if "logicantiq" in facebook_page["name"].lower() or "antiq" in facebook_page["name"].lower():
+                    print("✅ Correct page mapping for logicantiq -> LogicAntiq")
+                else:
+                    print(f"⚠️  Expected LogicAntiq page, got: {facebook_page['name']}")
+        
+        return success
+
+    def test_enhanced_product_post_missing_fields(self):
+        """Test enhanced endpoint with missing required fields"""
+        test_cases = [
+            {
+                "name": "Missing Title",
+                "data": {
+                    "description": "Description without title",
+                    "image_url": "https://picsum.photos/800/600",
+                    "product_url": "https://example.com/product",
+                    "shop_type": "gizmobbs"
+                },
+                "expected_error": "title"
+            },
+            {
+                "name": "Missing Description", 
+                "data": {
+                    "title": "Product Title",
+                    "image_url": "https://picsum.photos/800/600",
+                    "product_url": "https://example.com/product",
+                    "shop_type": "gizmobbs"
+                },
+                "expected_error": "description"
+            },
+            {
+                "name": "Invalid Image URL",
+                "data": {
+                    "title": "Product Title",
+                    "description": "Product description",
+                    "image_url": "not-a-valid-url",
+                    "product_url": "https://example.com/product",
+                    "shop_type": "gizmobbs"
+                },
+                "expected_error": "image"
+            },
+            {
+                "name": "Invalid Product URL",
+                "data": {
+                    "title": "Product Title",
+                    "description": "Product description", 
+                    "image_url": "https://picsum.photos/800/600",
+                    "product_url": "not-a-valid-url",
+                    "shop_type": "gizmobbs"
+                },
+                "expected_error": "product"
+            }
+        ]
+        
+        all_passed = True
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Enhanced Validation ({test_case['name']})",
+                "POST",
+                "api/test/product-post-enhanced",
+                400,  # Should return 400 for validation errors
+                data=test_case["data"]
+            )
+            
+            if success:
+                detail = response.get("detail", "").lower()
+                if test_case["expected_error"].lower() in detail:
+                    print(f"✅ Correct validation error for {test_case['name']}")
+                else:
+                    print(f"⚠️  Unexpected error message for {test_case['name']}: {detail}")
+            else:
+                all_passed = False
+        
+        return all_passed
+
+    def test_actual_enhanced_product_publishing(self):
+        """Test actual enhanced product publishing with clickable images and Instagram cross-posting"""
+        product_data = {
+            "title": "Test Produit Amélioré - Images Cliquables",
+            "description": "Ce produit teste les nouvelles fonctionnalités : images cliquables sur Facebook et publication automatique sur Instagram",
+            "image_url": "https://picsum.photos/800/600?random=realtest1",
+            "product_url": "https://gizmobbs.com/test-produit-ameliore",
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "Actual Enhanced Product Publishing",
+            "POST",
+            "api/publishProduct",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            facebook_post_id = response.get("facebook_post_id")
+            instagram_post_id = response.get("instagram_post_id")
+            instagram_error = response.get("instagram_error")
+            page_name = response.get("page_name")
+            message = response.get("message", "")
+            
+            print(f"   Published to page: {page_name}")
+            print(f"   Facebook post ID: {facebook_post_id}")
+            print(f"   Instagram post ID: {instagram_post_id}")
+            
+            # Check Facebook publishing
+            if facebook_post_id:
+                print("✅ Facebook post created successfully")
+                
+                # Check if it's a test post or real post
+                if facebook_post_id.startswith("test_"):
+                    print("✅ Test mode - Facebook post simulated")
+                else:
+                    print("✅ Real Facebook post created")
+            else:
+                print("❌ Facebook post creation failed")
+            
+            # Check Instagram cross-posting
+            if instagram_post_id:
+                print("✅ Instagram cross-posting successful")
+                
+                if instagram_post_id.startswith("test_"):
+                    print("✅ Test mode - Instagram post simulated")
+                else:
+                    print("✅ Real Instagram post created")
+                    
+                # Check if message mentions both platforms
+                if "facebook" in message.lower() and "instagram" in message.lower():
+                    print("✅ Success message mentions both platforms")
+                else:
+                    print("⚠️  Success message should mention both platforms")
+                    
+            elif instagram_error:
+                print(f"⚠️  Instagram cross-posting failed: {instagram_error}")
+                
+                # Common expected errors
+                if "no instagram account" in instagram_error.lower():
+                    print("✅ Expected error - no Instagram account connected")
+                elif "test mode" in instagram_error.lower():
+                    print("✅ Expected behavior in test mode")
+                else:
+                    print(f"⚠️  Unexpected Instagram error: {instagram_error}")
+            else:
+                print("⚠️  No Instagram post ID or error reported")
+            
+            # Check for clickable image indicators
+            duplicate_skipped = response.get("duplicate_skipped", False)
+            if duplicate_skipped:
+                print("✅ Duplicate detection working (post was already created)")
+            else:
+                print("✅ New post created with enhanced features")
+        
+        return success
+
+    def test_didier_user_identification(self):
+        """Test that the system correctly identifies Didier Preud'homme and his pages"""
+        # This test verifies the specific user/page/Instagram mapping mentioned in the request
+        product_data = {
+            "title": "Test Identification Didier",
+            "description": "Test pour vérifier l'identification de Didier Preud'homme -> Le Berger Blanc Suisse -> @logicamp_berger",
+            "image_url": "https://picsum.photos/800/600?random=didier1",
+            "product_url": "https://gizmobbs.com/test-didier",
+            "shop_type": "gizmobbs"  # Should map to "Le Berger Blanc Suisse"
+        }
+        
+        success, response = self.run_test(
+            "Didier User/Page/Instagram Identification",
+            "POST",
+            "api/test/product-post-enhanced",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            test_data = response.get("test_data", {})
+            user_name = test_data.get("user_name", "")
+            facebook_page = test_data.get("facebook_page", {})
+            instagram_account = test_data.get("instagram_account", {})
+            
+            print(f"   User identified: {user_name}")
+            print(f"   Facebook page: {facebook_page.get('name')} ({facebook_page.get('id')})")
+            print(f"   Instagram: @{instagram_account.get('username')} (connected: {instagram_account.get('connected')})")
+            
+            # Check the expected mapping chain
+            expected_checks = []
+            
+            # Check user identification (should be Didier or similar)
+            if "didier" in user_name.lower() or "preud" in user_name.lower():
+                expected_checks.append("✅ Didier Preud'homme identified")
+            else:
+                expected_checks.append(f"⚠️  Expected Didier Preud'homme, got: {user_name}")
+            
+            # Check Facebook page (should be Le Berger Blanc Suisse)
+            page_name = facebook_page.get("name", "").lower()
+            if "berger" in page_name and "blanc" in page_name and "suisse" in page_name:
+                expected_checks.append("✅ Le Berger Blanc Suisse page identified")
+            elif facebook_page.get("id") == "102401876209415":  # Expected page ID from config
+                expected_checks.append("✅ Correct page ID (102401876209415) identified")
+            else:
+                expected_checks.append(f"⚠️  Expected 'Le Berger Blanc Suisse', got: {facebook_page.get('name')}")
+            
+            # Check Instagram account (should be @logicamp_berger)
+            instagram_username = instagram_account.get("username", "").lower()
+            if "logicamp" in instagram_username and "berger" in instagram_username:
+                expected_checks.append("✅ @logicamp_berger Instagram account identified")
+            elif instagram_account.get("connected"):
+                expected_checks.append(f"⚠️  Expected @logicamp_berger, got: @{instagram_account.get('username')}")
+            else:
+                expected_checks.append("⚠️  No Instagram account connected (may be expected in test mode)")
+            
+            # Print all checks
+            for check in expected_checks:
+                print(f"   {check}")
+            
+            # Overall assessment
+            success_count = sum(1 for check in expected_checks if check.startswith("✅"))
+            if success_count >= 2:  # At least 2 out of 3 should work
+                print("✅ User/Page/Instagram identification chain working")
+            else:
+                print("⚠️  User/Page/Instagram identification needs attention")
+        
+        return success
+
+    def test_content_adaptation_for_platforms(self):
+        """Test that content is properly adapted for Facebook vs Instagram"""
+        product_data = {
+            "title": "Produit Test Adaptation Contenu",
+            "description": "Ce produit teste l'adaptation du contenu pour Facebook (avec lien cliquable) et Instagram (avec 'Lien en bio')",
+            "image_url": "https://picsum.photos/800/600?random=content1",
+            "product_url": "https://gizmobbs.com/test-adaptation-contenu",
+            "shop_type": "gizmobbs"
+        }
+        
+        success, response = self.run_test(
+            "Content Adaptation for Platforms",
+            "POST",
+            "api/test/product-post-enhanced",
+            200,
+            data=product_data
+        )
+        
+        if success:
+            test_data = response.get("test_data", {})
+            content_prepared = test_data.get("content_prepared", {})
+            
+            facebook_content = content_prepared.get("facebook_content", "")
+            instagram_content = content_prepared.get("instagram_content", "")
+            clickable_link = content_prepared.get("clickable_link", "")
+            
+            print(f"   Facebook content: {facebook_content[:100]}...")
+            print(f"   Instagram content: {instagram_content[:100]}...")
+            print(f"   Clickable link: {clickable_link}")
+            
+            # Check Facebook content (should NOT contain the product URL in text)
+            if product_data["product_url"] not in facebook_content:
+                print("✅ Facebook content doesn't contain product URL (will be clickable image)")
+            else:
+                print("⚠️  Facebook content contains product URL (should be clickable image instead)")
+            
+            # Check Instagram content (should contain "Lien en bio")
+            if "lien en bio" in instagram_content.lower():
+                print("✅ Instagram content adapted with 'Lien en bio'")
+            else:
+                print("❌ Instagram content missing 'Lien en bio' adaptation")
+            
+            # Check that both contents contain the title and description
+            if product_data["title"] in facebook_content and product_data["description"] in facebook_content:
+                print("✅ Facebook content contains title and description")
+            else:
+                print("❌ Facebook content missing title or description")
+            
+            if product_data["title"] in instagram_content and product_data["description"] in instagram_content:
+                print("✅ Instagram content contains title and description")
+            else:
+                print("❌ Instagram content missing title or description")
+            
+            # Check clickable link setup
+            if clickable_link == product_data["product_url"]:
+                print("✅ Clickable link correctly set for Facebook images")
+            else:
+                print(f"❌ Clickable link incorrect: expected {product_data['product_url']}, got {clickable_link}")
+            
+            # Check content length differences
+            if len(instagram_content) > len(facebook_content):
+                print("✅ Instagram content longer (includes 'Lien en bio' text)")
+            else:
+                print("⚠️  Instagram content should be longer than Facebook content")
+        
+        return success
+
     def test_facebook_posting_strategy_simulation(self):
         """Test Facebook posting strategy with different content types"""
         test_cases = [
