@@ -1824,7 +1824,7 @@ async def publish_product_from_n8n(request: ProductPublishRequest):
                 "page_id": result["page_id"],
                 "user_name": result["user_name"],
                 "published_at": result["published_at"],
-                "comment_added": result["comment_status"] == "success",
+                "comment_added": False,  # Link is now in post content, not comment
                 "product_title": request.title,
                 "product_url": request.product_url
             }
