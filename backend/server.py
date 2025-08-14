@@ -615,36 +615,32 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 
                 # STRATEGY 1B: Direct multipart upload with message and link integration
                 try:
-                    # Add product link to message for clickability while keeping image visible
-                    enhanced_message = base_data.get("message", "")
+                    # Add product link to message for additional visibility
                     if product_link:
-                        if enhanced_message:
-                            enhanced_message += f"\n\n🛒 Voir le produit: {product_link}"
+                        if base_data.get("message"):
+                            base_data["message"] += f"\n\n🛒 Voir le produit: {product_link}"
                         else:
-                            enhanced_message = f"📸 Découvrez ce produit: {product_link}"
-                        base_data["message"] = enhanced_message
-                        # Also add link parameter for Facebook to create rich link preview in comments
-                        base_data["link"] = product_link
+                            base_data["message"] = f"📸 Découvrez ce produit: {product_link}"
                     
                     if is_video:
                         # For videos, use /videos endpoint
                         files = {'source': ('video.mp4', media_content, 'video/mp4')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
-                        print(f"🎥 Uploading optimized video to: {endpoint}")
+                        print(f"🎥 Uploading video to: {endpoint}")
                     else:
-                        # For images, use /photos endpoint with optimized content
+                        # For images, use /photos endpoint
                         files = {'source': ('image.jpg', media_content, 'image/jpeg')}
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                        print(f"📸 Uploading optimized image to: {endpoint}")
+                        print(f"📸 Uploading image to: {endpoint}")
                         print(f"💬 With message: {base_data.get('message', 'No message')}")
                     
-                    response = requests.post(endpoint, data=base_data, files=files, timeout=60)  # Increased timeout
+                    response = requests.post(endpoint, data=base_data, files=files, timeout=60)
                     result = response.json()
                     
                     print(f"Facebook direct upload response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Direct optimized media upload successful!")
+                        print("✅ Direct media upload successful!")
                         return result
                     else:
                         print(f"❌ Direct upload failed: {result}")
