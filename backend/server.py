@@ -498,14 +498,10 @@ async def get_facebook_groups(access_token: str):
         return []
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with ENHANCED and OPTIMIZED media handling"""
+    """Post content to Facebook page/group with SIMPLIFIED and RELIABLE media handling"""
     try:
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
-        
-        # Initialize variables to avoid scope issues
-        data = {"access_token": page_access_token}
-        endpoint = ""
         
         # Check if we have a product link to make images clickable
         product_link = None
@@ -514,14 +510,13 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: Media posts with CLICKABLE LINKS (prioritize clickable images)
+        # STRATEGY 1: Media posts with direct upload (SIMPLIFIED)
         if post.media_urls:
             media_url = post.media_urls[0]
             
-            # Get full media URL - use environment variable or construct proper public URL
+            # Get full media URL and local path
             if media_url.startswith('http'):
                 full_media_url = media_url
-                # Try to extract local path for direct upload
                 local_file_path = None
             else:
                 # Use public domain for sharing links
@@ -530,47 +525,14 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 Processing media for CLICKABLE post: {full_media_url}")
+            print(f"📸 Processing media for Facebook: {full_media_url}")
             print(f"📁 Local file path: {local_file_path}")
             
             # Determine media type
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
-            # STRATEGY 1A: Clickable link post (PREFERRED for clickable images)
-            if product_link and is_image:
-                try:
-                    print(f"🔗 Creating CLICKABLE post with product link: {product_link}")
-                    
-                    # Use feed endpoint with only link parameter - Facebook will fetch the image from the link
-                    feed_data = {
-                        "access_token": page_access_token,
-                        "link": product_link,
-                        "message": post.content if post.content and post.content.strip() else f"📸 Découvrez ce produit"
-                    }
-                    
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                    print(f"🔗 Creating clickable post to: {endpoint}")
-                    print(f"📋 Feed data: {feed_data}")
-                    
-                    response = requests.post(endpoint, data=feed_data, timeout=60)
-                    result = response.json()
-                    
-                    print(f"Facebook clickable post response: {response.status_code} - {result}")
-                    
-                    if response.status_code == 200 and 'id' in result:
-                        print("✅ Clickable link post created successfully!")
-                        print("ℹ️ Facebook will fetch the image from the product link automatically")
-                        return result
-                    else:
-                        print(f"❌ Clickable post failed: {result}")
-                        raise Exception("Clickable post failed")
-                        
-                except Exception as clickable_error:
-                    print(f"Clickable post error: {clickable_error}")
-                    print("🔄 Falling back to direct upload with enhanced message...")
-            
-            # STRATEGY 1B: Direct multipart upload (fallback when no product link or for videos)
+            # Direct multipart upload - PRIORITIZED approach
             try:
                 # Use local file for better performance if available
                 if local_file_path and os.path.exists(local_file_path):
@@ -598,9 +560,9 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     # Fallback to download method
                     media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
                 
-                print(f"📊 Optimized media info: size={len(media_content)} bytes, type={content_type}")
+                print(f"📊 Media info: size={len(media_content)} bytes, type={content_type}")
                 
-                # Determine media type and file extension  
+                # Determine media type for Facebook API
                 is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
                 is_image = content_type.startswith('image/') or media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
                 
@@ -613,131 +575,84 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 if post.content and post.content.strip():
                     base_data["message"] = post.content
                 
-                # STRATEGY 1B: Direct multipart upload with message and link integration
-                try:
-                    # Add product link to message for additional visibility
-                    if product_link:
-                        if base_data.get("message"):
-                            base_data["message"] += f"\n\n🛒 Voir le produit: {product_link}"
-                        else:
-                            base_data["message"] = f"📸 Découvrez ce produit: {product_link}"
-                    
-                    if is_video:
-                        # For videos, use /videos endpoint
-                        files = {'source': ('video.mp4', media_content, 'video/mp4')}
-                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
-                        print(f"🎥 Uploading video to: {endpoint}")
+                # Add product link to message for additional visibility
+                if product_link:
+                    if base_data.get("message"):
+                        base_data["message"] += f"\n\n🛒 Voir le produit: {product_link}"
                     else:
-                        # For images, use /photos endpoint
-                        files = {'source': ('image.jpg', media_content, 'image/jpeg')}
-                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                        print(f"📸 Uploading image to: {endpoint}")
-                        print(f"💬 With message: {base_data.get('message', 'No message')}")
+                        base_data["message"] = f"📸 Découvrez ce produit: {product_link}"
+                
+                if is_video:
+                    # For videos, use /videos endpoint
+                    files = {'source': ('video.mp4', media_content, content_type)}
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
+                    print(f"🎥 Uploading video to: {endpoint}")
+                else:
+                    # For images, use /photos endpoint
+                    files = {'source': ('image.jpg', media_content, content_type)}
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
+                    print(f"📸 Uploading image to: {endpoint}")
+                    print(f"💬 With message: {base_data.get('message', 'No message')}")
+                
+                response = requests.post(endpoint, data=base_data, files=files, timeout=60)
+                result = response.json()
+                
+                print(f"Facebook upload response: {response.status_code} - {result}")
+                
+                if response.status_code == 200 and 'id' in result:
+                    print("✅ Facebook media upload successful!")
+                    return result
+                else:
+                    print(f"❌ Facebook upload failed: {result}")
+                    # Fallback to link posting
+                    raise Exception("Direct upload failed")
+                        
+            except Exception as upload_error:
+                print(f"Upload error: {upload_error}")
+                
+                # FALLBACK: Simple link post with message
+                try:
+                    print("🔄 Falling back to link-based post...")
                     
-                    response = requests.post(endpoint, data=base_data, files=files, timeout=60)
+                    # Create message
+                    message = ""
+                    if post.content and post.content.strip():
+                        message = post.content
+                    else:
+                        message = "📸 Nouveau contenu !" if is_image else "🎥 Découvrez cette vidéo"
+                    
+                    # Add product link to message if available
+                    if product_link:
+                        message += f"\n\n🛒 Voir le produit: {product_link}"
+                    else:
+                        message += f"\n\n📱 Voir le média: {full_media_url}"
+                    
+                    # Simple link post
+                    data = {
+                        "access_token": page_access_token,
+                        "message": message,
+                        "link": product_link if product_link else full_media_url
+                    }
+                    
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                    print(f"🔗 Posting link to: {endpoint}")
+                    
+                    response = requests.post(endpoint, data=data, timeout=30)
                     result = response.json()
                     
-                    print(f"Facebook direct upload response: {response.status_code} - {result}")
+                    print(f"Facebook link post response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Direct media upload successful!")
+                        print("✅ Link post created successfully!")
                         return result
                     else:
-                        print(f"❌ Direct upload failed: {result}")
-                        raise Exception("Direct upload failed")
+                        print(f"❌ Link post failed: {result}")
+                        raise Exception("Link post failed")
                         
-                except Exception as direct_error:
-                    print(f"Direct upload error: {direct_error}")
-                    
-                    # STRATEGY 1C: Enhanced link-based posting with better image preview
-                    try:
-                        print("🔄 Trying enhanced link-based media sharing...")
-                        
-                        # Create rich content that encourages Facebook to fetch media
-                        rich_message = ""
-                        if post.content and post.content.strip():
-                            rich_message = post.content
-                        else:
-                            rich_message = "📸 Nouveau produit disponible !" if is_image else "🎥 Découvrez cette vidéo"
-                        
-                        # Add product link to message
-                        if product_link:
-                            rich_message += f"\n\n🛒 Voir le produit: {product_link}"
-                        
-                        # Use feed endpoint with both message and link for rich preview
-                        feed_data = {
-                            "access_token": page_access_token,
-                            "message": rich_message,
-                            "link": product_link if product_link else full_media_url,
-                            "picture": full_media_url if is_image else None  # Explicitly specify picture URL
-                        }
-                        
-                        # Remove None values
-                        feed_data = {k: v for k, v in feed_data.items() if v is not None}
-                        
-                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                        print(f"🔗 Posting enhanced media link to: {endpoint}")
-                        print(f"📋 Feed data: {feed_data}")
-                        
-                        response = requests.post(endpoint, data=feed_data, timeout=30)
-                        result = response.json()
-                        
-                        print(f"Facebook enhanced link post response: {response.status_code} - {result}")
-                        
-                        if response.status_code == 200 and 'id' in result:
-                            print("✅ Enhanced link-based media sharing successful!")
-                            return result
-                        else:
-                            print(f"❌ Enhanced link sharing failed: {result}")
-                            raise Exception("Enhanced link sharing failed")
-                            
-                    except Exception as link_error:
-                        print(f"URL-based sharing error: {link_error}")
-                        
-                        # STRATEGY 1D: Last resort - Optimized text post with media information
-                        print("🔄 Using optimized text fallback...")
-                        
-                        # Create a more engaging text post that encourages Facebook to fetch the media
-                        media_type_text = "🎥 Vidéo" if is_video else "📸 Image optimisée"
-                        
-                        fallback_message = ""
-                        if post.content and post.content.strip():
-                            if product_link:
-                                fallback_message = f"{post.content}\n\n🛒 Voir le produit: {product_link}"
-                            else:
-                                fallback_message = f"{post.content}\n\n{media_type_text}: {full_media_url}"
-                        else:
-                            if product_link:
-                                fallback_message = f"{media_type_text} - 🛒 Voir le produit : {product_link}"
-                            else:
-                                fallback_message = f"{media_type_text} à découvrir : {full_media_url}"
-                        
-                        data = {
-                            "access_token": page_access_token,
-                            "message": fallback_message,
-                            "link": product_link if product_link else full_media_url  # Add link parameter to encourage preview
-                        }
-                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                        print("📝 Using enhanced text fallback with link preview")
-                        
-            except Exception as media_processing_error:
-                print(f"Media processing error: {media_processing_error}")
-                
-                # Final fallback - simple text post with product link if available
-                if product_link:
-                    data = {
-                        "access_token": page_access_token,
-                        "message": f"{post.content}\n\n🛒 Voir le produit: {product_link}" if post.content else f"🛒 Découvrez ce produit: {product_link}",
-                        "link": product_link
-                    }
-                else:
-                    data = {
-                        "access_token": page_access_token,
-                        "message": f"{post.content}\n\nMédia disponible: {full_media_url}" if post.content else f"📱 Contenu multimédia: {full_media_url}",
-                        "link": full_media_url
-                    }
-                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                print("📝 Using final text fallback with link")
+                except Exception as link_error:
+                    print(f"Link post error: {link_error}")
+                    # Final fallback to text only
+                    print("🔄 Using text-only fallback...")
                 
         # STRATEGY 2: Link posts (URL sharing) - Enhanced
         elif urls_in_content:
