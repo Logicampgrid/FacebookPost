@@ -518,28 +518,35 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
             )}
           </div>
 
-          {/* Comment Section - Facebook only */}
+          {/* Enhanced Comment Section - Facebook only */}
           {((!crossPostMode && selectedPlatform?.platform === 'facebook') || 
             (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))) && (
             <div className="space-y-4">
               <div className="border-t pt-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Commentaire automatique (Facebook uniquement)
+                  Commentaire automatique & Liens cliquables (Facebook)
                 </h3>
-                <p className="text-xs text-gray-500 mb-4">
-                  💡 <strong>Stratégie :</strong> Ajoutez automatiquement un commentaire après la publication pour maximiser l'engagement et la portée organique sur Facebook
-                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-xs text-blue-700 mb-2">
+                    <strong>💡 Stratégie optimisée :</strong>
+                  </p>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• <strong>Images cliquables :</strong> Si vous ajoutez un lien, l'image deviendra cliquable (comme Facebook Share)</li>
+                    <li>• <strong>Commentaire automatique :</strong> Maximise l'engagement et la portée organique</li>
+                    <li>• <strong>Double redirection :</strong> Clic sur image OU lien dans commentaire = même destination</li>
+                  </ul>
+                </div>
                 
                 {/* Comment Text */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texte du commentaire
+                    💬 Texte du commentaire
                   </label>
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Écrivez votre commentaire ici... (question, call-to-action, information supplémentaire)"
+                    placeholder="Ex: 'Qu'est-ce que vous en pensez ?' ou 'Découvrez tous nos modèles sur notre site !'"
                     className="facebook-textarea h-20 text-sm"
                     disabled={loading}
                   />
@@ -548,31 +555,44 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
                   </div>
                 </div>
                 
-                {/* Comment Link - Legacy support */}
+                {/* Comment Link - Enhanced for clickable images */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Link className="w-4 h-4 inline mr-1" />
-                    Ou un lien en commentaire
+                    🔗 Lien pour images cliquables + commentaire
                   </label>
                   <input
                     type="url"
                     value={commentLink}
                     onChange={(e) => setCommentLink(e.target.value)}
-                    placeholder="https://exemple.com - Sera ajouté en commentaire si aucun texte ci-dessus"
+                    placeholder="https://votre-site.com/produit - Rend les images cliquables ET sera ajouté en commentaire"
                     className="facebook-input w-full text-sm"
                     disabled={loading}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    🎯 Ce lien servira à la fois pour rendre l'image cliquable ET sera visible dans le commentaire
+                  </p>
                 </div>
                 
                 {(commentText || commentLink) && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800 font-medium mb-1">📝 Aperçu du commentaire :</p>
+                    <p className="text-sm text-blue-800 font-medium mb-1">📝 Aperçu du commentaire automatique :</p>
                     <div className="text-sm text-blue-700 bg-white p-2 rounded border">
-                      {commentText || commentLink}
+                      {commentText && <div>{commentText}</div>}
+                      {commentLink && (
+                        <div className={commentText ? "mt-2 pt-2 border-t border-blue-200" : ""}>
+                          🔗 <a href={commentLink} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">
+                            {commentLink}
+                          </a>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-blue-600 mt-2">
-                      ✨ Ce commentaire sera automatiquement ajouté après la publication sur Facebook
-                    </p>
+                    <div className="text-xs text-blue-600 mt-2 space-y-1">
+                      <p>✨ Ce commentaire sera automatiquement ajouté après la publication</p>
+                      {commentLink && mediaFiles.length > 0 && (
+                        <p>🎯 <strong>Bonus :</strong> L'image sera également cliquable et redirigera vers ce lien !</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
