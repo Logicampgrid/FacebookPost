@@ -537,16 +537,15 @@ async def post_to_facebook(post: Post, page_access_token: str):
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
-            # STRATEGY 1A: Clickable link post with image preview (PREFERRED for clickable images)
+            # STRATEGY 1A: Clickable link post (PREFERRED for clickable images)
             if product_link and is_image:
                 try:
-                    print(f"🔗 Creating CLICKABLE image post with product link: {product_link}")
+                    print(f"🔗 Creating CLICKABLE post with product link: {product_link}")
                     
-                    # Use feed endpoint with link and picture for clickable image
+                    # Use feed endpoint with only link parameter - Facebook will fetch the image from the link
                     feed_data = {
                         "access_token": page_access_token,
                         "link": product_link,
-                        "picture": full_media_url,  # This makes the image clickable
                         "message": post.content if post.content and post.content.strip() else f"📸 Découvrez ce produit"
                     }
                     
@@ -560,7 +559,8 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     print(f"Facebook clickable post response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Clickable image post created successfully!")
+                        print("✅ Clickable link post created successfully!")
+                        print("ℹ️ Facebook will fetch the image from the product link automatically")
                         return result
                     else:
                         print(f"❌ Clickable post failed: {result}")
@@ -568,7 +568,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                         
                 except Exception as clickable_error:
                     print(f"Clickable post error: {clickable_error}")
-                    print("🔄 Falling back to direct upload...")
+                    print("🔄 Falling back to direct upload with enhanced message...")
             
             # STRATEGY 1B: Direct multipart upload (fallback when no product link or for videos)
             try:
