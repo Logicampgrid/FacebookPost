@@ -1691,27 +1691,38 @@ def get_permission_recommendations(granted_permissions):
     
     return recommendations
 
-@app.get("/api/debug/facebook-token/{token}")
-async def debug_facebook_token(token: str):
+@app.post("/api/debug/facebook-token")
+async def debug_facebook_token(request: dict):
     """Debug Facebook token for troubleshooting"""
     try:
+        token = request.get("token", "")
+        
         # Validate token format first
         if not token or len(token) < 20:
             raise HTTPException(status_code=400, detail="Invalid token format - too short")
         
         # Check if someone passed a URL instead of a token
         if token.startswith(('http://', 'https://', 'www.')):
-            raise HTTPException(
-                status_code=400, 
-                detail="Invalid token - you provided a URL instead of a Facebook access token. Please paste only the access token from Facebook Graph API Explorer."
-            )
+            return {
+                "status": "invalid",
+                "token": token[:50] + "..." if len(token) > 50 else token,
+                "error": {
+                    "message": "Invalid token - you provided a URL instead of a Facebook access token. Please paste only the access token from Facebook Graph API Explorer.",
+                    "type": "InvalidTokenFormat"
+                },
+                "instructions": "Go to https://developers.facebook.com/tools/explorer/ and copy the ACCESS TOKEN, not the URL"
+            }
         
         # Check for obvious non-token patterns
         if '/' in token and len(token.split('/')) > 2:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid token format - this appears to be a URL or path, not a Facebook access token"
-            )
+            return {
+                "status": "invalid",
+                "token": token[:50] + "..." if len(token) > 50 else token,
+                "error": {
+                    "message": "Invalid token format - this appears to be a URL or path, not a Facebook access token",
+                    "type": "InvalidTokenFormat"
+                }
+            }
         
         print(f"🔍 Debugging Facebook token: {token[:20]}...")
         
