@@ -850,16 +850,40 @@ async def post_to_instagram(post: Post, page_access_token: str):
             print("❌ Instagram requires media - skipping post without images or videos")
             return None
         
-        # Create media container with extended timeout
-        print(f"📱 Creating Instagram media container: {container_data}")
-        container_response = requests.post(
-            f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
-            data=container_data,
-            timeout=60  # Increased timeout for optimized images
-        )
+        # Create media container with extended timeout and better error handling
+        print(f"📱 Creating Instagram media container for {post.target_name}: {container_data}")
         
-        if container_response.status_code != 200:
-            print(f"❌ Failed to create Instagram media container: {container_response.json()}")
+        try:
+            container_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                data=container_data,
+                timeout=60  # Increased timeout for optimized images
+            )
+            
+            print(f"Instagram container response: {container_response.status_code}")
+            if container_response.status_code != 200:
+                error_detail = container_response.json()
+                print(f"❌ Failed to create Instagram media container: {error_detail}")
+                
+                # Check for specific Instagram errors
+                if 'error' in error_detail:
+                    error_msg = error_detail['error'].get('message', 'Unknown error')
+                    error_code = error_detail['error'].get('code', 'No code')
+                    print(f"Instagram API Error: {error_code} - {error_msg}")
+                    
+                    # Handle specific error cases
+                    if error_code == 100 and 'permissions' in error_msg.lower():
+                        print("⚠️ Instagram publishing permission issue")
+                    elif error_code == 400 and 'media' in error_msg.lower():
+                        print("⚠️ Instagram media format issue")
+                
+                return None
+                
+        except requests.exceptions.Timeout:
+            print("❌ Instagram container creation timeout")
+            return None
+        except Exception as e:
+            print(f"❌ Instagram container creation error: {e}")
             return None
         
         container_result = container_response.json()
