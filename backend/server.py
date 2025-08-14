@@ -2014,7 +2014,7 @@ async def webhook_endpoint(request: N8NWebhookRequest):
                 "page_id": result["page_id"],
                 "store": request.store,
                 "published_at": result["published_at"],
-                "comment_added": result["comment_status"] == "success",
+                "comment_added": False,  # Link is now in post content, not comment
                 "duplicate_skipped": False,
                 "webhook_processed_at": datetime.utcnow().isoformat()
             }
