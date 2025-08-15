@@ -17,6 +17,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
   const [commentText, setCommentText] = useState('');  // New state for comment text
   const [crossPostMode, setCrossPostMode] = useState(false);
   const [selectedCrossTargets, setSelectedCrossTargets] = useState([]);
+  const [smartCrossPostMode, setSmartCrossPostMode] = useState(false);  // New: Smart cross-post mode
   const [loading, setLoading] = useState(false);
 
   // Hook pour la détection automatique des liens
