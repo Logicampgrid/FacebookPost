@@ -489,7 +489,14 @@ function App() {
 
         {/* Content */}
         {activeTab === 'setup' && (
-          <div className="facebook-card p-6">
+          <div className="space-y-6">
+            {/* Connection Status */}
+            <div className="facebook-card p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">État de la connexion</h3>
+              <ConnectionStatus API_BASE={API_BASE} />
+            </div>
+            
+            <div className="facebook-card p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Statut de la configuration Meta</h3>
             
             <div className="space-y-4">
