@@ -1668,9 +1668,9 @@ def generate_enhanced_product_description(title: str, description: str, shop_typ
             return f"{title}\n\n{description}"
 
 async def create_product_post(request: ProductPublishRequest) -> dict:
-    """Create a Facebook post for a product from n8n data with Instagram cross-posting"""
+    """Create a cross-platform post (Facebook Page + Groups + Instagram) for a product from N8N data"""
     try:
-        print(f"🛍️ Creating product post with cross-posting: {request.title}")
+        print(f"🛍️ Creating CROSS-PLATFORM product post: {request.title}")
         
         # Check for duplicate posts to avoid multiple posts for same product
         duplicate_check = await check_duplicate_product_post(
@@ -1688,6 +1688,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "message": f"Product '{request.title}' already posted recently - returning existing post",
                 "facebook_post_id": existing_post.get("facebook_post_id", "unknown"),
                 "instagram_post_id": existing_post.get("instagram_post_id", "not_posted"),
+                "groups_post_ids": existing_post.get("groups_post_ids", []),
                 "post_id": existing_post.get("post_id", "unknown"),
                 "page_name": "Cached Page",
                 "page_id": "cached",
