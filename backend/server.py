@@ -227,6 +227,38 @@ async def debug_store_platforms(shop_type: str):
         }
 
 # Test endpoint for shop page mapping
+@app.post("/api/debug/test-multi-platform-post")
+async def test_multi_platform_post(shop_type: str = "outdoor"):
+    """Test endpoint to simulate multi-platform posting for debugging"""
+    try:
+        # Create a test product request
+        test_request = ProductPublishRequest(
+            title="Test Product Multi-Platform",
+            description="This is a test product to verify multi-platform publishing works correctly across all available platforms including Facebook Pages, Groups, and Instagram accounts.",
+            image_url="https://picsum.photos/800/600?random=1",
+            product_url="https://example.com/test-product",
+            shop_type=shop_type
+        )
+        
+        print(f"🧪 Testing multi-platform post for shop_type: {shop_type}")
+        
+        # Call the multi-platform publishing function
+        result = await create_product_post(test_request)
+        
+        return {
+            "test_success": True,
+            "shop_type": shop_type,
+            "result": result
+        }
+        
+    except Exception as e:
+        print(f"❌ Multi-platform test failed: {e}")
+        return {
+            "test_success": False,
+            "shop_type": shop_type,
+            "error": str(e)
+        }
+
 @app.post("/api/debug/test-outdoor-mapping")
 async def test_outdoor_mapping():
     """Test endpoint to verify outdoor shop mapping works correctly"""
