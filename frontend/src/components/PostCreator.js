@@ -585,8 +585,8 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           </div>
 
           {/* Enhanced Comment Section - Facebook only */}
-          {((!crossPostMode && selectedPlatform?.platform === 'facebook') || 
-            (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))) && (
+          {((!crossPostMode && !smartCrossPostMode && selectedPlatform?.platform === 'facebook') || 
+            ((crossPostMode || smartCrossPostMode) && selectedCrossTargets.some(t => t.platform === 'facebook'))) && (
             <div className="space-y-4">
               <div className="border-t pt-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
