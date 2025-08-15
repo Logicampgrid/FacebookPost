@@ -125,7 +125,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
   const getIncompatibleWarnings = () => {
     const warnings = [];
     
-    if (crossPostMode) {
+    if (crossPostMode || smartCrossPostMode) {
       const instagramTargets = selectedCrossTargets.filter(t => t.platform === 'instagram');
       if (instagramTargets.length > 0 && !isInstagramCompatible()) {
         warnings.push('Instagram nécessite au moins une image ou un lien avec image');
