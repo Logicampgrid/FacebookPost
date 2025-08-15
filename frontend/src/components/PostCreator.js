@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Send, Image, Calendar, Users, Clock, Link, Instagram, MessageSquare, Plus, X, Target } from 'lucide-react';
+import { Send, Image, Calendar, Users, Clock, Link, Instagram, MessageSquare, Plus, X, Target, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import MediaUploader from './MediaUploader';
 import PostPreview from './PostPreview';
 import LinkPreview from './LinkPreview';
+import SmartCrossPostSelector from './SmartCrossPostSelector';
 import { useLinkDetection } from '../hooks/useLinkDetection';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
