@@ -2365,13 +2365,20 @@ async def webhook_info():
         "required_fields": ["store", "title", "description", "product_url", "image_url"],
         "available_stores": list(SHOP_PAGE_MAPPING.keys()),
         "example_payload": {
-            "store": "gizmobbs",
+            "store": "gizmobbs",  # ou "gimobbs", "outdoor", "logicantiq"
             "title": "Product Name",
-            "description": "Product Description", 
+            "description": "Product Description (HTML will be automatically stripped)", 
             "product_url": "https://example.com/product",
             "image_url": "https://example.com/image.jpg"
         },
-        "shop_mapping": SHOP_PAGE_MAPPING
+        "notes": [
+            "HTML tags in title and description will be automatically stripped using stripHtml function",
+            "Default description 'Découvrez ce produit' will be used if description is empty",
+            "Default title 'Sans titre' will be used if title is empty",
+            "Both 'gizmobbs' and 'gimobbs' are supported for backward compatibility"
+        ],
+        "shop_mapping": SHOP_PAGE_MAPPING,
+        "n8n_transformation_compatible": True
     }
 
 @app.post("/api/webhook/debug")
