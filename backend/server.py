@@ -200,6 +200,11 @@ SHOP_PAGE_MAPPING = {
         "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
         "woocommerce_url": "https://gizmobbs.com"
     },
+    "gimobbs": {  # Alternative spelling for N8N compatibility
+        "name": "Le Berger Blanc Suisse", 
+        "expected_id": "102401876209415",  # Same page as gizmobbs
+        "woocommerce_url": "https://gizmobbs.com"
+    },
     "logicantiq": {
         "name": "LogicAntiq",
         "expected_id": "210654558802531",  # Existing page ID
