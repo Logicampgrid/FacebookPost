@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Calendar, ExternalLink, CheckCircle, XCircle, RefreshCw, Store } from 'lucide-react';
+import { Package, Calendar, ExternalLink, CheckCircle, XCircle, RefreshCw, Store, Users, MessageSquare, Instagram } from 'lucide-react';
+import MultiPlatformStatus from './MultiPlatformStatus';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
