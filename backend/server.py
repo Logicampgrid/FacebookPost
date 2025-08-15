@@ -3269,6 +3269,127 @@ async def get_user_pages(user_id: str):
     """Get user's Facebook pages - legacy endpoint"""
     return await get_user_platforms(user_id)
 
+@app.get("/api/pages/{page_id}/related-platforms")
+async def get_page_related_platforms(page_id: str, user_id: str):
+    """Get platforms related to a specific page (Instagram + accessible groups)"""
+    try:
+        print(f"🔍 Getting related platforms for page {page_id}")
+        
+        # Get user and find the page
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Find the page and its access token
+        page_info = None
+        page_access_token = user.get("facebook_access_token")
+        
+        # Search in business manager pages first
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page["id"] == page_id:
+                    page_info = page
+                    page_access_token = page.get("access_token", page_access_token)
+                    break
+            if page_info:
+                break
+        
+        # Search in personal pages if not found
+        if not page_info:
+            for page in user.get("facebook_pages", []):
+                if page["id"] == page_id:
+                    page_info = page
+                    page_access_token = page.get("access_token", page_access_token)
+                    break
+        
+        if not page_info:
+            raise HTTPException(status_code=404, detail="Page not found")
+        
+        # Get related platforms
+        related_platforms = {
+            "page": page_info,
+            "connected_instagram": None,
+            "accessible_groups": [],
+            "cross_post_suggestions": []
+        }
+        
+        # Get connected Instagram account
+        instagram_account = await get_page_connected_instagram(page_access_token, page_id)
+        if instagram_account:
+            related_platforms["connected_instagram"] = instagram_account
+        
+        # Get accessible groups
+        accessible_groups = await get_page_accessible_groups(page_access_token, page_id)
+        if accessible_groups:
+            # Format groups for cross-post compatibility
+            for group in accessible_groups:
+                group["platform"] = "facebook"
+                group["type"] = "group"
+            related_platforms["accessible_groups"] = accessible_groups
+        
+        # Create cross-post suggestions
+        suggestions = []
+        
+        # Main page
+        suggestions.append({
+            "id": page_info["id"],
+            "name": page_info["name"],
+            "platform": "facebook",
+            "type": "page",
+            "selected": True,  # Always selected as primary
+            "primary": True
+        })
+        
+        # Connected Instagram
+        if instagram_account:
+            suggestions.append({
+                "id": instagram_account["id"],
+                "name": f"@{instagram_account.get('username', 'Instagram')}",
+                "platform": "instagram", 
+                "type": "instagram",
+                "selected": True,  # Auto-select Instagram
+                "requires_media": True
+            })
+        
+        # Accessible groups (auto-select up to 3 most relevant)
+        for i, group in enumerate(accessible_groups[:3]):  # Limit to 3 auto-selected
+            suggestions.append({
+                "id": group["id"],
+                "name": group["name"],
+                "platform": "facebook",
+                "type": "group",
+                "selected": True,  # Auto-select first 3 groups
+                "privacy": group.get("privacy", "unknown"),
+                "member_count": group.get("member_count", 0)
+            })
+        
+        # Additional groups (not auto-selected)
+        for group in accessible_groups[3:]:
+            suggestions.append({
+                "id": group["id"],
+                "name": group["name"],
+                "platform": "facebook",
+                "type": "group",
+                "selected": False,  # Optional additional groups
+                "privacy": group.get("privacy", "unknown"),
+                "member_count": group.get("member_count", 0)
+            })
+        
+        related_platforms["cross_post_suggestions"] = suggestions
+        
+        return {
+            "success": True,
+            "page_id": page_id,
+            "page_name": page_info["name"],
+            "related_platforms": related_platforms,
+            "total_suggestions": len(suggestions),
+            "auto_selected": len([s for s in suggestions if s.get("selected", False)])
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting page related platforms: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting related platforms: {str(e)}")
+
 @app.post("/api/links/preview")
 async def get_link_preview(request: LinkPreviewRequest):
     """Get link preview metadata"""
