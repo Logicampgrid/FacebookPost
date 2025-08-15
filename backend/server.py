@@ -103,6 +103,54 @@ async def health_check():
     
     return status
 
+# Debug endpoint for shop page mapping
+@app.get("/api/debug/pages")
+async def debug_pages():
+    """Debug endpoint to inspect available pages for shop mapping"""
+    try:
+        # Find a user with Facebook pages
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"error": "No user with Facebook access found"}
+        
+        pages_info = {
+            "user_name": user.get("name"),
+            "user_id": str(user.get("_id")),
+            "personal_pages": [],
+            "business_manager_pages": [],
+            "shop_mapping": SHOP_PAGE_MAPPING
+        }
+        
+        # Personal pages
+        for page in user.get("facebook_pages", []):
+            pages_info["personal_pages"].append({
+                "id": page.get("id"),
+                "name": page.get("name"),
+                "category": page.get("category")
+            })
+        
+        # Business manager pages
+        for bm in user.get("business_managers", []):
+            bm_info = {
+                "business_manager_name": bm.get("name"),
+                "pages": []
+            }
+            for page in bm.get("pages", []):
+                bm_info["pages"].append({
+                    "id": page.get("id"), 
+                    "name": page.get("name"),
+                    "category": page.get("category")
+                })
+            pages_info["business_manager_pages"].append(bm_info)
+        
+        return pages_info
+        
+    except Exception as e:
+        return {"error": f"Failed to get pages info: {str(e)}"}
+
 # Shop Type to Page Mapping Configuration
 SHOP_PAGE_MAPPING = {
     "outdoor": {
