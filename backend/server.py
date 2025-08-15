@@ -151,6 +151,43 @@ async def debug_pages():
     except Exception as e:
         return {"error": f"Failed to get pages info: {str(e)}"}
 
+# Test endpoint for shop page mapping
+@app.post("/api/debug/test-outdoor-mapping")
+async def test_outdoor_mapping():
+    """Test endpoint to verify outdoor shop mapping works correctly"""
+    try:
+        # Find user and page for outdoor shop type
+        user, target_page, access_token = await find_user_and_page_for_publishing(
+            None, None, "outdoor"
+        )
+        
+        if not target_page:
+            return {
+                "success": False,
+                "error": "Could not find page for outdoor shop type",
+                "user_found": bool(user),
+                "user_name": user.get("name") if user else None
+            }
+        
+        return {
+            "success": True,
+            "message": "Outdoor page mapping works correctly",
+            "user_name": user.get("name"),
+            "target_page": {
+                "id": target_page.get("id"),
+                "name": target_page.get("name"),
+                "category": target_page.get("category")
+            },
+            "has_access_token": bool(access_token),
+            "shop_config": SHOP_PAGE_MAPPING["outdoor"]
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Test failed: {str(e)}"
+        }
+
 # Shop Type to Page Mapping Configuration
 SHOP_PAGE_MAPPING = {
     "outdoor": {
