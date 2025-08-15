@@ -497,6 +497,104 @@ async def get_facebook_groups(access_token: str):
         print(f"Error getting Facebook groups: {e}")
         return []
 
+async def get_page_accessible_groups(page_access_token: str, page_id: str):
+    """Get groups that a specific Facebook page can post to"""
+    try:
+        print(f"🔍 Getting groups accessible by page {page_id}")
+        
+        # Method 1: Try to get groups where the page can post directly
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/{page_id}/groups",
+            params={
+                "access_token": page_access_token,
+                "fields": "id,name,privacy,description,member_count"
+            }
+        )
+        
+        groups = []
+        if response.status_code == 200:
+            groups = response.json().get("data", [])
+            print(f"✅ Found {len(groups)} groups accessible by page {page_id}")
+        else:
+            print(f"❌ API error for page groups: {response.status_code} - {response.text}")
+            
+            # Fallback: Try with user token to get groups where user is admin
+            # This is a fallback when page-specific groups API doesn't work
+            try:
+                # Note: We'll need the user's main access token for this fallback
+                print("🔄 Trying fallback method to get admin groups...")
+                user_response = requests.get(
+                    f"{FACEBOOK_GRAPH_URL}/me/groups",
+                    params={
+                        "access_token": page_access_token,
+                        "fields": "id,name,privacy,description,administrator,member_count"
+                    }
+                )
+                
+                if user_response.status_code == 200:
+                    all_groups = user_response.json().get("data", [])
+                    # Filter to only groups where user is admin (and could post as page)
+                    admin_groups = [g for g in all_groups if g.get("administrator")]
+                    groups = admin_groups
+                    print(f"✅ Fallback found {len(groups)} admin groups")
+                else:
+                    print(f"❌ Fallback also failed: {user_response.status_code}")
+            except Exception as fallback_error:
+                print(f"❌ Fallback error: {fallback_error}")
+        
+        # Add page_id to each group for tracking
+        for group in groups:
+            group["accessible_by_page"] = page_id
+            
+        return groups
+        
+    except Exception as e:
+        print(f"❌ Error getting page accessible groups: {e}")
+        return []
+
+async def get_page_connected_instagram(page_access_token: str, page_id: str):
+    """Get Instagram account connected to a specific Facebook page"""
+    try:
+        print(f"🔍 Getting Instagram account connected to page {page_id}")
+        
+        # Get Instagram account connected to this page
+        response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/{page_id}",
+            params={
+                "access_token": page_access_token,
+                "fields": "instagram_business_account"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "instagram_business_account" in data:
+                ig_id = data["instagram_business_account"]["id"]
+                
+                # Get Instagram account details
+                ig_response = requests.get(
+                    f"{FACEBOOK_GRAPH_URL}/{ig_id}",
+                    params={
+                        "access_token": page_access_token,
+                        "fields": "id,username,name,profile_picture_url,followers_count,media_count"
+                    }
+                )
+                
+                if ig_response.status_code == 200:
+                    ig_data = ig_response.json()
+                    ig_data["connected_page_id"] = page_id
+                    ig_data["platform"] = "instagram"
+                    ig_data["type"] = "instagram"
+                    print(f"✅ Found Instagram account: @{ig_data.get('username')} connected to page")
+                    return ig_data
+                    
+        print(f"❌ No Instagram account found for page {page_id}")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Error getting page connected Instagram: {e}")
+        return None
+
 async def post_to_facebook(post: Post, page_access_token: str):
     """Post content to Facebook page/group with CLICKABLE IMAGES feature"""
     try:
