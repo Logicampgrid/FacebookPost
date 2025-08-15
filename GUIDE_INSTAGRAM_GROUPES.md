@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://3eed30cb-b121-4f32-88bb-fff9ad82ef75.preview.emergentagent.com
+URL : https://ok-system-6.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
