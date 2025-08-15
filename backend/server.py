@@ -1317,6 +1317,20 @@ def generate_enhanced_product_description(title: str, description: str, shop_typ
         # Fallback to basic content
         return f"{title}\n\n{description}"
 
+def strip_html(html_content: str) -> str:
+    """
+    Strip HTML tags from content, exactly like the N8N stripHtml function
+    Equivalent to: html.replace(/<[^>]*>?/gm, '').trim()
+    """
+    if not html_content:
+        return ''
+    
+    # Remove HTML tags using regex (same as JavaScript version)
+    clean_text = re.sub(r'<[^>]*>?', '', html_content)
+    
+    # Trim whitespace (equivalent to .trim() in JavaScript)
+    return clean_text.strip()
+
 def extract_urls_from_text(text: str):
     """Extract URLs from text content"""
     # Regex pattern for URLs
