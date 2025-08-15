@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://continue-18.preview.emergentagent.com"
+BASE_URL = "https://preview-app-38.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
