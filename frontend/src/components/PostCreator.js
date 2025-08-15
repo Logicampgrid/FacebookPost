@@ -469,48 +469,52 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
               </div>
             )}
             
-            {/* Enhanced Clickable Images Indicator */}
+            {/* NATIVE Facebook Link Sharing Indicator */}
             {mediaFiles.length > 0 && (detectedLinks.length > 0 || commentLink) && (
               (!crossPostMode && selectedPlatform?.platform === 'facebook') || 
               (crossPostMode && selectedCrossTargets.some(t => t.platform === 'facebook'))
             ) && (
-              <div className="mt-2 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-400 rounded-lg">
+              <div className="mt-2 p-4 bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-400 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
-                  <Target className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-bold text-green-800">🎯 Images cliquables activées - Comme Facebook Share!</span>
+                  <Target className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-bold text-blue-800">🔗 Mode Partage Facebook Natif Activé!</span>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-green-700">
-                    <strong>✨ Fonctionnalité premium :</strong> Vos images seront cliquables sur Facebook et redirigeront automatiquement vers {' '}
+                  <p className="text-sm text-blue-700">
+                    <strong>✨ Fonctionnement EXACT de Facebook :</strong> Votre lien sera posté comme si vous colliez l'URL directement sur Facebook {' '}
                     {detectedLinks.length > 0 ? (
-                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-xs">
+                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-xs">
                         {detectedLinks[0].url.length > 40 ? 
                           `${detectedLinks[0].url.substring(0, 40)}...` : 
                           detectedLinks[0].url
                         }
                       </span>
                     ) : (
-                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-xs">
+                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-xs">
                         le lien du commentaire
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-gray-600 flex items-center">
-                    <span className="mr-2">🔗</span>
-                    Exactement comme quand vous partagez un lien sur Facebook - cliquer sur l'image redirige vers la page externe
-                  </p>
+                  <div className="bg-white rounded p-2 border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">🤖 <strong>Facebook va automatiquement :</strong></p>
+                    <ul className="text-xs text-gray-600 space-y-1 ml-4">
+                      <li>• Analyser votre lien pour récupérer l'image et les infos</li>
+                      <li>• Créer un aperçu avec l'image de votre produit</li>
+                      <li>• Rendre TOUTE la zone cliquable → redirection vers votre site</li>
+                    </ul>
+                  </div>
                   <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
-                      Image grande taille
+                      <span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
+                      Scraping automatique
                     </span>
                     <span className="flex items-center">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
-                      Redirection automatique
+                      <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                      100% natif Facebook
                     </span>
                     <span className="flex items-center">
                       <span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>
-                      Optimisé pour l'engagement
+                      Cliquable partout
                     </span>
                   </div>
                 </div>
