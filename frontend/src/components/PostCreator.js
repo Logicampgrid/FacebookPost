@@ -146,13 +146,14 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
       return;
     }
     
-    if (!crossPostMode && !selectedPlatform) {
+    if (!smartCrossPostMode && !crossPostMode && !selectedPlatform) {
       alert('Veuillez sélectionner une plateforme');
       return;
     }
     
-    if (crossPostMode && selectedCrossTargets.length === 0) {
-      alert('Veuillez sélectionner au moins une plateforme pour la publication croisée');
+    if ((crossPostMode || smartCrossPostMode) && selectedCrossTargets.length === 0) {
+      const modeText = smartCrossPostMode ? 'publication intelligente' : 'publication croisée';
+      alert(`Veuillez sélectionner au moins une plateforme pour la ${modeText}`);
       return;
     }
 
@@ -171,11 +172,12 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
       formData.append('user_id', user._id);
       formData.append('content', content.trim());
       
-      if (crossPostMode) {
-        // Cross-posting mode
+      if (crossPostMode || smartCrossPostMode) {
+        // Cross-posting mode (manual or smart)
+        const modeLabel = smartCrossPostMode ? 'Publication Intelligente' : 'Cross-post';
         formData.append('target_type', 'cross-post');
         formData.append('target_id', 'cross-post');
-        formData.append('target_name', `Cross-post (${selectedCrossTargets.length} plateformes)`);
+        formData.append('target_name', `${modeLabel} (${selectedCrossTargets.length} plateformes)`);
         formData.append('platform', 'meta');
         formData.append('cross_post_targets', JSON.stringify(selectedCrossTargets));
       } else {
