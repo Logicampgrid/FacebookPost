@@ -72,6 +72,37 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 # Create uploads directory
 os.makedirs("uploads", exist_ok=True)
 
+# Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint to verify connections"""
+    status = {
+        "status": "healthy",
+        "backend": "running",
+        "mongodb": "disconnected",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    try:
+        # Test MongoDB connection
+        await client.admin.command('ping')
+        status["mongodb"] = "connected"
+        
+        # Test database access
+        users_count = await db.users.count_documents({})
+        posts_count = await db.posts.count_documents({})
+        
+        status["database"] = {
+            "users_count": users_count,
+            "posts_count": posts_count
+        }
+        
+    except Exception as e:
+        status["mongodb"] = f"error: {str(e)}"
+        status["status"] = "degraded"
+    
+    return status
+
 # Shop Type to Page Mapping Configuration
 SHOP_PAGE_MAPPING = {
     "outdoor": {
