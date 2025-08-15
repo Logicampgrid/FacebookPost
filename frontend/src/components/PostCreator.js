@@ -314,36 +314,93 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           </div>
         </div>
 
-        {/* Cross-post Toggle */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-800 flex items-center">
-                <Target className="w-4 h-4 mr-2" />
-                Mode de publication
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {crossPostMode ? 
-                  'Publiez simultanément sur plusieurs plateformes Meta' : 
-                  'Publiez sur une seule plateforme'
-                }
-              </p>
+        {/* Publication Mode Selector */}
+        <div className="mb-6 space-y-4">
+          {/* Mode Selection Buttons */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-medium text-gray-800 flex items-center">
+                  <Target className="w-4 h-4 mr-2" />
+                  Mode de publication
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {smartCrossPostMode ? 
+                    'Publication intelligente : Page + Instagram + Groupes automatiques' :
+                    crossPostMode ? 
+                      'Publication croisée : Sélection manuelle des plateformes' : 
+                      'Publication simple : Une seule plateforme'
+                  }
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setCrossPostMode(!crossPostMode);
-                setSelectedCrossTargets([]);
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                crossPostMode 
-                  ? 'bg-purple-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {crossPostMode ? 'Mode Simple' : 'Publication Croisée'}
-            </button>
+            
+            <div className="flex space-x-2">
+              {/* Simple Mode */}
+              <button
+                type="button"
+                onClick={() => {
+                  setCrossPostMode(false);
+                  setSmartCrossPostMode(false);
+                  setSelectedCrossTargets([]);
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  !crossPostMode && !smartCrossPostMode
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Simple
+              </button>
+              
+              {/* Smart Cross-post Mode - Only for Facebook pages */}
+              {selectedPlatform?.platform === 'facebook' && selectedPlatform?.type === 'page' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCrossPostMode(false);
+                    setSmartCrossPostMode(true);
+                    setSelectedCrossTargets([]);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                    smartCrossPostMode
+                      ? 'bg-purple-600 text-white shadow-lg' 
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Intelligent</span>
+                </button>
+              )}
+              
+              {/* Manual Cross-post Mode */}
+              <button
+                type="button"
+                onClick={() => {
+                  setCrossPostMode(true);
+                  setSmartCrossPostMode(false);
+                  setSelectedCrossTargets([]);
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  crossPostMode && !smartCrossPostMode
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Manuel
+              </button>
+            </div>
           </div>
+          
+          {/* Smart Cross-post Selector */}
+          {smartCrossPostMode && selectedPlatform?.platform === 'facebook' && selectedPlatform?.type === 'page' && (
+            <SmartCrossPostSelector
+              selectedPlatform={selectedPlatform}
+              user={user}
+              onCrossTargetsChange={setSelectedCrossTargets}
+              initialTargets={selectedCrossTargets}
+            />
+          )}
         </div>
 
         {/* Cross-post platform selection */}
