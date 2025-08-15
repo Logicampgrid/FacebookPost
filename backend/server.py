@@ -2421,35 +2421,46 @@ async def webhook_endpoint(request: N8NWebhookRequest):
     
     This endpoint accepts the exact format from your N8N transformation script:
     {
-        "store": "gizmobbs",
+        "store": "gizmobbs" | "outdoor" | "logicantiq",
         "title": "Product Name", 
-        "description": "Product Description",
+        "description": "Product Description (HTML will be stripped)",
         "product_url": "https://...",
         "image_url": "https://..."
     }
+    
+    The description will be automatically cleaned from HTML tags using stripHtml function,
+    matching the N8N transformation logic.
     """
     try:
         print(f"🔗 N8N Webhook POST received: {request.title} for store '{request.store}'")
-        print(f"📋 Full request data: store={request.store}, title='{request.title}', description='{request.description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
         
-        # Validate required fields
-        if not request.title or not request.title.strip() or request.title.lower() in ['null', 'undefined', 'none']:
-            print(f"❌ Validation failed: Invalid title: '{request.title}'")
+        # Clean HTML from description using the same logic as N8N stripHtml function
+        clean_description = strip_html(request.description) if request.description else "Découvrez ce produit"
+        clean_title = strip_html(request.title) if request.title else "Sans titre"
+        
+        print(f"📋 Processed data: store={request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
+        
+        # Validate required fields with cleaned data
+        if not clean_title or clean_title.strip() == "" or clean_title.lower() in ['null', 'undefined', 'none', 'sans titre']:
+            print(f"❌ Validation failed: Invalid title after HTML cleaning: '{clean_title}'")
             raise HTTPException(status_code=400, detail="Product title is required and cannot be empty, null, or undefined")
         
-        if not request.description or not request.description.strip() or request.description.lower() in ['null', 'undefined', 'none']:
-            print(f"❌ Validation failed: Invalid description: '{request.description}'") 
-            raise HTTPException(status_code=400, detail="Product description is required and cannot be empty, null, or undefined")
+        if not clean_description or clean_description.strip() == "" or clean_description.lower() in ['null', 'undefined', 'none']:
+            clean_description = "Découvrez ce produit"  # Default fallback as in N8N script
+            print(f"🔄 Using default description: '{clean_description}'")
         
-        if not request.image_url or not request.image_url.startswith('http'):
-            print(f"❌ Validation failed: Invalid image URL: {request.image_url}")
-            raise HTTPException(status_code=400, detail="Valid product image URL is required")
+        if not request.image_url or request.image_url.strip() == "":
+            print(f"⚠️ Warning: No image URL provided")
+            # Don't fail - some products might not have images
+        elif not request.image_url.startswith('http'):
+            print(f"❌ Validation failed: Invalid image URL format: {request.image_url}")
+            raise HTTPException(status_code=400, detail="Image URL must be a valid HTTP/HTTPS URL")
         
         if not request.product_url or not request.product_url.startswith('http'):
             print(f"❌ Validation failed: Invalid product URL: {request.product_url}")
             raise HTTPException(status_code=400, detail="Valid product URL is required")
         
-        # Validate store type
+        # Validate store type (support both "gizmobbs" and "gimobbs")
         if not request.store or request.store not in SHOP_PAGE_MAPPING:
             available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
             print(f"❌ Validation failed: Invalid store '{request.store}'. Available: {available_stores}")
@@ -2458,10 +2469,10 @@ async def webhook_endpoint(request: N8NWebhookRequest):
                 detail=f"Invalid store type '{request.store}'. Available stores: {available_stores}"
             )
         
-        # Convert N8N webhook format to ProductPublishRequest format
+        # Convert N8N webhook format to ProductPublishRequest format with cleaned data
         product_request = ProductPublishRequest(
-            title=request.title,
-            description=request.description,
+            title=clean_title,
+            description=clean_description,
             image_url=request.image_url,
             product_url=request.product_url,
             shop_type=request.store,  # Map 'store' to 'shop_type'
@@ -2471,7 +2482,8 @@ async def webhook_endpoint(request: N8NWebhookRequest):
         )
         
         print(f"🏪 Processing webhook for store: {request.store}")
-        print(f"📦 Product: {request.title}")
+        print(f"📦 Product: {clean_title}")
+        print(f"📝 Description: {clean_description}")
         print(f"🔗 URL: {request.product_url}")
         print(f"📸 Image: {request.image_url}")
         
