@@ -260,6 +260,7 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
       setCommentText('');  // Reset comment text
       setSelectedCrossTargets([]);
       setCrossPostMode(false);
+      setSmartCrossPostMode(false);  // Reset smart mode
       resetRemovedLinks();
 
       // Notify parent
