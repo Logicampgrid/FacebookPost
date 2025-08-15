@@ -1667,8 +1667,99 @@ def generate_enhanced_product_description(title: str, description: str, shop_typ
         else:
             return f"{title}\n\n{description}"
 
+async def get_all_platforms_for_store(shop_type: str, user: dict) -> dict:
+    """Get all available platforms for a specific store (pages, groups, Instagram)"""
+    try:
+        print(f"🔍 Finding all platforms for store: {shop_type}")
+        
+        # Find the main page for this store
+        main_page = await find_page_by_shop_type(user, shop_type)
+        if not main_page:
+            return {
+                "main_page": None,
+                "additional_pages": [],
+                "accessible_groups": [],
+                "instagram_accounts": [],
+                "error": f"No main page found for store {shop_type}"
+            }
+        
+        platforms = {
+            "main_page": main_page,
+            "additional_pages": [],
+            "accessible_groups": [],
+            "instagram_accounts": []
+        }
+        
+        # Get access token for API calls
+        access_token = main_page.get("access_token") or user.get("facebook_access_token")
+        
+        # Get groups accessible by the main page
+        try:
+            accessible_groups = await get_page_accessible_groups(access_token, main_page["id"])
+            platforms["accessible_groups"] = accessible_groups
+            print(f"📋 Found {len(accessible_groups)} accessible groups for {main_page['name']}")
+        except Exception as e:
+            print(f"⚠️ Error getting accessible groups: {e}")
+        
+        # Get Instagram accounts connected to this page and other pages
+        instagram_accounts = []
+        
+        # Check main page Instagram connection
+        try:
+            main_instagram = await get_page_connected_instagram(access_token, main_page["id"])
+            if main_instagram:
+                instagram_accounts.append(main_instagram)
+                print(f"📸 Found Instagram account @{main_instagram.get('username')} for main page")
+        except Exception as e:
+            print(f"⚠️ Error getting Instagram for main page: {e}")
+        
+        # Check other pages in the same business manager for additional platforms
+        additional_pages = []
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                # Skip the main page
+                if page["id"] == main_page["id"]:
+                    continue
+                
+                # Add pages that might be related to the same store
+                # You could add logic here to determine related pages by name similarity
+                if shop_type.lower() in page.get("name", "").lower():
+                    additional_pages.append(page)
+                    
+                    # Check for Instagram accounts on additional pages
+                    try:
+                        page_access_token = page.get("access_token", access_token)
+                        page_instagram = await get_page_connected_instagram(page_access_token, page["id"])
+                        if page_instagram and page_instagram["id"] not in [ig["id"] for ig in instagram_accounts]:
+                            instagram_accounts.append(page_instagram)
+                            print(f"📸 Found additional Instagram @{page_instagram.get('username')} for page {page['name']}")
+                    except Exception as e:
+                        print(f"⚠️ Error getting Instagram for page {page['name']}: {e}")
+        
+        platforms["additional_pages"] = additional_pages
+        platforms["instagram_accounts"] = instagram_accounts
+        
+        total_platforms = 1 + len(additional_pages) + len(accessible_groups) + len(instagram_accounts)
+        print(f"✅ Found {total_platforms} total platforms for {shop_type}:")
+        print(f"  - 1 main page: {main_page['name']}")
+        print(f"  - {len(additional_pages)} additional pages")
+        print(f"  - {len(accessible_groups)} accessible groups") 
+        print(f"  - {len(instagram_accounts)} Instagram accounts")
+        
+        return platforms
+        
+    except Exception as e:
+        print(f"❌ Error finding platforms for store {shop_type}: {e}")
+        return {
+            "main_page": None,
+            "additional_pages": [],
+            "accessible_groups": [],
+            "instagram_accounts": [],
+            "error": str(e)
+        }
+
 async def create_product_post(request: ProductPublishRequest) -> dict:
-    """Create a cross-platform post (Facebook Page + Groups + Instagram) for a product from N8N data"""
+    """Create a comprehensive cross-platform post (Facebook Pages + Groups + Instagram) for a product from N8N data"""
     try:
         print(f"🛍️ Creating CROSS-PLATFORM product post: {request.title}")
         
