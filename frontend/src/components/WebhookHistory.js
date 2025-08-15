@@ -55,21 +55,40 @@ const WebhookHistory = () => {
     });
   };
 
-  const getStatusBadge = (status, commentAdded) => {
-    if (status === 'published') {
-      return (
-        <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Publié
-          </span>
-          {commentAdded && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              💬 Lien ajouté
+  const getStatusBadge = (post) => {
+    // Check if this is a comprehensive multi-platform post
+    const isMultiPlatform = post.publication_results || post.comprehensive_cross_post;
+    const hasPublicationSummary = post.publication_summary;
+    
+    if (post.status === 'published') {
+      if (isMultiPlatform && hasPublicationSummary) {
+        const { total_published, total_failed } = post.publication_summary;
+        return (
+          <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Multi-Plateforme
             </span>
-          )}
-        </div>
-      );
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              ✅ {total_published} | ❌ {total_failed}
+            </span>
+          </div>
+        );
+      } else {
+        return (
+          <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Publié
+            </span>
+            {post.comment_added && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                💬 Lien ajouté
+              </span>
+            )}
+          </div>
+        );
+      }
     }
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
