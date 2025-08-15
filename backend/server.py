@@ -151,6 +151,81 @@ async def debug_pages():
     except Exception as e:
         return {"error": f"Failed to get pages info: {str(e)}"}
 
+# Test endpoint for comprehensive platform discovery
+@app.get("/api/debug/store-platforms/{shop_type}")
+async def debug_store_platforms(shop_type: str):
+    """Debug endpoint to see all platforms available for a specific store"""
+    try:
+        # Find a user with Facebook access
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"error": "No user with Facebook access found"}
+        
+        # Get all platforms for this store
+        all_platforms = await get_all_platforms_for_store(shop_type, user)
+        
+        if all_platforms.get("error"):
+            return {
+                "shop_type": shop_type,
+                "error": all_platforms["error"],
+                "user_name": user.get("name")
+            }
+        
+        # Calculate totals
+        total_platforms = 0
+        if all_platforms["main_page"]:
+            total_platforms += 1
+        total_platforms += len(all_platforms["additional_pages"])
+        total_platforms += len(all_platforms["accessible_groups"])
+        total_platforms += len(all_platforms["instagram_accounts"])
+        
+        return {
+            "shop_type": shop_type,
+            "user_name": user.get("name"),
+            "total_platforms": total_platforms,
+            "platforms": {
+                "main_page": {
+                    "id": all_platforms["main_page"]["id"] if all_platforms["main_page"] else None,
+                    "name": all_platforms["main_page"]["name"] if all_platforms["main_page"] else None,
+                    "category": all_platforms["main_page"].get("category") if all_platforms["main_page"] else None
+                },
+                "additional_pages": [
+                    {
+                        "id": page["id"],
+                        "name": page["name"],
+                        "category": page.get("category", "Unknown")
+                    } for page in all_platforms["additional_pages"]
+                ],
+                "accessible_groups": [
+                    {
+                        "id": group["id"],
+                        "name": group["name"],
+                        "privacy": group.get("privacy", "Unknown"),
+                        "member_count": group.get("member_count", 0)
+                    } for group in all_platforms["accessible_groups"]
+                ],
+                "instagram_accounts": [
+                    {
+                        "id": ig["id"],
+                        "username": ig.get("username", "Unknown"),
+                        "name": ig.get("name", ""),
+                        "connected_page": ig.get("connected_page_name", ""),
+                        "followers_count": ig.get("followers_count", 0)
+                    } for ig in all_platforms["instagram_accounts"]
+                ]
+            },
+            "shop_mapping_config": SHOP_PAGE_MAPPING.get(shop_type, {})
+        }
+        
+    except Exception as e:
+        return {
+            "shop_type": shop_type,
+            "error": f"Debug failed: {str(e)}"
+        }
+
 # Test endpoint for shop page mapping
 @app.post("/api/debug/test-outdoor-mapping")
 async def test_outdoor_mapping():
