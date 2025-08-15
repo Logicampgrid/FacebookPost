@@ -769,9 +769,10 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  {smartCrossPostMode ? <Sparkles className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                   <span>
                     {scheduledTime ? 'Programmer' : 
+                     smartCrossPostMode ? `🧠 Publication Intelligente (${selectedCrossTargets.length})` :
                      crossPostMode ? `Publier sur ${selectedCrossTargets.length} plateformes` :
                      'Publier'}
                   </span>
