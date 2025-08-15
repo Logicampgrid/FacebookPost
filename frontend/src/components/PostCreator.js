@@ -794,14 +794,19 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
             content={content}
             mediaFiles={mediaFiles}
             detectedLinks={detectedLinks}
-            pageName={crossPostMode ? 'Multi-plateforme' : (selectedPlatform?.name || selectedPlatform?.username || 'Ma Page')}
+            pageName={(crossPostMode || smartCrossPostMode) ? 
+              (smartCrossPostMode ? 'Publication Intelligente' : 'Multi-plateforme') : 
+              (selectedPlatform?.name || selectedPlatform?.username || 'Ma Page')}
             timestamp="À l'instant"
-            platform={crossPostMode ? 'meta' : selectedPlatform?.platform}
+            platform={(crossPostMode || smartCrossPostMode) ? 'meta' : selectedPlatform?.platform}
           />
           
-          {crossPostMode && selectedCrossTargets.length > 0 && (
+          {(crossPostMode || smartCrossPostMode) && selectedCrossTargets.length > 0 && (
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Publication sur :</p>
+              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                {smartCrossPostMode && <Sparkles className="w-4 h-4 mr-1 text-purple-600" />}
+                Publication sur :
+              </p>
               <div className="flex flex-wrap gap-2">
                 {selectedCrossTargets.map((target) => (
                   <span
