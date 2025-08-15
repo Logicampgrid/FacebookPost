@@ -582,6 +582,7 @@ function App() {
               </div>
             )}
           </div>
+          </div>
         )}
 
         {activeTab === 'create' && selectedBusinessManager && (
