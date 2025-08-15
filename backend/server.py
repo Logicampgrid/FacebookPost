@@ -154,8 +154,8 @@ async def debug_pages():
 # Shop Type to Page Mapping Configuration
 SHOP_PAGE_MAPPING = {
     "outdoor": {
-        "name": "LogicampOutdoor",
-        "expected_id": None,  # To be configured when page is added
+        "name": "Logicamp Outdoor",  # Corrected name with space
+        "expected_id": "236260991673388",  # Added real page ID
         "woocommerce_url": "https://logicampoutdoor.com"
     },
     "gizmobbs": {
