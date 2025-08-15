@@ -1881,28 +1881,129 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         facebook_post_id = facebook_result["id"]
         facebook_post_data["facebook_post_id"] = facebook_post_id
         
-        print(f"✅ Facebook post published with clickable image: {facebook_post_id}")
+        print(f"✅ Main Facebook page published with clickable image: {facebook_post_id}")
         
-        # NOW PUBLISH TO INSTAGRAM AUTOMATICALLY
-        instagram_result = None
-        instagram_post_id = None
-        instagram_error = None
+        # Initialize tracking for all platform publications
+        publication_results = {
+            "main_page": {
+                "platform": "facebook_page",
+                "page_name": target_page["name"],
+                "page_id": target_page["id"],
+                "post_id": facebook_post_id,
+                "status": "success"
+            },
+            "additional_pages": [],
+            "groups": [],
+            "instagram_accounts": []
+        }
         
-        try:
-            # Find connected Instagram account for this page
-            instagram_account = None
-            
-            # Look for Instagram account connected to this page
-            for bm in user.get("business_managers", []):
-                for ig_account in bm.get("instagram_accounts", []):
-                    if ig_account.get("connected_page_id") == target_page["id"]:
-                        instagram_account = ig_account
-                        print(f"📸 Found connected Instagram account: {ig_account.get('username')} for page {target_page['name']}")
-                        break
-                if instagram_account:
-                    break
-            
-            if instagram_account:
+        # PUBLISH TO ALL ADDITIONAL PAGES
+        for additional_page in all_platforms.get("additional_pages", []):
+            try:
+                print(f"📄 Publishing to additional page: {additional_page['name']} ({additional_page['id']})")
+                
+                # Create post for additional page
+                additional_page_data = facebook_post_data.copy()
+                additional_page_data.update({
+                    "id": str(uuid.uuid4()),
+                    "target_id": additional_page["id"],
+                    "target_name": additional_page["name"]
+                })
+                
+                additional_page_obj = Post(**additional_page_data)
+                page_access_token = additional_page.get("access_token", access_token)
+                
+                if page_access_token.startswith("test_"):
+                    page_result = {"id": f"test_page_{uuid.uuid4().hex[:8]}"}
+                    print(f"✅ Simulated additional page post: {page_result['id']}")
+                else:
+                    page_result = await post_to_facebook(additional_page_obj, page_access_token)
+                
+                if page_result and "id" in page_result:
+                    publication_results["additional_pages"].append({
+                        "platform": "facebook_page",
+                        "page_name": additional_page["name"],
+                        "page_id": additional_page["id"],
+                        "post_id": page_result["id"],
+                        "status": "success"
+                    })
+                    print(f"✅ Additional page published: {page_result['id']}")
+                else:
+                    publication_results["additional_pages"].append({
+                        "platform": "facebook_page",
+                        "page_name": additional_page["name"],
+                        "page_id": additional_page["id"],
+                        "status": "failed",
+                        "error": "No post ID returned"
+                    })
+                    print(f"❌ Additional page publication failed")
+                    
+            except Exception as page_error:
+                publication_results["additional_pages"].append({
+                    "platform": "facebook_page",
+                    "page_name": additional_page["name"],
+                    "page_id": additional_page["id"],
+                    "status": "failed",
+                    "error": str(page_error)
+                })
+                print(f"❌ Additional page publication error: {page_error}")
+        
+        # PUBLISH TO ALL ACCESSIBLE GROUPS
+        for group in all_platforms.get("accessible_groups", []):
+            try:
+                print(f"👥 Publishing to group: {group['name']} ({group['id']})")
+                
+                # Create post for group
+                group_post_data = facebook_post_data.copy()
+                group_post_data.update({
+                    "id": str(uuid.uuid4()),
+                    "target_type": "group",
+                    "target_id": group["id"],
+                    "target_name": group["name"]
+                })
+                
+                group_post_obj = Post(**group_post_data)
+                
+                if access_token.startswith("test_"):
+                    group_result = {"id": f"test_group_{uuid.uuid4().hex[:8]}"}
+                    print(f"✅ Simulated group post: {group_result['id']}")
+                else:
+                    group_result = await post_to_facebook(group_post_obj, access_token)
+                
+                if group_result and "id" in group_result:
+                    publication_results["groups"].append({
+                        "platform": "facebook_group",
+                        "group_name": group["name"],
+                        "group_id": group["id"],
+                        "post_id": group_result["id"],
+                        "status": "success"
+                    })
+                    print(f"✅ Group published: {group_result['id']}")
+                else:
+                    publication_results["groups"].append({
+                        "platform": "facebook_group",
+                        "group_name": group["name"],
+                        "group_id": group["id"],
+                        "status": "failed",
+                        "error": "No post ID returned"
+                    })
+                    print(f"❌ Group publication failed")
+                    
+            except Exception as group_error:
+                publication_results["groups"].append({
+                    "platform": "facebook_group",
+                    "group_name": group["name"],
+                    "group_id": group["id"],
+                    "status": "failed",
+                    "error": str(group_error)
+                })
+                print(f"❌ Group publication error: {group_error}")
+        
+        # PUBLISH TO ALL INSTAGRAM ACCOUNTS
+        for instagram_account in all_platforms.get("instagram_accounts", []):
+            try:
+                print(f"📸 Publishing to Instagram: @{instagram_account.get('username')} ({instagram_account['id']})")
+                
                 # Create Instagram post object
                 instagram_post_data = facebook_post_data.copy()
                 instagram_post_data.update({
@@ -1917,39 +2018,72 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 
                 instagram_post_obj = Post(**instagram_post_data)
                 
-                print(f"📤 Publishing to Instagram: {instagram_account.get('username')} ({instagram_account['id']})")
-                
                 if access_token.startswith("test_"):
-                    # Test mode for Instagram too
-                    instagram_result = {
-                        "id": f"test_ig_post_{uuid.uuid4().hex[:8]}"
-                    }
+                    instagram_result = {"id": f"test_ig_post_{uuid.uuid4().hex[:8]}"}
                     print(f"✅ Simulated Instagram post: {instagram_result['id']}")
                 else:
-                    # Real Instagram API call
                     instagram_result = await post_to_instagram(instagram_post_obj, access_token)
                 
                 if instagram_result and "id" in instagram_result:
-                    instagram_post_id = instagram_result["id"]
-                    facebook_post_data["instagram_post_id"] = instagram_post_id
-                    facebook_post_data["cross_posted_to"] = [{
+                    publication_results["instagram_accounts"].append({
                         "platform": "instagram",
                         "account_name": instagram_account.get("username"),
                         "account_id": instagram_account["id"],
-                        "post_id": instagram_post_id
-                    }]
-                    print(f"✅ Instagram post published: {instagram_post_id}")
+                        "post_id": instagram_result["id"],
+                        "status": "success"
+                    })
+                    print(f"✅ Instagram published: {instagram_result['id']}")
                 else:
-                    instagram_error = "Instagram publishing failed - no ID returned"
-                    print(f"❌ {instagram_error}")
+                    publication_results["instagram_accounts"].append({
+                        "platform": "instagram",
+                        "account_name": instagram_account.get("username"),
+                        "account_id": instagram_account["id"],
+                        "status": "failed",
+                        "error": "No post ID returned"
+                    })
+                    print(f"❌ Instagram publication failed")
                     
-            else:
+            except Exception as instagram_error:
+                publication_results["instagram_accounts"].append({
+                    "platform": "instagram",
+                    "account_name": instagram_account.get("username"),
+                    "account_id": instagram_account["id"],
+                    "status": "failed",
+                    "error": str(instagram_error)
+                })
+                print(f"❌ Instagram publication error: {instagram_error}")
+        
+        # Extract legacy variables for backward compatibility
+        instagram_post_id = None
+        instagram_error = None
+        
+        # Get first successful Instagram post ID for backward compatibility
+        for ig_result in publication_results["instagram_accounts"]:
+            if ig_result["status"] == "success":
+                instagram_post_id = ig_result["post_id"]
+                break
+        
+        # Get first Instagram error for backward compatibility
+        if not instagram_post_id:
+            for ig_result in publication_results["instagram_accounts"]:
+                if ig_result["status"] == "failed":
+                    instagram_error = ig_result.get("error", "Instagram publishing failed")
+                    break
+            if not instagram_error and len(publication_results["instagram_accounts"]) == 0:
                 instagram_error = f"No Instagram account connected to page {target_page['name']}"
-                print(f"⚠️ {instagram_error}")
-                
-        except Exception as ig_error:
-            instagram_error = str(ig_error)
-            print(f"❌ Instagram publishing error: {instagram_error}")
+        
+        # Update facebook_post_data with cross-posting information
+        if instagram_post_id:
+            facebook_post_data["instagram_post_id"] = instagram_post_id
+            facebook_post_data["cross_posted_to"] = [{
+                "platform": "instagram",
+                "account_name": publication_results["instagram_accounts"][0].get("account_name"),
+                "account_id": publication_results["instagram_accounts"][0].get("account_id"),
+                "post_id": instagram_post_id
+            }]
+        
+        # Store complete publication results in the post data
+        facebook_post_data["publication_results"] = publication_results
         
         # Save to database with both Facebook and Instagram results
         result = await db.posts.insert_one(facebook_post_data)
