@@ -191,7 +191,7 @@ const WebhookHistory = () => {
                       </div>
                       
                       <div className="flex-shrink-0 ml-4">
-                        {getStatusBadge(post.status, post.comment_added)}
+                        {getStatusBadge(post)}
                       </div>
                     </div>
 
