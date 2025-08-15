@@ -2089,16 +2089,33 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         result = await db.posts.insert_one(facebook_post_data)
         facebook_post_data["_id"] = str(result.inserted_id)
         
-        # Prepare success message
-        success_message = f"Product '{request.title}' published successfully to Facebook"
-        if instagram_post_id:
-            success_message += f" and Instagram"
-        elif instagram_error:
-            success_message += f" (Instagram failed: {instagram_error})"
+        # Generate comprehensive success message
+        total_published = 1  # Main page
+        total_published += len([p for p in publication_results["additional_pages"] if p["status"] == "success"])
+        total_published += len([g for g in publication_results["groups"] if g["status"] == "success"])
+        total_published += len([i for i in publication_results["instagram_accounts"] if i["status"] == "success"])
+        
+        total_failed = 0
+        total_failed += len([p for p in publication_results["additional_pages"] if p["status"] == "failed"])
+        total_failed += len([g for g in publication_results["groups"] if g["status"] == "failed"])
+        total_failed += len([i for i in publication_results["instagram_accounts"] if i["status"] == "failed"])
+        
+        success_message = f"Product '{request.title}' published to {total_published} platforms"
+        if total_failed > 0:
+            success_message += f" ({total_failed} failed)"
+        
+        print(f"🎉 COMPREHENSIVE PUBLICATION COMPLETE:")
+        print(f"   ✅ {total_published} platforms successful")
+        print(f"   ❌ {total_failed} platforms failed")
+        print(f"   📊 Main page: {target_page['name']}")
+        print(f"   📄 Additional pages: {len(publication_results['additional_pages'])}")
+        print(f"   👥 Groups: {len(publication_results['groups'])}")
+        print(f"   📸 Instagram: {len(publication_results['instagram_accounts'])}")
         
         return {
             "success": True,
             "message": success_message,
+            # Legacy fields for backward compatibility
             "facebook_post_id": facebook_post_id,
             "instagram_post_id": instagram_post_id,
             "instagram_error": instagram_error,
@@ -2109,7 +2126,17 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             "media_url": media_url,
             "comment_status": facebook_post_data.get("comment_status"),
             "published_at": facebook_post_data["published_at"].isoformat(),
-            "cross_posted": instagram_post_id is not None
+            "cross_posted": instagram_post_id is not None,
+            # New comprehensive publication data
+            "publication_summary": {
+                "total_published": total_published,
+                "total_failed": total_failed,
+                "platforms_successful": total_published,
+                "platforms_failed": total_failed
+            },
+            "publication_results": publication_results,
+            "shop_type": request.shop_type,
+            "comprehensive_cross_post": True
         }
         
     except Exception as e:
