@@ -1761,7 +1761,8 @@ async def get_all_platforms_for_store(shop_type: str, user: dict) -> dict:
 async def create_product_post(request: ProductPublishRequest) -> dict:
     """Create a comprehensive cross-platform post (Facebook Pages + Groups + Instagram) for a product from N8N data"""
     try:
-        print(f"🛍️ Creating CROSS-PLATFORM product post: {request.title}")
+        print(f"🛍️ Creating COMPREHENSIVE CROSS-PLATFORM product post: {request.title}")
+        print(f"🏪 Store: {request.shop_type}")
         
         # Check for duplicate posts to avoid multiple posts for same product
         duplicate_check = await check_duplicate_product_post(
@@ -1780,6 +1781,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "facebook_post_id": existing_post.get("facebook_post_id", "unknown"),
                 "instagram_post_id": existing_post.get("instagram_post_id", "not_posted"),
                 "groups_post_ids": existing_post.get("groups_post_ids", []),
+                "additional_pages_post_ids": existing_post.get("additional_pages_post_ids", []),
                 "post_id": existing_post.get("post_id", "unknown"),
                 "page_name": "Cached Page",
                 "page_id": "cached",
@@ -1793,10 +1795,20 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         print(f"✅ {duplicate_check['message']}")
         content_hash = duplicate_check.get("content_hash")
         
-        # Find user and page for publishing
-        user, target_page, access_token = await find_user_and_page_for_publishing(
+        # Find user and get ALL platforms for this store
+        user, main_page, main_access_token = await find_user_and_page_for_publishing(
             request.user_id, request.page_id, request.shop_type
         )
+        
+        # Get all available platforms for this store
+        all_platforms = await get_all_platforms_for_store(request.shop_type, user)
+        
+        if all_platforms.get("error"):
+            raise Exception(f"No platforms available for store {request.shop_type}: {all_platforms['error']}")
+        
+        # Use main page as primary target
+        target_page = all_platforms["main_page"] or main_page
+        access_token = target_page.get("access_token", main_access_token)
         
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
