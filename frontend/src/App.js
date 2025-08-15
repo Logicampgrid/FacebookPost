@@ -7,7 +7,7 @@ import FacebookLogin from './components/FacebookLogin';
 import PlatformSelector from './components/PlatformSelector';
 import BusinessManagerSelector from './components/BusinessManagerSelector';
 import WebhookHistory from './components/WebhookHistory';
-import ConnectionStatus from './components/ConnectionStatus';
+import ConnectionDiagnostic from './components/ConnectionDiagnostic';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
