@@ -730,11 +730,12 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           {/* Submit Button */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-sm text-gray-500">
-              {crossPostMode ? (
+              {crossPostMode || smartCrossPostMode ? (
                 selectedCrossTargets.length > 0 ? (
                   <span className="flex items-center">
-                    <Target className="w-4 h-4 mr-1" />
+                    {smartCrossPostMode ? <Sparkles className="w-4 h-4 mr-1 text-purple-500" /> : <Target className="w-4 h-4 mr-1" />}
                     {selectedCrossTargets.length} plateforme(s) sélectionnée(s)
+                    {smartCrossPostMode && <span className="ml-1 text-purple-600">(Intelligent)</span>}
                   </span>
                 ) : (
                   'Sélectionnez des plateformes'
@@ -756,8 +757,8 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
               disabled={
                 loading || 
                 (!content.trim() && mediaFiles.length === 0) || 
-                (!crossPostMode && !selectedPlatform) ||
-                (crossPostMode && selectedCrossTargets.length === 0)
+                (!crossPostMode && !smartCrossPostMode && !selectedPlatform) ||
+                ((crossPostMode || smartCrossPostMode) && selectedCrossTargets.length === 0)
               }
               className="facebook-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
