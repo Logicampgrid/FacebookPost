@@ -510,80 +510,55 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: CLICKABLE IMAGES - Enhanced implementation like Facebook Share
+        # STRATEGY 1: NATIVE FACEBOOK LINK SHARING - Exactly like posting a URL on Facebook
         if post.media_urls and product_link:
-            media_url = post.media_urls[0]
+            print(f"🔗 Creating NATIVE Facebook link post (like posting URL directly): {product_link}")
             
-            # Get full media URL for picture parameter
-            if media_url.startswith('http'):
-                full_media_url = media_url
-            else:
-                # Use public domain for sharing links - ensure it's accessible externally
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://ok-demo-4.preview.emergentagent.com")
-                full_media_url = f"{base_url}{media_url}"
-            
-            # Verify the image URL is accessible before creating clickable post
             try:
-                img_check = requests.head(full_media_url, timeout=10)
-                if img_check.status_code != 200:
-                    print(f"⚠️ Image URL not accessible: {full_media_url} (status: {img_check.status_code})")
-                    # Continue anyway, Facebook might be able to access it
-            except Exception as img_error:
-                print(f"⚠️ Could not verify image accessibility: {img_error}")
-                # Continue anyway
-            
-            print(f"🔗 Creating CLICKABLE image post (like Facebook Share): {full_media_url} -> {product_link}")
-            
-            # Determine media type
-            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
-            is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
-            
-            # For clickable images, use /feed endpoint with link + picture parameters (Facebook Share style)
-            if is_image:  # Only images can be made clickable this way
-                try:
-                    # Create link post with clickable image - exactly like Facebook Share functionality
-                    data = {
-                        "access_token": page_access_token,
-                        "link": product_link,  # This makes the image clickable and creates the external redirect
-                        "picture": full_media_url,  # This is the image that will be displayed
-                        "name": post.link_metadata[0].get("title", "Voir ce produit") if post.link_metadata else "Voir ce produit",
-                        "description": post.link_metadata[0].get("description", "Cliquez pour découvrir ce produit") if post.link_metadata else "Cliquez pour découvrir ce produit"
-                    }
-                    
-                    # Add enhanced message/caption if provided
-                    if post.content and post.content.strip():
-                        # Clean the message - remove product link since it's now in the link parameter
-                        message = post.content
-                        if product_link in message:
-                            message = message.replace(product_link, '').strip()
-                            message = message.replace('🛒 Voir le produit:', '').strip()
-                            message = message.replace('\n\n', '\n').strip()
+                # Create link post EXACTLY like Facebook native behavior
+                # Only use the link parameter - let Facebook scrape Open Graph data automatically
+                data = {
+                    "access_token": page_access_token,
+                    "link": product_link,  # Facebook will automatically scrape this URL for image and metadata
+                }
+                
+                # Add message/caption if provided (this appears above the link preview)
+                if post.content and post.content.strip():
+                    # Clean the message - remove product link since it's now in the link preview
+                    message = post.content
+                    if product_link in message:
+                        message = message.replace(product_link, '').strip()
+                        message = message.replace('🛒 Voir le produit:', '').strip()
+                        message = message.replace('\n\n', '\n').strip()
+                    if message.strip():  # Only add message if there's content left
                         data["message"] = message
+                
+                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                print(f"🔗 Creating NATIVE link post to: {endpoint}")
+                print(f"🎯 Target URL (Facebook will scrape automatically): {product_link}")
+                print(f"💬 Post Message: {data.get('message', 'No message - link preview only')}")
+                print(f"🤖 Facebook will automatically:")
+                print(f"   - Scrape Open Graph data from {product_link}")
+                print(f"   - Display the scraped image as clickable")
+                print(f"   - Make entire preview clickable -> redirects to {product_link}")
+                
+                response = requests.post(endpoint, data=data, timeout=30)
+                result = response.json()
+                
+                print(f"Facebook native link response: {response.status_code} - {result}")
+                
+                if response.status_code == 200 and 'id' in result:
+                    print("✅ NATIVE Facebook link post created successfully!")
+                    print("🎯 Image will be clickable exactly like native Facebook URL posting")
+                    return result
+                else:
+                    print(f"❌ Native link post failed: {result}")
+                    # Fall back to direct upload method
+                    raise Exception("Native link post failed")
                     
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                    print(f"🔗 Creating clickable image post (Facebook Share style) to: {endpoint}")
-                    print(f"📸 Image URL: {full_media_url}")
-                    print(f"🎯 Target URL (clickable): {product_link}")
-                    print(f"📝 Link Title: {data.get('name')}")
-                    print(f"📄 Link Description: {data.get('description')}")
-                    print(f"💬 Post Message: {data.get('message', 'No message')}")
-                    
-                    response = requests.post(endpoint, data=data, timeout=30)
-                    result = response.json()
-                    
-                    print(f"Facebook clickable image response: {response.status_code} - {result}")
-                    
-                    if response.status_code == 200 and 'id' in result:
-                        print("✅ Clickable image post created successfully! (Facebook Share style - image redirects to external page)")
-                        return result
-                    else:
-                        print(f"❌ Clickable image post failed: {result}")
-                        # Fall back to direct upload for videos or if link post fails
-                        raise Exception("Clickable image post failed")
-                        
-                except Exception as clickable_error:
-                    print(f"Clickable image error: {clickable_error}")
-                    print("🔄 Falling back to direct upload method...")
+            except Exception as native_error:
+                print(f"Native link post error: {native_error}")
+                print("🔄 Falling back to direct upload method...")
         
         # STRATEGY 2: Direct media upload (for videos or when no product link)
         if post.media_urls:
