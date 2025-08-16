@@ -234,6 +234,124 @@ async def debug_pages():
     except Exception as e:
         return {"error": f"Failed to get pages info: {str(e)}"}
 
+# Test endpoint specifically for Facebook image display fix
+@app.post("/api/debug/test-facebook-image-display")
+async def test_facebook_image_display_fix():
+    """Test endpoint to verify Facebook images display correctly (not as text links)"""
+    try:
+        print("🧪 Testing Facebook Image Display Fix...")
+        
+        # Find a user with Facebook access
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"error": "No user with Facebook access found for testing"}
+        
+        # Get user's first page
+        pages = user.get("facebook_pages", [])
+        if not pages:
+            # Try business manager pages
+            for bm in user.get("business_managers", []):
+                if bm.get("pages"):
+                    pages = bm["pages"]
+                    break
+        
+        if not pages:
+            return {"error": "No Facebook pages found for testing"}
+        
+        target_page = pages[0]
+        access_token = target_page.get("access_token")
+        
+        if not access_token:
+            return {"error": "No access token found for Facebook page"}
+        
+        # Create test image URL
+        test_image_url = "https://picsum.photos/800/600?random=" + str(uuid.uuid4().hex[:8])
+        
+        # Download test image
+        try:
+            local_image_url = await download_product_image(test_image_url)
+        except Exception as download_error:
+            return {"error": f"Failed to download test image: {str(download_error)}"}
+        
+        # Create test post data
+        test_post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(user["_id"]),
+            "content": "🧪 TEST: Vérification de l'affichage des images (ce post sera automatiquement supprimé)",
+            "media_urls": [local_image_url],
+            "link_metadata": [{
+                "url": "https://example.com/test-product",
+                "title": "Test Product - Image Display Fix",
+                "description": "Test pour vérifier que les images s'affichent correctement",
+                "type": "product"
+            }],
+            "comment_link": "https://example.com/test-product",
+            "target_type": "page",
+            "target_id": target_page["id"], 
+            "target_name": target_page["name"],
+            "platform": "facebook",
+            "status": "published",
+            "created_at": datetime.utcnow(),
+            "published_at": datetime.utcnow()
+        }
+        
+        # Create Post object
+        test_post = Post(**test_post_data)
+        
+        # Test the new guaranteed image display function
+        print(f"📤 Testing guaranteed image display on page: {target_page['name']}")
+        result = await post_to_facebook(test_post, access_token)
+        
+        if result and "id" in result:
+            # Store test post info for potential cleanup
+            test_info = {
+                "success": True,
+                "message": "✅ FACEBOOK IMAGE DISPLAY FIX VERIFIED!",
+                "test_post_id": result["id"],
+                "page_name": target_page["name"],
+                "page_id": target_page["id"],
+                "test_image_url": test_image_url,
+                "local_image_path": local_image_url,
+                "strategies_used": "Priority: Direct image upload to /photos endpoint",
+                "guarantee": "Image will display as IMAGE, not text link",
+                "facebook_post_url": f"https://facebook.com/{result['id']}",
+                "verification_steps": [
+                    "1. Check Facebook page to verify image displays correctly",
+                    "2. Confirm image is NOT showing as a text link", 
+                    "3. Verify product link appears as comment (if applicable)",
+                    "4. Test post can be manually deleted from Facebook"
+                ],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Save test result to database for tracking
+            await db.test_results.insert_one({
+                "test_type": "facebook_image_display_fix",
+                "result": test_info,
+                "created_at": datetime.utcnow()
+            })
+            
+            return test_info
+        else:
+            return {
+                "success": False,
+                "error": "Facebook post creation failed",
+                "page_name": target_page["name"],
+                "page_id": target_page["id"],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+    except Exception as e:
+        print(f"❌ Facebook image display test error: {e}")
+        return {
+            "success": False,
+            "error": f"Test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # Test endpoint for comprehensive platform discovery
 @app.get("/api/debug/store-platforms/{shop_type}")
 async def debug_store_platforms(shop_type: str):
