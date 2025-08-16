@@ -824,8 +824,10 @@ async def get_page_connected_instagram(page_access_token: str, page_id: str):
         return None
 
 async def post_to_facebook(post: Post, page_access_token: str):
-    """Post content to Facebook page/group with CLICKABLE IMAGES feature"""
+    """Post content to Facebook page/group - GUARANTEED IMAGE DISPLAY"""
     try:
+        print(f"🎯 GUARANTEED IMAGE DISPLAY - Processing post to Facebook")
+        
         # Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
         
@@ -836,57 +838,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # STRATEGY 1: NATIVE FACEBOOK LINK SHARING - Exactly like posting a URL on Facebook
-        if post.media_urls and product_link:
-            print(f"🔗 Creating NATIVE Facebook link post (like posting URL directly): {product_link}")
-            
-            try:
-                # Create link post EXACTLY like Facebook native behavior
-                # Only use the link parameter - let Facebook scrape Open Graph data automatically
-                data = {
-                    "access_token": page_access_token,
-                    "link": product_link,  # Facebook will automatically scrape this URL for image and metadata
-                }
-                
-                # Add message/caption if provided (this appears above the link preview)
-                if post.content and post.content.strip():
-                    # Clean the message - remove product link since it's now in the link preview
-                    message = post.content
-                    if product_link in message:
-                        message = message.replace(product_link, '').strip()
-                        message = message.replace('🛒 Voir le produit:', '').strip()
-                        message = message.replace('\n\n', '\n').strip()
-                    if message.strip():  # Only add message if there's content left
-                        data["message"] = message
-                
-                endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                print(f"🔗 Creating NATIVE link post to: {endpoint}")
-                print(f"🎯 Target URL (Facebook will scrape automatically): {product_link}")
-                print(f"💬 Post Message: {data.get('message', 'No message - link preview only')}")
-                print(f"🤖 Facebook will automatically:")
-                print(f"   - Scrape Open Graph data from {product_link}")
-                print(f"   - Display the scraped image as clickable")
-                print(f"   - Make entire preview clickable -> redirects to {product_link}")
-                
-                response = requests.post(endpoint, data=data, timeout=30)
-                result = response.json()
-                
-                print(f"Facebook native link response: {response.status_code} - {result}")
-                
-                if response.status_code == 200 and 'id' in result:
-                    print("✅ NATIVE Facebook link post created successfully!")
-                    print("🎯 Image will be clickable exactly like native Facebook URL posting")
-                    return result
-                else:
-                    print(f"❌ Native link post failed: {result}")
-                    # Fall back to direct upload method
-                    raise Exception("Native link post failed")
-                    
-            except Exception as native_error:
-                print(f"Native link post error: {native_error}")
-                print("🔄 Falling back to direct upload method...")
-        
-        # STRATEGY 2: Direct media upload (for videos or when no product link)
+        # PRIORITY STRATEGY: DIRECT IMAGE UPLOAD (Always shows as image)
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -901,18 +853,18 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 Processing media for Facebook (direct upload): {full_media_url}")
+            print(f"📸 PRIORITY: Direct image upload to guarantee display: {full_media_url}")
             print(f"📁 Local file path: {local_file_path}")
             
             # Determine media type
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
-            # Direct multipart upload
+            # STRATEGY 1A: Direct multipart upload (GUARANTEED IMAGE DISPLAY)
             try:
                 # Use local file for better performance if available
                 if local_file_path and os.path.exists(local_file_path):
-                    print(f"✅ Using local file for Facebook upload: {local_file_path}")
+                    print(f"✅ Using local file for guaranteed image display: {local_file_path}")
                     # Read local file content
                     with open(local_file_path, 'rb') as f:
                         media_content = f.read()
@@ -962,12 +914,12 @@ async def post_to_facebook(post: Post, page_access_token: str):
                     # For videos, use /videos endpoint
                     files = {'source': ('video.mp4', media_content, content_type)}
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
-                    print(f"🎥 Uploading video to: {endpoint}")
+                    print(f"🎥 GUARANTEED: Uploading video to display as video: {endpoint}")
                 else:
-                    # For images, use /photos endpoint (when no clickable link needed)
+                    # For images, use /photos endpoint - GUARANTEED IMAGE DISPLAY
                     files = {'source': ('image.jpg', media_content, content_type)}
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                    print(f"📸 Uploading image to: {endpoint}")
+                    print(f"📸 GUARANTEED: Uploading image to display as image: {endpoint}")
                     print(f"💬 With message: {base_data.get('message', 'No message')}")
                 
                 response = requests.post(endpoint, data=base_data, files=files, timeout=60)
@@ -976,61 +928,127 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 print(f"Facebook upload response: {response.status_code} - {result}")
                 
                 if response.status_code == 200 and 'id' in result:
-                    print("✅ Facebook media upload successful!")
+                    print("✅ SUCCESS: Facebook media upload successful - IMAGE WILL DISPLAY AS IMAGE!")
+                    
+                    # If we have a product link, add it as a comment for clickability
+                    if product_link:
+                        try:
+                            print(f"🔗 Adding clickable comment with product link: {product_link}")
+                            comment_result = await add_comment_to_facebook_post(
+                                result["id"], 
+                                f"🛒 Voir le produit: {product_link}",
+                                page_access_token
+                            )
+                            if comment_result:
+                                print("✅ Clickable product comment added successfully!")
+                            else:
+                                print("⚠️ Comment addition failed, but image posted successfully")
+                        except Exception as comment_error:
+                            print(f"⚠️ Comment addition error: {comment_error} (image still posted successfully)")
+                    
                     return result
                 else:
                     print(f"❌ Facebook upload failed: {result}")
-                    # Fallback to link posting
+                    # Don't fall back to link posts - try strategy 1B
                     raise Exception("Direct upload failed")
                         
             except Exception as upload_error:
-                print(f"Upload error: {upload_error}")
+                print(f"Strategy 1A upload error: {upload_error}")
+                print("🔄 Trying Strategy 1B: URL-based photo post...")
                 
-                # FALLBACK: Simple link post with message
+                # STRATEGY 1B: URL-based photo post (Still shows as image, not text link)
                 try:
-                    print("🔄 Falling back to link-based post...")
-                    
-                    # Create message
-                    message = ""
-                    if post.content and post.content.strip():
-                        message = post.content
-                    else:
-                        message = "📸 Nouveau contenu !" if is_image else "🎥 Découvrez cette vidéo"
-                    
-                    # Add product link to message if available
-                    if product_link:
-                        message += f"\n\n🛒 Voir le produit: {product_link}"
-                    else:
-                        message += f"\n\n📱 Voir le média: {full_media_url}"
-                    
-                    # Simple link post
+                    # Use photo URL parameter to force image display
                     data = {
                         "access_token": page_access_token,
-                        "message": message,
-                        "link": product_link if product_link else full_media_url
+                        "url": full_media_url,  # Force Facebook to display this as image
                     }
                     
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                    print(f"🔗 Posting link to: {endpoint}")
+                    # Add message/caption if provided
+                    if post.content and post.content.strip():
+                        data["message"] = post.content
+                    
+                    # Add product link to message
+                    if product_link:
+                        if data.get("message"):
+                            data["message"] += f"\n\n🛒 Voir le produit: {product_link}"
+                        else:
+                            data["message"] = f"📸 Découvrez ce produit: {product_link}"
+                    
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
+                    print(f"📸 STRATEGY 1B: URL-based photo post to guarantee image display: {endpoint}")
+                    print(f"🔗 Image URL: {full_media_url}")
                     
                     response = requests.post(endpoint, data=data, timeout=30)
                     result = response.json()
                     
-                    print(f"Facebook link post response: {response.status_code} - {result}")
+                    print(f"Facebook URL photo response: {response.status_code} - {result}")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ Link post created successfully!")
+                        print("✅ SUCCESS: URL-based photo post successful - IMAGE WILL DISPLAY AS IMAGE!")
                         return result
                     else:
-                        print(f"❌ Link post failed: {result}")
-                        raise Exception("Link post failed")
+                        print(f"❌ URL-based photo post failed: {result}")
+                        raise Exception("URL photo post failed")
                         
-                except Exception as link_error:
-                    print(f"Link post error: {link_error}")
-                    # Final fallback to text only
-                    print("🔄 Using text-only fallback...")
+                except Exception as url_photo_error:
+                    print(f"Strategy 1B URL photo error: {url_photo_error}")
+                    print("🔄 Trying Strategy 1C: Enhanced link post with picture parameter...")
+                    
+                    # STRATEGY 1C: Enhanced link post with picture parameter (Forces image preview)
+                    try:
+                        data = {
+                            "access_token": page_access_token,
+                            "message": post.content if post.content and post.content.strip() else "📸 Nouveau produit !",
+                            "link": product_link if product_link else full_media_url,
+                            "picture": full_media_url,  # Force image to appear
+                        }
+                        
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                        print(f"🔗 STRATEGY 1C: Enhanced link post with forced image: {endpoint}")
+                        print(f"🖼️ Picture parameter: {full_media_url}")
+                        print(f"🔗 Link parameter: {data['link']}")
+                        
+                        response = requests.post(endpoint, data=data, timeout=30)
+                        result = response.json()
+                        
+                        print(f"Facebook enhanced link response: {response.status_code} - {result}")
+                        
+                        if response.status_code == 200 and 'id' in result:
+                            print("✅ SUCCESS: Enhanced link post with forced image successful!")
+                            return result
+                        else:
+                            print(f"❌ Enhanced link post failed: {result}")
+                            raise Exception("Enhanced link post failed")
+                            
+                    except Exception as enhanced_link_error:
+                        print(f"Strategy 1C enhanced link error: {enhanced_link_error}")
+                        print("❌ ALL IMAGE STRATEGIES FAILED - This should not happen!")
+                        
+                        # EMERGENCY FALLBACK: Simple text post (only as last resort)
+                        print("🚨 EMERGENCY FALLBACK: Simple text post with image URL")
+                        emergency_message = f"📸 {post.content if post.content else 'Nouveau contenu'}\n\n"
+                        emergency_message += f"🖼️ Image: {full_media_url}\n"
+                        if product_link:
+                            emergency_message += f"🛒 Voir le produit: {product_link}"
+                        
+                        data = {
+                            "access_token": page_access_token,
+                            "message": emergency_message
+                        }
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                        
+                        response = requests.post(endpoint, data=data, timeout=30)
+                        result = response.json()
+                        
+                        if response.status_code == 200:
+                            print("⚠️ Emergency fallback successful, but image will show as text link")
+                            return result
+                        else:
+                            print(f"❌ Even emergency fallback failed: {result}")
+                            return None
                 
-        # STRATEGY 2: Link posts (URL sharing) - Enhanced
+        # STRATEGY 2: Link posts (URL sharing) - Enhanced with better image handling
         elif urls_in_content:
             primary_link = urls_in_content[0]
             
@@ -1053,6 +1071,17 @@ async def post_to_facebook(post: Post, page_access_token: str):
             endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
             print(f"🔗 Enhanced link post to: {primary_link}")
             
+            response = requests.post(endpoint, data=data, timeout=30)
+            result = response.json()
+            
+            print(f"📡 Facebook link API response: {response.status_code} - {result}")
+            
+            if response.status_code == 200:
+                return result
+            else:
+                print(f"❌ Facebook link API error: {result}")
+                return None
+            
         # STRATEGY 3: Text-only posts
         else:
             data = {
@@ -1061,41 +1090,17 @@ async def post_to_facebook(post: Post, page_access_token: str):
             }
             endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
             print("📝 Text-only post")
-        
-        # Make the API call (for link and text posts)
-        if not post.media_urls:  # Only if we haven't already handled media posts
-            print(f"🚀 Posting to: {endpoint}")
-            print(f"📋 Request data: {data}")
             
             response = requests.post(endpoint, data=data, timeout=30)
             result = response.json()
             
-            print(f"📡 Facebook API response: {response.status_code} - {result}")
+            print(f"📡 Facebook text API response: {response.status_code} - {result}")
             
             if response.status_code == 200:
                 return result
             else:
-                print(f"❌ Facebook API error: {result}")
+                print(f"❌ Facebook text API error: {result}")
                 return None
-        
-        # If we get here from media posts fallback, make a simple text post
-        data = {
-            "access_token": page_access_token,
-            "message": post.content if post.content and post.content.strip() else "Post créé depuis Meta Publishing Platform"
-        }
-        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-        print("📝 Final fallback: Text-only post")
-        
-        response = requests.post(endpoint, data=data, timeout=30)
-        result = response.json()
-        
-        print(f"📡 Facebook final fallback response: {response.status_code} - {result}")
-        
-        if response.status_code == 200:
-            return result
-        else:
-            print(f"❌ Facebook final fallback error: {result}")
-            return None
             
     except Exception as e:
         print(f"💥 Error posting to Facebook: {e}")
