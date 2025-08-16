@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 
 class N8NIntegrationTester:
-    def __init__(self, base_url="https://img-facebook-fix.preview.emergentagent.com"):
+    def __init__(self, base_url="https://persistent-flow-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
