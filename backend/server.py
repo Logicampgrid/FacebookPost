@@ -791,6 +791,39 @@ def optimize_image_for_instagram(file_path: str, target_path: str = None):
         print(f"❌ Instagram image optimization failed for {file_path}: {e}")
         return False
 
+def optimize_video_for_social_media(file_path: str, target_path: str = None, max_size_mb: int = 100, instagram_mode: bool = False):
+    """Basic video optimization for social media platforms"""
+    try:
+        if target_path is None:
+            target_path = file_path
+            
+        file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        
+        if instagram_mode:
+            max_size_mb = 60  # Instagram limit
+            print(f"📹 Instagram video optimization - Max size: {max_size_mb}MB")
+        else:
+            print(f"📹 Facebook video optimization - Max size: {max_size_mb}MB")
+        
+        if file_size_mb <= max_size_mb:
+            print(f"📹 Video size OK: {file_size_mb:.1f}MB (within {max_size_mb}MB limit)")
+            if target_path != file_path:
+                import shutil
+                shutil.copy2(file_path, target_path)
+            return True
+        else:
+            print(f"⚠️ Video too large: {file_size_mb:.1f}MB (exceeds {max_size_mb}MB limit)")
+            # For now, we'll just copy the file and let the platform handle it
+            # Future: implement video compression with ffmpeg
+            if target_path != file_path:
+                import shutil
+                shutil.copy2(file_path, target_path)
+            return True
+            
+    except Exception as e:
+        print(f"❌ Video optimization failed for {file_path}: {e}")
+        return False
+
 def optimize_image(file_path: str, target_path: str = None, max_size: tuple = (1200, 1200), quality: int = 85, instagram_mode: bool = False):
     """Optimize image for social media platforms"""
     try:
