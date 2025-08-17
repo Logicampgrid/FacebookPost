@@ -12,8 +12,8 @@ import json
 # Créer une image de test simple
 def create_test_image():
     """Créer une image de test en mémoire et retourner les données base64"""
-    # Créer une image RGB simple
-    img = Image.new('RGB', (800, 600), color=(70, 130, 180))  # SteelBlue
+    # Créer une image RGB simple plus petite
+    img = Image.new('RGB', (200, 150), color=(70, 130, 180))  # SteelBlue plus petit
     
     # Ajouter du texte (si PIL supporte le texte)
     try:
