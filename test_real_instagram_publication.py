@@ -155,7 +155,7 @@ def analyze_instagram_issue():
     print("  → System cannot get valid access tokens for Instagram API")
     
     print("\n🔧 SOLUTION STEPS:")
-    print("  1. 🌐 Open: https://continue-app-45.preview.emergentagent.com")
+    print("  1. 🌐 Open: https://hors-instagram.preview.emergentagent.com")
     print("  2. 🔑 Click 'Facebook Login' and authenticate")
     print("  3. 📊 Select Business Manager with Instagram access")
     print("  4. ✅ Verify both Facebook page and Instagram account appear")
