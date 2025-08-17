@@ -692,7 +692,7 @@ async def webhook_info():
         "url": "/api/webhook", 
         "content_type": "multipart/form-data",
         "required_fields": {
-            "image": "File upload (JPEG, PNG, GIF, WebP)",
+            "image": "File upload (JPEG, PNG, GIF, WebP, MP4, MOV, AVI, WebM)",
             "json_data": "JSON string with required fields: title, description, url"
         },
         "json_structure": {
