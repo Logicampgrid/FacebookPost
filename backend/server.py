@@ -97,11 +97,137 @@ async def health_check():
             "posts_count": posts_count
         }
         
+        # Instagram diagnosis
+        status["instagram_diagnosis"] = {
+            "authentication_required": users_count == 0,
+            "message": "No authenticated users found - Instagram publishing will fail" if users_count == 0 else f"{users_count} users authenticated"
+        }
+        
     except Exception as e:
         status["mongodb"] = f"error: {str(e)}"
         status["status"] = "degraded"
     
     return status
+
+# Advanced Instagram Diagnostics
+@app.get("/api/debug/instagram-complete-diagnosis")
+async def instagram_complete_diagnosis():
+    """Complete Instagram diagnosis with detailed error analysis"""
+    try:
+        print("🎯 Starting complete Instagram diagnosis...")
+        
+        # Find authenticated user
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        diagnosis = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "analysis_complete",
+            "authentication": {
+                "user_found": bool(user),
+                "user_name": user.get("name") if user else None,
+                "business_managers_count": len(user.get("business_managers", [])) if user else 0
+            },
+            "instagram_accounts": [],
+            "issues": [],
+            "recommendations": []
+        }
+        
+        if not user:
+            diagnosis["issues"].append("❌ NO AUTHENTICATED USER - This is the primary issue")
+            diagnosis["recommendations"].extend([
+                "1. 🔑 Connect with Facebook Business Manager account",
+                "2. 📱 Ensure Instagram Business accounts are connected to Facebook pages",
+                "3. 🔒 Verify all required permissions are granted"
+            ])
+            return diagnosis
+        
+        # Check business managers
+        if not user.get("business_managers"):
+            diagnosis["issues"].append("❌ No Business Managers found")
+            diagnosis["recommendations"].append("Connect to a Facebook Business Manager with Instagram accounts")
+        else:
+            for bm in user.get("business_managers", []):
+                bm_diagnosis = {
+                    "business_manager_name": bm.get("name"),
+                    "pages_count": len(bm.get("pages", [])),
+                    "instagram_accounts": []
+                }
+                
+                # Check each page for Instagram connection
+                for page in bm.get("pages", []):
+                    page_id = page.get("id")
+                    access_token = page.get("access_token")
+                    
+                    if access_token:
+                        # Check if page has Instagram
+                        try:
+                            response = requests.get(
+                                f"{FACEBOOK_GRAPH_URL}/{page_id}",
+                                params={
+                                    "access_token": access_token,
+                                    "fields": "instagram_business_account,name"
+                                }
+                            )
+                            
+                            if response.status_code == 200:
+                                page_data = response.json()
+                                if "instagram_business_account" in page_data:
+                                    ig_id = page_data["instagram_business_account"]["id"]
+                                    
+                                    # Get Instagram details
+                                    ig_response = requests.get(
+                                        f"{FACEBOOK_GRAPH_URL}/{ig_id}",
+                                        params={
+                                            "access_token": access_token,
+                                            "fields": "id,username,name,account_type"
+                                        }
+                                    )
+                                    
+                                    if ig_response.status_code == 200:
+                                        ig_data = ig_response.json()
+                                        bm_diagnosis["instagram_accounts"].append({
+                                            "id": ig_id,
+                                            "username": ig_data.get("username"),
+                                            "name": ig_data.get("name"),
+                                            "account_type": ig_data.get("account_type"),
+                                            "connected_page": page_data.get("name"),
+                                            "status": "✅ Connected and accessible"
+                                        })
+                                    else:
+                                        diagnosis["issues"].append(f"❌ Cannot access Instagram account for page {page_data.get('name')}")
+                                else:
+                                    diagnosis["issues"].append(f"❌ Page '{page_data.get('name')}' has no Instagram Business account")
+                            else:
+                                diagnosis["issues"].append(f"❌ Cannot access page {page_id}")
+                        except Exception as e:
+                            diagnosis["issues"].append(f"❌ Error checking page {page_id}: {str(e)}")
+                
+                diagnosis["instagram_accounts"].extend(bm_diagnosis["instagram_accounts"])
+        
+        # Final assessment
+        total_instagram = len(diagnosis["instagram_accounts"])
+        if total_instagram == 0:
+            diagnosis["issues"].append("❌ NO INSTAGRAM BUSINESS ACCOUNTS FOUND")
+            diagnosis["recommendations"].extend([
+                "🔧 Connect Instagram Business accounts to Facebook pages in Business Manager",
+                "📱 Ensure accounts are BUSINESS type (not personal)",
+                "🔒 Verify Instagram publishing permissions are granted"
+            ])
+        else:
+            diagnosis["status"] = "ready_for_publishing"
+            diagnosis["recommendations"].append(f"✅ Ready to publish! Found {total_instagram} Instagram account(s)")
+        
+        return diagnosis
+        
+    except Exception as e:
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "diagnosis_failed",
+            "error": str(e),
+            "message": "Instagram diagnosis failed - check logs"
+        }
 
 # Facebook Image Display Diagnostic Endpoint
 @app.get("/api/debug/facebook-image-fix")
