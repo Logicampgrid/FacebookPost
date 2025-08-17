@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://file-webhook-api.preview.emergentagent.com"
+    base_url = "https://keep-going-238.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     
