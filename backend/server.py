@@ -517,7 +517,8 @@ SHOP_PAGE_MAPPING = {
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Same page as gizmobbs
         "woocommerce_url": "https://gizmobbs.com",
-        "platform": "instagram",  # Publish to Instagram instead of Facebook
+        "platform": "multi",  # Publish to BOTH Instagram AND Facebook
+        "platforms": ["facebook", "instagram"],  # Explicit multi-platform support
         "instagram_username": "logicamp_berger",  # Target Instagram account
         "instagram_url": "https://www.instagram.com/logicamp_berger/"
     },
