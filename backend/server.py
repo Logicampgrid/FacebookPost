@@ -2541,6 +2541,9 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         target_page = all_platforms["main_page"] or main_page
         access_token = target_page.get("access_token", main_access_token)
         
+        # Download and optimize product image
+        media_url = await download_product_image(request.image_url)
+        
         # Check if this shop should publish to Instagram instead of Facebook
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
