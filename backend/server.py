@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, validator
 from typing import List, Optional
 import os
 import motor.motor_asyncio
