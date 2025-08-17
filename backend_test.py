@@ -60,13 +60,102 @@ class FacebookPostManagerTester:
             return False, {}
 
     def test_health_check(self):
-        """Test health endpoint"""
+        """Test health endpoint with Instagram diagnosis"""
         success, response = self.run_test(
-            "Health Check",
+            "Health Check with Instagram Diagnosis",
             "GET",
             "api/health",
             200
         )
+        
+        if success:
+            # Check for Instagram diagnosis in health response
+            instagram_diagnosis = response.get("instagram_diagnosis", {})
+            auth_required = instagram_diagnosis.get("authentication_required", False)
+            message = instagram_diagnosis.get("message", "")
+            
+            print(f"   Instagram Auth Required: {auth_required}")
+            print(f"   Instagram Message: {message}")
+            
+            if auth_required and "No authenticated users found" in message:
+                print("✅ Instagram diagnosis correctly shows no authenticated users (expected)")
+            elif auth_required:
+                print("✅ Instagram diagnosis shows authentication required")
+            else:
+                print("⚠️  Instagram diagnosis shows authentication not required (unexpected)")
+        
+        return success
+
+    def test_instagram_complete_diagnosis(self):
+        """Test the complete Instagram diagnosis endpoint"""
+        success, response = self.run_test(
+            "Instagram Complete Diagnosis",
+            "GET",
+            "api/debug/instagram-complete-diagnosis",
+            200
+        )
+        
+        if success:
+            status = response.get("status", "")
+            authentication = response.get("authentication", {})
+            issues = response.get("issues", [])
+            recommendations = response.get("recommendations", [])
+            instagram_accounts = response.get("instagram_accounts", [])
+            
+            print(f"   Status: {status}")
+            print(f"   User Found: {authentication.get('user_found', False)}")
+            print(f"   Issues Count: {len(issues)}")
+            print(f"   Recommendations Count: {len(recommendations)}")
+            print(f"   Instagram Accounts: {len(instagram_accounts)}")
+            
+            # Expected behavior: no user found, issues detected, recommendations provided
+            if not authentication.get("user_found", True):
+                print("✅ Expected: No authenticated user found")
+            else:
+                print("⚠️  Unexpected: User found in test environment")
+                
+            if len(issues) > 0:
+                print("✅ Issues correctly detected")
+                for i, issue in enumerate(issues[:3]):  # Show first 3 issues
+                    print(f"   Issue {i+1}: {issue}")
+            else:
+                print("❌ No issues detected (unexpected)")
+                
+            if len(recommendations) > 0:
+                print("✅ Recommendations provided")
+                for i, rec in enumerate(recommendations[:3]):  # Show first 3 recommendations
+                    print(f"   Rec {i+1}: {rec}")
+            else:
+                print("❌ No recommendations provided")
+        
+        return success
+
+    def test_instagram_publication_test(self):
+        """Test Instagram publication test endpoint"""
+        success, response = self.run_test(
+            "Instagram Publication Test",
+            "POST",
+            "api/debug/test-instagram-publication",
+            200
+        )
+        
+        if success:
+            test_success = response.get("success", True)
+            error = response.get("error", "")
+            solution = response.get("solution", "")
+            
+            print(f"   Test Success: {test_success}")
+            print(f"   Error: {error}")
+            print(f"   Solution: {solution}")
+            
+            # Expected: should fail with "No authenticated user found"
+            if not test_success and "No authenticated user found" in error:
+                print("✅ Expected failure: No authenticated user found")
+            elif not test_success:
+                print(f"✅ Expected failure with different reason: {error}")
+            else:
+                print("⚠️  Unexpected success - should fail without authentication")
+        
         return success
 
     def test_facebook_auth_invalid(self):
