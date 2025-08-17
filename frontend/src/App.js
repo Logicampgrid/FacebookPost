@@ -9,6 +9,7 @@ import BusinessManagerSelector from './components/BusinessManagerSelector';
 import WebhookHistory from './components/WebhookHistory';
 import ConnectionDiagnostic from './components/ConnectionDiagnostic';
 import FacebookConnectionTest from './components/FacebookConnectionTest';
+import InstagramDiagnostics from './components/InstagramDiagnostics';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
