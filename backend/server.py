@@ -3142,6 +3142,187 @@ async def webhook_endpoint(request: N8NWebhookRequest):
             }
         }
 
+async def save_binary_image(filename: str, mimetype: str, base64_data: str) -> str:
+    """Save base64 binary data as image file and return the public URL"""
+    try:
+        # Decode base64 data
+        import base64
+        binary_data = base64.b64decode(base64_data)
+        
+        # Generate unique filename
+        file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
+        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        file_path = f"uploads/{unique_filename}"
+        
+        # Save the file
+        with open(file_path, 'wb') as f:
+            f.write(binary_data)
+        
+        # Optimize image if needed
+        if mimetype.startswith('image/'):
+            optimize_image(file_path, instagram_mode=False)
+        
+        # Return public URL
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://persistent-flow-1.preview.emergentagent.com")
+        public_url = f"{base_url}/api/uploads/{unique_filename}"
+        
+        print(f"📁 Saved binary image: {file_path} -> {public_url}")
+        return public_url
+        
+    except Exception as e:
+        print(f"❌ Error saving binary image: {e}")
+        raise e
+
+def determine_shop_type_from_link(link: str) -> str:
+    """Determine shop type from the provided link"""
+    link_lower = link.lower()
+    
+    if "gizmobbs" in link_lower:
+        return "gizmobbs"
+    elif "logicampoutdoor" in link_lower or "logicamp" in link_lower:
+        return "outdoor"  
+    elif "logicantiq" in link_lower:
+        return "logicantiq"
+    else:
+        # Default fallback - could be made configurable
+        print(f"⚠️ Unknown link domain, using default shop type: {link}")
+        return "gizmobbs"  # Default to gizmobbs as it seems to be the main one
+
+@app.post("/api/webhook/binary")
+async def webhook_binary_endpoint(request: N8NBinaryWebhookRequest):
+    """
+    Binary data webhook endpoint for N8N integration
+    
+    Accepts binary image data with metadata and publishes to appropriate social media platforms.
+    Format expected:
+    {
+        "filename": "image.jpg",
+        "mimetype": "image/jpeg", 
+        "comment": "Découvrez ce produit dans notre boutique !",
+        "link": "https://www.logicamp.org/wordpress/gizmobbs/",
+        "data": "base64encodedimagedata"
+    }
+    """
+    try:
+        print(f"📁 N8N Binary Webhook received: {request.filename}")
+        
+        # Validate required fields
+        if not request.filename or not request.filename.strip():
+            raise HTTPException(status_code=400, detail="Filename is required")
+            
+        if not request.data or not request.data.strip():
+            raise HTTPException(status_code=400, detail="Binary data is required")
+            
+        if not request.link or not request.link.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid link URL is required")
+        
+        # Determine shop type from link
+        shop_type = determine_shop_type_from_link(request.link)
+        print(f"🏪 Determined shop type: {shop_type} from link: {request.link}")
+        
+        # Save binary data as image file
+        image_url = await save_binary_image(request.filename, request.mimetype, request.data)
+        
+        # Generate title from filename if not provided in comment
+        title = request.filename.split('.')[0].replace('_', ' ').replace('-', ' ').title()
+        if len(title) < 3:
+            title = f"Nouveau produit - {request.filename}"
+        
+        # Use comment as description, with fallback
+        description = request.comment if request.comment and request.comment.strip() else "Découvrez ce produit dans notre boutique !"
+        
+        # Create ProductPublishRequest from binary data
+        product_request = ProductPublishRequest(
+            title=title,
+            description=description,
+            image_url=image_url,
+            product_url=request.link,
+            shop_type=shop_type,
+            user_id=None,
+            page_id=None,
+            api_key=None
+        )
+        
+        print(f"🏪 Processing binary webhook for shop: {shop_type}")
+        print(f"📦 Product: {title}")
+        print(f"📝 Description: {description}")
+        print(f"🔗 Link: {request.link}")
+        print(f"📸 Generated image URL: {image_url}")
+        print(f"📁 Original file: {request.filename} ({request.mimetype})")
+        
+        # Create and publish the product post using existing logic
+        result = await create_product_post(product_request)
+        
+        # Check if this was a duplicate post
+        if result.get("duplicate_skipped"):
+            return {
+                "success": True,
+                "status": "duplicate_skipped",
+                "message": f"File '{request.filename}' already processed recently - duplicate skipped",
+                "data": {
+                    "facebook_post_id": result["facebook_post_id"],
+                    "instagram_post_id": result.get("instagram_post_id"),
+                    "post_id": result["post_id"],
+                    "page_name": result.get("page_name", "Cached Page"),
+                    "page_id": result.get("page_id", "cached"),
+                    "shop_type": shop_type,
+                    "published_at": result["published_at"],
+                    "duplicate_skipped": True,
+                    "binary_processed": True,
+                    "generated_title": title,
+                    "generated_image_url": image_url,
+                    "webhook_processed_at": datetime.utcnow().isoformat()
+                }
+            }
+        
+        # Return success response for new posts
+        return {
+            "success": True,
+            "status": "published", 
+            "message": f"Binary file '{request.filename}' published successfully to {shop_type}",
+            "data": {
+                "facebook_post_id": result["facebook_post_id"],
+                "instagram_post_id": result.get("instagram_post_id"),
+                "post_id": result["post_id"],
+                "page_name": result["page_name"],
+                "page_id": result["page_id"],
+                "shop_type": shop_type,
+                "published_at": result["published_at"],
+                "duplicate_skipped": False,
+                "binary_processed": True,
+                "original_filename": request.filename,
+                "original_mimetype": request.mimetype,
+                "generated_title": title,
+                "generated_image_url": image_url,
+                "publication_summary": result.get("publication_summary", {}),
+                "publication_results": result.get("publication_results", {}),
+                "webhook_processed_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Error in binary webhook endpoint: {e}")
+        
+        # Return webhook-friendly error response
+        error_message = str(e)
+        
+        return {
+            "success": False,
+            "status": "failed",
+            "message": f"Failed to process binary file: {error_message}",
+            "error": {
+                "type": "binary_webhook_processing_error",
+                "details": error_message,
+                "filename": request.filename if hasattr(request, 'filename') else "Unknown",
+                "mimetype": request.mimetype if hasattr(request, 'mimetype') else "Unknown", 
+                "link": request.link if hasattr(request, 'link') else "Unknown",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }
+
 @app.get("/api/publishProduct/config")
 async def get_publish_config():
     """
