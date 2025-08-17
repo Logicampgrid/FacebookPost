@@ -3188,6 +3188,63 @@ def determine_shop_type_from_link(link: str) -> str:
         print(f"⚠️ Unknown link domain, using default shop type: {link}")
         return "gizmobbs"  # Default to gizmobbs as it seems to be the main one
 
+@app.get("/api/webhook/binary")
+async def binary_webhook_info():
+    """
+    GET endpoint for binary webhook information and testing
+    """
+    return {
+        "message": "N8N Binary Webhook Endpoint - Use POST method to submit binary image data",
+        "method": "POST",
+        "url": "/api/webhook/binary", 
+        "content_type": "application/json",
+        "required_fields": ["filename", "mimetype", "comment", "link", "data"],
+        "field_descriptions": {
+            "filename": "Original filename (e.g., 'product.jpg')",
+            "mimetype": "MIME type (e.g., 'image/jpeg', 'image/png')",
+            "comment": "Description text for the post",
+            "link": "Product or shop URL (used to determine shop type)",
+            "data": "Base64 encoded binary image data"
+        },
+        "shop_type_detection": {
+            "gizmobbs": "Links containing 'gizmobbs'",
+            "outdoor": "Links containing 'logicampoutdoor' or 'logicamp'", 
+            "logicantiq": "Links containing 'logicantiq'",
+            "default": "gizmobbs (if no match found)"
+        },
+        "example_n8n_transformation": {
+            "description": "Use this transformation in N8N:",
+            "code": '''return items.map(item => {
+  return {
+    json: {
+      filename: item.json["File Name"],
+      mimetype: item.json["Mime Type"],
+      comment: "Découvrez ce produit dans notre boutique !",
+      link: "https://www.logicamp.org/wordpress/gizmobbs/",
+      data: item.binary ? item.binary.data.data.toString('base64') : null
+    }
+  };
+});'''
+        },
+        "features": [
+            "✅ Accepts binary image data directly (no need to upload to external server first)",
+            "✅ Auto-detects shop type from link URL",
+            "✅ Generates title from filename if needed",
+            "✅ Publishes to Facebook Page + Instagram automatically",
+            "✅ Optimizes images for both platforms",
+            "✅ Handles duplicate detection",
+            "✅ Returns comprehensive publication results"
+        ],
+        "workflow": [
+            "1. N8N sends binary image data with metadata",
+            "2. System saves image to local storage",
+            "3. Determines shop type from link URL", 
+            "4. Creates product post with generated title",
+            "5. Publishes to Facebook Page + Instagram simultaneously",
+            "6. Returns detailed success/failure status"
+        ]
+    }
+
 @app.post("/api/webhook/binary")
 async def webhook_binary_endpoint(request: N8NBinaryWebhookRequest):
     """
