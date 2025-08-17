@@ -1635,7 +1635,11 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 else:
                     media_type = "IMAGE"
                     content_type = 'image/jpeg'
-                    # Note: image_url is NOT needed for multipart upload
+                    # Instagram requires image_url even for multipart uploads
+                    base_url = os.getenv("PUBLIC_BASE_URL", "https://keep-going-238.preview.emergentagent.com")
+                    public_image_url = f"{base_url}{media_url}" if media_url.startswith('/') else media_url
+                    container_data["image_url"] = public_image_url
+                    print(f"📸 Adding required image_url for Instagram: {public_image_url}")
                 
                 print(f"📱 Creating Instagram media container with multipart upload for {post.target_name}")
                 print(f"📋 Container data: {container_data}")
