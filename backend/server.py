@@ -1536,106 +1536,231 @@ async def post_to_facebook(post: Post, page_access_token: str):
         return None
 
 async def post_to_instagram(post: Post, page_access_token: str):
-    """Post content to Instagram Business account with enhanced and optimized media support"""
+    """Post content to Instagram Business account with MULTIPART UPLOAD for better compatibility"""
     try:
         # Instagram posting requires a two-step process:
         # 1. Create media container
         # 2. Publish the container
         
-        # Step 1: Create media container
+        print(f"📸 Publishing to Instagram: @{post.target_name} ({post.target_id})")
+        
+        # Step 1: Create media container with MULTIPART UPLOAD
         container_data = {
             "access_token": page_access_token
         }
         
-        # Add caption (can be empty)
+        # Add caption with Instagram-specific formatting
+        caption = ""
         if post.content and post.content.strip():
-            container_data["caption"] = post.content
+            caption = post.content
+            
+            # Instagram-specific caption improvements
+            if post.link_metadata:
+                caption += f"\n\n🛒 Lien en bio pour plus d'infos!"
+            elif post.comment_link:
+                caption += f"\n\n🛒 Lien en bio pour plus d'infos!"
+                
+            # Add relevant hashtags for the store
+            if "outdoor" in post.target_name.lower() or "logicamp" in post.target_name.lower():
+                caption += f"\n\n#bergerblancsuisse #chien #dog #animaux #outdoor #logicampoutdoor"
+            elif "berger" in post.target_name.lower():
+                caption += f"\n\n#bergerblancsuisse #chien #dog #animaux #gizmobbs"
+            else:
+                caption += f"\n\n#produit #nouveauté"
+                
+        container_data["caption"] = caption
         
-        # Handle media - Use publicly accessible URLs for Instagram compatibility
+        # Step 2: Handle media with MULTIPART UPLOAD STRATEGY
         media_url = None
-        media_type = "image"  # default
+        local_file_path = None
         
         if post.media_urls:
-            # Use uploaded media first (highest priority)
             media_url = post.media_urls[0]
             
-            # For Instagram, we need to ensure the image URL is publicly accessible
+            # Get local file path for multipart upload
             if media_url.startswith('http'):
-                full_media_url = media_url
+                # External URL - try to download for multipart upload
+                print(f"📥 External media URL detected, will attempt download for multipart upload")
+                local_file_path = None
             else:
-                # Check if we have a local file that we can re-upload to a public service
+                # Local file path
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://file-webhook-api.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
-                
-                # For Instagram, try to use the original image URL if it was downloaded from elsewhere
-                # This is a workaround for the domain accessibility issue
-                if local_file_path and os.path.exists(local_file_path):
-                    print(f"📸 Instagram will use current domain URL: {full_media_url}")
-                    print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
-            
-            # Determine media type
-            if media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
-                media_type = "video"
-                container_data["media_type"] = "VIDEO"
-                container_data["video_url"] = full_media_url
-                print(f"🎥 Instagram video: {full_media_url}")
-            else:
-                media_type = "image"
-                container_data["image_url"] = full_media_url
-                print(f"📸 Instagram image: {full_media_url}")
-                
-        elif post.link_metadata:
-            # Use link image as fallback if no uploaded media
-            for link in post.link_metadata:
-                if link.get("image"):
-                    container_data["image_url"] = link["image"]
-                    print(f"🔗 Instagram using external link image: {link['image']}")
-                    break
         
-        # Check if we have media URL for Instagram posting
-        if not container_data.get("image_url") and not container_data.get("video_url"):
+        # Check if we have media for Instagram posting
+        if not media_url:
             print("❌ Instagram requires media - skipping post without images or videos")
-            return None
+            return {"status": "error", "message": "No media provided for Instagram"}
         
-        # Create media container using URL method (simplified approach)
-        try:
-            print(f"📱 Creating Instagram media container with URL method for {post.target_name}")
-            print(f"📋 Container data: {container_data}")
-            
-            container_response = requests.post(
-                f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
-                data=container_data,
-                timeout=60
-            )
-            
-            print(f"Instagram container response: {container_response.status_code}")
-            if container_response.status_code != 200:
-                error_detail = container_response.json()
-                print(f"❌ Failed to create Instagram media container: {error_detail}")
+        # STRATEGY 1: MULTIPART UPLOAD (Direct file upload - Recommended for Instagram)
+        multipart_success = False
+        container_id = None
+        
+        if local_file_path and os.path.exists(local_file_path):
+            try:
+                print(f"🚀 STRATEGY 1: Using multipart upload for Instagram compatibility")
+                print(f"📁 Local file: {local_file_path}")
                 
-                # Check for specific Instagram errors
-                if 'error' in error_detail:
-                    error_msg = error_detail['error'].get('message', 'Unknown error')
-                    error_code = error_detail['error'].get('code', 'No code')
-                    print(f"Instagram API Error: {error_code} - {error_msg}")
+                # Optimize image specifically for Instagram
+                instagram_optimized_path = f"{local_file_path}.instagram_optimized.jpg"
+                if optimize_image_for_instagram(local_file_path, instagram_optimized_path):
+                    print(f"📱 Using Instagram-optimized image: {instagram_optimized_path}")
+                    upload_file_path = instagram_optimized_path
+                else:
+                    print(f"⚠️ Instagram optimization failed, using original: {local_file_path}")
+                    upload_file_path = local_file_path
+                
+                # Read file content for multipart upload
+                with open(upload_file_path, 'rb') as f:
+                    media_content = f.read()
+                
+                print(f"📊 Media info: size={len(media_content)} bytes")
+                
+                # Determine media type
+                file_ext = upload_file_path.lower().split('.')[-1]
+                if file_ext in ['mp4', 'mov', 'avi']:
+                    media_type = "VIDEO"
+                    content_type = 'video/mp4'
+                    container_data["media_type"] = "VIDEO"
+                else:
+                    media_type = "IMAGE"
+                    content_type = 'image/jpeg'
+                    # Note: image_url is NOT needed for multipart upload
+                
+                print(f"📱 Creating Instagram media container with multipart upload for {post.target_name}")
+                print(f"📋 Container data: {container_data}")
+                
+                # Create media container with multipart file upload
+                files = {'source': (os.path.basename(upload_file_path), media_content, content_type)}
+                
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                    data=container_data,
+                    files=files,
+                    timeout=90  # Extended timeout for large files
+                )
+                
+                print(f"Instagram multipart container response: {container_response.status_code}")
+                
+                if container_response.status_code == 200:
+                    container_result = container_response.json()
+                    if 'id' in container_result:
+                        container_id = container_result['id']
+                        multipart_success = True
+                        print(f"✅ SUCCESS: Instagram multipart container created: {container_id}")
+                    else:
+                        print(f"❌ No container ID in multipart response: {container_result}")
+                else:
+                    error_detail = container_response.json()
+                    print(f"❌ Instagram multipart container failed: {error_detail}")
+                
+                # Clean up optimized file
+                if upload_file_path.endswith('.instagram_optimized.jpg') and os.path.exists(upload_file_path):
+                    os.remove(upload_file_path)
                     
-                    # Handle specific error cases
-                    if error_code == 100 and 'permissions' in error_msg.lower():
-                        print("⚠️ Instagram publishing permission issue")
-                    elif error_code == 400 and 'media' in error_msg.lower():
-                        print("⚠️ Instagram media format issue")
-                
-                return None
-                
-        except requests.exceptions.Timeout:
-            print("❌ Instagram container creation timeout")
-            return None
-        except Exception as e:
-            print(f"❌ Instagram container creation error: {e}")
-            return None
+            except Exception as multipart_error:
+                print(f"❌ Multipart upload error: {multipart_error}")
         
-        container_result = container_response.json()
+        # STRATEGY 2: URL FALLBACK (if multipart failed and we have public URL)
+        if not multipart_success and local_file_path:
+            try:
+                print(f"🔄 STRATEGY 2: Trying URL method as fallback")
+                
+                # Use public URL as fallback
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://file-webhook-api.preview.emergentagent.com")
+                public_image_url = f"{base_url}{media_url}"
+                
+                container_data_url = {
+                    "access_token": page_access_token,
+                    "caption": caption,
+                    "image_url": public_image_url
+                }
+                
+                print(f"📸 Instagram image: {public_image_url}")
+                print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
+                
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                    data=container_data_url,
+                    timeout=60
+                )
+                
+                print(f"Instagram URL container response: {container_response.status_code}")
+                if container_response.status_code == 200:
+                    container_result = container_response.json()
+                    if 'id' in container_result:
+                        container_id = container_result['id']
+                        print(f"✅ SUCCESS: Instagram URL container created: {container_id}")
+                    else:
+                        print(f"❌ No container ID in URL response: {container_result}")
+                else:
+                    error_detail = container_response.json()
+                    print(f"❌ Instagram URL container failed: {error_detail}")
+                    
+                    # Handle specific Instagram errors
+                    if 'error' in error_detail:
+                        error_msg = error_detail['error'].get('message', 'Unknown error')
+                        error_code = error_detail['error'].get('code', 'No code')
+                        print(f"Instagram API Error: {error_code} - {error_msg}")
+                        
+                        if error_code == 9004:
+                            print("🔍 ERROR 9004: Instagram cannot access the image URL - this confirms the domain accessibility issue")
+                            print("💡 SOLUTION: The multipart upload method should work better for this case")
+                        elif error_code == 100 and 'permissions' in error_msg.lower():
+                            print("⚠️ Instagram publishing permission issue")
+                        elif error_code == 400 and 'media' in error_msg.lower():
+                            print("⚠️ Instagram media format issue")
+                            
+            except Exception as url_error:
+                print(f"❌ URL fallback error: {url_error}")
+        
+        # Step 3: Publish the container if we have one
+        if container_id:
+            try:
+                print(f"📺 Publishing Instagram container: {container_id}")
+                
+                publish_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish",
+                    data={
+                        "access_token": page_access_token,
+                        "creation_id": container_id
+                    },
+                    timeout=30
+                )
+                
+                print(f"Instagram publish response: {publish_response.status_code}")
+                
+                if publish_response.status_code == 200:
+                    publish_result = publish_response.json()
+                    if 'id' in publish_result:
+                        instagram_post_id = publish_result['id']
+                        print(f"✅ Instagram post published successfully: {instagram_post_id}")
+                        return {
+                            "id": instagram_post_id,
+                            "platform": "instagram",
+                            "status": "success",
+                            "method": "multipart" if multipart_success else "url",
+                            "container_id": container_id
+                        }
+                    else:
+                        print(f"❌ No post ID returned: {publish_result}")
+                        return None
+                else:
+                    error_detail = publish_response.json()
+                    print(f"❌ Instagram publish failed: {error_detail}")
+                    return None
+                    
+            except Exception as publish_error:
+                print(f"❌ Instagram publish error: {publish_error}")
+                return None
+        else:
+            print("❌ No container ID available - Instagram posting failed")
+            return {"status": "error", "message": "Failed to create Instagram media container"}
+            
+    except Exception as e:
+        print(f"💥 Error posting to Instagram: {e}")
+        return {"status": "error", "message": f"Instagram error: {str(e)}"}
         container_id = container_result.get("id")
         
         if not container_id:
