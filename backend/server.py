@@ -2541,78 +2541,199 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         target_page = all_platforms["main_page"] or main_page
         access_token = target_page.get("access_token", main_access_token)
         
+        # Check if this shop should publish to Instagram instead of Facebook
+        shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
+        should_use_instagram = shop_config.get("platform") == "instagram"
+        
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        # Enhanced product description generation
-        facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type)
-        
-        # Create post content for Instagram (links don't work well in Instagram posts)
-        instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
-        
-        # Create post object for Facebook (with enhanced clickable image setup)
-        facebook_post_data = {
-            "id": str(uuid.uuid4()),
-            "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
-            "content": facebook_content,
-            "media_urls": [media_url],
-            "link_metadata": [{
-                "url": request.product_url,
-                "title": request.title,
-                "description": request.description,
-                "image": request.image_url,
-                "type": "product"
-            }],
-            "comment_link": request.product_url,  # This ensures clickable image functionality
-            "comment_text": None,
-            "target_type": "page",
-            "target_id": target_page["id"],
-            "target_name": target_page["name"],
-            "platform": "facebook",
-            "business_manager_id": None,
-            "business_manager_name": None,
-            "cross_post_targets": [],
-            "scheduled_time": None,
-            "status": "published",
-            "comment_status": None,  
-            "created_at": datetime.utcnow(),
-            "published_at": datetime.utcnow(),
-            "source": "n8n_integration",
-            "shop_type": request.shop_type,
-            "webhook_data": {
-                "title": request.title,
-                "description": request.description,
-                "image_url": request.image_url,
-                "product_url": request.product_url,
-                "received_at": datetime.utcnow()
+        if should_use_instagram:
+            print(f"📸 Shop {request.shop_type} configured for Instagram publication")
+            
+            # Find the specific Instagram account for this shop
+            target_instagram = await find_instagram_by_shop_type(user, request.shop_type)
+            if not target_instagram:
+                # Fallback: try to find Instagram connected to the main page
+                target_instagram = await get_page_connected_instagram(access_token, target_page["id"])
+            
+            if not target_instagram:
+                raise Exception(f"Instagram account not found for shop {request.shop_type}. Expected: @{shop_config.get('instagram_username', 'unknown')}")
+            
+            print(f"🎯 Publishing to Instagram: @{target_instagram.get('username')} ({target_instagram['id']})")
+            
+            # Optimize image specifically for Instagram
+            print(f"📸 Optimizing image for Instagram...")
+            optimize_image(media_url.replace('/api/uploads/', 'uploads/'), instagram_mode=True)
+            
+            # Create Instagram post content
+            instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
+            
+            # Create post object for Instagram
+            instagram_post_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+                "content": instagram_content,
+                "media_urls": [media_url],
+                "link_metadata": [{
+                    "url": request.product_url,
+                    "title": request.title,
+                    "description": request.description,
+                    "image": request.image_url,
+                    "type": "product"
+                }],
+                "comment_link": None,  # Instagram doesn't support clickable links in posts
+                "comment_text": f"🛒 Lien en bio pour plus d'infos: {request.product_url}",
+                "target_type": "instagram",
+                "target_id": target_instagram["id"],
+                "target_name": target_instagram.get("username", "Instagram Account"),
+                "platform": "instagram",
+                "business_manager_id": None,
+                "business_manager_name": None,
+                "cross_post_targets": [],
+                "scheduled_time": None,
+                "status": "published",
+                "comment_status": None,  
+                "created_at": datetime.utcnow(),
+                "published_at": datetime.utcnow(),
+                "source": "n8n_integration",
+                "shop_type": request.shop_type,
+                "webhook_data": {
+                    "title": request.title,
+                    "description": request.description,
+                    "image_url": request.image_url,
+                    "product_url": request.product_url,
+                    "received_at": datetime.utcnow()
+                }
             }
-        }
-        
-        # Create Facebook Post object
-        facebook_post_obj = Post(**facebook_post_data)
-        
-        # Publish to Facebook with ENHANCED CLICKABLE IMAGE
-        print(f"📤 Publishing to Facebook page: {target_page['name']} ({target_page['id']}) with clickable image")
-        
-        # Check if this is a test token - if so, simulate success
-        if access_token.startswith("test_"):
-            print("🧪 Test token detected - simulating Facebook publication")
-            facebook_result = {
-                "id": f"test_fb_post_{uuid.uuid4().hex[:8]}",
-                "post_id": f"test_page_{target_page['id']}_{uuid.uuid4().hex[:8]}"
+            
+            # Create Instagram Post object
+            instagram_post_obj = Post(**instagram_post_data)
+            
+            # Publish to Instagram
+            print(f"📤 Publishing to Instagram: @{target_instagram.get('username')}")
+            
+            # Check if this is a test token - if so, simulate success
+            if access_token.startswith("test_"):
+                print("🧪 Test token detected - simulating Instagram publication")
+                instagram_result = {
+                    "id": f"test_ig_post_{uuid.uuid4().hex[:8]}",
+                    "post_id": f"test_ig_{target_instagram['id']}_{uuid.uuid4().hex[:8]}"
+                }
+                print(f"✅ Simulated Instagram post: {instagram_result['id']}")
+            else:
+                # Real Instagram API call
+                instagram_result = await post_to_instagram(instagram_post_obj, access_token)
+            
+            if not instagram_result or "id" not in instagram_result:
+                raise Exception("Instagram publishing failed")
+            
+            instagram_post_id = instagram_result["id"]
+            instagram_post_data["instagram_post_id"] = instagram_post_id
+            
+            print(f"✅ Instagram published successfully: {instagram_post_id}")
+            
+            # Store post in database for future reference
+            await db.posts.insert_one({
+                **instagram_post_data,
+                "content_hash": content_hash
+            })
+            
+            # Return Instagram success result
+            return {
+                "status": "success",
+                "message": f"Product '{request.title}' published successfully to Instagram @{target_instagram.get('username')}",
+                "results": [{
+                    "platform": "instagram",
+                    "platform_type": "instagram_business",
+                    "target_name": f"@{target_instagram.get('username')}",
+                    "target_id": target_instagram["id"],
+                    "post_id": instagram_post_id,
+                    "status": "success",
+                    "message": "Posted to Instagram successfully",
+                    "url": f"https://www.instagram.com/{target_instagram.get('username')}/"
+                }],
+                "instagram_post_id": instagram_post_id,
+                "post_id": instagram_post_data["id"],
+                "page_name": f"@{target_instagram.get('username')}",
+                "page_id": target_instagram["id"],
+                "user_name": user.get("name", "Unknown"),
+                "media_url": media_url,
+                "comment_status": "success",
+                "published_at": datetime.utcnow().isoformat(),
+                "total_platforms": 1
             }
-            print(f"✅ Simulated Facebook post: {facebook_result['id']}")
+        
         else:
-            # Real Facebook API call with enhanced clickable image handling
-            facebook_result = await post_to_facebook(facebook_post_obj, access_token)
-        
-        if not facebook_result or "id" not in facebook_result:
-            raise Exception("Facebook publishing failed")
-        
-        facebook_post_id = facebook_result["id"]
-        facebook_post_data["facebook_post_id"] = facebook_post_id
-        
-        print(f"✅ Main Facebook page published with clickable image: {facebook_post_id}")
+            # Original Facebook publication logic
+            print(f"📘 Shop {request.shop_type} configured for Facebook publication")
+            
+            # Enhanced product description generation
+            facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type)
+            
+            # Create post object for Facebook (with enhanced clickable image setup)
+            facebook_post_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+                "content": facebook_content,
+                "media_urls": [media_url],
+                "link_metadata": [{
+                    "url": request.product_url,
+                    "title": request.title,
+                    "description": request.description,
+                    "image": request.image_url,
+                    "type": "product"
+                }],
+                "comment_link": request.product_url,  # This ensures clickable image functionality
+                "comment_text": None,
+                "target_type": "page",
+                "target_id": target_page["id"],
+                "target_name": target_page["name"],
+                "platform": "facebook",
+                "business_manager_id": None,
+                "business_manager_name": None,
+                "cross_post_targets": [],
+                "scheduled_time": None,
+                "status": "published",
+                "comment_status": None,  
+                "created_at": datetime.utcnow(),
+                "published_at": datetime.utcnow(),
+                "source": "n8n_integration",
+                "shop_type": request.shop_type,
+                "webhook_data": {
+                    "title": request.title,
+                    "description": request.description,
+                    "image_url": request.image_url,
+                    "product_url": request.product_url,
+                    "received_at": datetime.utcnow()
+                }
+            }
+            
+            # Create Facebook Post object
+            facebook_post_obj = Post(**facebook_post_data)
+            
+            # Publish to Facebook with ENHANCED CLICKABLE IMAGE
+            print(f"📤 Publishing to Facebook page: {target_page['name']} ({target_page['id']}) with clickable image")
+            
+            # Check if this is a test token - if so, simulate success
+            if access_token.startswith("test_"):
+                print("🧪 Test token detected - simulating Facebook publication")
+                facebook_result = {
+                    "id": f"test_fb_post_{uuid.uuid4().hex[:8]}",
+                    "post_id": f"test_page_{target_page['id']}_{uuid.uuid4().hex[:8]}"
+                }
+                print(f"✅ Simulated Facebook post: {facebook_result['id']}")
+            else:
+                # Real Facebook API call with enhanced clickable image handling
+                facebook_result = await post_to_facebook(facebook_post_obj, access_token)
+            
+            if not facebook_result or "id" not in facebook_result:
+                raise Exception("Facebook publishing failed")
+            
+            facebook_post_id = facebook_result["id"]
+            facebook_post_data["facebook_post_id"] = facebook_post_id
+            
+            print(f"✅ Main Facebook page published with clickable image: {facebook_post_id}")
         
         # Initialize tracking for all platform publications
         publication_results = {
