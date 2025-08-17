@@ -478,6 +478,125 @@ async def test_facebook_image_display_fix():
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# Instagram Publication Test Endpoint
+@app.post("/api/debug/test-instagram-publication")
+async def test_instagram_publication():
+    """Test Instagram publication with authenticated user"""
+    try:
+        print("🧪 Testing Instagram publication...")
+        
+        # Find user with Instagram access
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "No authenticated user found",
+                "solution": "Please login with Facebook Business Manager first"
+            }
+        
+        # Find Instagram account from business managers
+        instagram_account = None
+        access_token = None
+        page_name = None
+        
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                # Check if this page has an Instagram account
+                page_access_token = page.get("access_token")
+                if page_access_token:
+                    try:
+                        response = requests.get(
+                            f"{FACEBOOK_GRAPH_URL}/{page['id']}",
+                            params={
+                                "access_token": page_access_token,
+                                "fields": "instagram_business_account,name"
+                            }
+                        )
+                        
+                        if response.status_code == 200:
+                            page_data = response.json()
+                            if "instagram_business_account" in page_data:
+                                instagram_account = page_data["instagram_business_account"]["id"]
+                                access_token = page_access_token
+                                page_name = page_data.get("name")
+                                break
+                    except Exception as e:
+                        continue
+            
+            if instagram_account:
+                break
+        
+        if not instagram_account:
+            return {
+                "success": False,
+                "error": "No Instagram Business account found",
+                "user_name": user.get("name"),
+                "business_managers": len(user.get("business_managers", [])),
+                "solution": "Connect Instagram Business account to Facebook page in Business Manager"
+            }
+        
+        # Create test post for Instagram
+        test_image_url = f"https://picsum.photos/1080/1080?test={int(datetime.utcnow().timestamp())}"
+        
+        test_post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(user["_id"]),
+            "content": "🧪 TEST INSTAGRAM - Publication de test automatique\n\n#test #instagram #publication",
+            "media_urls": [test_image_url],
+            "target_type": "instagram",
+            "target_id": instagram_account,
+            "target_name": f"Instagram via {page_name}",
+            "platform": "instagram",
+            "status": "published",
+            "created_at": datetime.utcnow(),
+            "published_at": datetime.utcnow()
+        }
+        
+        test_post = Post(**test_post_data)
+        
+        # Test Instagram publication
+        print(f"📱 Testing Instagram publication to account: {instagram_account}")
+        result = await post_to_instagram(test_post, access_token)
+        
+        if result and result.get("status") == "success":
+            return {
+                "success": True,
+                "message": "✅ Instagram publication TEST SUCCESSFUL!",
+                "instagram_post_id": result.get("id"),
+                "instagram_account": instagram_account,
+                "connected_page": page_name,
+                "test_image": test_image_url,
+                "method_used": result.get("method", "unknown"),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        elif result and result.get("status") == "error":
+            return {
+                "success": False,
+                "error": f"Instagram API error: {result.get('message')}",
+                "instagram_account": instagram_account,
+                "connected_page": page_name,
+                "debug_info": result
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Instagram publication failed - no result returned",
+                "instagram_account": instagram_account,
+                "connected_page": page_name,
+                "debug_info": str(result)
+            }
+        
+    except Exception as e:
+        print(f"❌ Instagram test error: {e}")
+        return {
+            "success": False,
+            "error": f"Test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # Test endpoint for comprehensive platform discovery
 @app.get("/api/debug/store-platforms/{shop_type}")
 async def debug_store_platforms(shop_type: str):
