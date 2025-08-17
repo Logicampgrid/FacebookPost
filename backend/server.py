@@ -2086,6 +2086,52 @@ async def download_product_image(image_url: str) -> str:
         print(f"❌ Error downloading product image: {e}")
         raise Exception(f"Failed to download product image: {str(e)}")
 
+async def find_instagram_by_shop_type(user, shop_type: str):
+    """Find the appropriate Instagram account based on shop type"""
+    try:
+        if not shop_type or shop_type not in SHOP_PAGE_MAPPING:
+            return None
+            
+        shop_config = SHOP_PAGE_MAPPING[shop_type]
+        
+        # Check if this shop should use Instagram
+        if shop_config.get("platform") != "instagram":
+            return None
+            
+        expected_username = shop_config.get("instagram_username")
+        if not expected_username:
+            return None
+            
+        print(f"🔍 Looking for Instagram account: @{expected_username} (shop_type: {shop_type})")
+        
+        # Search in business manager Instagram accounts
+        for bm in user.get("business_managers", []):
+            for ig_account in bm.get("instagram_accounts", []):
+                if ig_account.get("username") == expected_username:
+                    print(f"✅ Found Instagram account @{ig_account['username']} ({ig_account['id']})")
+                    return ig_account
+        
+        # Search through connected page Instagram accounts
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                # Get Instagram account connected to this page
+                try:
+                    access_token = page.get("access_token") or user.get("facebook_access_token")
+                    ig_account = await get_page_connected_instagram(access_token, page["id"])
+                    if ig_account and ig_account.get("username") == expected_username:
+                        print(f"✅ Found Instagram account @{ig_account['username']} connected to page {page['name']}")
+                        return ig_account
+                except Exception as e:
+                    print(f"⚠️ Error checking Instagram for page {page['name']}: {e}")
+                    continue
+        
+        print(f"❌ Instagram account @{expected_username} not found for shop_type '{shop_type}'")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Error finding Instagram account by shop type: {e}")
+        return None
+
 async def find_page_by_shop_type(user, shop_type: str):
     """Find the appropriate Facebook page based on shop type"""
     try:
