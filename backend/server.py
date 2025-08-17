@@ -574,12 +574,12 @@ async def multipart_webhook(
         if not image.filename:
             raise HTTPException(status_code=400, detail="Image filename is required")
         
-        # Validate image file type
-        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        # Validate image/video file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm']
         if image.content_type not in allowed_types:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Invalid image type: {image.content_type}. Allowed: {', '.join(allowed_types)}"
+                detail=f"Invalid media type: {image.content_type}. Allowed: images (JPG, PNG, GIF, WebP) and videos (MP4, MOV, AVI, WebM)"
             )
         
         # Step 3: Save uploaded image
