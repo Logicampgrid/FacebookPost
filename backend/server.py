@@ -517,6 +517,11 @@ SHOP_PAGE_MAPPING = {
         "name": "LogicAntiq",
         "expected_id": "210654558802531",  # Existing page ID
         "woocommerce_url": "https://logicantiq.com"
+    },
+    "ma-boutique": {
+        "name": "Le Berger Blanc Suisse",  # Using same page as gizmobbs
+        "expected_id": "102401876209415", 
+        "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/"
     }
 }
 
