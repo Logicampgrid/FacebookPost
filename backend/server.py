@@ -761,6 +761,14 @@ class N8NWebhookRequest(BaseModel):
     product_url: str
     image_url: str
 
+# N8N Binary Data Webhook Model - For file-based uploads
+class N8NBinaryWebhookRequest(BaseModel):
+    filename: str
+    mimetype: str
+    comment: str
+    link: str
+    data: str  # Base64 encoded binary data
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
