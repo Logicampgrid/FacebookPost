@@ -774,6 +774,20 @@ class N8NBinaryWebhookRequest(BaseModel):
     link: str
     data: str  # Base64 encoded binary data
 
+# N8N Enhanced Webhook Model - New format with separated json/binary structure
+class N8NEnhancedWebhookRequest(BaseModel):
+    store: str  # "ma-boutique", "outdoor", "gizmobbs", "logicantiq"
+    title: str  # Usually from fileName
+    description: str
+    product_url: str
+    comment: str
+
+# Binary data structure for the enhanced webhook
+class N8NBinaryData(BaseModel):
+    data: bytes  # Raw binary data
+    fileName: Optional[str] = None
+    mimeType: Optional[str] = None
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
