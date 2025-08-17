@@ -788,6 +788,13 @@ class N8NBinaryData(BaseModel):
     fileName: Optional[str] = None
     mimeType: Optional[str] = None
 
+# New Webhook Model - For multipart/form-data webhook
+class WebhookJsonData(BaseModel):
+    title: str
+    description: str
+    url: str
+    store: Optional[str] = None  # Optional store mapping: "outdoor", "gizmobbs", "logicantiq", etc.
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
