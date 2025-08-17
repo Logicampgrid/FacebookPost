@@ -634,6 +634,10 @@ function App() {
         {activeTab === 'webhook' && selectedBusinessManager && (
           <WebhookHistory />
         )}
+
+        {activeTab === 'guide' && (
+          <InstagramSetupGuide />
+        )}
       </div>
     </div>
   );
