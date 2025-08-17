@@ -590,13 +590,20 @@ async def multipart_webhook(
         unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
         file_path = f"uploads/{unique_filename}"
         
-        # Save image to disk
+        # Save image/video to disk
         content = await image.read()
         with open(file_path, "wb") as f:
             f.write(content)
         
-        # Optimize image for social media
-        optimize_image(file_path, max_size=(1200, 1200), quality=90)
+        # Optimize media for social media
+        is_video = image.content_type.startswith('video/') or file_extension.lower() in ['mp4', 'mov', 'avi', 'mkv', 'webm']
+        
+        if is_video:
+            print(f"🎬 Processing video file: {file_extension}")
+            optimize_video_for_social_media(file_path, max_size_mb=100)
+        else:
+            print(f"🖼️ Processing image file: {file_extension}")
+            optimize_image(file_path, max_size=(1200, 1200), quality=90)
         
         image_url = f"/api/uploads/{unique_filename}"
         print(f"✅ Image saved successfully: {image_url}")
