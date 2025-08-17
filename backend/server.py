@@ -525,6 +525,180 @@ SHOP_PAGE_MAPPING = {
     }
 }
 
+# ===============================
+# NEW MULTIPART WEBHOOK ENDPOINT  
+# ===============================
+@app.post("/api/webhook")
+async def multipart_webhook(
+    image: UploadFile = File(...),
+    json_data: str = Form(...)
+):
+    """
+    Webhook endpoint accepting multipart/form-data with:
+    - image: File upload (field name "image")
+    - json_data: JSON string (field name "json_data") containing {title, description, url, store (optional)}
+    
+    Validates JSON data with Pydantic and publishes to corresponding Facebook/Instagram pages.
+    Returns image filename and validated JSON data.
+    """
+    try:
+        print(f"🌐 NEW WEBHOOK - Processing multipart/form-data request")
+        print(f"📁 Image file: {image.filename} ({image.content_type})")
+        print(f"📋 JSON data received: {json_data}")
+        
+        # Step 1: Validate and parse JSON data
+        try:
+            parsed_json = json.loads(json_data)
+            validated_json = WebhookJsonData(**parsed_json)
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing error: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON format: {str(e)}")
+        except Exception as e:
+            print(f"❌ JSON validation error: {e}")
+            raise HTTPException(status_code=400, detail=f"JSON validation failed: {str(e)}")
+        
+        print(f"✅ JSON validated: title='{validated_json.title}', description='{validated_json.description[:50]}...', url={validated_json.url}")
+        
+        # Step 2: Validate image file
+        if not image.filename:
+            raise HTTPException(status_code=400, detail="Image filename is required")
+        
+        # Validate image file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if image.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid image type: {image.content_type}. Allowed: {', '.join(allowed_types)}"
+            )
+        
+        # Step 3: Save uploaded image
+        print(f"💾 Saving uploaded image: {image.filename}")
+        
+        # Create unique filename to prevent conflicts
+        file_extension = image.filename.split('.')[-1] if '.' in image.filename else 'jpg'
+        unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+        file_path = f"uploads/{unique_filename}"
+        
+        # Save image to disk
+        content = await image.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # Optimize image for social media
+        optimize_image(file_path, max_size=(1200, 1200), quality=90)
+        
+        image_url = f"/api/uploads/{unique_filename}"
+        print(f"✅ Image saved successfully: {image_url}")
+        
+        # Step 4: If store is specified, publish to social media
+        publish_results = []
+        if validated_json.store:
+            print(f"🚀 Publishing to store '{validated_json.store}' social media platforms...")
+            
+            # Validate store exists
+            if validated_json.store not in SHOP_PAGE_MAPPING:
+                available_stores = ', '.join(SHOP_PAGE_MAPPING.keys())
+                print(f"⚠️ Invalid store '{validated_json.store}'. Available: {available_stores}")
+                # Don't raise error, just log warning - still return the webhook response
+                publish_results.append({
+                    "status": "warning",
+                    "message": f"Invalid store '{validated_json.store}'. Available: {available_stores}",
+                    "platforms": []
+                })
+            else:
+                try:
+                    # Create ProductPublishRequest for the existing system
+                    product_request = ProductPublishRequest(
+                        title=validated_json.title,
+                        description=validated_json.description,
+                        image_url=image_url,  # Use local uploaded image
+                        product_url=validated_json.url,
+                        shop_type=validated_json.store
+                    )
+                    
+                    # Use existing publication system
+                    publish_result = await create_product_post_from_local_image(product_request, image_url)
+                    
+                    publish_results.append({
+                        "status": "success" if publish_result.get("status") == "success" else "partial",
+                        "message": f"Published to {validated_json.store} platforms",
+                        "platforms": publish_result.get("results", []),
+                        "details": publish_result
+                    })
+                    
+                    print(f"✅ Successfully published to {validated_json.store} platforms")
+                    
+                except Exception as publish_error:
+                    print(f"❌ Publishing error: {publish_error}")
+                    publish_results.append({
+                        "status": "error",
+                        "message": f"Failed to publish to {validated_json.store}: {str(publish_error)}",
+                        "platforms": []
+                    })
+        
+        # Step 5: Return response with image filename and JSON data
+        response = {
+            "status": "success",
+            "message": "Webhook processed successfully",
+            "data": {
+                "image_filename": unique_filename,
+                "image_url": image_url,
+                "image_size_bytes": len(content),
+                "json_data": validated_json.dict(),
+                "received_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+        # Add publication results if applicable
+        if publish_results:
+            response["data"]["publication_results"] = publish_results
+        
+        print(f"✅ Webhook completed successfully")
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Webhook error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.get("/api/webhook")
+async def webhook_info():
+    """
+    GET endpoint for webhook information and usage instructions
+    """
+    return {
+        "message": "Multipart Webhook Endpoint - Use POST method to submit image and JSON data",
+        "method": "POST",
+        "url": "/api/webhook", 
+        "content_type": "multipart/form-data",
+        "required_fields": {
+            "image": "File upload (JPEG, PNG, GIF, WebP)",
+            "json_data": "JSON string with required fields: title, description, url"
+        },
+        "json_structure": {
+            "title": "Product or content title (required)",
+            "description": "Product or content description (required)", 
+            "url": "Product or content URL (required)",
+            "store": "Optional store for auto-publishing: outdoor, gizmobbs, logicantiq, ma-boutique"
+        },
+        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "example_curl": """
+curl -X POST "https://your-domain.com/api/webhook" \\
+  -F "image=@/path/to/image.jpg" \\
+  -F 'json_data={"title":"Mon Produit","description":"Description du produit","url":"https://example.com/produit","store":"outdoor"}'
+        """,
+        "features": [
+            "✅ Image validation and optimization for social media",
+            "✅ JSON validation with Pydantic",
+            "✅ Auto-publishing to Facebook & Instagram if store specified",
+            "✅ Returns image filename and validated JSON data",
+            "✅ Unique filename generation to prevent conflicts"
+        ],
+        "shop_mapping": SHOP_PAGE_MAPPING
+    }
+
 # Optimized static file serving with better performance for social media APIs
 from fastapi.staticfiles import StaticFiles
 class OptimizedStaticFiles(StaticFiles):
