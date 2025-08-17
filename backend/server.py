@@ -965,9 +965,29 @@ class N8NBinaryData(BaseModel):
 # New Webhook Model - For multipart/form-data webhook
 class WebhookJsonData(BaseModel):
     title: str
-    description: str
+    description: str  
     url: str
     store: Optional[str] = None  # Optional store mapping: "outdoor", "gizmobbs", "logicantiq", etc.
+    
+    @validator('title')
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Title cannot be empty')
+        return v.strip()
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Description cannot be empty')
+        return v.strip()
+    
+    @validator('url')
+    def validate_url(cls, v):
+        if not v or not v.strip():
+            raise ValueError('URL cannot be empty')
+        if not (v.startswith('http://') or v.startswith('https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v.strip()
 
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
