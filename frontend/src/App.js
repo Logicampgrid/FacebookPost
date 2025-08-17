@@ -487,6 +487,20 @@ function App() {
                 <span>Historique Webhook</span>
               </div>
             </button>
+            
+            <button
+              onClick={() => setActiveTab('guide')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'guide'
+                  ? 'text-facebook-primary border-b-2 border-facebook-primary'
+                  : 'text-gray-600 hover:text-facebook-primary'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Instagram className="w-4 h-4" />
+                <span>Guide Instagram</span>
+              </div>
+            </button>
           </div>
         </div>
 
