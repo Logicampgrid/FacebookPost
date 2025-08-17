@@ -892,8 +892,27 @@ async def download_and_optimize_for_facebook(media_url: str) -> tuple:
                     os.unlink(temp_file.name)
                     return media_content, content_type
         else:
-            # Return video as-is (might need video optimization in the future)
-            return media_content, content_type
+            # For videos, apply basic optimization
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+                # Save original video
+                temp_file.write(media_content)
+                temp_file.flush()
+                
+                # Apply video optimization
+                optimized_path = temp_file.name + '.optimized.mp4'
+                if optimize_video_for_social_media(temp_file.name, optimized_path, max_size_mb=100):
+                    with open(optimized_path, 'rb') as f:
+                        optimized_content = f.read()
+                    
+                    # Clean up temp files
+                    os.unlink(temp_file.name)
+                    os.unlink(optimized_path)
+                    
+                    return optimized_content, 'video/mp4'
+                else:
+                    # Clean up and return original
+                    os.unlink(temp_file.name)
+                    return media_content, content_type
             
     except Exception as e:
         print(f"❌ Download and optimization failed: {e}")
