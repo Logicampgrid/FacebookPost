@@ -3798,6 +3798,234 @@ async def webhook_binary_endpoint(request: N8NBinaryWebhookRequest):
             }
         }
 
+@app.get("/api/webhook/enhanced")
+async def enhanced_webhook_info():
+    """
+    GET endpoint for enhanced N8N webhook information
+    """
+    return {
+        "message": "N8N Enhanced Webhook Endpoint - Supports new format with separated json/binary structure",
+        "method": "POST",
+        "url": "/api/webhook/enhanced",
+        "content_type": "multipart/form-data",
+        "required_fields": {
+            "json_data": "JSON string containing store, title, description, product_url, comment",
+            "image": "Binary file upload"
+        },
+        "json_structure": {
+            "store": "ma-boutique (or outdoor, gizmobbs, logicantiq)",
+            "title": "Product title (usually from fileName)",
+            "description": "Product description",
+            "product_url": "Product URL",
+            "comment": "Comment for the post"
+        },
+        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "n8n_transformation_example": '''
+return items.map(item => {
+  return {
+    json: {
+      store: "ma-boutique",
+      title: item.binary.data.fileName,
+      description: "Découvrez ce produit dans notre boutique !",
+      product_url: "https://www.logicamp.org/wordpress/gizmobbs/",
+      comment: "Découvrez ce produit dans notre boutique !"
+    },
+    binary: {
+      image: item.binary.data // met le binaire sous le champ "image"
+    }
+  };
+});''',
+        "features": [
+            "✅ Supports separated JSON and binary data structure",
+            "✅ Handles binary image files directly from N8N",
+            "✅ Auto-detects shop type from store field",
+            "✅ Uses fileName as product title",
+            "✅ Multi-platform publishing (Facebook + Instagram)",
+            "✅ Image optimization for social media",
+            "✅ Duplicate detection system"
+        ]
+    }
+
+@app.post("/api/webhook/enhanced")
+async def enhanced_webhook_endpoint(request: Request):
+    """
+    Enhanced N8N webhook endpoint that handles separated JSON and binary data
+    
+    Expects:
+    - json_data: JSON string with store, title, description, product_url, comment
+    - image: Binary file upload
+    
+    This matches the new N8N transformation format where JSON and binary are separated.
+    """
+    try:
+        print("🔗 Enhanced N8N Webhook POST received")
+        
+        # Parse multipart form data
+        form = await request.form()
+        
+        # Extract JSON data
+        json_data_str = form.get("json_data")
+        if not json_data_str:
+            raise HTTPException(status_code=400, detail="json_data field is required")
+        
+        try:
+            json_data = json.loads(json_data_str)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON in json_data: {str(e)}")
+        
+        # Extract binary image file
+        image_file = form.get("image")
+        if not image_file:
+            raise HTTPException(status_code=400, detail="image file is required")
+        
+        # Validate JSON structure
+        required_fields = ["store", "title", "description", "product_url", "comment"]
+        for field in required_fields:
+            if field not in json_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field in JSON: {field}")
+        
+        store = json_data["store"]
+        title = json_data["title"] 
+        description = json_data["description"]
+        product_url = json_data["product_url"]
+        comment = json_data["comment"]
+        
+        print(f"📋 Enhanced webhook data: store={store}, title='{title}', description='{description[:50]}...', product_url={product_url}")
+        
+        # Validate store type
+        if store not in SHOP_PAGE_MAPPING:
+            available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid store '{store}'. Available stores: {available_stores}"
+            )
+        
+        # Validate required fields
+        if not title or title.strip() == "":
+            raise HTTPException(status_code=400, detail="Product title is required and cannot be empty")
+        
+        if not product_url or not product_url.startswith('http'):
+            raise HTTPException(status_code=400, detail="Valid product URL is required")
+        
+        # Process the binary image file
+        image_content = await image_file.read()
+        if not image_content:
+            raise HTTPException(status_code=400, detail="Image file is empty")
+        
+        # Get filename and mimetype
+        filename = getattr(image_file, 'filename', 'uploaded_image.jpg') or 'uploaded_image.jpg'
+        content_type = getattr(image_file, 'content_type', 'image/jpeg') or 'image/jpeg'
+        
+        print(f"📁 Processing image file: {filename} ({content_type}, {len(image_content)} bytes)")
+        
+        # Save the binary image file
+        file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
+        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        file_path = f"uploads/{unique_filename}"
+        
+        # Write the binary data to file
+        with open(file_path, 'wb') as f:
+            f.write(image_content)
+        
+        # Optimize image if needed
+        if content_type.startswith('image/'):
+            optimize_image(file_path, instagram_mode=False)
+        
+        # Generate public URL for the image
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://webhoek-next.preview.emergentagent.com")
+        image_url = f"{base_url}/api/uploads/{unique_filename}"
+        
+        print(f"📸 Image saved and optimized: {file_path} -> {image_url}")
+        
+        # Create ProductPublishRequest from the enhanced webhook data
+        product_request = ProductPublishRequest(
+            title=title,
+            description=description,
+            image_url=image_url,
+            product_url=product_url,
+            shop_type=store,
+            user_id=None,
+            page_id=None,
+            api_key=None
+        )
+        
+        print(f"🏪 Processing enhanced webhook for store: {store}")
+        print(f"📦 Product: {title}")
+        print(f"📝 Description: {description}")
+        print(f"🔗 URL: {product_url}")
+        print(f"📸 Image: {image_url}")
+        print(f"💬 Comment: {comment}")
+        
+        # Create and publish the product post
+        result = await create_product_post_from_local_image(product_request, image_url)
+        
+        # Check if this was a duplicate post
+        if result.get("duplicate_skipped"):
+            return {
+                "success": True,
+                "status": "duplicate_skipped",
+                "message": f"Product '{title}' already posted recently - duplicate skipped",
+                "data": {
+                    "facebook_post_id": result["facebook_post_id"],
+                    "instagram_post_id": result.get("instagram_post_id"),
+                    "post_id": result["post_id"],
+                    "page_name": result.get("page_name", "Cached Page"),
+                    "page_id": result.get("page_id", "cached"),
+                    "store": store,
+                    "published_at": result["published_at"],
+                    "duplicate_skipped": True,
+                    "enhanced_webhook": True,
+                    "original_filename": filename,
+                    "generated_image_url": image_url,
+                    "webhook_processed_at": datetime.utcnow().isoformat()
+                }
+            }
+        
+        # Return success response for new posts
+        return {
+            "success": True,
+            "status": "published",
+            "message": f"Product '{title}' published successfully to {store} via enhanced webhook",
+            "data": {
+                "facebook_post_id": result["facebook_post_id"],
+                "instagram_post_id": result.get("instagram_post_id"),
+                "post_id": result["post_id"],
+                "page_name": result["page_name"],
+                "page_id": result["page_id"],
+                "store": store,
+                "published_at": result["published_at"],
+                "duplicate_skipped": False,
+                "enhanced_webhook": True,
+                "original_filename": filename,
+                "original_content_type": content_type,
+                "generated_image_url": image_url,
+                "comment_text": comment,
+                "publication_summary": result.get("publication_summary", {}),
+                "publication_results": result.get("publication_results", {}),
+                "webhook_processed_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"💥 Error in enhanced webhook endpoint: {e}")
+        
+        # Return webhook-friendly error response
+        error_message = str(e)
+        
+        return {
+            "success": False,
+            "status": "failed",
+            "message": f"Failed to process enhanced webhook: {error_message}",
+            "error": {
+                "type": "enhanced_webhook_processing_error",
+                "details": error_message,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }
+
 @app.get("/api/publishProduct/config")
 async def get_publish_config():
     """
