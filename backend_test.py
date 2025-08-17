@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 
 class FacebookPostManagerTester:
-    def __init__(self, base_url="https://keep-going-238.preview.emergentagent.com"):
+    def __init__(self, base_url="https://continue-app-45.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

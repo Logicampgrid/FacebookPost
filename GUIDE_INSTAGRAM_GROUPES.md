@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://keep-going-238.preview.emergentagent.com
+URL : https://continue-app-45.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

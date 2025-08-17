@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://keep-going-238.preview.emergentagent.com
+🔗 https://continue-app-45.preview.emergentagent.com
