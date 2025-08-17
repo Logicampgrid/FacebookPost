@@ -1397,20 +1397,42 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     print(f"🔗 Instagram using external link image: {link['image']}")
                     break
         
-        if not container_data.get("image_url") and not container_data.get("video_url"):
-            # Instagram requires media, so we'll skip posts without images/videos
+        # Check if we have media content for direct upload or URL for regular method
+        if not container_data.get("image_url") and not container_data.get("video_url") and not media_content:
             print("❌ Instagram requires media - skipping post without images or videos")
             return None
         
-        # Create media container with extended timeout and better error handling
-        print(f"📱 Creating Instagram media container for {post.target_name}: {container_data}")
-        
+        # Create media container - use direct upload if we have media_content, otherwise URL method
         try:
-            container_response = requests.post(
-                f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
-                data=container_data,
-                timeout=60  # Increased timeout for optimized images
-            )
+            if media_content and media_type == "image":
+                # DIRECT UPLOAD METHOD for images (prevents domain access issues)
+                print(f"📱 Creating Instagram media container with DIRECT UPLOAD for {post.target_name}")
+                print(f"📊 Direct upload size: {len(media_content)} bytes")
+                
+                # Prepare files for multipart upload
+                files = {'source': ('image.jpg', media_content, 'image/jpeg')}
+                
+                # Prepare form data (remove image_url since we're using direct upload)
+                form_data = {key: value for key, value in container_data.items() if key != 'image_url'}
+                
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                    data=form_data,
+                    files=files,
+                    timeout=60
+                )
+                print(f"📤 Instagram direct upload request sent")
+                
+            else:
+                # REGULAR URL METHOD for videos or when direct upload not available  
+                print(f"📱 Creating Instagram media container with URL method for {post.target_name}")
+                print(f"📋 Container data: {container_data}")
+                
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                    data=container_data,
+                    timeout=60
+                )
             
             print(f"Instagram container response: {container_response.status_code}")
             if container_response.status_code != 200:
