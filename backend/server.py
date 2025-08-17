@@ -708,11 +708,12 @@ curl -X POST "https://your-domain.com/api/webhook" \\
   -F 'json_data={"title":"Mon Produit","description":"Description du produit","url":"https://example.com/produit","store":"outdoor"}'
         """,
         "features": [
-            "✅ Image validation and optimization for social media",
+            "✅ Image & video validation and optimization for social media",
             "✅ JSON validation with Pydantic",
             "✅ Auto-publishing to Facebook & Instagram if store specified",
-            "✅ Returns image filename and validated JSON data",
-            "✅ Unique filename generation to prevent conflicts"
+            "✅ Returns media filename and validated JSON data",
+            "✅ Unique filename generation to prevent conflicts",
+            "✅ Multi-platform support for gizmobbs (Facebook + Instagram)"
         ],
         "shop_mapping": SHOP_PAGE_MAPPING
     }
