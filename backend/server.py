@@ -3244,8 +3244,8 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             
             facebook_post_id = facebook_result["id"]
             facebook_post_data["facebook_post_id"] = facebook_post_id
-        
-        print(f"✅ Main Facebook page published with local image: {facebook_post_id}")
+            
+            print(f"✅ Main Facebook page published with local image: {facebook_post_id}")
         
         # Initialize tracking for all platform publications
         publication_results = {
