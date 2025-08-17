@@ -1331,37 +1331,70 @@ async def post_to_instagram(post: Post, page_access_token: str):
         if post.content and post.content.strip():
             container_data["caption"] = post.content
         
-        # Handle media - PRIORITY: uploaded files over link images
+        # Handle media - PRIORITY: Direct file upload for Instagram compatibility
         media_url = None
         media_type = "image"  # default
+        local_file_path = None
+        media_content = None
         
         if post.media_urls:
             # Use uploaded media first (highest priority)
             media_url = post.media_urls[0]
+            
+            # For Instagram, we need to use direct file upload like Facebook
+            # to avoid URL access issues with preview domains
             if media_url.startswith('http'):
                 full_media_url = media_url
+                local_file_path = None
             else:
-                # Use public URL instead of localhost
+                # Extract local file path for direct upload
+                local_file_path = media_url.replace('/api/uploads/', 'uploads/')
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://progress-on-7.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
             
             # Determine media type
-            if media_url.lower().endswith(('.mp4', '.mov', '.avi')):
+            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+            
+            if is_video:
                 media_type = "video"
+                # For videos, we still use URL method (videos usually work better with URLs)
                 container_data["media_type"] = "VIDEO"
                 container_data["video_url"] = full_media_url
-                print(f"🎥 Instagram video: {full_media_url}")
+                print(f"🎥 Instagram video (URL method): {full_media_url}")
             else:
                 media_type = "image"
-                container_data["image_url"] = full_media_url
-                print(f"📸 Instagram optimized image: {full_media_url}")
+                
+                # FOR IMAGES: Use direct file upload to avoid domain access issues
+                try:
+                    if local_file_path and os.path.exists(local_file_path):
+                        print(f"📸 Instagram direct image upload (domain-safe): {local_file_path}")
+                        with open(local_file_path, 'rb') as f:
+                            media_content = f.read()
+                        print(f"✅ Loaded local file for Instagram: {len(media_content)} bytes")
+                    else:
+                        print(f"⚠️ Local file not found for Instagram, downloading: {full_media_url}")
+                        # Download image content for direct upload
+                        response = requests.get(full_media_url, timeout=30)
+                        if response.status_code == 200:
+                            media_content = response.content
+                            print(f"✅ Downloaded image for Instagram direct upload: {len(media_content)} bytes")
+                        else:
+                            raise Exception(f"Failed to download image: HTTP {response.status_code}")
+                    
+                    # We'll use this media_content for multipart upload instead of URL
+                    
+                except Exception as e:
+                    print(f"⚠️ Could not prepare direct upload, falling back to URL: {e}")
+                    # Fallback to URL method if direct upload preparation fails
+                    container_data["image_url"] = full_media_url
+                    print(f"📸 Instagram image (URL fallback): {full_media_url}")
                 
         elif post.link_metadata:
             # Use link image as fallback if no uploaded media
             for link in post.link_metadata:
                 if link.get("image"):
                     container_data["image_url"] = link["image"]
-                    print(f"🔗 Instagram using link image: {link['image']}")
+                    print(f"🔗 Instagram using external link image: {link['image']}")
                     break
         
         if not container_data.get("image_url") and not container_data.get("video_url"):
