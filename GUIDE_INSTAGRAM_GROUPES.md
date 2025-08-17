@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://persistent-flow-1.preview.emergentagent.com
+URL : https://bbs-media-poster.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
