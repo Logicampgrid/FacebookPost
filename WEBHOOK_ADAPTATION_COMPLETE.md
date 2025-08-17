@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://webhoek-next.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://file-webhook-api.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://webhoek-next.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://webhoek-next.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://webhoek-next.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://file-webhook-api.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://file-webhook-api.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://file-webhook-api.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

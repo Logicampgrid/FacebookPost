@@ -4,7 +4,7 @@
 Document and test the workflow for publishing to Instagram and Facebook Groups through the Meta Publishing Platform.
 
 ## 📋 Application Overview
-- **URL**: https://webhoek-next.preview.emergentagent.com
+- **URL**: https://file-webhook-api.preview.emergentagent.com
 - **Backend**: FastAPI with MongoDB
 - **Frontend**: React with Facebook SDK integration
 - **Key Features**: Cross-platform publishing (Pages, Groups, Instagram)
