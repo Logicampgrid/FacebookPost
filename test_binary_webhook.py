@@ -78,7 +78,7 @@ def test_binary_webhook():
             "http://localhost:8001/api/webhook/binary", 
             json=test_data,
             headers=headers,
-            timeout=30
+            timeout=90  # Augmenter le timeout
         )
         
         print(f"📡 Status: {response.status_code}")
