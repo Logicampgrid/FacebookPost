@@ -2550,14 +2550,198 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        # Check if this shop should publish to Instagram instead of Facebook
+        # Check shop configuration for publication strategy
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
+        should_use_multi = shop_config.get("platform") == "multi"
         
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
-        if should_use_instagram:
+        # Multi-platform publication (Facebook + Instagram)
+        if should_use_multi:
+            print(f"🌐 Shop {request.shop_type} configured for MULTI-PLATFORM publication (Facebook + Instagram)")
+            
+            # Find Instagram account
+            target_instagram = await find_instagram_by_shop_type(user, request.shop_type)
+            if not target_instagram:
+                target_instagram = await get_page_connected_instagram(access_token, target_page["id"])
+            
+            if not target_instagram:
+                print(f"⚠️ Instagram account not found for shop {request.shop_type}. Will only publish to Facebook.")
+                target_instagram = None
+            
+            # PUBLICATION 1: FACEBOOK
+            print(f"📘 Publishing to Facebook: {target_page['name']} ({target_page['id']})")
+            
+            # Create Facebook post content
+            facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="facebook")
+            
+            # Create Facebook post
+            facebook_post_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+                "content": facebook_content,
+                "media_urls": [media_url],
+                "link_metadata": [{
+                    "url": request.product_url,
+                    "title": request.title,
+                    "description": request.description,
+                    "image": request.image_url,
+                    "type": "product"
+                }],
+                "comment_link": request.product_url,
+                "comment_text": f"🛒 Découvrez ce produit: {request.product_url}",
+                "target_type": "page",
+                "target_id": target_page["id"],
+                "target_name": target_page["name"],
+                "platform": "facebook",
+                "business_manager_id": None,
+                "business_manager_name": None,
+                "cross_post_targets": [],
+                "scheduled_time": None,
+                "status": "published",
+                "comment_status": None,
+                "created_at": datetime.utcnow(),
+                "published_at": datetime.utcnow(),
+                "source": "n8n_integration",
+                "shop_type": request.shop_type,
+                "webhook_data": {
+                    "title": request.title,
+                    "description": request.description,
+                    "image_url": request.image_url,
+                    "product_url": request.product_url,
+                    "received_at": datetime.utcnow()
+                }
+            }
+            
+            facebook_post_obj = Post(**facebook_post_data)
+            
+            # Publish to Facebook
+            if access_token.startswith("test_"):
+                print("🧪 Test token detected - simulating Facebook publication")
+                facebook_result = {
+                    "id": f"test_fb_post_{uuid.uuid4().hex[:8]}"
+                }
+                print(f"✅ Simulated Facebook post: {facebook_result['id']}")
+            else:
+                facebook_result = await post_to_facebook(facebook_post_obj, access_token)
+            
+            facebook_post_id = facebook_result["id"] if facebook_result and "id" in facebook_result else None
+            
+            if facebook_post_id:
+                print(f"✅ Facebook published successfully: {facebook_post_id}")
+                facebook_post_data["facebook_post_id"] = facebook_post_id
+            else:
+                print(f"❌ Facebook publication failed")
+            
+            # PUBLICATION 2: INSTAGRAM (if available)
+            instagram_post_id = None
+            if target_instagram:
+                print(f"📸 Publishing to Instagram: @{target_instagram.get('username')} ({target_instagram['id']})")
+                
+                # Optimize image specifically for Instagram
+                print(f"📸 Optimizing image for Instagram...")
+                optimize_image(media_url.replace('/api/uploads/', 'uploads/'), instagram_mode=True)
+                
+                # Create Instagram post content
+                instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
+                
+                # Create Instagram post
+                instagram_post_data = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+                    "content": instagram_content,
+                    "media_urls": [media_url],
+                    "link_metadata": [{
+                        "url": request.product_url,
+                        "title": request.title,
+                        "description": request.description,
+                        "image": request.image_url,
+                        "type": "product"
+                    }],
+                    "comment_link": None,  # Instagram doesn't support clickable links in posts
+                    "comment_text": f"🛒 Lien en bio pour plus d'infos: {request.product_url}",
+                    "target_type": "instagram",
+                    "target_id": target_instagram["id"],
+                    "target_name": target_instagram.get("username", "Instagram Account"),
+                    "platform": "instagram",
+                    "business_manager_id": None,
+                    "business_manager_name": None,
+                    "cross_post_targets": [],
+                    "scheduled_time": None,
+                    "status": "published",
+                    "comment_status": None,  
+                    "created_at": datetime.utcnow(),
+                    "published_at": datetime.utcnow(),
+                    "source": "n8n_integration",
+                    "shop_type": request.shop_type,
+                    "webhook_data": {
+                        "title": request.title,
+                        "description": request.description,
+                        "image_url": request.image_url,
+                        "product_url": request.product_url,
+                        "received_at": datetime.utcnow()
+                    }
+                }
+                
+                instagram_post_obj = Post(**instagram_post_data)
+                
+                # Publish to Instagram
+                if access_token.startswith("test_"):
+                    print("🧪 Test token detected - simulating Instagram publication")
+                    instagram_result = {
+                        "id": f"test_ig_post_{uuid.uuid4().hex[:8]}",
+                        "post_id": f"test_ig_{target_instagram['id']}_{uuid.uuid4().hex[:8]}"
+                    }
+                    print(f"✅ Simulated Instagram post: {instagram_result['id']}")
+                else:
+                    instagram_result = await post_to_instagram(instagram_post_obj, access_token)
+                
+                instagram_post_id = instagram_result["id"] if instagram_result and "id" in instagram_result else None
+                
+                if instagram_post_id:
+                    print(f"✅ Instagram published successfully: {instagram_post_id}")
+                    instagram_post_data["instagram_post_id"] = instagram_post_id
+                    
+                    # Store Instagram post in database
+                    await db.posts.insert_one({
+                        **instagram_post_data,
+                        "content_hash": content_hash
+                    })
+                else:
+                    print(f"❌ Instagram publication failed")
+            
+            # Store Facebook post in database
+            if facebook_post_id:
+                await db.posts.insert_one({
+                    **facebook_post_data,
+                    "content_hash": content_hash
+                })
+            
+            # Return multi-platform success result
+            return {
+                "success": True,
+                "message": f"✅ MULTI-PLATFORM: Published '{request.title}' to Facebook{' + Instagram' if instagram_post_id else ' (Instagram failed)'}",
+                "facebook_post_id": facebook_post_id,
+                "instagram_post_id": instagram_post_id,
+                "groups_post_ids": [],
+                "additional_pages_post_ids": [],
+                "post_id": facebook_post_data["id"] if facebook_post_id else instagram_post_data.get("id", "unknown"),
+                "page_name": target_page["name"],
+                "page_id": target_page["id"],
+                "user_name": user.get("name", "Unknown User"),
+                "media_url": media_url,
+                "comment_status": "success" if facebook_post_id else "failed",
+                "published_at": datetime.utcnow().isoformat(),
+                "platforms_published": {
+                    "facebook": bool(facebook_post_id),
+                    "instagram": bool(instagram_post_id)
+                }
+            }
+        
+        # Single Instagram publication
+        elif should_use_instagram:
             print(f"📸 Shop {request.shop_type} configured for Instagram publication")
             
             # Find the specific Instagram account for this shop
