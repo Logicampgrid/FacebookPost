@@ -3696,8 +3696,8 @@ async def webhook_binary_endpoint(request: N8NBinaryWebhookRequest):
         print(f"📸 Generated image URL: {image_url}")
         print(f"📁 Original file: {request.filename} ({request.mimetype})")
         
-        # Create and publish the product post using existing logic
-        result = await create_product_post(product_request)
+        # Create and publish the product post using modified logic for local images
+        result = await create_product_post_from_local_image(product_request, image_url)
         
         # Check if this was a duplicate post
         if result.get("duplicate_skipped"):
