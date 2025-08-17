@@ -501,27 +501,36 @@ SHOP_PAGE_MAPPING = {
     "outdoor": {
         "name": "Logicamp Outdoor",  # Corrected name with space
         "expected_id": "236260991673388",  # Added real page ID
-        "woocommerce_url": "https://logicampoutdoor.com"
+        "woocommerce_url": "https://logicampoutdoor.com",
+        "platform": "facebook"  # Default to Facebook
     },
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
-        "woocommerce_url": "https://gizmobbs.com"
+        "woocommerce_url": "https://gizmobbs.com",
+        "platform": "instagram",  # Publish to Instagram instead of Facebook
+        "instagram_username": "logicamp_berger",  # Target Instagram account
+        "instagram_url": "https://www.instagram.com/logicamp_berger/"
     },
     "gimobbs": {  # Alternative spelling for N8N compatibility
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Same page as gizmobbs
-        "woocommerce_url": "https://gizmobbs.com"
+        "woocommerce_url": "https://gizmobbs.com",
+        "platform": "instagram",  # Publish to Instagram instead of Facebook
+        "instagram_username": "logicamp_berger",  # Target Instagram account
+        "instagram_url": "https://www.instagram.com/logicamp_berger/"
     },
     "logicantiq": {
         "name": "LogicAntiq",
         "expected_id": "210654558802531",  # Existing page ID
-        "woocommerce_url": "https://logicantiq.com"
+        "woocommerce_url": "https://logicantiq.com",
+        "platform": "facebook"  # Default to Facebook
     },
     "ma-boutique": {
         "name": "Le Berger Blanc Suisse",  # Using same page as gizmobbs
         "expected_id": "102401876209415", 
-        "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/"
+        "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/",
+        "platform": "facebook"  # Default to Facebook
     }
 }
 
