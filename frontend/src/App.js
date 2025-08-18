@@ -659,6 +659,10 @@ function App() {
         {activeTab === 'guide' && (
           <InstagramSetupGuide />
         )}
+
+        {activeTab === 'logicamp' && (
+          <LogicampBergerSetup user={user} />
+        )}
       </div>
     </div>
   );
