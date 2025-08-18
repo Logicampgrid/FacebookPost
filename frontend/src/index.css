@@ -65,7 +65,10 @@ body {
 }
 
 .post-media {
-  @apply rounded-lg mb-3 w-full object-cover;
+  @apply rounded-lg mb-3 w-full;
+  object-fit: contain; /* ✅ FIX: Use 'contain' instead of 'cover' to preserve aspect ratio and orientation */
+  max-height: 400px; /* Limit height to prevent overly tall images */
+  background: #f8f9fa; /* Light background for letterboxing */
 }
 
 .post-actions {
