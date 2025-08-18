@@ -169,7 +169,7 @@ const WebhookHistory = () => {
                       <img
                         src={post.image_url}
                         alt={post.title}
-                        className="w-16 h-16 rounded-lg object-cover border"
+                        className="w-16 h-16 rounded-lg object-contain bg-gray-100 border"
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
