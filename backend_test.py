@@ -1415,6 +1415,66 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_image_orientation_fix_endpoint(self):
+        """Test the new image orientation fix endpoint"""
+        # Create a simple test image (we'll use a small PNG)
+        import io
+        from PIL import Image
+        
+        # Create a simple vertical test image
+        test_image = Image.new('RGB', (300, 600), color='red')  # Vertical image
+        
+        # Save to bytes
+        img_bytes = io.BytesIO()
+        test_image.save(img_bytes, format='JPEG')
+        img_bytes.seek(0)
+        
+        # Prepare file for upload
+        files = {
+            'image': ('test_vertical.jpg', img_bytes, 'image/jpeg')
+        }
+        
+        success, response = self.run_test(
+            "Image Orientation Fix Test",
+            "POST",
+            "api/debug/test-image-orientation-fix",
+            200,
+            files=files
+        )
+        
+        if success:
+            message = response.get("message", "")
+            original_image = response.get("original_image", {})
+            optimized_image = response.get("optimized_image", {})
+            optimization_applied = response.get("optimization_applied", "")
+            
+            print(f"   Message: {message}")
+            print(f"   Original size: {original_image.get('size_bytes', 0)} bytes")
+            print(f"   Optimized size: {optimized_image.get('size_bytes', 0)} bytes")
+            print(f"   Optimization: {optimization_applied}")
+            
+            # Check if URLs are provided
+            if original_image.get("url") and optimized_image.get("url"):
+                print("✅ Image URLs generated successfully")
+                print(f"   Original URL: {original_image['url']}")
+                print(f"   Optimized URL: {optimized_image['url']}")
+            else:
+                print("❌ Image URLs not generated")
+            
+            # Check if EXIF orientation correction is mentioned
+            if "EXIF orientation correction" in optimization_applied:
+                print("✅ EXIF orientation correction applied")
+            else:
+                print("⚠️  EXIF orientation correction not explicitly mentioned")
+                
+            # Check if optimization was successful
+            if "successfully" in message.lower():
+                print("✅ Image orientation fix test completed successfully")
+            else:
+                print("⚠️  Test may not have completed successfully")
+        
+        return success
+
     # NEW TESTS FOR SMART CROSS-POST FUNCTIONALITY
     
     def test_page_related_platforms_invalid_user(self):
