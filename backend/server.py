@@ -849,6 +849,142 @@ async def test_instagram_webhook_universal(shop_type: str = "outdoor"):
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# Test endpoint spécifique pour @logicamp_berger avec gizmobbs
+@app.post("/api/debug/test-logicamp-berger-webhook")
+async def test_logicamp_berger_webhook():
+    """Test endpoint spécifique pour vérifier publication sur @logicamp_berger via webhook gizmobbs"""
+    try:
+        print("🎯 Test spécifique webhook gizmobbs → @logicamp_berger")
+        
+        # Simuler une requête webhook gizmobbs
+        test_request = ProductPublishRequest(
+            title="Test Gizmobbs → @logicamp_berger",
+            description="Test automatique de publication sur Instagram @logicamp_berger via webhook gizmobbs. Vérification que le Business Manager 1715327795564432 est accessible.",
+            image_url="https://picsum.photos/1080/1080?logicamp_test=" + str(int(datetime.utcnow().timestamp())),
+            product_url="https://gizmobbs.com/test-logicamp-berger",
+            shop_type="gizmobbs"  # Ceci doit publier sur @logicamp_berger
+        )
+        
+        print(f"📝 Données de test:")
+        print(f"   shop_type: {test_request.shop_type}")
+        print(f"   Business Manager cible: 1715327795564432")
+        print(f"   Instagram cible: @logicamp_berger")
+        
+        # Vérifier configuration
+        shop_config = SHOP_PAGE_MAPPING.get("gizmobbs", {})
+        print(f"📋 Configuration gizmobbs:")
+        print(f"   platform: {shop_config.get('platform')}")
+        print(f"   business_manager_id: {shop_config.get('business_manager_id')}")
+        print(f"   instagram_username: {shop_config.get('instagram_username')}")
+        
+        # Trouver un utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé",
+                "solution": "Connectez-vous avec le Business Manager 1715327795564432 pour accéder à @logicamp_berger",
+                "required_business_manager": "1715327795564432",
+                "required_instagram": "@logicamp_berger"
+            }
+        
+        print(f"👤 Utilisateur trouvé: {user.get('name')}")
+        print(f"📊 Business Managers: {len(user.get('business_managers', []))}")
+        
+        # Chercher le Business Manager spécifique
+        target_bm = None
+        for bm in user.get("business_managers", []):
+            if bm.get("id") == "1715327795564432":
+                target_bm = bm
+                print(f"✅ Business Manager trouvé: {bm.get('name')} (1715327795564432)")
+                break
+        
+        if not target_bm:
+            return {
+                "success": False,
+                "error": "Business Manager 1715327795564432 non trouvé dans les comptes connectés",
+                "user_name": user.get("name"),
+                "available_business_managers": [
+                    {"id": bm.get("id"), "name": bm.get("name")} 
+                    for bm in user.get("business_managers", [])
+                ],
+                "solution": "Connectez-vous avec le compte qui a accès au Business Manager 1715327795564432"
+            }
+        
+        # Chercher @logicamp_berger dans ce Business Manager
+        logicamp_instagram = None
+        
+        # 1. Chercher dans les comptes Instagram directs
+        for ig_account in target_bm.get("instagram_accounts", []):
+            if ig_account.get("username") == "logicamp_berger":
+                logicamp_instagram = ig_account
+                print(f"✅ @logicamp_berger trouvé directement dans Business Manager")
+                break
+        
+        # 2. Chercher dans les pages connectées
+        if not logicamp_instagram:
+            for page in target_bm.get("pages", []):
+                try:
+                    access_token = page.get("access_token") or user.get("facebook_access_token")
+                    ig_account = await get_page_connected_instagram(access_token, page["id"])
+                    if ig_account and ig_account.get("username") == "logicamp_berger":
+                        logicamp_instagram = ig_account
+                        print(f"✅ @logicamp_berger trouvé connecté à la page {page['name']}")
+                        break
+                except Exception as e:
+                    print(f"⚠️ Erreur vérification page {page.get('name')}: {e}")
+                    continue
+        
+        if not logicamp_instagram:
+            return {
+                "success": False,
+                "error": "@logicamp_berger non trouvé dans Business Manager 1715327795564432",
+                "user_name": user.get("name"),
+                "business_manager_found": target_bm.get("name"),
+                "instagram_accounts_found": [
+                    ig.get("username") for ig in target_bm.get("instagram_accounts", [])
+                ],
+                "solution": "Vérifiez que @logicamp_berger est bien connecté à une page Facebook dans ce Business Manager"
+            }
+        
+        # Test de publication via webhook
+        print(f"🚀 Test publication webhook sur @logicamp_berger...")
+        result = await create_product_post(test_request)
+        
+        return {
+            "success": True,
+            "message": "✅ Test webhook gizmobbs → @logicamp_berger RÉUSSI!",
+            "instagram_account": {
+                "id": logicamp_instagram["id"],
+                "username": logicamp_instagram.get("username"),
+                "name": logicamp_instagram.get("name", "")
+            },
+            "business_manager": {
+                "id": "1715327795564432",
+                "name": target_bm.get("name")
+            },
+            "user_name": user.get("name"),
+            "publication_result": result,
+            "configuration_status": "✅ Configuration optimisée pour @logicamp_berger",
+            "webhook_endpoint": "/api/webhook avec shop_type: 'gizmobbs'",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test @logicamp_berger webhook: {e}")
+        return {
+            "success": False,
+            "error": f"Test échoué: {str(e)}",
+            "required_setup": [
+                "1. Se connecter avec compte ayant accès au Business Manager 1715327795564432",
+                "2. Vérifier que @logicamp_berger est connecté à une page Facebook",
+                "3. S'assurer que les permissions Instagram Business sont accordées"
+            ],
+            "timestamp": datetime.utcnow().isoformat()
+        }
 @app.post("/api/debug/test-outdoor-mapping")
 async def test_outdoor_mapping():
     """Test endpoint to verify outdoor shop mapping works correctly"""
