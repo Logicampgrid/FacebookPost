@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://hors-instagram.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://carry-on-174.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://hors-instagram.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://hors-instagram.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://hors-instagram.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://carry-on-174.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://carry-on-174.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://carry-on-174.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

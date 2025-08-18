@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://hors-instagram.preview.emergentagent.com
+🔗 https://carry-on-174.preview.emergentagent.com
