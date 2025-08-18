@@ -4080,8 +4080,102 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         # Check if this shop should publish to Instagram instead of Facebook
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
+        should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         
-        if should_use_instagram:
+        # ✅ NOUVEAU: Instagram Priority (gizmobbs → @logicamp_berger)
+        if should_use_instagram_priority:
+            print(f"📸 Shop {request.shop_type} configured for INSTAGRAM PRIORITY → @logicamp_berger")
+            
+            # Find the specific Instagram account (@logicamp_berger)
+            target_instagram = await find_instagram_by_shop_type(user, request.shop_type)
+            
+            if not target_instagram:
+                # Log detailed error for gizmobbs specifically
+                print(f"❌ ERREUR CRITIQUE: Instagram @logicamp_berger non trouvé pour {request.shop_type}")
+                print(f"🔧 Business Manager requis: {shop_config.get('business_manager_id')}")
+                print(f"📱 Instagram cible: @{shop_config.get('instagram_username')}")
+                
+                raise Exception(f"Instagram @logicamp_berger non accessible. Vérifiez l'authentification avec Business Manager {shop_config.get('business_manager_id')}")
+            
+            print(f"🎯 Publication Instagram PRIORITAIRE sur: @{target_instagram.get('username')} ({target_instagram['id']})")
+            
+            # Optimize image specifically for Instagram
+            print(f"📸 Optimisation image pour Instagram...")
+            local_file_path = media_url.replace('/api/uploads/', 'uploads/')
+            optimize_image(local_file_path, instagram_mode=True)
+            
+            # Create Instagram post content
+            # instagram_content already generated above
+            
+            # Create post object for Instagram
+            instagram_post_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+                "content": instagram_content,
+                "media_urls": [media_url],
+                "link_metadata": [{
+                    "url": request.product_url,
+                    "title": request.title,
+                    "description": request.description,
+                    "image": local_image_url,
+                    "type": "product"
+                }],
+                "comment_link": None,  # Instagram doesn't support clickable links in posts
+                "comment_text": f"🛒 Plus d'infos: lien en bio",  # Instagram standard practice
+                "target_type": "instagram",
+                "target_id": target_instagram["id"],
+                "target_name": f"@{target_instagram.get('username')}",
+                "platform": "instagram",
+                "business_manager_id": shop_config.get('business_manager_id'),
+                "status": "published",
+                "created_at": datetime.utcnow(),
+                "published_at": datetime.utcnow(),
+                "content_hash": content_hash,
+                "shop_type": request.shop_type
+            }
+            
+            instagram_post = Post(**instagram_post_data)
+            
+            # Publish to Instagram
+            instagram_result = await post_to_instagram(instagram_post, access_token)
+            instagram_post_id = None
+            
+            if instagram_result and instagram_result.get("status") == "success":
+                instagram_post_id = instagram_result.get("id")
+                print(f"✅ Publication Instagram PRIORITAIRE réussie: @{target_instagram.get('username')} - {instagram_post_id}")
+                
+                # Save to database
+                instagram_post_data["published_at"] = datetime.utcnow()
+                instagram_post_data["instagram_post_id"] = instagram_post_id
+                await db.posts.insert_one(instagram_post_data)
+                
+            else:
+                error_msg = instagram_result.get("message", "Unknown error") if instagram_result else "No response"
+                print(f"❌ Publication Instagram PRIORITAIRE échec: {error_msg}")
+                raise Exception(f"Échec publication Instagram @logicamp_berger: {error_msg}")
+            
+            # Return success result for Instagram priority
+            return {
+                "status": "success",
+                "message": f"Product '{request.title}' published successfully to Instagram @logicamp_berger",
+                "instagram_post_id": instagram_post_id,
+                "post_id": instagram_post_data["id"],
+                "page_name": f"Instagram @{target_instagram.get('username')}",
+                "page_id": target_instagram["id"],
+                "user_name": user.get("name", "Unknown User"),
+                "media_url": media_url,
+                "published_at": datetime.utcnow().isoformat(),
+                "platform": "instagram",
+                "shop_type": request.shop_type,
+                "business_manager_id": shop_config.get('business_manager_id'),
+                "platforms_published": {
+                    "instagram": bool(instagram_post_id),
+                    "facebook": False  # Not published to Facebook in priority mode
+                }
+            }
+        
+        # Standard Instagram publication
+        elif should_use_instagram:
             print(f"📸 Shop {request.shop_type} configured for Instagram publication")
             
             # Find the specific Instagram account for this shop
