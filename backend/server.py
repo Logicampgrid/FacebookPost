@@ -3164,13 +3164,94 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         # Check shop configuration for publication strategy
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
+        should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         should_use_multi = shop_config.get("platform") == "multi"
         
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
         
+        # ✅ NOUVEAU: Instagram Priority publication (gizmobbs → @logicamp_berger)
+        if should_use_instagram_priority:
+            print(f"📸 Shop {request.shop_type} configured for INSTAGRAM PRIORITY publication → @logicamp_berger")
+            
+            # Find the specific Instagram account (@logicamp_berger)
+            target_instagram = await find_instagram_by_shop_type(user, request.shop_type)
+            
+            if not target_instagram:
+                # Log detailed error for gizmobbs specifically
+                print(f"❌ ERREUR CRITIQUE: Instagram @logicamp_berger non trouvé pour {request.shop_type}")
+                print(f"🔧 Business Manager requis: {shop_config.get('business_manager_id')}")
+                print(f"📱 Instagram cible: @{shop_config.get('instagram_username')}")
+                
+                raise Exception(f"Instagram @logicamp_berger non accessible. Vérifiez l'authentification avec Business Manager {shop_config.get('business_manager_id')}")
+            
+            print(f"🎯 Publication Instagram uniquement sur: @{target_instagram.get('username')} ({target_instagram['id']})")
+            
+            # Optimize image specifically for Instagram
+            print(f"📸 Optimisation image pour Instagram...")
+            optimize_image(media_url.replace('/api/uploads/', 'uploads/'), instagram_mode=True)
+            
+            # Create Instagram post content
+            instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
+            
+            # Create Instagram post
+            instagram_post_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user["_id"]),
+                "content": instagram_content,
+                "media_urls": [media_url],
+                "target_type": "instagram",
+                "target_id": target_instagram["id"],
+                "target_name": f"@{target_instagram.get('username')}",
+                "platform": "instagram",
+                "status": "published",
+                "created_at": datetime.utcnow(),
+                "published_at": datetime.utcnow()
+            }
+            
+            instagram_post = Post(**instagram_post_data)
+            
+            # Publish to Instagram
+            instagram_result = await post_to_instagram(instagram_post, access_token)
+            instagram_post_id = None
+            
+            if instagram_result and instagram_result.get("status") == "success":
+                instagram_post_id = instagram_result.get("id")
+                print(f"✅ Publication Instagram réussie: @{target_instagram.get('username')} - {instagram_post_id}")
+                
+                # Save to database
+                instagram_post_data["published_at"] = datetime.utcnow()
+                instagram_post_data["instagram_post_id"] = instagram_post_id
+                instagram_post_data["content_hash"] = content_hash
+                await db.posts.insert_one(instagram_post_data)
+                
+            else:
+                error_msg = instagram_result.get("message", "Unknown error") if instagram_result else "No response"
+                print(f"❌ Publication Instagram échec: {error_msg}")
+                raise Exception(f"Échec publication Instagram @logicamp_berger: {error_msg}")
+            
+            # Return success result for Instagram priority
+            return {
+                "status": "success",
+                "message": f"Product '{request.title}' published successfully to Instagram @logicamp_berger",
+                "instagram_post_id": instagram_post_id,
+                "post_id": instagram_post_data["id"],
+                "page_name": f"Instagram @{target_instagram.get('username')}",
+                "page_id": target_instagram["id"],
+                "user_name": user.get("name", "Unknown User"),
+                "media_url": media_url,
+                "published_at": datetime.utcnow().isoformat(),
+                "platform": "instagram",
+                "shop_type": request.shop_type,
+                "business_manager_id": shop_config.get('business_manager_id'),
+                "platforms_published": {
+                    "instagram": bool(instagram_post_id),
+                    "facebook": False  # Not published to Facebook in priority mode
+                }
+            }
+        
         # Multi-platform publication (Facebook + Instagram)
-        if should_use_multi:
+        elif should_use_multi:
             print(f"🌐 Shop {request.shop_type} configured for MULTI-PLATFORM publication (Facebook + Instagram)")
             
             # Find Instagram account
