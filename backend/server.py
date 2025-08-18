@@ -2521,6 +2521,39 @@ async def download_product_image(image_url: str) -> str:
         print(f"❌ Error downloading product image: {e}")
         raise Exception(f"Failed to download product image: {str(e)}")
 
+async def find_any_available_instagram_account(user):
+    """Find any available Instagram account for fallback publishing"""
+    try:
+        print("🔍 Recherche de n'importe quel compte Instagram disponible...")
+        
+        # Search in business manager Instagram accounts first
+        for bm in user.get("business_managers", []):
+            for ig_account in bm.get("instagram_accounts", []):
+                if ig_account.get("id"):
+                    print(f"✅ Trouvé compte Instagram @{ig_account.get('username', 'unknown')} ({ig_account['id']})")
+                    return ig_account
+        
+        # Search through connected page Instagram accounts
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                try:
+                    access_token = page.get("access_token") or user.get("facebook_access_token")
+                    if access_token:
+                        ig_account = await get_page_connected_instagram(access_token, page["id"])
+                        if ig_account and ig_account.get("id"):
+                            print(f"✅ Trouvé Instagram @{ig_account.get('username', 'unknown')} connecté à la page {page['name']}")
+                            return ig_account
+                except Exception as e:
+                    print(f"⚠️ Erreur lors de la vérification d'Instagram pour la page {page.get('name', 'unknown')}: {e}")
+                    continue
+        
+        print("❌ Aucun compte Instagram disponible trouvé")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la recherche d'un compte Instagram disponible: {e}")
+        return None
+
 async def find_instagram_by_shop_type(user, shop_type: str):
     """Find the appropriate Instagram account based on shop type"""
     try:
