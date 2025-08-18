@@ -2555,50 +2555,54 @@ async def find_any_available_instagram_account(user):
         return None
 
 async def find_instagram_by_shop_type(user, shop_type: str):
-    """Find the appropriate Instagram account based on shop type"""
+    """Find the appropriate Instagram account based on shop type - AMÉLIORÉ pour webhook Instagram universel"""
     try:
+        print(f"🔍 Recherche d'un compte Instagram pour shop_type: {shop_type}")
+        
         if not shop_type or shop_type not in SHOP_PAGE_MAPPING:
-            return None
+            print(f"⚠️ Shop_type '{shop_type}' non configuré, recherche du premier Instagram disponible...")
+            # Fallback: retourner le premier compte Instagram trouvé
+            return await find_any_available_instagram_account(user)
             
         shop_config = SHOP_PAGE_MAPPING[shop_type]
         
-        # Check if this shop should use Instagram
-        if shop_config.get("platform") != "instagram":
-            return None
-            
+        # ✅ NOUVEAU: Chercher Instagram même si platform != "instagram"
+        # On cherche d'abord le compte Instagram spécifié dans la config
         expected_username = shop_config.get("instagram_username")
-        if not expected_username:
-            return None
+        
+        if expected_username:
+            print(f"🎯 Recherche du compte Instagram spécifique: @{expected_username}")
             
-        print(f"🔍 Looking for Instagram account: @{expected_username} (shop_type: {shop_type})")
-        
-        # Search in business manager Instagram accounts
-        for bm in user.get("business_managers", []):
-            for ig_account in bm.get("instagram_accounts", []):
-                if ig_account.get("username") == expected_username:
-                    print(f"✅ Found Instagram account @{ig_account['username']} ({ig_account['id']})")
-                    return ig_account
-        
-        # Search through connected page Instagram accounts
-        for bm in user.get("business_managers", []):
-            for page in bm.get("pages", []):
-                # Get Instagram account connected to this page
-                try:
-                    access_token = page.get("access_token") or user.get("facebook_access_token")
-                    ig_account = await get_page_connected_instagram(access_token, page["id"])
-                    if ig_account and ig_account.get("username") == expected_username:
-                        print(f"✅ Found Instagram account @{ig_account['username']} connected to page {page['name']}")
+            # Search in business manager Instagram accounts
+            for bm in user.get("business_managers", []):
+                for ig_account in bm.get("instagram_accounts", []):
+                    if ig_account.get("username") == expected_username:
+                        print(f"✅ Trouvé compte Instagram @{ig_account['username']} ({ig_account['id']})")
                         return ig_account
-                except Exception as e:
-                    print(f"⚠️ Error checking Instagram for page {page['name']}: {e}")
-                    continue
+            
+            # Search through connected page Instagram accounts
+            for bm in user.get("business_managers", []):
+                for page in bm.get("pages", []):
+                    # Get Instagram account connected to this page
+                    try:
+                        access_token = page.get("access_token") or user.get("facebook_access_token")
+                        ig_account = await get_page_connected_instagram(access_token, page["id"])
+                        if ig_account and ig_account.get("username") == expected_username:
+                            print(f"✅ Trouvé Instagram @{ig_account['username']} connecté à la page {page['name']}")
+                            return ig_account
+                    except Exception as e:
+                        print(f"⚠️ Erreur lors de la vérification d'Instagram pour la page {page['name']}: {e}")
+                        continue
+            
+            print(f"⚠️ Compte Instagram @{expected_username} non trouvé, recherche d'une alternative...")
         
-        print(f"❌ Instagram account @{expected_username} not found for shop_type '{shop_type}'")
-        return None
+        # ✅ NOUVEAU: Si pas de compte spécifique trouvé, chercher n'importe quel Instagram disponible
+        print(f"🔍 Recherche du premier compte Instagram disponible pour publication webhook...")
+        return await find_any_available_instagram_account(user)
         
     except Exception as e:
-        print(f"❌ Error finding Instagram account by shop type: {e}")
-        return None
+        print(f"❌ Erreur lors de la recherche d'Instagram pour shop_type: {e}")
+        return await find_any_available_instagram_account(user)  # Fallback en cas d'erreur
 
 async def find_page_by_shop_type(user, shop_type: str):
     """Find the appropriate Facebook page based on shop type"""
