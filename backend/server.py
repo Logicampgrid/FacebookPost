@@ -2668,7 +2668,7 @@ async def find_any_available_instagram_account(user):
         return None
 
 async def find_instagram_by_shop_type(user, shop_type: str):
-    """Find the appropriate Instagram account based on shop type - AMÉLIORÉ pour webhook Instagram universel"""
+    """Find the appropriate Instagram account based on shop type - OPTIMISÉ pour @logicamp_berger"""
     try:
         print(f"🔍 Recherche d'un compte Instagram pour shop_type: {shop_type}")
         
@@ -2679,8 +2679,40 @@ async def find_instagram_by_shop_type(user, shop_type: str):
             
         shop_config = SHOP_PAGE_MAPPING[shop_type]
         
-        # ✅ NOUVEAU: Chercher Instagram même si platform != "instagram"
-        # On cherche d'abord le compte Instagram spécifié dans la config
+        # ✅ SPÉCIAL: Traitement spécifique pour gizmobbs → @logicamp_berger
+        if shop_type == "gizmobbs":
+            print(f"🎯 Configuration spéciale pour gizmobbs → @logicamp_berger")
+            print(f"🏢 Business Manager ID cible: {shop_config.get('business_manager_id', 'non spécifié')}")
+            
+            # 1. Chercher d'abord dans le Business Manager spécifique
+            target_bm_id = shop_config.get("business_manager_id")
+            if target_bm_id:
+                for bm in user.get("business_managers", []):
+                    if bm.get("id") == target_bm_id:
+                        print(f"✅ Business Manager trouvé: {bm.get('name')} ({target_bm_id})")
+                        
+                        # Chercher @logicamp_berger dans ce BM
+                        for ig_account in bm.get("instagram_accounts", []):
+                            if ig_account.get("username") == "logicamp_berger":
+                                print(f"🎯 SUCCÈS: Trouvé @logicamp_berger dans le bon Business Manager!")
+                                return ig_account
+                        
+                        # Chercher dans les pages de ce BM
+                        for page in bm.get("pages", []):
+                            try:
+                                access_token = page.get("access_token") or user.get("facebook_access_token")
+                                ig_account = await get_page_connected_instagram(access_token, page["id"])
+                                if ig_account and ig_account.get("username") == "logicamp_berger":
+                                    print(f"🎯 SUCCÈS: @logicamp_berger connecté à la page {page['name']}!")
+                                    return ig_account
+                            except Exception as e:
+                                print(f"⚠️ Erreur vérification Instagram page {page.get('name')}: {e}")
+                                continue
+                        
+                        print(f"⚠️ @logicamp_berger non trouvé dans Business Manager {target_bm_id}")
+                        break
+        
+        # ✅ RECHERCHE STANDARD: Chercher Instagram même si platform != "instagram"
         expected_username = shop_config.get("instagram_username")
         
         if expected_username:
@@ -2709,7 +2741,7 @@ async def find_instagram_by_shop_type(user, shop_type: str):
             
             print(f"⚠️ Compte Instagram @{expected_username} non trouvé, recherche d'une alternative...")
         
-        # ✅ NOUVEAU: Si pas de compte spécifique trouvé, chercher n'importe quel Instagram disponible
+        # ✅ FALLBACK: Si pas de compte spécifique trouvé, chercher n'importe quel Instagram disponible
         print(f"🔍 Recherche du premier compte Instagram disponible pour publication webhook...")
         return await find_any_available_instagram_account(user)
         
