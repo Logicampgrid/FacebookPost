@@ -11,6 +11,7 @@ import ConnectionDiagnostic from './components/ConnectionDiagnostic';
 import FacebookConnectionTest from './components/FacebookConnectionTest';
 import InstagramDiagnostics from './components/InstagramDiagnostics';
 import InstagramSetupGuide from './components/InstagramSetupGuide';
+import ImageOrientationTest from './components/ImageOrientationTest';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
