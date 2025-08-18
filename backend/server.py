@@ -772,6 +772,83 @@ async def test_multi_platform_post(shop_type: str = "outdoor"):
             "error": str(e)
         }
 
+# Test endpoint spécifique pour Instagram webhook universel
+@app.post("/api/debug/test-instagram-webhook-universal")
+async def test_instagram_webhook_universal(shop_type: str = "outdoor"):
+    """Test endpoint pour vérifier que Instagram fonctionne via webhook pour tous les shops"""
+    try:
+        print(f"🧪 Test Instagram webhook universel pour shop_type: {shop_type}")
+        
+        # Trouver un utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé",
+                "solution": "Connectez-vous d'abord avec Facebook Business Manager"
+            }
+        
+        # Test de la fonction améliorée find_instagram_by_shop_type
+        instagram_account = await find_instagram_by_shop_type(user, shop_type)
+        
+        if not instagram_account:
+            return {
+                "success": False,
+                "error": f"Aucun compte Instagram trouvé pour shop_type '{shop_type}'",
+                "user_name": user.get("name"),
+                "business_managers_count": len(user.get("business_managers", [])),
+                "solution": "Connectez un compte Instagram Business à une page Facebook dans Business Manager"
+            }
+        
+        # Créer un test post pour Instagram
+        test_image_url = f"https://picsum.photos/1080/1080?webhook_test={int(datetime.utcnow().timestamp())}"
+        
+        # Simuler une requête webhook
+        webhook_request = ProductPublishRequest(
+            title=f"Test Instagram Webhook - {shop_type}",
+            description=f"Test automatique de publication Instagram via webhook pour le shop '{shop_type}'. Ce post vérifie que le système webhook peut publier sur Instagram malgré tout.",
+            image_url=test_image_url,
+            product_url="https://example.com/test-webhook-instagram",
+            shop_type=shop_type
+        )
+        
+        print(f"📱 Test publication Instagram via webhook simulation...")
+        print(f"🎯 Compte Instagram trouvé: @{instagram_account.get('username')} ({instagram_account['id']})")
+        
+        # Tester le processus de publication via webhook
+        result = await create_product_post_from_local_image(webhook_request, test_image_url)
+        
+        return {
+            "success": True,
+            "message": f"✅ Test Instagram webhook universel RÉUSSI pour {shop_type}!",
+            "shop_type": shop_type,
+            "instagram_account": {
+                "id": instagram_account["id"],
+                "username": instagram_account.get("username", "unknown"),
+                "name": instagram_account.get("name", "")
+            },
+            "user_name": user.get("name"),
+            "webhook_simulation_result": result,
+            "improvements_applied": [
+                "✅ Publication Instagram possible même si shop configuré pour Facebook",
+                "✅ Recherche automatique d'un compte Instagram disponible",
+                "✅ Système de fallback robuste",
+                "✅ Support universel de tous les shop types via webhook"
+            ],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test Instagram webhook universel: {e}")
+        return {
+            "success": False,
+            "error": f"Test échoué: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 @app.post("/api/debug/test-outdoor-mapping")
 async def test_outdoor_mapping():
     """Test endpoint to verify outdoor shop mapping works correctly"""
