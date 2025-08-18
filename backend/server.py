@@ -597,7 +597,74 @@ async def test_instagram_publication():
             "timestamp": datetime.utcnow().isoformat()
         }
 
-# Test endpoint for comprehensive platform discovery
+# Test endpoint for image orientation fix
+@app.post("/api/debug/test-image-orientation-fix")
+async def test_image_orientation_fix(image: UploadFile = File(...)):
+    """Test endpoint to verify that vertical images are properly oriented after processing"""
+    try:
+        print("🖼️ Testing image orientation fix...")
+        
+        # Save uploaded image
+        unique_filename = f"test_orientation_{uuid.uuid4().hex[:8]}.jpg"
+        file_path = f"uploads/{unique_filename}"
+        
+        content = await image.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        print(f"📁 Original image saved: {file_path}")
+        
+        # Test optimization with EXIF orientation correction
+        optimized_path = file_path.replace(".jpg", "_optimized.jpg")
+        success = optimize_image(file_path, optimized_path, max_size=(800, 600), quality=90)
+        
+        if success:
+            # Get file sizes for comparison
+            original_size = os.path.getsize(file_path)
+            optimized_size = os.path.getsize(optimized_path)
+            
+            # Create URLs for both images
+            original_url = f"/api/uploads/{unique_filename}"
+            optimized_url = f"/api/uploads/{unique_filename.replace('.jpg', '_optimized.jpg')}"
+            
+            result = {
+                "success": True,
+                "message": "✅ Image orientation fix test completed successfully!",
+                "original_image": {
+                    "url": original_url,
+                    "size_bytes": original_size,
+                    "filename": unique_filename
+                },
+                "optimized_image": {
+                    "url": optimized_url, 
+                    "size_bytes": optimized_size,
+                    "filename": unique_filename.replace('.jpg', '_optimized.jpg')
+                },
+                "optimization_applied": "EXIF orientation correction + size optimization",
+                "note": "Compare the two images - the optimized one should have correct orientation",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            print(f"✅ Image orientation test completed successfully")
+            return result
+            
+        else:
+            # Clean up original file
+            os.unlink(file_path)
+            
+            return {
+                "success": False,
+                "error": "Image optimization failed",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+    except Exception as e:
+        print(f"❌ Image orientation test error: {e}")
+        return {
+            "success": False,
+            "error": f"Test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
 @app.get("/api/debug/store-platforms/{shop_type}")
 async def debug_store_platforms(shop_type: str):
     """Debug endpoint to see all platforms available for a specific store"""
