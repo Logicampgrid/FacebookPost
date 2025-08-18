@@ -194,7 +194,7 @@ const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
                           <img 
                             src={process.env.REACT_APP_BACKEND_URL + url} 
                             alt={`Media ${index + 1}`}
-                            className="w-full h-16 object-cover rounded border"
+                            className="w-full h-16 object-contain bg-gray-100 rounded border"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
