@@ -3848,8 +3848,8 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             optimize_image(local_file_path, instagram_mode=True)
             
-            # Create Instagram post content
-            instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
+            # Create Instagram post content (déjà généré plus haut)
+            # instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
             
             # Create post object for Instagram
             instagram_post_data = {
