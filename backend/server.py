@@ -3821,6 +3821,10 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         media_url = local_image_url
         print(f"📸 Using local image directly: {media_url}")
         
+        # ✅ NOUVEAU: Générer le contenu Instagram pour tous les cas
+        instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
+        facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="facebook")
+        
         # Check if this shop should publish to Instagram instead of Facebook
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
