@@ -24,7 +24,7 @@ const LinkPreview = ({ link, onRemove = null }) => {
           <img 
             src={link.image} 
             alt={link.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain bg-gray-100"
             onError={(e) => {
               e.target.style.display = 'none';
             }}
