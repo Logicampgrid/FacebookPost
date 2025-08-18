@@ -58,7 +58,7 @@ const MediaUploader = ({ files, onFilesChange, disabled }) => {
         <div className="relative">
           <video 
             src={url} 
-            className="w-full h-20 object-cover rounded"
+            className="w-full h-20 object-contain bg-gray-100 rounded"
             onLoadedData={() => URL.revokeObjectURL(url)}
             muted
           />
