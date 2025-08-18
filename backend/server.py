@@ -2554,6 +2554,39 @@ async def find_any_available_instagram_account(user):
         print(f"❌ Erreur lors de la recherche d'un compte Instagram disponible: {e}")
         return None
 
+async def find_any_available_instagram_account(user):
+    """Trouve n'importe quel compte Instagram disponible pour publication webhook - NOUVEAU HELPER"""
+    try:
+        print(f"🔍 Recherche de n'importe quel compte Instagram disponible...")
+        
+        # Chercher dans les comptes Instagram des business managers
+        for bm in user.get("business_managers", []):
+            for ig_account in bm.get("instagram_accounts", []):
+                if ig_account.get("id") and ig_account.get("username"):
+                    print(f"✅ Trouvé compte Instagram @{ig_account['username']} dans Business Manager {bm.get('name')}")
+                    return ig_account
+        
+        # Chercher dans les pages connectées à Instagram
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                try:
+                    access_token = page.get("access_token") or user.get("facebook_access_token")
+                    if access_token:
+                        ig_account = await get_page_connected_instagram(access_token, page["id"])
+                        if ig_account and ig_account.get("id"):
+                            print(f"✅ Trouvé Instagram @{ig_account.get('username', 'unknown')} connecté à la page {page['name']}")
+                            return ig_account
+                except Exception as e:
+                    print(f"⚠️ Erreur lors de la vérification d'Instagram pour la page {page['name']}: {e}")
+                    continue
+        
+        print(f"❌ Aucun compte Instagram trouvé pour cet utilisateur")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la recherche d'Instagram: {e}")
+        return None
+
 async def find_instagram_by_shop_type(user, shop_type: str):
     """Find the appropriate Instagram account based on shop type - AMÉLIORÉ pour webhook Instagram universel"""
     try:
