@@ -984,6 +984,30 @@ def optimize_image_for_instagram(file_path: str, target_path: str = None):
             target_path = file_path
             
         with Image.open(file_path) as img:
+            # ✅ FIX: Handle EXIF orientation data to fix vertical images displaying horizontally
+            try:
+                # Get EXIF orientation and rotate image accordingly
+                exif = img._getexif()
+                if exif is not None:
+                    orientation = exif.get(274, 1)  # 274 is the EXIF orientation tag
+                    if orientation == 3:
+                        img = img.rotate(180, expand=True)
+                        print("🔄 Rotated image 180° based on EXIF orientation")
+                    elif orientation == 6:
+                        img = img.rotate(270, expand=True)
+                        print("🔄 Rotated image 270° (90° CCW) based on EXIF orientation")
+                    elif orientation == 8:
+                        img = img.rotate(90, expand=True)
+                        print("🔄 Rotated image 90° (90° CW) based on EXIF orientation")
+            except (AttributeError, KeyError, TypeError):
+                # Fallback: use PIL's built-in ImageOps.exif_transpose for newer PIL versions
+                try:
+                    from PIL import ImageOps
+                    img = ImageOps.exif_transpose(img)
+                    print("🔄 Applied EXIF orientation correction using ImageOps")
+                except Exception:
+                    print("ℹ️ No EXIF orientation data found or couldn't apply")
+            
             # Convert to RGB if necessary
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
