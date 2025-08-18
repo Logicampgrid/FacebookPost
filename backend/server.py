@@ -814,7 +814,10 @@ SHOP_PAGE_MAPPING = {
         "name": "Logicamp Outdoor",  # Corrected name with space
         "expected_id": "236260991673388",  # Added real page ID
         "woocommerce_url": "https://logicampoutdoor.com",
-        "platform": "facebook"  # Default to Facebook
+        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
+        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
+        "instagram_username": "logicamp_berger",  # Compte Instagram associé
+        "instagram_url": "https://www.instagram.com/logicamp_berger/"
     },
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
@@ -838,13 +841,19 @@ SHOP_PAGE_MAPPING = {
         "name": "LogicAntiq",
         "expected_id": "210654558802531",  # Existing page ID
         "woocommerce_url": "https://logicantiq.com",
-        "platform": "facebook"  # Default to Facebook
+        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
+        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
+        "instagram_username": "logicamp_berger",  # Compte Instagram associé
+        "instagram_url": "https://www.instagram.com/logicamp_berger/"
     },
     "ma-boutique": {
         "name": "Le Berger Blanc Suisse",  # Using same page as gizmobbs
         "expected_id": "102401876209415", 
         "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/",
-        "platform": "facebook"  # Default to Facebook
+        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
+        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
+        "instagram_username": "logicamp_berger",  # Compte Instagram associé
+        "instagram_url": "https://www.instagram.com/logicamp_berger/"
     }
 }
 
