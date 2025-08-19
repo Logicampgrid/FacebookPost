@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://extend-url.preview.emergentagent.com
+URL : https://img-post-fix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
