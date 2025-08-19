@@ -1035,14 +1035,14 @@ SHOP_PAGE_MAPPING = {
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
-        "business_manager_id": "1715327795564432",  # Business Manager ID for @logicamp_berger
+        "business_manager_id": "284950785684706",  # Corrected: Entreprise de Didier Preud'homme
         "woocommerce_url": "https://gizmobbs.com",
-        "platform": "instagram_priority",  # Priority to Instagram, fallback to Facebook
-        "platforms": ["instagram", "facebook"],  # Instagram first, then Facebook
+        "platform": "facebook_priority",  # Changed: Facebook priority since Instagram not connected
+        "platforms": ["facebook", "instagram"],  # Facebook first, then Instagram if available
         "instagram_username": "logicamp_berger",  # Target Instagram account
         "instagram_url": "https://www.instagram.com/logicamp_berger/",
-        "instagram_priority": True,  # Force Instagram publication for this shop
-        "requires_instagram_auth": True  # Requires Instagram Business auth
+        "instagram_priority": False,  # Disabled Instagram priority until account connected
+        "requires_instagram_auth": False  # Disabled until Instagram Business auth is complete
     },
     "gimobbs": {  # Alternative spelling for N8N compatibility
         "name": "Le Berger Blanc Suisse", 
