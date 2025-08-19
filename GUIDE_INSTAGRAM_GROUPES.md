@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://img-post-fix.preview.emergentagent.com
+URL : https://berger-blanc-suisse.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

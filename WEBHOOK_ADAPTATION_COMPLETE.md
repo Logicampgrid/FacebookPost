@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://img-post-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://berger-blanc-suisse.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://img-post-fix.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://img-post-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://img-post-fix.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://berger-blanc-suisse.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://berger-blanc-suisse.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://berger-blanc-suisse.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
