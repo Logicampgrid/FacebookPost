@@ -86,6 +86,155 @@ class FacebookPostManagerTester:
         
         return success
 
+    def test_webhook_info_endpoint(self):
+        """Test GET /api/webhook endpoint for configuration info"""
+        success, response = self.run_test(
+            "Webhook Info - gizmobbs Configuration",
+            "GET",
+            "api/webhook",
+            200
+        )
+        
+        if success:
+            # Check if gizmobbs is in available stores
+            available_stores = response.get('available_stores', [])
+            shop_mapping = response.get('shop_mapping', {})
+            
+            gizmobbs_config = shop_mapping.get('gizmobbs', {})
+            
+            # Verify gizmobbs configuration
+            platform = gizmobbs_config.get('platform')
+            platforms = gizmobbs_config.get('platforms', [])
+            
+            print(f"   Available stores: {available_stores}")
+            print(f"   gizmobbs platform: {platform}")
+            print(f"   gizmobbs platforms: {platforms}")
+            
+            if 'gizmobbs' in available_stores:
+                print("✅ gizmobbs found in available stores")
+            else:
+                print("❌ gizmobbs not found in available stores")
+                
+            if platform == 'multi':
+                print("✅ gizmobbs platform is 'multi'")
+            else:
+                print(f"❌ Expected platform 'multi', got '{platform}'")
+                
+            if 'facebook' in platforms and 'instagram' in platforms:
+                print("✅ gizmobbs supports both Facebook and Instagram")
+            else:
+                print(f"❌ Expected ['facebook', 'instagram'], got {platforms}")
+        
+        return success
+
+    def test_webhook_multipart_endpoint(self):
+        """Test POST /api/webhook with multipart form data"""
+        # Create a simple test image
+        import io
+        from PIL import Image
+        
+        # Create test image
+        test_image = Image.new('RGB', (400, 300), color='red')
+        img_bytes = io.BytesIO()
+        test_image.save(img_bytes, format='JPEG')
+        img_bytes.seek(0)
+        
+        # Prepare test data as specified in the request
+        json_data = {
+            "title": "Test Multi-Platform",
+            "description": "Testing Facebook and Instagram posting",
+            "url": "https://gizmobbs.com/test",
+            "store": "gizmobbs"
+        }
+        
+        # Prepare multipart form data
+        files = {
+            'image': ('test_image.jpg', img_bytes, 'image/jpeg')
+        }
+        data = {
+            'json_data': json.dumps(json_data)
+        }
+        
+        success, response = self.run_test(
+            "Webhook Multipart Request",
+            "POST",
+            "api/webhook",
+            200,
+            data=data,
+            files=files
+        )
+        
+        if success:
+            status = response.get('status')
+            message = response.get('message')
+            data_section = response.get('data', {})
+            
+            print(f"   Status: {status}")
+            print(f"   Message: {message}")
+            print(f"   Image filename: {data_section.get('image_filename')}")
+            print(f"   Image size: {data_section.get('image_size_bytes')} bytes")
+            
+            # Check if publication results are present
+            publication_results = data_section.get('publication_results', [])
+            print(f"   Publication results: {len(publication_results)} entries")
+            
+            if status == 'success':
+                print("✅ Webhook processed successfully")
+            else:
+                print(f"❌ Unexpected status: {status}")
+                
+            # Check publication results
+            for i, result in enumerate(publication_results):
+                result_status = result.get('status')
+                result_message = result.get('message')
+                platforms = result.get('platforms', [])
+                
+                print(f"   Publication {i+1}: {result_status} - {result_message}")
+                print(f"   Platforms attempted: {len(platforms)}")
+                
+                if result_status in ['success', 'partial', 'error']:
+                    print(f"✅ Publication result {i+1} has valid status")
+                else:
+                    print(f"❌ Unexpected publication status: {result_status}")
+        
+        return success
+
+    def test_webhook_error_handling(self):
+        """Test webhook error handling with invalid data"""
+        # Test with invalid JSON
+        import io
+        from PIL import Image
+        
+        test_image = Image.new('RGB', (100, 100), color='blue')
+        img_bytes = io.BytesIO()
+        test_image.save(img_bytes, format='JPEG')
+        img_bytes.seek(0)
+        
+        files = {
+            'image': ('test_image.jpg', img_bytes, 'image/jpeg')
+        }
+        data = {
+            'json_data': 'invalid json'  # Invalid JSON
+        }
+        
+        success, response = self.run_test(
+            "Webhook Error Handling - Invalid JSON",
+            "POST",
+            "api/webhook",
+            400,  # Should return 400 for invalid JSON
+            data=data,
+            files=files
+        )
+        
+        if success:
+            detail = response.get('detail', '')
+            if 'JSON' in detail or 'json' in detail:
+                print("✅ Correctly identified JSON parsing error")
+            else:
+                print(f"⚠️ Unexpected error message: {detail}")
+        
+        return success
+
     def test_instagram_complete_diagnosis(self):
         """Test the complete Instagram diagnosis endpoint"""
         success, response = self.run_test(
