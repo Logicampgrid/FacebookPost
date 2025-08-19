@@ -2251,7 +2251,7 @@ async def post_to_instagram(post: Post, page_access_token: str, base_url: Option
             else:
                 # Local file path
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
-                dynamic_base_url = get_dynamic_base_url(base_url)
+                dynamic_base_url = get_dynamic_base_url()
                 full_media_url = f"{dynamic_base_url}{media_url}"
         
         # Check if we have media for Instagram posting
