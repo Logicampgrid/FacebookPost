@@ -1181,11 +1181,11 @@ async def multipart_webhook(
                         shop_type=validated_json.store
                     )
                     
-                    # Use existing publication system with dynamic base URL
+                    # Use existing publication system with fixed base URL from environment
                     publish_result = await create_product_post_from_local_image(
                         product_request, 
                         image_url, 
-                        validated_json.base_url
+                        None  # Always use environment base_url, no dynamic override
                     )
                     
                     publish_results.append({
