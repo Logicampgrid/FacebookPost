@@ -2744,7 +2744,12 @@ async def download_product_image(image_url: str, base_url: Optional[str] = None)
             else:
                 print(f"⚠️ Image optimization failed, using original: {unique_filename}")
         
-        return f"/api/uploads/{unique_filename}"
+        # Return public URL using dynamic base URL
+        dynamic_base_url = get_dynamic_base_url(base_url)
+        public_url = f"{dynamic_base_url}/api/uploads/{unique_filename}"
+        
+        print(f"✅ Product image downloaded and optimized: {public_url}")
+        return public_url
         
     except Exception as e:
         print(f"❌ Error downloading product image: {e}")
