@@ -2687,7 +2687,7 @@ def extract_urls_from_text(text: str):
     urls = re.findall(url_pattern, text)
     return list(set(urls))  # Remove duplicates
 
-async def download_product_image(image_url: str) -> str:
+async def download_product_image(image_url: str, base_url: Optional[str] = None) -> str:
     """Download product image from URL and save locally"""
     try:
         print(f"📥 Downloading product image: {image_url}")
