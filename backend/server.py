@@ -1947,9 +1947,9 @@ async def post_to_facebook(post: Post, page_access_token: str, base_url: Optiona
                 full_media_url = media_url
                 local_file_path = None
             else:
-                # Use public domain for sharing links
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
-                full_media_url = f"{base_url}{media_url}"
+                # Use dynamic base URL for sharing links
+                dynamic_base_url = get_dynamic_base_url(base_url)
+                full_media_url = f"{dynamic_base_url}{media_url}"
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
