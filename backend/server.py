@@ -1918,7 +1918,7 @@ async def get_page_connected_instagram(page_access_token: str, page_id: str):
         print(f"❌ Error getting page connected Instagram: {e}")
         return None
 
-async def post_to_facebook(post: Post, page_access_token: str, base_url: Optional[str] = None):
+async def post_to_facebook(post: Post, page_access_token: str):
     """Post content to Facebook page/group - GUARANTEED IMAGE DISPLAY"""
     try:
         print(f"🎯 GUARANTEED IMAGE DISPLAY - Processing post to Facebook")
