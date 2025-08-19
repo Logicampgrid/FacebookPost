@@ -3305,6 +3305,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
         should_use_instagram = shop_config.get("platform") == "instagram"
         should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         should_use_multi = shop_config.get("platform") == "multi"
+        should_use_facebook_only = shop_config.get("platform") == "facebook_only"
         
         # Download and optimize product image
         media_url = await download_product_image(request.image_url)
