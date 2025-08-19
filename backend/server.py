@@ -2201,7 +2201,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         print(f"💥 Error posting to Facebook: {e}")
         return None
 
-async def post_to_instagram(post: Post, page_access_token: str, base_url: Optional[str] = None):
+async def post_to_instagram(post: Post, page_access_token: str):
     """Post content to Instagram Business account with MULTIPART UPLOAD for better compatibility"""
     try:
         # Instagram posting requires a two-step process:
