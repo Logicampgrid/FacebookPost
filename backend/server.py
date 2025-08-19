@@ -3779,8 +3779,8 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "platform": "facebook_page",
                 "page_name": target_page["name"],
                 "page_id": target_page["id"],
-                "post_id": facebook_post_id,
-                "status": "success"
+                "post_id": facebook_post_id if facebook_post_id else None,
+                "status": "success" if facebook_post_id else "skipped"
             },
             "additional_pages": [],
             "groups": [],
