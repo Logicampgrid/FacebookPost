@@ -559,7 +559,7 @@ async def test_instagram_publication():
         
         # Test Instagram publication
         print(f"📱 Testing Instagram publication to account: {instagram_account}")
-        result = await post_to_instagram(test_post, access_token, get_dynamic_base_url())
+        result = await post_to_instagram(test_post, access_token)
         
         if result and result.get("status") == "success":
             return {
