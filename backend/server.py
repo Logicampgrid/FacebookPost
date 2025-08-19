@@ -2340,7 +2340,7 @@ async def post_to_instagram(post: Post, page_access_token: str, base_url: Option
                 print(f"🔄 STRATEGY 2: Trying URL method as fallback")
                 
                 # Use dynamic base URL as fallback
-                dynamic_base_url = get_dynamic_base_url(base_url)
+                dynamic_base_url = get_dynamic_base_url()
                 public_image_url = f"{dynamic_base_url}{media_url}"
                 
                 container_data_url = {
