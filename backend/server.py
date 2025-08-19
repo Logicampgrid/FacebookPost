@@ -3547,7 +3547,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                     }
                     print(f"✅ Simulated Instagram post: {instagram_result['id']}")
                 else:
-                    instagram_result = await post_to_instagram(instagram_post_obj, access_token)
+                    instagram_result = await post_to_instagram(instagram_post_obj, access_token, get_dynamic_base_url())
                 
                 instagram_post_id = instagram_result["id"] if instagram_result and "id" in instagram_result else None
                 
