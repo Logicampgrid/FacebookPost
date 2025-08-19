@@ -1180,8 +1180,7 @@ async def multipart_webhook(
                     # Use existing publication system with fixed base URL from environment
                     publish_result = await create_product_post_from_local_image(
                         product_request, 
-                        image_url, 
-                        None  # Always use environment base_url, no dynamic override
+                        image_url
                     )
                     
                     publish_results.append({
