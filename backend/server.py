@@ -2494,7 +2494,7 @@ async def cross_post_to_meta(post: Post, access_tokens: dict):
             if platform == "facebook":
                 result = await post_to_facebook(target_post, access_token)
             elif platform == "instagram":
-                result = await post_to_instagram(target_post, access_token, get_dynamic_base_url())
+                result = await post_to_instagram(target_post, access_token)
             else:
                 print(f"Unsupported platform: {platform}")
                 continue
