@@ -4365,45 +4365,10 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             print(f"📘 Shop {request.shop_type} configured for Facebook publication")
             
             # Enhanced product description generation
-            facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type)
+            facebook_content_updated = generate_enhanced_product_description(request.title, request.description, request.shop_type)
             
-            # Create post object for Facebook (with enhanced clickable image setup)
-            facebook_post_data = {
-                "id": str(uuid.uuid4()),
-                "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
-                "content": facebook_content,
-                "media_urls": [media_url],
-                "link_metadata": [{
-                    "url": request.product_url,
-                    "title": request.title,
-                    "description": request.description,
-                    "image": local_image_url,  # Use local image URL
-                    "type": "product"
-                }],
-                "comment_link": request.product_url,  # This ensures clickable image functionality
-                "comment_text": None,
-                "target_type": "page",
-                "target_id": target_page["id"],
-                "target_name": target_page["name"],
-                "platform": "facebook",
-                "business_manager_id": None,
-                "business_manager_name": None,
-                "cross_post_targets": [],
-                "scheduled_time": None,
-                "status": "published",
-                "comment_status": None,  
-                "created_at": datetime.utcnow(),
-                "published_at": datetime.utcnow(),
-                "source": "n8n_binary_webhook",
-                "shop_type": request.shop_type,
-                "webhook_data": {
-                    "title": request.title,
-                    "description": request.description,
-                    "image_url": local_image_url,  # Store local image URL
-                    "product_url": request.product_url,
-                    "received_at": datetime.utcnow()
-                }
-            }
+            # Update the content in the pre-initialized facebook_post_data
+            facebook_post_data["content"] = facebook_content_updated
             
             # Create Facebook Post object
             facebook_post_obj = Post(**facebook_post_data)
