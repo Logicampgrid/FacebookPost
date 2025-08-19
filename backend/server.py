@@ -3701,7 +3701,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 "published_at": datetime.utcnow().isoformat(),
                 "total_platforms": 1
             }
-        
+            
         else:
             # Original Facebook publication logic
             print(f"📘 Shop {request.shop_type} configured for Facebook publication")
