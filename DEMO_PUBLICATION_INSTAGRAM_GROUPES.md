@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://ok-simple-19.preview.emergentagent.com
+🔗 https://next-steps-55.preview.emergentagent.com

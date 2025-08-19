@@ -15,7 +15,7 @@
 
 #### 1.1 Ouvrir l'application
 ```
-🌐 URL : https://ok-simple-19.preview.emergentagent.com
+🌐 URL : https://next-steps-55.preview.emergentagent.com
 ```
 
 #### 1.2 Connexion Facebook
@@ -168,7 +168,7 @@ curl -X POST "http://localhost:8001/api/products/publish" \
 ## ✅ CHECKLIST FINALE
 
 ### Avant de démarrer :
-- [ ] Application accessible sur https://ok-simple-19.preview.emergentagent.com
+- [ ] Application accessible sur https://next-steps-55.preview.emergentagent.com
 - [ ] Compte Facebook Business Manager prêt
 - [ ] Permissions Instagram Business configurées
 
