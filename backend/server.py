@@ -4084,9 +4084,16 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
         should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
+        should_use_facebook_only = shop_config.get("platform") == "facebook_only"
+        
+        # ✅ FACEBOOK ONLY: Skip Instagram for shops configured as facebook_only
+        if should_use_facebook_only:
+            print(f"📘 Shop {request.shop_type} configured for FACEBOOK ONLY - skipping Instagram")
+            # Continue with Facebook-only publication logic
+            pass
         
         # ✅ NOUVEAU: Instagram Priority (gizmobbs → @logicamp_berger)
-        if should_use_instagram_priority:
+        elif should_use_instagram_priority:
             print(f"📸 Shop {request.shop_type} configured for INSTAGRAM PRIORITY → @logicamp_berger")
             
             # Find the specific Instagram account (@logicamp_berger)
