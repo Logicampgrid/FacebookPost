@@ -1625,6 +1625,7 @@ class WebhookJsonData(BaseModel):
     description: str  
     url: str
     store: Optional[str] = None  # Optional store mapping: "outdoor", "gizmobbs", "logicantiq", etc.
+    base_url: Optional[str] = None  # Optional dynamic preview URL configuration
     
     @validator('title')
     def validate_title(cls, v):
