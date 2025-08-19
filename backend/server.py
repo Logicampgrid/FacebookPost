@@ -4027,6 +4027,11 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         print(f"🏪 Store: {request.shop_type}")
         print(f"📁 Local image: {local_image_url}")
         
+        # Initialize post IDs and error variables to avoid "not associated with a value" errors
+        facebook_post_id = None
+        instagram_post_id = None
+        instagram_error = None
+        
         # Check for duplicate posts to avoid multiple posts for same product
         duplicate_check = await check_duplicate_product_post(
             request.title, 
