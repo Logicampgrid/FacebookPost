@@ -3371,7 +3371,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
             instagram_post = Post(**instagram_post_data)
             
             # Publish to Instagram
-            instagram_result = await post_to_instagram(instagram_post, access_token)
+            instagram_result = await post_to_instagram(instagram_post, access_token, get_dynamic_base_url())
             instagram_post_id = None
             
             if instagram_result and instagram_result.get("status") == "success":
