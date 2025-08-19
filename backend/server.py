@@ -1021,6 +1021,15 @@ async def test_outdoor_mapping():
             "error": f"Test failed: {str(e)}"
         }
 
+def get_dynamic_base_url(custom_base_url: Optional[str] = None) -> str:
+    """Get the base URL for media files, allowing for dynamic configuration"""
+    if custom_base_url:
+        print(f"🔄 Using dynamic base URL: {custom_base_url}")
+        return custom_base_url.rstrip('/')  # Remove trailing slash
+    
+    default_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
+    return default_url.rstrip('/')
+
 # Shop Type to Page Mapping Configuration
 SHOP_PAGE_MAPPING = {
     "outdoor": {
