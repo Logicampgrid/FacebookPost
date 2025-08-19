@@ -4044,6 +4044,7 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         facebook_post_id = None
         instagram_post_id = None
         instagram_error = None
+        facebook_post_data = None
         
         # Check for duplicate posts to avoid multiple posts for same product
         duplicate_check = await check_duplicate_product_post(
