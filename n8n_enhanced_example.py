@@ -199,7 +199,7 @@ return items.map(item => {
 });""")
     
     print("\n2. Configurez le nœud HTTP Request :")
-    print("   • URL: https://next-steps-55.preview.emergentagent.com/api/webhook/enhanced")
+    print("   • URL: https://dynamic-preview.preview.emergentagent.com/api/webhook/enhanced")
     print("   • Method: POST")
     print("   • Body Type: Multipart-Form Data")
     print("   • Fields:")

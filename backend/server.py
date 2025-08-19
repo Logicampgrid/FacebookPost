@@ -263,7 +263,7 @@ async def facebook_image_display_diagnostic():
         }
         
         # Test image accessibility
-        public_base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+        public_base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
         test_image_scenarios = [
             {
                 "scenario": "Local image file upload",
@@ -1934,7 +1934,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 local_file_path = None
             else:
                 # Use public domain for sharing links
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
@@ -2242,7 +2242,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
             else:
                 # Local file path
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
                 full_media_url = f"{base_url}{media_url}"
         
         # Check if we have media for Instagram posting
@@ -2331,7 +2331,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 print(f"🔄 STRATEGY 2: Trying URL method as fallback")
                 
                 # Use public URL as fallback
-                base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
                 public_image_url = f"{base_url}{media_url}"
                 
                 container_data_url = {
@@ -5335,7 +5335,7 @@ async def save_binary_image(filename: str, mimetype: str, base64_data: str) -> s
             optimize_image(file_path, instagram_mode=False)
         
         # Return public URL
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
         public_url = f"{base_url}/api/uploads/{unique_filename}"
         
         print(f"📁 Saved binary image: {file_path} -> {public_url}")
@@ -5686,7 +5686,7 @@ async def enhanced_webhook_endpoint(request: Request):
             optimize_image(file_path, instagram_mode=False)
         
         # Generate public URL for the image
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
         image_url = f"{base_url}/api/uploads/{unique_filename}"
         
         print(f"📸 Image saved and optimized: {file_path} -> {image_url}")
@@ -6879,7 +6879,7 @@ async def test_clickable_and_instagram(request: dict):
         
         # Test 3: Check image access
         test_image_path = "/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://next-steps-55.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://dynamic-preview.preview.emergentagent.com")
         full_image_url = f"{base_url}{test_image_path}"
         
         # Test 4: Prepare test data

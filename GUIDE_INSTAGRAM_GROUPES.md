@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://next-steps-55.preview.emergentagent.com
+URL : https://dynamic-preview.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
