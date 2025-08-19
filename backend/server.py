@@ -4106,6 +4106,44 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         should_use_facebook_only = shop_config.get("platform") == "facebook_only"
         
+        # Initialize base facebook_post_data structure for all paths
+        facebook_post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(user["_id"]) if "_id" in user else user.get("facebook_id"),
+            "content": facebook_content,
+            "media_urls": [media_url],
+            "link_metadata": [{
+                "url": request.product_url,
+                "title": request.title,
+                "description": request.description,
+                "image": local_image_url,
+                "type": "product"
+            }],
+            "comment_link": request.product_url,
+            "comment_text": None,
+            "target_type": "page",
+            "target_id": target_page["id"],
+            "target_name": target_page["name"],
+            "platform": "facebook",
+            "business_manager_id": None,
+            "business_manager_name": None,
+            "cross_post_targets": [],
+            "scheduled_time": None,
+            "status": "published",
+            "comment_status": None,
+            "created_at": datetime.utcnow(),
+            "published_at": datetime.utcnow(),
+            "source": "n8n_binary_webhook",
+            "shop_type": request.shop_type,
+            "webhook_data": {
+                "title": request.title,
+                "description": request.description,
+                "image_url": local_image_url,
+                "product_url": request.product_url,
+                "received_at": datetime.utcnow()
+            }
+        }
+        
         # ✅ FACEBOOK ONLY: Skip Instagram for shops configured as facebook_only
         if should_use_facebook_only:
             print(f"📘 Shop {request.shop_type} configured for FACEBOOK ONLY - skipping Instagram")
