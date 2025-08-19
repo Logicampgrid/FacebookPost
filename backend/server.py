@@ -3662,7 +3662,7 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 print(f"✅ Simulated Instagram post: {instagram_result['id']}")
             else:
                 # Real Instagram API call
-                instagram_result = await post_to_instagram(instagram_post_obj, access_token, get_dynamic_base_url())
+                instagram_result = await post_to_instagram(instagram_post_obj, access_token)
             
             if not instagram_result or "id" not in instagram_result:
                 raise Exception("Instagram publishing failed")
