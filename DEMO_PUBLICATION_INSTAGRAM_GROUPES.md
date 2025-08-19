@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://dynamic-preview.preview.emergentagent.com
+🔗 https://extend-url.preview.emergentagent.com

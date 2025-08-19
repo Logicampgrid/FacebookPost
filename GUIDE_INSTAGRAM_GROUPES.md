@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://dynamic-preview.preview.emergentagent.com
+URL : https://extend-url.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
