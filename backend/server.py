@@ -1181,8 +1181,12 @@ async def multipart_webhook(
                         shop_type=validated_json.store
                     )
                     
-                    # Use existing publication system
-                    publish_result = await create_product_post_from_local_image(product_request, image_url)
+                    # Use existing publication system with dynamic base URL
+                    publish_result = await create_product_post_from_local_image(
+                        product_request, 
+                        image_url, 
+                        validated_json.base_url
+                    )
                     
                     publish_results.append({
                         "status": "success" if publish_result.get("status") == "success" else "partial",
