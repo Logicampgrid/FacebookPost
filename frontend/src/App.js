@@ -559,6 +559,11 @@ function App() {
         {/* Content */}
         {activeTab === 'setup' && (
           <div className="space-y-6">
+            {/* Tunnel Instagram Status Widget */}
+            <div className="facebook-card p-6">
+              <TunnelStatusWidget user={user} />
+            </div>
+            
             {/* Connection Status */}
             <div className="facebook-card p-6">
               <ConnectionDiagnostic API_BASE={API_BASE} />
