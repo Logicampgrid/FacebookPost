@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://insta-tunnel-free.preview.emergentagent.com"
+BASE_URL = "https://insta-next.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://insta-tunnel-free.preview.emergentagent.com
+🔗 https://insta-next.preview.emergentagent.com
