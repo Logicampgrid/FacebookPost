@@ -4744,24 +4744,6 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                         "error": error_message
                     })
                     print(f"❌ Instagram publication failed: {error_message}")
-                if instagram_result and "id" in instagram_result:
-                    publication_results["instagram_accounts"].append({
-                        "platform": "instagram",
-                        "account_name": instagram_account.get("username"),
-                        "account_id": instagram_account["id"],
-                        "post_id": instagram_result["id"],
-                        "status": "success"
-                    })
-                    print(f"✅ Instagram published: {instagram_result['id']}")
-                else:
-                    publication_results["instagram_accounts"].append({
-                        "platform": "instagram",
-                        "account_name": instagram_account.get("username"),
-                        "account_id": instagram_account["id"],
-                        "status": "failed",
-                        "error": "No post ID returned"
-                    })
-                    print(f"❌ Instagram publication failed")
                     
             except Exception as instagram_error:
                 publication_results["instagram_accounts"].append({
