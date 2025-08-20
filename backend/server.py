@@ -5124,10 +5124,11 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
                 # Real Instagram API call
                 instagram_result = await post_to_instagram(instagram_post_obj, access_token)
             
-            if not instagram_result or "id" not in instagram_result:
-                raise Exception("Instagram publishing failed")
+            if not instagram_result or instagram_result.get("status") != "success":
+                error_msg = instagram_result.get("message", "Unknown error") if instagram_result else "No response"
+                raise Exception(f"Instagram publishing failed: {error_msg}")
             
-            instagram_post_id = instagram_result["id"]
+            instagram_post_id = instagram_result.get("id")
             instagram_post_data["instagram_post_id"] = instagram_post_id
             
             print(f"✅ Instagram published successfully: {instagram_post_id}")
