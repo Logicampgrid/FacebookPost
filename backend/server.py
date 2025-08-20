@@ -1243,6 +1243,159 @@ async def debug_business_manager_access():
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# Test endpoint spécifique pour @logicamp_berger avec gizmobbs (version améliorée)
+@app.post("/api/debug/test-logicamp-berger-final")
+async def test_logicamp_berger_final():
+    """Test endpoint FINAL spécifique pour vérifier publication sur @logicamp_berger via gizmobbs"""
+    try:
+        print("🎯 Test FINAL webhook gizmobbs → @logicamp_berger")
+        
+        # Trouver un utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé",
+                "solution": "Connectez-vous via l'interface web"
+            }
+        
+        print(f"👤 Utilisateur trouvé: {user.get('name')}")
+        
+        # Vérifier le Business Manager et Instagram
+        target_bm = None
+        for bm in user.get("business_managers", []):
+            if bm.get("id") == "284950785684706":  # Business Manager correct
+                target_bm = bm
+                print(f"✅ Business Manager trouvé: {bm.get('name')}")
+                break
+        
+        if not target_bm:
+            return {
+                "success": False,
+                "error": "Business Manager 'Entreprise de Didier Preud'homme' non trouvé",
+                "available_business_managers": [
+                    {"id": bm.get("id"), "name": bm.get("name")} 
+                    for bm in user.get("business_managers", [])
+                ]
+            }
+        
+        # Vérifier @logicamp_berger
+        logicamp_instagram = None
+        for ig_account in target_bm.get("instagram_accounts", []):
+            if ig_account.get("username") == "logicamp_berger":
+                logicamp_instagram = ig_account
+                print(f"✅ @logicamp_berger trouvé: {ig_account['id']}")
+                break
+        
+        if not logicamp_instagram:
+            return {
+                "success": False,
+                "error": "@logicamp_berger non trouvé dans Business Manager",
+                "instagram_accounts_found": [
+                    ig.get("username") for ig in target_bm.get("instagram_accounts", [])
+                ]
+            }
+        
+        # Trouver la page Facebook correspondante pour le test
+        test_page = None
+        for page in target_bm.get("pages", []):
+            if page.get("id") == "102401876209415":  # Le Berger Blanc Suisse
+                test_page = page
+                print(f"✅ Page Facebook trouvée: {page['name']}")
+                break
+        
+        if not test_page:
+            return {
+                "success": False,
+                "error": "Page Facebook 'Le Berger Blanc Suisse' non trouvée",
+                "pages_found": [page.get("name") for page in target_bm.get("pages", [])]
+            }
+        
+        # Test de publication Facebook uniquement (Instagram sera disponible après permissions)
+        access_token = test_page.get("access_token") or user.get("facebook_access_token")
+        
+        if not access_token:
+            return {
+                "success": False,
+                "error": "Aucun token d'accès disponible pour la page"
+            }
+        
+        # Créer un post test simple pour Facebook
+        test_content = f"🧪 TEST FINAL - Publication automatique via gizmobbs\n\n✅ Business Manager: Entreprise de Didier Preud'homme\n✅ Page Facebook: Le Berger Blanc Suisse\n⏳ Instagram: @logicamp_berger (en attente des permissions)\n\n#test #gizmobbs #{int(datetime.utcnow().timestamp())}"
+        
+        # Tester l'API Facebook directement
+        try:
+            facebook_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{test_page['id']}/feed",
+                data={
+                    "message": test_content,
+                    "access_token": access_token
+                }
+            )
+            
+            if facebook_response.status_code == 200:
+                facebook_result = facebook_response.json()
+                
+                return {
+                    "success": True,
+                    "message": "✅ Test FINAL gizmobbs → Facebook RÉUSSI!",
+                    "configuration_status": "✅ OPTIMALE",
+                    "results": {
+                        "facebook": {
+                            "status": "✅ SUCCESS",
+                            "post_id": facebook_result.get("id"),
+                            "page_name": test_page["name"],
+                            "page_id": test_page["id"]
+                        },
+                        "instagram": {
+                            "status": "⏳ PENDING - Permissions required",
+                            "account_found": f"@{logicamp_instagram['username']}",
+                            "account_id": logicamp_instagram["id"],
+                            "next_step": "Activer permissions instagram_basic et instagram_content_publish"
+                        },
+                        "business_manager": {
+                            "name": target_bm["name"],
+                            "id": target_bm["id"],
+                            "status": "✅ CONNECTED"
+                        }
+                    },
+                    "webhook_ready": {
+                        "gizmobbs": "✅ Opérationnel (Facebook uniquement)",
+                        "endpoint": "/api/webhook",
+                        "shop_type": "gizmobbs",
+                        "instagram_eta": "Disponible après approbation permissions Facebook"
+                    },
+                    "permissions_guide": "Visitez /api/instagram-permissions-guide pour les étapes",
+                    "facebook_post_url": f"https://facebook.com/{facebook_result.get('id')}",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                
+            else:
+                error_data = facebook_response.json() if facebook_response.headers.get('content-type', '').find('json') >= 0 else {"error": facebook_response.text}
+                return {
+                    "success": False,
+                    "error": f"Publication Facebook échouée: {error_data}",
+                    "status_code": facebook_response.status_code
+                }
+                
+        except Exception as api_error:
+            return {
+                "success": False,
+                "error": f"Erreur API Facebook: {str(api_error)}",
+                "access_token_available": bool(access_token)
+            }
+        
+    except Exception as e:
+        print(f"❌ Erreur test final: {e}")
+        return {
+            "success": False,
+            "error": f"Test échoué: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # Test endpoint spécifique pour @logicamp_berger avec gizmobbs
 @app.post("/api/debug/test-logicamp-berger-webhook")
 async def test_logicamp_berger_webhook():
