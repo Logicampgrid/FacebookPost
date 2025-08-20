@@ -1040,7 +1040,8 @@ SHOP_PAGE_MAPPING = {
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
-        "business_manager_id": "284950785684706",  # Corrected: Entreprise de Didier Preud'homme
+        "business_manager_id": "logicamp_berger",  # CORRECTED: Use Business Manager that owns @logicamp_berger
+        "business_manager_name": "Logicamp_berger",  # Exact name of the owner Business Manager
         "woocommerce_url": "https://gizmobbs.com",
         "platform": "multi",  # ENABLED: Multi-platform posting to both Facebook and Instagram
         "platforms": ["facebook", "instagram"],  # Both Facebook and Instagram enabled
@@ -1048,7 +1049,8 @@ SHOP_PAGE_MAPPING = {
         "instagram_url": "https://www.instagram.com/logicamp_berger/",
         "instagram_priority": False,  # Both platforms get posted to
         "requires_instagram_auth": True,  # Instagram authentication required
-        "note": "Multi-platform enabled - posts to both Facebook page and Instagram @logicamp_berger"
+        "requires_owner_business_manager": True,  # Requires Logicamp_berger Business Manager
+        "note": "Multi-platform enabled - requires connection with Logicamp_berger Business Manager for Instagram access"
     },
     "gimobbs": {  # Alternative spelling for N8N compatibility
         "name": "Le Berger Blanc Suisse", 
