@@ -554,6 +554,22 @@ function App() {
                 <span>@logicamp_berger</span>
               </div>
             </button>
+            
+            <button
+              onClick={() => setActiveTab('multi-platform')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'multi-platform'
+                  ? 'text-facebook-primary border-b-2 border-facebook-primary'
+                  : 'text-gray-600 hover:text-facebook-primary'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Instagram className="w-2 h-2 text-white" />
+                </div>
+                <span>Connexion Multi-Plateformes</span>
+              </div>
+            </button>
           </div>
         </div>
 
