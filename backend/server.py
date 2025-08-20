@@ -987,12 +987,13 @@ async def test_logicamp_berger_webhook():
         print(f"👤 Utilisateur trouvé: {user.get('name')}")
         print(f"📊 Business Managers: {len(user.get('business_managers', []))}")
         
-        # Chercher le Business Manager spécifique
+        # Chercher le Business Manager spécifique pour @logicamp_berger
         target_bm = None
+        # Utiliser le Business Manager qui a accès à @logicamp_berger (Entreprise de Didier Preud'homme)
         for bm in user.get("business_managers", []):
-            if bm.get("id") == "1715327795564432":
+            if bm.get("id") == "284950785684706":  # ID correct du Business Manager avec accès Instagram
                 target_bm = bm
-                print(f"✅ Business Manager trouvé: {bm.get('name')} (1715327795564432)")
+                print(f"✅ Business Manager trouvé: {bm.get('name')} (284950785684706)")
                 break
         
         if not target_bm:
