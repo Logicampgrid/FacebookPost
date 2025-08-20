@@ -849,6 +849,99 @@ async def test_instagram_webhook_universal(shop_type: str = "outdoor"):
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# Debug endpoint for Business Manager access issues
+@app.get("/api/debug/business-manager-access")
+async def debug_business_manager_access():
+    """Debug Business Manager access and Instagram permissions"""
+    try:
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "error": "No authenticated user found",
+                "solution": "Please login via http://localhost:3000"
+            }
+        
+        result = {
+            "user_name": user.get("name"),
+            "user_id": str(user.get("_id")),
+            "current_business_managers": [],
+            "instagram_access_analysis": {},
+            "required_business_manager": "Logicamp_berger",
+            "instagram_target": "@logicamp_berger",
+            "recommendations": []
+        }
+        
+        # Analyze current Business Managers
+        for bm in user.get("business_managers", []):
+            bm_info = {
+                "name": bm.get("name"),
+                "id": bm.get("id"),
+                "pages_count": len(bm.get("pages", [])),
+                "instagram_accounts": [],
+                "has_logicamp_berger_access": False
+            }
+            
+            # Check Instagram accounts in this BM
+            for ig_account in bm.get("instagram_accounts", []):
+                bm_info["instagram_accounts"].append({
+                    "username": ig_account.get("username"),
+                    "id": ig_account.get("id"),
+                    "is_logicamp_berger": ig_account.get("username") == "logicamp_berger"
+                })
+                
+                if ig_account.get("username") == "logicamp_berger":
+                    bm_info["has_logicamp_berger_access"] = True
+            
+            result["current_business_managers"].append(bm_info)
+        
+        # Check if we have the required Business Manager
+        has_logicamp_bm = any(
+            bm.get("name", "").lower().find("logicamp") != -1 
+            for bm in user.get("business_managers", [])
+        )
+        
+        has_instagram_access = any(
+            any(ig.get("username") == "logicamp_berger" for ig in bm.get("instagram_accounts", []))
+            for bm in user.get("business_managers", [])
+        )
+        
+        # Provide specific recommendations
+        if not has_logicamp_bm:
+            result["recommendations"].extend([
+                "❌ Business Manager 'Logicamp_berger' NOT found in connected accounts",
+                "🔑 You need to login with the account that has access to 'Logicamp_berger' Business Manager",
+                "💡 Current account only has partial access via 'Didier Preud'homme' Business Manager"
+            ])
+        
+        if not has_instagram_access:
+            result["recommendations"].extend([
+                "❌ No full access to @logicamp_berger Instagram account",
+                "📱 @logicamp_berger is owned by 'Logicamp_berger' Business Manager",
+                "🔧 Either get admin access or login with the owner account"
+            ])
+        
+        result["instagram_access_analysis"] = {
+            "has_required_business_manager": has_logicamp_bm,
+            "has_instagram_access": has_instagram_access,
+            "access_status": "FULL" if (has_logicamp_bm and has_instagram_access) else "PARTIAL",
+            "can_publish_instagram": has_instagram_access,
+            "issue": "Business Manager access rights" if not has_logicamp_bm else "Instagram permissions"
+        }
+        
+        if has_instagram_access:
+            result["recommendations"].append("✅ Instagram access available - publishing should work!")
+        
+        return result
+        
+    except Exception as e:
+        return {
+            "error": f"Analysis failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # Test endpoint spécifique pour @logicamp_berger avec gizmobbs
 @app.post("/api/debug/test-logicamp-berger-webhook")
 async def test_logicamp_berger_webhook():
