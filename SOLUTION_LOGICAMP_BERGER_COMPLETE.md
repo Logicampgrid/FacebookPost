@@ -40,7 +40,7 @@ Votre système a été **OPTIMISÉ** pour publier automatiquement sur **@logicam
 ### **Pour publier sur @logicamp_berger :**
 
 ```bash
-curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://insta-tunnel-free.preview.emergentagent.com/api/webhook" \
   -F "image=@/chemin/vers/image.jpg" \
   -F 'json_data={"title":"Mon Produit","description":"Description","url":"https://gizmobbs.com/produit","store":"gizmobbs"}'
 ```
@@ -48,7 +48,7 @@ curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/webhook"
 ### **Format JSON (Alternative) :**
 
 ```bash
-curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://insta-tunnel-free.preview.emergentagent.com/api/publishProduct" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Mon Produit Gizmobbs",
@@ -65,7 +65,7 @@ curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/publishP
 
 ### **Test 1 : Configuration @logicamp_berger**
 ```bash
-curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
+curl -X POST "https://insta-tunnel-free.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
 ```
 
 **Résultat attendu (après authentification) :**
@@ -86,7 +86,7 @@ curl -X POST "https://berger-blanc-suisse.preview.emergentagent.com/api/debug/te
 
 ### **Test 2 : Diagnostic Instagram Complet**
 ```bash
-curl -X GET "https://berger-blanc-suisse.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
+curl -X GET "https://insta-tunnel-free.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
 ```
 
 ---
@@ -95,7 +95,7 @@ curl -X GET "https://berger-blanc-suisse.preview.emergentagent.com/api/debug/ins
 
 ### **1. Connexion Interface Web**
 ```
-🌐 URL: https://berger-blanc-suisse.preview.emergentagent.com
+🌐 URL: https://insta-tunnel-free.preview.emergentagent.com
 👆 Cliquez "Facebook Login"
 🔑 Utilisez le compte avec accès au Business Manager 1715327795564432
 ```
@@ -161,10 +161,10 @@ Dernier modèle avec appareil photo professionnel
 ### **API de Monitoring**
 ```bash
 # Status global
-curl -X GET "https://berger-blanc-suisse.preview.emergentagent.com/api/health"
+curl -X GET "https://insta-tunnel-free.preview.emergentagent.com/api/health"
 
 # Historique webhook gizmobbs
-curl -X GET "https://berger-blanc-suisse.preview.emergentagent.com/api/webhook-history?shop_type=gizmobbs"
+curl -X GET "https://insta-tunnel-free.preview.emergentagent.com/api/webhook-history?shop_type=gizmobbs"
 ```
 
 ---

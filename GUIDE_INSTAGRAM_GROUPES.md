@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://berger-blanc-suisse.preview.emergentagent.com
+URL : https://insta-tunnel-free.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

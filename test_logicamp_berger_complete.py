@@ -9,7 +9,7 @@ import base64
 import os
 from datetime import datetime
 
-API_BASE = "https://berger-blanc-suisse.preview.emergentagent.com"
+API_BASE = "https://insta-tunnel-free.preview.emergentagent.com"
 # API_BASE = "http://localhost:8001"  # Pour tests locaux
 
 def test_1_configuration_logicamp_berger():
@@ -34,7 +34,7 @@ def test_1_configuration_logicamp_berger():
                 
                 if "authentifié" in error:
                     print("\n🔧 SOLUTION:")
-                    print("1. Allez sur https://berger-blanc-suisse.preview.emergentagent.com")
+                    print("1. Allez sur https://insta-tunnel-free.preview.emergentagent.com")
                     print("2. Connectez-vous avec le compte ayant accès au Business Manager 1715327795564432")
                     print("3. Relancez ce test")
                     
