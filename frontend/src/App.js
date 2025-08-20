@@ -691,6 +691,18 @@ function App() {
           <WebhookHistory />
         )}
 
+        {activeTab === 'tunnel' && (
+          <InstagramTunnelSetup 
+            user={user}
+            onUserConnected={handleFacebookLogin}
+            onTunnelReady={(ready) => {
+              if (ready) {
+                console.log('Tunnel Instagram activé !');
+              }
+            }}
+          />
+        )}
+
         {activeTab === 'guide' && (
           <InstagramSetupGuide />
         )}
