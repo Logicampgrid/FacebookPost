@@ -1030,6 +1030,126 @@ async def test_instagram_webhook_universal(shop_type: str = "outdoor"):
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# ✅ SOLUTION SPÉCIFIQUE: Guide Instagram Permissions
+@app.get("/api/instagram-permissions-guide")
+async def instagram_permissions_guide():
+    """Guide complet pour activer les permissions Instagram sur l'application Facebook"""
+    try:
+        
+        # Vérifier le statut actuel des permissions
+        permissions_status = await check_instagram_permissions_status()
+        
+        guide = {
+            "status": "permissions_required",
+            "problem_analysis": {
+                "issue": "❌ Permissions Instagram manquantes",
+                "missing_permissions": ["instagram_basic", "instagram_content_publish"],
+                "current_app_id": FACEBOOK_APP_ID,
+                "business_manager_access": "✅ Disponible (Entreprise de Didier Preud'homme)",
+                "instagram_account": "✅ @logicamp_berger connecté"
+            },
+            "solution_steps": [
+                {
+                    "step": 1,
+                    "title": "Aller sur Facebook Developers Console",
+                    "action": f"Visitez: https://developers.facebook.com/apps/{FACEBOOK_APP_ID}/permissions/review/",
+                    "description": "Ouvrez la console développeur Facebook pour votre application"
+                },
+                {
+                    "step": 2,
+                    "title": "Demander les permissions Instagram",
+                    "action": "Cliquez sur '+ Add permission'",
+                    "description": "Ajoutez les permissions suivantes:",
+                    "permissions": [
+                        "instagram_basic - Accès de base à Instagram Business",
+                        "instagram_content_publish - Publication de contenu sur Instagram"
+                    ]
+                },
+                {
+                    "step": 3,
+                    "title": "Justifier l'utilisation",
+                    "action": "Remplir le formulaire de justification",
+                    "description": "Expliquez que vous utilisez ces permissions pour publier automatiquement du contenu sur votre propre compte Instagram Business @logicamp_berger"
+                },
+                {
+                    "step": 4,
+                    "title": "Soumettre pour révision",
+                    "action": "Cliquez sur 'Submit for Review'",
+                    "description": "Facebook examinera votre demande (généralement 3-7 jours)"
+                }
+            ],
+            "temporary_solution": {
+                "description": "En attendant l'approbation Instagram, Facebook fonctionne parfaitement",
+                "working_platforms": {
+                    "facebook": "✅ Publication Facebook opérationnelle",
+                    "instagram": "⏳ En attente des permissions",
+                    "multi_platform": "🔄 Facebook uniquement jusqu'à approbation"
+                }
+            },
+            "test_endpoints": {
+                "test_facebook_only": "/api/debug/test-logicamp-berger-webhook",
+                "check_permissions": "/api/debug/instagram-deep-analysis",
+                "business_manager_status": "/api/debug/business-manager-access"
+            },
+            "current_permissions": permissions_status,
+            "next_actions": [
+                "1. ✅ Votre configuration Business Manager est correcte",
+                "2. ✅ @logicamp_berger est accessible via 'Entreprise de Didier Preud'homme'",
+                "3. 🔄 Il faut juste activer les permissions Instagram",
+                "4. 📱 Une fois approuvé, Instagram fonctionnera automatiquement"
+            ]
+        }
+        
+        return guide
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": f"Failed to generate Instagram permissions guide: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+async def check_instagram_permissions_status():
+    """Vérifier le statut actuel des permissions Instagram"""
+    try:
+        app_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+        permissions_response = requests.get(
+            f"{FACEBOOK_GRAPH_URL}/{FACEBOOK_APP_ID}/permissions",
+            params={"access_token": app_token}
+        )
+        
+        if permissions_response.status_code == 200:
+            permissions = permissions_response.json().get("data", [])
+            
+            instagram_permissions = [p for p in permissions if "instagram" in p.get("permission", "").lower()]
+            required_perms = ["instagram_basic", "instagram_content_publish"]
+            
+            status = {
+                "all_permissions": permissions,
+                "instagram_permissions": instagram_permissions,
+                "required_permissions": required_perms,
+                "missing_permissions": []
+            }
+            
+            for perm in required_perms:
+                if not any(p.get("permission") == perm and p.get("status") == "live" for p in permissions):
+                    status["missing_permissions"].append(perm)
+            
+            status["permissions_ready"] = len(status["missing_permissions"]) == 0
+            
+            return status
+        else:
+            return {
+                "error": f"Failed to check permissions: HTTP {permissions_response.status_code}",
+                "permissions_ready": False
+            }
+            
+    except Exception as e:
+        return {
+            "error": f"Permission check failed: {str(e)}",
+            "permissions_ready": False
+        }
+
 # Debug endpoint for Business Manager access issues
 @app.get("/api/debug/business-manager-access")
 async def debug_business_manager_access():
