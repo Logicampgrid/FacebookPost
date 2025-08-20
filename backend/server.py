@@ -1315,18 +1315,17 @@ SHOP_PAGE_MAPPING = {
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse", 
         "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
-        "business_manager_id": "logicamp_berger",  # CORRECTED: Use Business Manager that owns @logicamp_berger
-        "business_manager_name": "Logicamp_berger",  # Exact name of the owner Business Manager
+        "business_manager_id": "284950785684706",  # CORRECTED: Use actual Business Manager ID that owns @logicamp_berger
+        "business_manager_name": "Entreprise de Didier Preud'homme",  # Exact name of the owner Business Manager
         "woocommerce_url": "https://gizmobbs.com",
-        "platform": "facebook",  # TEMPORAIRE: Facebook uniquement en attendant permissions Instagram
-        "platforms": ["facebook"],  # Instagram désactivé temporairement
-        "instagram_username": "logicamp_berger",  # Target Instagram account (pour plus tard)
+        "platform": "multi",  # ✅ ACTIVÉ: Support Instagram + Facebook
+        "platforms": ["facebook", "instagram"],  # Instagram ACTIVÉ !
+        "instagram_username": "logicamp_berger",  # Target Instagram account
         "instagram_url": "https://www.instagram.com/logicamp_berger/",
-        "instagram_priority": False,  
+        "instagram_priority": True,  # Priority to Instagram
         "requires_instagram_auth": True,  # Instagram authentication required
-        "requires_owner_business_manager": True,  # Requires Logicamp_berger Business Manager
-        "instagram_disabled_reason": "Permissions instagram_basic et instagram_content_publish manquantes dans Facebook App",
-        "note": "Facebook ONLY - Instagram désactivé en attendant les permissions App Review"
+        "requires_owner_business_manager": True,  # Requires correct Business Manager
+        "note": "✅ MULTI-PLATFORM: Support Instagram + Facebook via Business Manager 'Entreprise de Didier Preud'homme'"
     },
     "gimobbs": {  # Alternative spelling for N8N compatibility
         "name": "Le Berger Blanc Suisse", 
