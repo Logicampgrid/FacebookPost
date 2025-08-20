@@ -313,33 +313,53 @@ function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-facebook flex items-center justify-center">
-        <div className="facebook-card p-8 max-w-md w-full mx-4">
+      <div className="min-h-screen bg-gray-facebook">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Instagram className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Meta Publishing Platform</h1>
-            <p className="text-gray-600">Publiez sur Facebook Pages, Groupes & Instagram</p>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Tunnel Instagram Gratuit</h1>
+            <p className="text-gray-600 text-lg">Publication automatique sur Instagram @logicamp_berger</p>
           </div>
-          
-          <FacebookLogin onLogin={handleFacebookLogin} loading={loading} />
-          
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>✨ Accès complet aux plateformes Meta Business</p>
-            <div className="flex justify-center space-x-4 mt-2">
-              <span className="flex items-center space-x-1">
-                <Users className="w-3 h-3" />
-                <span>Pages</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <MessageSquare className="w-3 h-3" />
-                <span>Groupes</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <Instagram className="w-3 h-3" />
-                <span>Instagram</span>
-              </span>
+
+          {/* Instagram Tunnel Setup Component */}
+          <InstagramTunnelSetup 
+            user={user}
+            onUserConnected={handleFacebookLogin}
+            onTunnelReady={(ready) => {
+              if (ready) {
+                console.log('Tunnel Instagram prêt !');
+              }
+            }}
+          />
+
+          {/* Alternative: Classic Login */}
+          <div className="mt-12 max-w-md mx-auto">
+            <div className="facebook-card p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+                Ou connexion classique
+              </h3>
+              <FacebookLogin onLogin={handleFacebookLogin} loading={loading} />
+              
+              <div className="mt-4 text-center text-sm text-gray-500">
+                <p>✨ Accès complet aux plateformes Meta Business</p>
+                <div className="flex justify-center space-x-4 mt-2">
+                  <span className="flex items-center space-x-1">
+                    <Users className="w-3 h-3" />
+                    <span>Pages</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <MessageSquare className="w-3 h-3" />
+                    <span>Groupes</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <Instagram className="w-3 h-3" />
+                    <span>Instagram</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
