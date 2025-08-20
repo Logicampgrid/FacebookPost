@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://ok-system-7.preview.emergentagent.com
+URL : https://ok-simple-20.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

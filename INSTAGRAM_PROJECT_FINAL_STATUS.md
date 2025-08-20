@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://ok-system-7.preview.emergentagent.com/api/webhook
+https://ok-simple-20.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
