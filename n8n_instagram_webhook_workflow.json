@@ -1,0 +1,150 @@
+{
+  "name": "Instagram Publishing via Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "product-webhook",
+        "options": {}
+      },
+      "id": "f0b5b1e5-6f8e-4b1d-8c2a-1f3e5d7b9c4e",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "12345-webhook-id"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Download Product Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://insta-next.preview.emergentagent.com/api/webhook",
+        "sendHeaders": true,
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "json_data",
+              "value": "={\"title\": \"{{ $('Webhook Trigger').item.json.product_name || $('Webhook Trigger').item.json.title }}\", \"description\": \"{{ $('Webhook Trigger').item.json.product_description || $('Webhook Trigger').item.json.description }}\", \"url\": \"{{ $('Webhook Trigger').item.json.product_url || $('Webhook Trigger').item.json.url }}\", \"store\": \"{{ $('Webhook Trigger').item.json.store_type || 'gizmobbs' }}\"}",
+              "parameterType": "formData"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Publish to Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "name": "facebook_post_id",
+              "value": "={{ $json.data.publication_results[0].details.facebook_post_id }}"
+            },
+            {
+              "name": "instagram_result",
+              "value": "={{ $json.data.publication_results[0].details.instagram_post_id || 'Failed: ' + $json.data.publication_results[0].details.instagram_error }}"
+            },
+            {
+              "name": "image_filename",
+              "value": "={{ $json.data.image_filename }}"
+            },
+            {
+              "name": "platforms_published",
+              "value": "={{ $json.data.publication_results[0].details.publication_summary.total_published }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Product Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Product Image": {
+      "main": [
+        [
+          {
+            "node": "Publish to Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Instagram": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2025-08-20T16:25:00.000Z",
+  "updatedAt": "2025-08-20T16:25:00.000Z",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-20T16:25:00.000Z",
+      "updatedAt": "2025-08-20T16:25:00.000Z",
+      "id": "instagram-webhook",
+      "name": "Instagram"
+    }
+  ],
+  "triggerCount": 1,
+  "active": false,
+  "id": "instagram-webhook-workflow"
+}
