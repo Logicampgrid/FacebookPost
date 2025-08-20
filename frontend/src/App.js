@@ -733,6 +733,17 @@ function App() {
         {activeTab === 'logicamp' && (
           <LogicampBergerSetup user={user} />
         )}
+
+        {activeTab === 'multi-platform' && (
+          <LogicampBergerConnector 
+            user={user} 
+            onConnectionComplete={(platforms) => {
+              console.log('Connexion multi-plateformes établie:', platforms);
+              // Optionnellement recharger les données utilisateur ou mettre à jour l'état
+              loadUserPlatforms();
+            }}
+          />
+        )}
       </div>
     </div>
   );
