@@ -478,6 +478,187 @@ async def test_facebook_image_display_fix():
             "timestamp": datetime.utcnow().isoformat()
         }
 
+# Deep Instagram Analysis
+@app.post("/api/debug/instagram-deep-analysis")
+async def instagram_deep_analysis():
+    """Analyse approfondie des problèmes Instagram"""
+    try:
+        print("🔍 Starting deep Instagram analysis...")
+        
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"error": "No authenticated user found"}
+        
+        analysis = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "user": user.get("name"),
+            "instagram_diagnostics": {},
+            "api_tests": {},
+            "permissions_check": {},
+            "recommendations": []
+        }
+        
+        # Find Instagram account
+        instagram_account = None
+        access_token = None
+        
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == "102401876209415":  # Le Berger Blanc Suisse
+                    access_token = page.get("access_token") or user.get("facebook_access_token")
+                    
+                    # Check if page has Instagram
+                    try:
+                        response = requests.get(
+                            f"{FACEBOOK_GRAPH_URL}/{page['id']}",
+                            params={
+                                "access_token": access_token,
+                                "fields": "instagram_business_account"
+                            }
+                        )
+                        
+                        if response.status_code == 200 and "instagram_business_account" in response.json():
+                            instagram_account = response.json()["instagram_business_account"]["id"]
+                            break
+                    except Exception as e:
+                        continue
+            
+            if instagram_account:
+                break
+        
+        if not instagram_account or not access_token:
+            analysis["error"] = "No Instagram account or access token found"
+            return analysis
+        
+        analysis["instagram_diagnostics"]["account_id"] = instagram_account
+        analysis["instagram_diagnostics"]["access_token_available"] = bool(access_token)
+        
+        # Test 1: Account type and basic info
+        try:
+            account_response = requests.get(
+                f"{FACEBOOK_GRAPH_URL}/{instagram_account}",
+                params={
+                    "access_token": access_token,
+                    "fields": "id,username,name,account_type,profile_picture_url"
+                }
+            )
+            
+            if account_response.status_code == 200:
+                account_data = account_response.json()
+                analysis["api_tests"]["account_info"] = {
+                    "status": "success",
+                    "account_type": account_data.get("account_type"),
+                    "username": account_data.get("username"),
+                    "name": account_data.get("name"),
+                    "is_business": account_data.get("account_type") == "BUSINESS"
+                }
+                
+                if account_data.get("account_type") != "BUSINESS":
+                    analysis["recommendations"].append("❌ Account must be Instagram BUSINESS type")
+            else:
+                analysis["api_tests"]["account_info"] = {
+                    "status": "failed",
+                    "error": f"HTTP {account_response.status_code}: {account_response.text}"
+                }
+        except Exception as e:
+            analysis["api_tests"]["account_info"] = {"status": "error", "error": str(e)}
+        
+        # Test 2: Try to create a media container with a simple test
+        try:
+            test_image_url = "https://picsum.photos/1080/1080?test=" + str(int(datetime.utcnow().timestamp()))
+            
+            container_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{instagram_account}/media",
+                data={
+                    "image_url": test_image_url,
+                    "caption": "Test de création de conteneur Instagram",
+                    "access_token": access_token
+                }
+            )
+            
+            analysis["api_tests"]["media_container_creation"] = {
+                "status": "success" if container_response.status_code == 200 else "failed",
+                "status_code": container_response.status_code,
+                "response": container_response.json() if container_response.status_code == 200 else container_response.text,
+                "test_image_url": test_image_url
+            }
+            
+            if container_response.status_code != 200:
+                error_data = container_response.json() if 'application/json' in container_response.headers.get('content-type', '') else {"message": container_response.text}
+                analysis["recommendations"].append(f"❌ Media container creation failed: {error_data.get('error', {}).get('message', 'Unknown error')}")
+            
+        except Exception as e:
+            analysis["api_tests"]["media_container_creation"] = {"status": "error", "error": str(e)}
+        
+        # Test 3: Check app permissions
+        try:
+            app_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+            permissions_response = requests.get(
+                f"{FACEBOOK_GRAPH_URL}/{FACEBOOK_APP_ID}/permissions",
+                params={"access_token": app_token}
+            )
+            
+            if permissions_response.status_code == 200:
+                permissions = permissions_response.json().get("data", [])
+                analysis["permissions_check"]["app_permissions"] = permissions
+                
+                instagram_permissions = [p for p in permissions if "instagram" in p.get("permission", "").lower()]
+                analysis["permissions_check"]["instagram_specific"] = instagram_permissions
+                
+                required_perms = ["instagram_basic", "instagram_content_publish"]
+                missing_perms = []
+                
+                for perm in required_perms:
+                    if not any(p.get("permission") == perm and p.get("status") == "live" for p in permissions):
+                        missing_perms.append(perm)
+                
+                if missing_perms:
+                    analysis["recommendations"].append(f"❌ Missing permissions: {', '.join(missing_perms)}")
+                    analysis["permissions_check"]["missing_permissions"] = missing_perms
+                else:
+                    analysis["permissions_check"]["missing_permissions"] = []
+                    
+        except Exception as e:
+            analysis["permissions_check"]["error"] = str(e)
+        
+        # Test 4: Token validation
+        try:
+            token_response = requests.get(
+                f"{FACEBOOK_GRAPH_URL}/me",
+                params={"access_token": access_token, "fields": "id,name"}
+            )
+            
+            analysis["api_tests"]["token_validation"] = {
+                "status": "valid" if token_response.status_code == 200 else "invalid",
+                "status_code": token_response.status_code,
+                "response": token_response.json() if token_response.status_code == 200 else token_response.text
+            }
+            
+        except Exception as e:
+            analysis["api_tests"]["token_validation"] = {"status": "error", "error": str(e)}
+        
+        # Final recommendations
+        if not analysis["recommendations"]:
+            analysis["recommendations"].append("✅ All basic checks passed - issue might be with image format or external factors")
+        
+        analysis["next_steps"] = [
+            "1. Check image format and size constraints",
+            "2. Try with a direct file upload instead of URL",
+            "3. Verify Instagram app review status",
+            "4. Test with a simpler image (square 1080x1080)"
+        ]
+        
+        return analysis
+        
+    except Exception as e:
+        return {
+            "error": f"Deep analysis failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # Instagram Publication Test Endpoint
 @app.post("/api/debug/test-instagram-publication")
 async def test_instagram_publication():
