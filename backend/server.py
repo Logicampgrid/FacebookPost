@@ -1318,14 +1318,15 @@ SHOP_PAGE_MAPPING = {
         "business_manager_id": "logicamp_berger",  # CORRECTED: Use Business Manager that owns @logicamp_berger
         "business_manager_name": "Logicamp_berger",  # Exact name of the owner Business Manager
         "woocommerce_url": "https://gizmobbs.com",
-        "platform": "multi",  # ENABLED: Multi-platform posting to both Facebook and Instagram
-        "platforms": ["facebook", "instagram"],  # Both Facebook and Instagram enabled
-        "instagram_username": "logicamp_berger",  # Target Instagram account
+        "platform": "facebook",  # TEMPORAIRE: Facebook uniquement en attendant permissions Instagram
+        "platforms": ["facebook"],  # Instagram désactivé temporairement
+        "instagram_username": "logicamp_berger",  # Target Instagram account (pour plus tard)
         "instagram_url": "https://www.instagram.com/logicamp_berger/",
-        "instagram_priority": False,  # Both platforms get posted to
+        "instagram_priority": False,  
         "requires_instagram_auth": True,  # Instagram authentication required
         "requires_owner_business_manager": True,  # Requires Logicamp_berger Business Manager
-        "note": "Multi-platform enabled - requires connection with Logicamp_berger Business Manager for Instagram access"
+        "instagram_disabled_reason": "Permissions instagram_basic et instagram_content_publish manquantes dans Facebook App",
+        "note": "Facebook ONLY - Instagram désactivé en attendant les permissions App Review"
     },
     "gimobbs": {  # Alternative spelling for N8N compatibility
         "name": "Le Berger Blanc Suisse", 
