@@ -512,6 +512,20 @@ function App() {
             </button>
             
             <button
+              onClick={() => setActiveTab('tunnel')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'tunnel'
+                  ? 'text-facebook-primary border-b-2 border-facebook-primary'
+                  : 'text-gray-600 hover:text-facebook-primary'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Instagram className="w-4 h-4" />
+                <span>Tunnel Instagram</span>
+              </div>
+            </button>
+            
+            <button
               onClick={() => setActiveTab('guide')}
               className={`px-6 py-3 font-medium transition-colors ${
                 activeTab === 'guide'
