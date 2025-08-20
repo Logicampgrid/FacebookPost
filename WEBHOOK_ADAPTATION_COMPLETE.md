@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://ok-simple-20.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://gizmobbs-shop.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://ok-simple-20.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://ok-simple-20.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://ok-simple-20.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://gizmobbs-shop.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://gizmobbs-shop.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://gizmobbs-shop.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
