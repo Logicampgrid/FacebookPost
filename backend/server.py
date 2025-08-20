@@ -4717,6 +4717,33 @@ async def create_product_post(request: ProductPublishRequest) -> dict:
                 else:
                     instagram_result = await post_to_instagram(instagram_post_obj, access_token)
                 
+                
+                # ✅ FIXED: Improved Instagram result handling with proper error messages
+                if instagram_result and instagram_result.get("status") == "success" and "id" in instagram_result:
+                    publication_results["instagram_accounts"].append({
+                        "platform": "instagram",
+                        "account_name": instagram_account.get("username"),
+                        "account_id": instagram_account["id"],
+                        "post_id": instagram_result["id"],
+                        "status": "success"
+                    })
+                    print(f"✅ Instagram published: {instagram_result['id']}")
+                else:
+                    # Extract actual error message from Instagram result
+                    error_message = "No post ID returned"
+                    if instagram_result and instagram_result.get("status") == "error":
+                        error_message = instagram_result.get("message", "Instagram API error")
+                    elif not instagram_result:
+                        error_message = "Instagram function returned None"
+                    
+                    publication_results["instagram_accounts"].append({
+                        "platform": "instagram",
+                        "account_name": instagram_account.get("username"),
+                        "account_id": instagram_account["id"],
+                        "status": "failed",
+                        "error": error_message
+                    })
+                    print(f"❌ Instagram publication failed: {error_message}")
                 if instagram_result and "id" in instagram_result:
                     publication_results["instagram_accounts"].append({
                         "platform": "instagram",
