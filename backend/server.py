@@ -999,13 +999,13 @@ async def test_logicamp_berger_webhook():
         if not target_bm:
             return {
                 "success": False,
-                "error": "Business Manager 1715327795564432 non trouvé dans les comptes connectés",
+                "error": "Business Manager 'Entreprise de Didier Preud'homme' non trouvé dans les comptes connectés",
                 "user_name": user.get("name"),
                 "available_business_managers": [
                     {"id": bm.get("id"), "name": bm.get("name")} 
                     for bm in user.get("business_managers", [])
                 ],
-                "solution": "Connectez-vous avec le compte qui a accès au Business Manager 1715327795564432"
+                "solution": "Vérifiez que vous êtes connecté avec le bon compte Facebook"
             }
         
         # Chercher @logicamp_berger dans ce Business Manager
