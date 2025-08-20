@@ -14,6 +14,7 @@ import InstagramSetupGuide from './components/InstagramSetupGuide';
 import ImageOrientationTest from './components/ImageOrientationTest';
 import LogicampBergerSetup from './components/LogicampBergerSetup';
 import InstagramTunnelSetup from './components/InstagramTunnelSetup';
+import TunnelStatusWidget from './components/TunnelStatusWidget';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
