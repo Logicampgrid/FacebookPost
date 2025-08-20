@@ -13,6 +13,7 @@ import InstagramDiagnostics from './components/InstagramDiagnostics';
 import InstagramSetupGuide from './components/InstagramSetupGuide';
 import ImageOrientationTest from './components/ImageOrientationTest';
 import LogicampBergerSetup from './components/LogicampBergerSetup';
+import LogicampBergerConnector from './components/LogicampBergerConnector';
 import InstagramTunnelSetup from './components/InstagramTunnelSetup';
 import TunnelStatusWidget from './components/TunnelStatusWidget';
 
