@@ -20,19 +20,19 @@ Votre système a été **OPTIMISÉ** pour publier automatiquement sur **@logicam
 
 ### **Endpoint Principal**
 ```
-POST https://ok-confirm-5.preview.emergentagent.com/api/webhook
+POST https://product-image-link-1.preview.emergentagent.com/api/webhook
 ```
 
 ### **Format Multipart/Form-Data**
 ```bash
-curl -X POST "https://ok-confirm-5.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://product-image-link-1.preview.emergentagent.com/api/webhook" \
   -F "image=@/chemin/vers/image.jpg" \
   -F 'json_data={"title":"Mon Produit Gizmobbs","description":"Description du produit","url":"https://gizmobbs.com/produit","store":"gizmobbs"}'
 ```
 
 ### **Format JSON (Alternative)**
 ```bash
-curl -X POST "https://ok-confirm-5.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://product-image-link-1.preview.emergentagent.com/api/publishProduct" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Mon Produit Gizmobbs",
@@ -83,7 +83,7 @@ Découvrez ce nouveau smartphone avec appareil photo pro
 ```json
 {
   "method": "POST",
-  "url": "https://ok-confirm-5.preview.emergentagent.com/api/publishProduct",
+  "url": "https://product-image-link-1.preview.emergentagent.com/api/publishProduct",
   "headers": {
     "Content-Type": "application/json"
   },
@@ -126,17 +126,17 @@ if (product.brand === "gizmobbs" ||
 
 ### **Test Direct @logicamp_berger**
 ```bash
-curl -X POST "https://ok-confirm-5.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
+curl -X POST "https://product-image-link-1.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
 ```
 
 ### **Test Configuration Gizmobbs**
 ```bash
-curl -X POST "https://ok-confirm-5.preview.emergentagent.com/api/debug/test-multi-platform-post?shop_type=gizmobbs"
+curl -X POST "https://product-image-link-1.preview.emergentagent.com/api/debug/test-multi-platform-post?shop_type=gizmobbs"
 ```
 
 ### **Diagnostic Instagram Complet**
 ```bash
-curl -X GET "https://ok-confirm-5.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
+curl -X GET "https://product-image-link-1.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
 ```
 
 ---
@@ -147,7 +147,7 @@ curl -X GET "https://ok-confirm-5.preview.emergentagent.com/api/debug/instagram-
 
 1. **Se connecter via l'interface web :**
    ```
-   https://ok-confirm-5.preview.emergentagent.com
+   https://product-image-link-1.preview.emergentagent.com
    ```
 
 2. **Utiliser le compte avec accès à :**
@@ -212,18 +212,18 @@ curl -X GET "https://ok-confirm-5.preview.emergentagent.com/api/debug/instagram-
 
 1. **Vérifier l'authentification :**
    ```bash
-   curl -X GET "https://ok-confirm-5.preview.emergentagent.com/api/health"
+   curl -X GET "https://product-image-link-1.preview.emergentagent.com/api/health"
    # Doit montrer users_count > 0
    ```
 
 2. **Tester la configuration :**
    ```bash
-   curl -X POST "https://ok-confirm-5.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
+   curl -X POST "https://product-image-link-1.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
    ```
 
 3. **Diagnostic complet :**
    ```bash
-   curl -X GET "https://ok-confirm-5.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
+   curl -X GET "https://product-image-link-1.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
    ```
 
 ### **Messages d'erreur courants :**
