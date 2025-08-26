@@ -3780,7 +3780,11 @@ async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = 
                     print(f"⚠️ No real user found, using test user: {user.get('name')}")
         
         if not user:
-            raise Exception("No user found for publishing")
+            # FALLBACK: Create/use test user for WooCommerce webhook compatibility
+            print("⚠️ No user found, creating test user for WooCommerce webhook")
+            user = await create_or_get_test_user_for_woocommerce()
+            if not user:
+                raise Exception("No user found for publishing and test user creation failed")
         
         # Find target page
         target_page = None
