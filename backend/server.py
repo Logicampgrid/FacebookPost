@@ -2801,7 +2801,7 @@ async def post_to_facebook(post: Post, page_access_token: str):
         elif post.comment_link:
             product_link = post.comment_link
         
-        # PRIORITY STRATEGY: DIRECT IMAGE UPLOAD (Always shows as image)
+        # ENHANCED PRIORITY LOGIC: CLICKABLE IMAGES FOR PRODUCTS
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -2816,12 +2816,48 @@ async def post_to_facebook(post: Post, page_access_token: str):
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 PRIORITY: Direct image upload to guarantee display: {full_media_url}")
+            print(f"📸 ENHANCED: Processing media with clickable support: {full_media_url}")
             print(f"📁 Local file path: {local_file_path}")
+            print(f"🔗 Product link available: {bool(product_link)}")
             
             # Determine media type
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+            
+            # PRIORITY STRATEGY: CLICKABLE LINK POSTS FOR PRODUCTS WITH IMAGES
+            if product_link and is_image:
+                print(f"🎯 PRIORITY: Creating CLICKABLE image post with product link: {product_link}")
+                try:
+                    data = {
+                        "access_token": page_access_token,
+                        "message": post.content if post.content and post.content.strip() else "📸 Découvrez ce produit !",
+                        "link": product_link,  # Makes the image clickable to product
+                        "picture": full_media_url,  # Display the image prominently
+                    }
+                    
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+                    print(f"🔗 Creating CLICKABLE image post: {full_media_url} -> {product_link}")
+                    print(f"🔗 Creating clickable image post to: {endpoint}")
+                    print(f"📸 Image URL: {full_media_url}")
+                    print(f"🎯 Target URL: {product_link}")
+                    
+                    response = requests.post(endpoint, data=data, timeout=30)
+                    result = response.json()
+                    
+                    print(f"Facebook clickable image response: {response.status_code} - {result}")
+                    
+                    if response.status_code == 200 and 'id' in result:
+                        print("✅ Clickable image post created successfully!")
+                        print("🎯 Image is now clickable and redirects to product URL")
+                        return result
+                    else:
+                        print(f"❌ Clickable image post failed: {result}")
+                        print("🔄 Falling back to direct upload method...")
+                        # Fall through to direct upload method
+                except Exception as clickable_error:
+                    print(f"❌ Clickable image post failed: {clickable_error}")
+                    print("🔄 Falling back to direct upload method...")
+                    # Fall through to direct upload method
             
             # STRATEGY 1A: Direct multipart upload (GUARANTEED IMAGE DISPLAY)
             try:
