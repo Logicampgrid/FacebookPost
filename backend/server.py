@@ -3072,6 +3072,11 @@ async def post_to_facebook(post: Post, page_access_token: str):
 async def post_to_instagram(post: Post, page_access_token: str):
     """Post content to Instagram Business account with MULTIPART UPLOAD for better compatibility"""
     try:
+        # TEST MODE: Handle test tokens
+        if page_access_token.startswith("test_"):
+            print(f"🧪 TEST MODE: Simulating Instagram post")
+            return await simulate_instagram_post_for_test(post, page_access_token)
+        
         # Instagram posting requires a two-step process:
         # 1. Create media container
         # 2. Publish the container
