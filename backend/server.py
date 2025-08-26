@@ -2734,6 +2734,53 @@ async def get_page_connected_instagram(page_access_token: str, page_id: str):
         print(f"❌ Error getting page connected Instagram: {e}")
         return None
 
+async def simulate_facebook_post_for_test(post: Post, page_access_token: str):
+    """Simulate Facebook post for test mode - demonstrates clickable images functionality"""
+    try:
+        print("🎭 SIMULATION: Facebook post with clickable images")
+        
+        # Extract product link for clickable image demo
+        product_link = None
+        if post.link_metadata and len(post.link_metadata) > 0:
+            product_link = post.link_metadata[0].get("url")
+        elif post.comment_link:
+            product_link = post.comment_link
+        
+        # Generate test post ID
+        test_post_id = f"test_fb_post_{uuid.uuid4().hex[:8]}"
+        
+        # Log the clickable image configuration
+        if post.media_urls and product_link:
+            print(f"🔗 IMAGES CLIQUABLES SIMULÉES:")
+            print(f"   📸 Image: {post.media_urls[0]}")
+            print(f"   🎯 Lien cible: {product_link}")
+            print(f"   💬 Message: {post.content}")
+            print(f"   ✅ L'image sera cliquable et redirigera vers: {product_link}")
+            print(f"   ✅ Un commentaire avec le lien sera ajouté automatiquement")
+        
+        # Simulate successful post creation
+        result = {
+            "id": test_post_id,
+            "post_id": f"{post.target_id}_{test_post_id}",
+            "message": "Test mode: Facebook post simulated successfully",
+            "test_mode": True,
+            "clickable_image_configured": bool(post.media_urls and product_link),
+            "product_url": product_link if product_link else None,
+            "image_url": post.media_urls[0] if post.media_urls else None
+        }
+        
+        print(f"✅ TEST: Facebook post simulé avec succès: {test_post_id}")
+        
+        # Simulate comment addition for clickable functionality
+        if product_link:
+            print(f"✅ TEST: Commentaire avec lien produit simulé: {product_link}")
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Erreur simulation Facebook: {e}")
+        return None
+
 async def post_to_facebook(post: Post, page_access_token: str):
     """Post content to Facebook page/group - GUARANTEED IMAGE DISPLAY"""
     try:
