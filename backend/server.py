@@ -3745,6 +3745,89 @@ async def find_page_by_shop_type(user, shop_type: str):
         print(f"❌ Error finding page by shop type: {e}")
         return None
 
+async def create_or_get_test_user_for_woocommerce() -> dict:
+    """Create or get test user for WooCommerce webhook when no real user is available"""
+    try:
+        # Check if test user already exists
+        test_user = await db.users.find_one({"test_user": True, "name": "WooCommerce Test User"})
+        if test_user:
+            print("✅ Using existing WooCommerce test user")
+            return test_user
+        
+        print("🔧 Creating WooCommerce test user with shop pages...")
+        
+        # Create comprehensive test user with all shop configurations
+        test_user_data = {
+            "name": "WooCommerce Test User",
+            "facebook_id": "test_woocommerce_user",
+            "facebook_access_token": "test_token_woocommerce",
+            "test_user": True,
+            "created_at": datetime.utcnow(),
+            "facebook_pages": [
+                {
+                    "id": "236260991673388",  # Logicamp Outdoor (outdoor)
+                    "name": "Logicamp Outdoor",
+                    "access_token": "test_outdoor_token",
+                    "category": "Shopping & Retail"
+                },
+                {
+                    "id": "102401876209415",  # Le Berger Blanc Suisse (gizmobbs)
+                    "name": "Le Berger Blanc Suisse",
+                    "access_token": "test_berger_token", 
+                    "category": "Pet"
+                }
+            ],
+            "business_managers": [
+                {
+                    "id": "test_business_manager",
+                    "name": "WooCommerce Test Business Manager",
+                    "pages": [
+                        {
+                            "id": "236260991673388",
+                            "name": "Logicamp Outdoor",
+                            "access_token": "test_outdoor_token",
+                            "category": "Shopping & Retail"
+                        },
+                        {
+                            "id": "102401876209415", 
+                            "name": "Le Berger Blanc Suisse",
+                            "access_token": "test_berger_token",
+                            "category": "Pet"
+                        }
+                    ],
+                    "groups": [],
+                    "instagram_accounts": [
+                        {
+                            "id": "test_instagram_outdoor",
+                            "username": "logicampoutdoor_test",
+                            "name": "Logicamp Outdoor Test",
+                            "connected_page": "Logicamp Outdoor"
+                        },
+                        {
+                            "id": "test_instagram_berger", 
+                            "username": "logicamp_berger_test",
+                            "name": "Le Berger Blanc Suisse Test",
+                            "connected_page": "Le Berger Blanc Suisse"
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        # Insert test user
+        result = await db.users.insert_one(test_user_data)
+        test_user_data["_id"] = result.inserted_id
+        
+        print("✅ WooCommerce test user created successfully")
+        print(f"📄 Test pages: {len(test_user_data['facebook_pages'])}")
+        print(f"📱 Test Instagram accounts: {len(test_user_data['business_managers'][0]['instagram_accounts'])}")
+        
+        return test_user_data
+        
+    except Exception as e:
+        print(f"❌ Error creating WooCommerce test user: {e}")
+        return None
+
 async def find_user_and_page_for_publishing(user_id: str = None, page_id: str = None, shop_type: str = None):
     """Find user and determine which page to publish to"""
     try:
