@@ -3,6 +3,9 @@ import sys
 import json
 from datetime import datetime
 import uuid
+import tempfile
+import os
+from PIL import Image
 
 class FacebookPostManagerTester:
     def __init__(self, base_url="https://media-display-fix-2.preview.emergentagent.com"):
