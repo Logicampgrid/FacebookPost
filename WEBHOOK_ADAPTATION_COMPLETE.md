@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://product-image-link-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://media-display-fix-2.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://product-image-link-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://product-image-link-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://product-image-link-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://media-display-fix-2.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://media-display-fix-2.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://media-display-fix-2.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
