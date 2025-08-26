@@ -3069,6 +3069,43 @@ async def post_to_facebook(post: Post, page_access_token: str):
         print(f"💥 Error posting to Facebook: {e}")
         return None
 
+async def simulate_instagram_post_for_test(post: Post, page_access_token: str):
+    """Simulate Instagram post for test mode - demonstrates multipart upload functionality"""
+    try:
+        print("🎭 SIMULATION: Instagram post with multipart upload")
+        
+        # Generate test post ID
+        test_post_id = f"test_ig_post_{uuid.uuid4().hex[:8]}"
+        
+        # Log the multipart upload configuration
+        if post.media_urls:
+            print(f"📱 INSTAGRAM MULTIPART UPLOAD SIMULÉ:")
+            print(f"   📸 Image: {post.media_urls[0]}")
+            print(f"   💬 Caption: {post.content}")
+            print(f"   🔧 Méthode: Multipart upload (optimale pour Instagram)")
+            print(f"   ✅ L'image serait uploadée directement (pas d'URL)")
+            print(f"   ✅ Format optimisé pour Instagram (carré 1080x1080)")
+        
+        # Simulate successful Instagram post
+        result = {
+            "status": "success",
+            "id": test_post_id, 
+            "message": "Test mode: Instagram post simulated successfully",
+            "test_mode": True,
+            "multipart_upload_used": True,
+            "image_url": post.media_urls[0] if post.media_urls else None,
+            "caption": post.content
+        }
+        
+        print(f"✅ TEST: Instagram post simulé avec succès: {test_post_id}")
+        print(f"✅ TEST: Multipart upload simulé pour image locale")
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Erreur simulation Instagram: {e}")
+        return {"status": "error", "message": f"Simulation failed: {str(e)}"}
+
 async def post_to_instagram(post: Post, page_access_token: str):
     """Post content to Instagram Business account with MULTIPART UPLOAD for better compatibility"""
     try:
