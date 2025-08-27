@@ -2785,7 +2785,101 @@ async def simulate_facebook_post_for_test(post: Post, page_access_token: str):
         print(f"❌ Erreur simulation Facebook: {e}")
         return None
 
-async def post_to_facebook(post: Post, page_access_token: str):
+async def use_strategy_1c(post: Post, page_access_token: str, media_url: str, product_link: str = None):
+    """
+    Strategy 1C: Enhanced link post with picture parameter (Forces image preview)
+    Used when 'store' parameter is present in webhook request
+    """
+    try:
+        print(f"🎯 STRATEGY 1C: Enhanced link post with forced image preview")
+        print(f"📋 Trigger: Store parameter detected - using strategy 1C as requested")
+        
+        # Get full media URL
+        if media_url.startswith('http'):
+            full_media_url = media_url
+        else:
+            dynamic_base_url = get_dynamic_base_url()
+            full_media_url = f"{dynamic_base_url}{media_url}"
+        
+        data = {
+            "access_token": page_access_token,
+            "message": post.content if post.content and post.content.strip() else "📸 Nouveau produit !",
+            "link": product_link if product_link else full_media_url,
+            "picture": full_media_url,  # Force image to appear
+        }
+        
+        endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
+        print(f"🔗 STRATEGY 1C: Enhanced link post with forced image: {endpoint}")
+        print(f"🖼️ Picture parameter: {full_media_url}")
+        print(f"🔗 Link parameter: {data['link']}")
+        
+        response = requests.post(endpoint, data=data, timeout=30)
+        result = response.json()
+        
+        print(f"Facebook enhanced link response: {response.status_code} - {result}")
+        
+        if response.status_code == 200 and 'id' in result:
+            print("✅ SUCCESS: Strategy 1C - Enhanced link post with forced image successful!")
+            return result
+        else:
+            print(f"❌ Strategy 1C failed: {result}")
+            raise Exception("Strategy 1C enhanced link post failed")
+            
+    except Exception as error:
+        print(f"❌ Strategy 1C error: {error}")
+        raise error
+
+async def send_to_external_webhook(post_data: dict, store: str = None):
+    """
+    Send data to external webhook (ngrok) instead of processing internally
+    Used when EXTERNAL_WEBHOOK_ENABLED is true
+    """
+    try:
+        if not NGROK_URL or not NGROK_URL.strip():
+            raise Exception("NGROK_URL not configured")
+        
+        # Prepare payload for external webhook
+        payload = {
+            "source": "internal_webhook",
+            "timestamp": datetime.utcnow().isoformat(),
+            "store": store,
+            "strategy": "1C" if store else "auto",
+            "data": post_data
+        }
+        
+        print(f"🌐 Sending to external webhook: {NGROK_URL}")
+        print(f"📦 Payload: {payload}")
+        
+        response = requests.post(
+            NGROK_URL,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "InternalWebhookForwarder/1.0"
+            },
+            timeout=30
+        )
+        
+        print(f"🔄 External webhook response: {response.status_code} - {response.text[:200]}...")
+        
+        if response.status_code == 200:
+            return {
+                "success": True,
+                "external_webhook_status": "sent",
+                "response": response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+            }
+        else:
+            raise Exception(f"External webhook returned {response.status_code}: {response.text}")
+        
+    except Exception as error:
+        print(f"❌ External webhook error: {error}")
+        return {
+            "success": False,
+            "external_webhook_status": "failed",
+            "error": str(error)
+        }
+
+async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_forced: bool = False):
     """Post content to Facebook page/group - GUARANTEED IMAGE DISPLAY"""
     try:
         print(f"🎯 GUARANTEED IMAGE DISPLAY - Processing post to Facebook")
