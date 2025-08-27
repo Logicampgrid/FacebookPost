@@ -5165,7 +5165,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
         print(f"💥 Error creating product post: {e}")
         raise Exception(f"Failed to create product post: {str(e)}")
 
-async def create_product_post_from_local_image(request: ProductPublishRequest, local_image_url: str) -> dict:
+async def create_product_post_from_local_image(request: ProductPublishRequest, local_image_url: str, force_strategy_1c: bool = False) -> dict:
     """Create a comprehensive cross-platform post optimized for local images from binary webhook data"""
     try:
         print(f"🛍️ Creating COMPREHENSIVE CROSS-PLATFORM product post from local image: {request.title}")
