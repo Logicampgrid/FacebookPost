@@ -4886,7 +4886,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                 print(f"✅ Simulated Facebook post: {facebook_result['id']}")
             else:
                 # Real Facebook API call with enhanced clickable image handling
-                facebook_result = await post_to_facebook(facebook_post_obj, access_token)
+                facebook_result = await post_to_facebook(facebook_post_obj, access_token, force_strategy_1c)
             
             if not facebook_result or "id" not in facebook_result:
                 raise Exception("Facebook publishing failed")
