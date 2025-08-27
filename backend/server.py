@@ -4930,7 +4930,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                     page_result = {"id": f"test_page_{uuid.uuid4().hex[:8]}"}
                     print(f"✅ Simulated additional page post: {page_result['id']}")
                 else:
-                    page_result = await post_to_facebook(additional_page_obj, page_access_token)
+                    page_result = await post_to_facebook(additional_page_obj, page_access_token, force_strategy_1c)
                 
                 if page_result and "id" in page_result:
                     publication_results["additional_pages"].append({
