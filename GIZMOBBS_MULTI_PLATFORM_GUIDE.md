@@ -44,14 +44,14 @@ Même configuration que "gizmobbs" pour compatibilité N8N.
 
 #### Exemple cURL avec IMAGE :
 ```bash
-curl -X POST "https://dev-assistant-fb.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://product-share-hub.preview.emergentagent.com/api/webhook" \
   -F "image=@mon_produit.jpg" \
   -F 'json_data={"title":"Nouveau produit Berger Blanc","description":"Découvrez notre nouvelle gamme","url":"https://gizmobbs.com/produit","store":"gizmobbs"}'
 ```
 
 #### Exemple cURL avec VIDÉO :
 ```bash
-curl -X POST "https://dev-assistant-fb.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://product-share-hub.preview.emergentagent.com/api/webhook" \
   -F "image=@demonstration.mp4" \
   -F 'json_data={"title":"Démonstration produit","description":"Vidéo de présentation","url":"https://gizmobbs.com/demo","store":"gizmobbs"}'
 ```

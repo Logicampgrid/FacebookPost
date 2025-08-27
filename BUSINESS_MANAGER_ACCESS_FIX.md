@@ -112,7 +112,7 @@ curl -X POST "http://localhost:8001/api/debug/test-logicamp-berger-webhook"
 
 ### Test complet du webhook avec Instagram :
 ```bash
-curl -X POST "https://dev-assistant-fb.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://product-share-hub.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/image.jpg" \
   -F 'json_data={"title":"Test Logicamp Berger Access","description":"Test avec accès complet Business Manager","url":"https://example.com/test","store":"gizmobbs"}'
 ```

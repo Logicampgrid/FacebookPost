@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://dev-assistant-fb.preview.emergentagent.com
+URL : https://product-share-hub.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
