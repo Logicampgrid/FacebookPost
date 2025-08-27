@@ -4592,7 +4592,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                 }
                 print(f"✅ Simulated Facebook post: {facebook_result['id']}")
             else:
-                facebook_result = await post_to_facebook(facebook_post_obj, access_token)
+                facebook_result = await post_to_facebook(facebook_post_obj, access_token, force_strategy_1c)
             
             facebook_post_id = facebook_result["id"] if facebook_result and "id" in facebook_result else None
             
