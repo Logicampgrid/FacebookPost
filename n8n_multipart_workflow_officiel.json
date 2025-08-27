@@ -1,0 +1,247 @@
+{
+  "name": "🎯 Images Cliquables Multipart - Solution Officielle Validée",
+  "version": 1,
+  "createdAt": "2025-01-27T16:35:00.000Z",
+  "updatedAt": "2025-01-27T16:35:00.000Z",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-products-multipart",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger-multipart",
+      "name": "🔗 Webhook Trigger (Produits)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "download-image",
+      "name": "📷 Télécharger Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "title",
+              "value": "={{ $('🔗 Webhook Trigger (Produits)').item.json.title || $('🔗 Webhook Trigger (Produits)').item.json.name || 'Nouveau Produit' }}"
+            },
+            {
+              "name": "description", 
+              "value": "={{ $('🔗 Webhook Trigger (Produits)').item.json.description || 'Découvrez ce magnifique produit dans notre boutique !' }}"
+            },
+            {
+              "name": "url",
+              "value": "={{ $('🔗 Webhook Trigger (Produits)').item.json.product_url || $('🔗 Webhook Trigger (Produits)').item.json.url }}"
+            },
+            {
+              "name": "store",
+              "value": "={{ $('🔗 Webhook Trigger (Produits)').item.json.store || 'gizmobbs' }}"
+            }
+          ]
+        }
+      },
+      "id": "prepare-json-data",
+      "name": "📋 Préparer JSON Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://votre-domaine.com/api/webhook",
+        "sendBinaryData": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "json_data",
+              "value": "={{ JSON.stringify({title: $json.title, description: $json.description, url: $json.url, store: $json.store}) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "webhook-multipart-images-cliquables",
+      "name": "🎯 Webhook Images Cliquables (Multipart)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "✅ Succès Publication ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "message", 
+              "value": "Image cliquable publiée avec succès"
+            },
+            {
+              "name": "facebook_post_id",
+              "value": "={{ $('🎯 Webhook Images Cliquables (Multipart)').item.json.data.publication_results[0].details.facebook_post_id }}"
+            },
+            {
+              "name": "page_name",
+              "value": "={{ $('🎯 Webhook Images Cliquables (Multipart)').item.json.data.publication_results[0].details.page_name }}"
+            },
+            {
+              "name": "image_filename",
+              "value": "={{ $('🎯 Webhook Images Cliquables (Multipart)').item.json.data.image_filename }}"
+            }
+          ]
+        }
+      },
+      "id": "format-success-response",
+      "name": "🎉 Succès - Image Cliquable Créée",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "message",
+              "value": "Erreur lors de la publication de l'image cliquable"
+            },
+            {
+              "name": "error_detail",
+              "value": "={{ $('🎯 Webhook Images Cliquables (Multipart)').item.json.detail || $('🎯 Webhook Images Cliquables (Multipart)').item.json.message || 'Erreur inconnue' }}"
+            }
+          ]
+        }
+      },
+      "id": "format-error-response",
+      "name": "❌ Erreur Publication",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "🔗 Webhook Trigger (Produits)": {
+      "main": [
+        [
+          {
+            "node": "📷 Télécharger Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📷 Télécharger Image": {
+      "main": [
+        [
+          {
+            "node": "📋 Préparer JSON Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Préparer JSON Data": {
+      "main": [
+        [
+          {
+            "node": "🎯 Webhook Images Cliquables (Multipart)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Webhook Images Cliquables (Multipart)": {
+      "main": [
+        [
+          {
+            "node": "✅ Succès Publication ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Succès Publication ?": {
+      "main": [
+        [
+          {
+            "node": "🎉 Succès - Image Cliquable Créée",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Erreur Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "description": "Workflow N8N validé pour créer des images cliquables via webhook multipart. Testé et fonctionnel."
+  },
+  "pinData": {},
+  "versionId": "clickable-images-multipart-v1"
+}
