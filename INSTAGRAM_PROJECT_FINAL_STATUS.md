@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://media-display-fix-2.preview.emergentagent.com/api/webhook
+https://webhook-config.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
