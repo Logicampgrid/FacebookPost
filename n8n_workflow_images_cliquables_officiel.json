@@ -1,0 +1,207 @@
+{
+  "name": "🎯 Webhook Images Cliquables - Solution Officielle",
+  "version": 1,
+  "createdAt": "2025-01-27T10:00:00.000Z",
+  "updatedAt": "2025-01-27T10:00:00.000Z",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-products",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "🔗 Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "product-webhook-trigger"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "store", 
+              "value": "={{ $json.store || 'gizmobbs' }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title || $json.name || 'Nouveau Produit' }}"
+            },
+            {
+              "name": "description", 
+              "value": "={{ $json.description || $json.excerpt || 'Découvrez ce magnifique produit dans notre boutique !' }}"
+            },
+            {
+              "name": "product_url",
+              "value": "={{ $json.product_url || $json.url || $json.link }}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url || $json.image || $json.featured_image }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "data-preparation",
+      "name": "📋 Préparation Données",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://votre-domaine.com/api/webhook",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"store\": \"{{ $json.store }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"product_url\": \"{{ $json.product_url }}\",\n  \"image_url\": \"{{ $json.image_url }}\"\n}",
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "webhook-request",
+      "name": "🎯 Webhook Images Cliquables",
+      "type": "n8n-nodes-base.httpRequest", 
+      "typeVersion": 4,
+      "position": [680, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "success-condition",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "success-check",
+      "name": "✅ Succès ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "🎉 Publication Réussie",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition", 
+        "options": {}
+      },
+      "id": "error-response",
+      "name": "❌ Erreur Publication",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "🔗 Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "📋 Préparation Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Préparation Données": {
+      "main": [
+        [
+          {
+            "node": "🎯 Webhook Images Cliquables",
+            "type": "main", 
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Webhook Images Cliquables": {
+      "main": [
+        [
+          {
+            "node": "✅ Succès ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Succès ?": {
+      "main": [
+        [
+          {
+            "node": "🎉 Publication Réussie",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Erreur Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "clickable-images-v1"
+}
