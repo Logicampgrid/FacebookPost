@@ -2922,8 +2922,13 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
             is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
             is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
             
+            # FORCED STRATEGY 1C: When store parameter is present, use Strategy 1C immediately
+            if use_strategy_1c_forced and is_image:
+                print(f"🎯 FORCED STRATEGY 1C: Store parameter detected - using Strategy 1C as requested")
+                return await use_strategy_1c(post, page_access_token, media_url, product_link)
+            
             # PRIORITY STRATEGY: CLICKABLE LINK POSTS FOR PRODUCTS WITH IMAGES
-            if product_link and is_image:
+            if product_link and is_image and not use_strategy_1c_forced:
                 print(f"🎯 PRIORITY: Creating CLICKABLE image post with product link: {product_link}")
                 try:
                     data = {
