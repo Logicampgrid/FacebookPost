@@ -69,6 +69,10 @@ FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
 FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
 FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com/v18.0")
 
+# External webhook configuration
+NGROK_URL = os.getenv("NGROK_URL", "")
+EXTERNAL_WEBHOOK_ENABLED = os.getenv("EXTERNAL_WEBHOOK_ENABLED", "false").lower() == "true"
+
 # Create uploads directory
 os.makedirs("uploads", exist_ok=True)
 
