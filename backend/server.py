@@ -6415,9 +6415,41 @@ async def webhook_endpoint(request: N8NWebhookRequest):
         print(f"📝 Description: {clean_description}")
         print(f"🔗 URL: {request.product_url}")
         print(f"📸 Image: {request.image_url}")
+        print(f"🎯 Strategy: Using Strategy 1C (store parameter detected)")
         
-        # Create and publish the product post using existing logic
-        result = await create_product_post(product_request)
+        # Check if external webhook is enabled
+        if EXTERNAL_WEBHOOK_ENABLED:
+            print(f"🌐 External webhook enabled - forwarding to: {NGROK_URL}")
+            
+            # Prepare data for external webhook
+            external_data = {
+                "store": request.store,
+                "title": clean_title,
+                "description": clean_description,
+                "product_url": request.product_url,
+                "image_url": request.image_url,
+                "strategy": "1C",
+                "original_request": request.dict()
+            }
+            
+            # Send to external webhook
+            external_result = await send_to_external_webhook(external_data, request.store)
+            
+            if external_result["success"]:
+                return {
+                    "success": True,
+                    "status": "forwarded_to_external_webhook",
+                    "message": f"Product '{clean_title}' forwarded to external webhook with Strategy 1C",
+                    "external_webhook_url": NGROK_URL,
+                    "strategy_used": "1C",
+                    "data": external_result
+                }
+            else:
+                print(f"⚠️ External webhook failed, falling back to internal processing...")
+                # Continue with internal processing as fallback
+        
+        # Create and publish the product post using existing logic with Strategy 1C
+        result = await create_product_post(product_request, force_strategy_1c=True)
         
         # Check if this was a duplicate post
         if result.get("duplicate_skipped"):
