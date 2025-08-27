@@ -4380,7 +4380,7 @@ async def get_all_platforms_for_store(shop_type: str, user: dict) -> dict:
             "error": str(e)
         }
 
-async def create_product_post(request: ProductPublishRequest) -> dict:
+async def create_product_post(request: ProductPublishRequest, force_strategy_1c: bool = False) -> dict:
     """Create a comprehensive cross-platform post (Facebook Pages + Groups + Instagram) for a product from N8N data"""
     try:
         print(f"🛍️ Creating COMPREHENSIVE CROSS-PLATFORM product post: {request.title}")
