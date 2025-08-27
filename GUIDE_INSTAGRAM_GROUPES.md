@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://webhook-config.preview.emergentagent.com
+URL : https://dev-assistant-fb.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

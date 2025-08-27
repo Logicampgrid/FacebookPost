@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://webhook-config.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://dev-assistant-fb.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://webhook-config.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://webhook-config.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://webhook-config.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://dev-assistant-fb.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://dev-assistant-fb.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://dev-assistant-fb.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

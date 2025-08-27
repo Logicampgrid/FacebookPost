@@ -8,7 +8,7 @@ import os
 from PIL import Image
 
 class FacebookPostManagerTester:
-    def __init__(self, base_url="https://webhook-config.preview.emergentagent.com"):
+    def __init__(self, base_url="https://dev-assistant-fb.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

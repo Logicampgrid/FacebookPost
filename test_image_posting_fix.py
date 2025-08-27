@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://webhook-config.preview.emergentagent.com"
+BASE_URL = "https://dev-assistant-fb.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""

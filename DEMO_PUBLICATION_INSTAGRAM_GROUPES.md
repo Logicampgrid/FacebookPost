@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://webhook-config.preview.emergentagent.com
+🔗 https://dev-assistant-fb.preview.emergentagent.com
