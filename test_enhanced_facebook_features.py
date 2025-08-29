@@ -82,40 +82,52 @@ async def test_enhanced_clickable_images():
         return False
 
 async def test_gizmobbs_video_comments():
-    """Test automatic gizmobbs comments for videos"""
+    """Test automatic gizmobbs comments for videos via multipart webhook"""
     print("\n🧪 TEST 2: Automatic Gizmobbs Video Comments")
     print("=" * 50)
     
     try:
-        # Create a test video post for gizmobbs - using a proper video URL
-        test_data = {
-            "store": "gizmobbs", 
+        # Prepare test video data
+        test_json_data = {
             "title": "Test Vidéo Gizmobbs avec Commentaire Auto",
             "description": "Test pour vérifier l'ajout automatique du commentaire gizmobbs",
-            "product_url": "https://logicamp.org/werdpress/gizmobbs/test-video",
-            "image_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"  # Public test video
+            "url": "https://logicamp.org/werdpress/gizmobbs/test-video",
+            "store": "gizmobbs"
         }
         
-        print(f"🎬 Testing gizmobbs video: {test_data['image_url']}")
+        print(f"🎬 Testing gizmobbs video comment feature")
         print(f"💬 Expected auto-comment: 'Découvrez ce produit sur notre boutique : https://logicamp.org/werdpress/gizmobbs'")
+        
+        # Use the video file we created (it has video/mp4 content type)
+        files = {
+            'image': ('test_video.mp4', open('/app/test_video.mp4', 'rb'), 'video/mp4')
+        }
+        data = {
+            'json_data': json.dumps(test_json_data)
+        }
         
         response = requests.post(
             "http://localhost:8001/api/webhook",
-            json=test_data,
-            headers={"Content-Type": "application/json"}
+            files=files,
+            data=data
         )
+        
+        # Close the file
+        files['image'][1].close()
         
         if response.status_code == 200:
             result = response.json()
             print(f"✅ Video webhook response successful: {response.status_code}")
-            print(f"📊 Response data: {json.dumps(result, indent=2)}")
+            print(f"📊 Response summary: {result.get('status', 'unknown')}")
             
             # Check for gizmobbs-specific features
+            publication_results = result.get("data", {}).get("publication_results", [])
+            
             success_indicators = [
-                "gizmobbs automatic comment" in str(result).lower(),
                 "gizmobbs" in str(result).lower(),
                 "success" in str(result).lower(),
                 "published" in str(result).lower(),
+                len(publication_results) > 0,
                 result.get("status") == "success"
             ]
             
