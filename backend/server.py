@@ -2328,6 +2328,14 @@ class WebhookJsonData(BaseModel):
             raise ValueError('URL must start with http:// or https://')
         return v.strip()
 
+class WebhookData(BaseModel):
+    store: str
+    title: str
+    url: str
+    description: str
+    page_id: Optional[str] = None
+    image_url: Optional[str] = None
+
 # Facebook/Meta API functions
 async def get_facebook_user_info(access_token: str):
     """Get user info from Facebook"""
