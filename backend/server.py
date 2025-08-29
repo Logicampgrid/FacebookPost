@@ -2556,6 +2556,51 @@ async def get_page_accessible_groups(page_access_token: str, page_id: str):
         print(f"❌ Error getting page accessible groups: {e}")
         return []
 
+async def is_image_url_accessible(image_url: str) -> bool:
+    """Test if an image URL is publicly accessible"""
+    try:
+        response = requests.head(image_url, timeout=5, allow_redirects=True)
+        # Vérifier que l'URL est accessible (codes 2xx) et que c'est une image
+        if response.status_code == 200:
+            content_type = response.headers.get('content-type', '').lower()
+            return content_type.startswith('image/')
+        return False
+    except Exception as e:
+        print(f"Image URL not accessible: {image_url} - Error: {e}")
+        return False
+
+async def get_page_access_token_by_store_or_id(store: str, page_id: Optional[str] = None):
+    """Get page access token by store type or specific page ID"""
+    try:
+        # Find authenticated user
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return None
+            
+        # If specific page_id is provided, find that page
+        if page_id:
+            for bm in user.get("business_managers", []):
+                for page in bm.get("pages", []):
+                    if page.get("id") == page_id:
+                        return page.get("access_token")
+        
+        # Otherwise, find page by store mapping
+        if store in SHOP_PAGE_MAPPING:
+            target_page_id = SHOP_PAGE_MAPPING[store]["page_id"]
+            for bm in user.get("business_managers", []):
+                for page in bm.get("pages", []):
+                    if page.get("id") == target_page_id:
+                        return page.get("access_token")
+        
+        return None
+        
+    except Exception as e:
+        print(f"❌ Error getting page access token: {e}")
+        return None
+
 async def get_page_connected_instagram(page_access_token: str, page_id: str):
     """Get Instagram account connected to a specific Facebook page"""
     try:
