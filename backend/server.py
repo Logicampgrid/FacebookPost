@@ -6554,15 +6554,41 @@ async def webhook_endpoint(request: Request):
             except json.JSONDecodeError:
                 raise HTTPException(status_code=400, detail="Invalid JSON in request body")
             
-            # Convert to N8NWebhookRequest for validation
-            try:
-                webhook_request = N8NWebhookRequest(**json_request)
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+            # Extraire l'image URL de manière robuste (supporter différents champs)
+            image_url = (json_request.get("image_url") or 
+                        json_request.get("image") or 
+                        json_request.get("imageUrl") or 
+                        json_request.get("picture"))
             
-            print(f"🔗 N8N Webhook POST received: {webhook_request.title} for store '{webhook_request.store}'")
+            # Valider les champs requis
+            required_fields = ["store", "title", "product_url"]
+            for field in required_fields:
+                if field not in json_request or not json_request[field]:
+                    # Essayer aussi des variantes de noms de champs
+                    if field == "product_url":
+                        json_request[field] = json_request.get("url") or json_request.get("productUrl")
+                    if not json_request.get(field):
+                        raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in JSON request")
+            
+            # Vérifier l'image URL
+            if not image_url:
+                raise HTTPException(status_code=400, detail="Image URL is required. Use field 'image_url', 'image', 'imageUrl', or 'picture'")
+            
+            if not image_url.startswith(('http://', 'https://')):
+                raise HTTPException(status_code=400, detail="Image URL must be a valid HTTP/HTTPS URL")
+            
+            # Convert to N8NWebhookRequest for validation and processing
+            webhook_request = N8NWebhookRequest(
+                store=json_request["store"],
+                title=json_request["title"],
+                description=json_request.get("description", ""),
+                product_url=json_request["product_url"],
+                image_url=image_url
+            )
+            
+            print(f"🔗 N8N JSON Webhook POST received: {webhook_request.title} for store '{webhook_request.store}'")
         
-        # Clean HTML from description using the same logic as N8N stripHtml function
+        # Clean HTML from description using the same logic as N8N stripHtml function  
         clean_description = strip_html(webhook_request.description) if webhook_request.description else "Découvrez ce produit"
         clean_title = strip_html(webhook_request.title) if webhook_request.title else "Sans titre"
         
@@ -6577,13 +6603,6 @@ async def webhook_endpoint(request: Request):
             clean_description = "Découvrez ce produit"  # Default fallback as in N8N script
             print(f"🔄 Using default description: '{clean_description}'")
         
-        if not webhook_request.image_url or webhook_request.image_url.strip() == "":
-            print(f"⚠️ Warning: No image URL provided")
-            # Don't fail - some products might not have images
-        elif not webhook_request.image_url.startswith('http'):
-            print(f"❌ Validation failed: Invalid image URL format: {webhook_request.image_url}")
-            raise HTTPException(status_code=400, detail="Image URL must be a valid HTTP/HTTPS URL")
-        
         if not webhook_request.product_url or not webhook_request.product_url.startswith('http'):
             print(f"❌ Validation failed: Invalid product URL: {webhook_request.product_url}")
             raise HTTPException(status_code=400, detail="Valid product URL is required")
@@ -6596,6 +6615,20 @@ async def webhook_endpoint(request: Request):
                 status_code=400, 
                 detail=f"Invalid store type '{webhook_request.store}'. Available stores: {available_stores}"
             )
+        
+        # NOUVELLE LOGIQUE JSON: Vérifier l'accessibilité de l'image URL
+        use_strategy_1c_json = False
+        if webhook_request.image_url:
+            print(f"🔍 Vérification accessibilité image URL JSON: {webhook_request.image_url}")
+            if await check_image_url_accessibility(webhook_request.image_url):
+                print(f"✅ Image URL JSON accessible - Utilisation Stratégie 1C")
+                use_strategy_1c_json = True
+            else:
+                print(f"❌ Image URL JSON non accessible")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Image URL '{webhook_request.image_url}' is not accessible (HTTP error 400/403/404). Please provide an accessible image URL."
+                )
         
         # Convert N8N webhook format to ProductPublishRequest format with cleaned data
         product_request = ProductPublishRequest(
@@ -6614,7 +6647,7 @@ async def webhook_endpoint(request: Request):
         print(f"📝 Description: {clean_description}")
         print(f"🔗 URL: {webhook_request.product_url}")
         print(f"📸 Image: {webhook_request.image_url}")
-        print(f"🎯 Strategy: Using Strategy 1C (store parameter detected)")
+        print(f"🎯 Strategy: Using Strategy 1C (image URL accessible)")
         
         # Check if external webhook is enabled
         if EXTERNAL_WEBHOOK_ENABLED:
