@@ -246,22 +246,56 @@ const WebhookHistory = () => {
         )}
       </div>
 
-      {/* Usage Information */}
+      {/* Usage Information - Updated for multipart/form-data */}
       <div className="facebook-card p-6 bg-blue-50 border-blue-200">
-        <h3 className="text-lg font-medium text-blue-900 mb-3">Configuration N8N</h3>
-        <p className="text-sm text-blue-800 mb-3">
-          Pour publier automatiquement sur une boutique spécifique, ajoutez le paramètre <code className="bg-blue-100 px-1 py-0.5 rounded">shop_type</code> dans votre requête N8N :
-        </p>
-        <div className="bg-blue-100 rounded-lg p-3 text-sm">
-          <pre className="text-blue-900">
+        <h3 className="text-lg font-medium text-blue-900 mb-3">Configuration N8N - Format Multipart</h3>
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-medium text-blue-900 mb-2">Endpoint Webhook :</h4>
+            <code className="bg-blue-100 px-2 py-1 rounded text-sm text-blue-900">
+              POST https://gizmobbs-media-api.preview.emergentagent.com/api/webhook
+            </code>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-blue-900 mb-2">Format HTTP Request (multipart/form-data) :</h4>
+            <div className="bg-blue-100 rounded-lg p-3 text-sm">
+              <div className="space-y-2">
+                <div>
+                  <span className="font-medium text-blue-900">Content-Type:</span> 
+                  <code className="ml-2 text-blue-800">multipart/form-data</code>
+                </div>
+                <div>
+                  <span className="font-medium text-blue-900">Champ json_data (string):</span>
+                  <pre className="mt-1 text-blue-900 text-xs">
 {`{
-  "title": "Produit example",
-  "description": "Description du produit",
-  "image_url": "https://...",
-  "product_url": "https://...",
-  "shop_type": "logicantiq"  // "outdoor", "gizmobbs", "logicantiq"
+  "store": "gizmobbs",
+  "title": "Titre de l'item",
+  "url": "URL du produit ou de la boutique",
+  "description": "Commentaire ou description"
 }`}
-          </pre>
+                  </pre>
+                </div>
+                <div className="pt-2 border-t border-blue-200">
+                  <span className="font-medium text-blue-900">Champ binaire :</span>
+                  <div className="ml-4 mt-1 text-blue-800 text-sm">
+                    <div>• <code>image</code> : fichier image (jpg, png, webp)</div>
+                    <div>• <code>video</code> : fichier vidéo (mp4, mov, avi, webm)</div>
+                    <div className="text-xs text-blue-600 mt-1">⚠️ Un seul type par requête</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-green-100 border border-green-200 rounded-lg p-3">
+            <h4 className="font-medium text-green-900 mb-2">✨ Comportements automatiques :</h4>
+            <div className="text-sm text-green-800 space-y-1">
+              <div>🎥 <strong>Vidéos</strong> : Le commentaire s'affiche automatiquement</div>
+              <div>🖼️ <strong>Images</strong> : Cliquables vers l'URL du produit</div>
+              <div>🏪 <strong>Store</strong> : "gizmobbs" = publication sur votre boutique</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
