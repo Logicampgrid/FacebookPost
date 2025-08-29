@@ -6722,12 +6722,10 @@ async def webhook_endpoint(
         return {
             "success": False,
             "status": "failed",
-            "message": f"Failed to publish product: {error_message}",
+            "message": f"Failed to process webhook request: {error_message}",
             "error": {
                 "type": "webhook_processing_error",
                 "details": error_message,
-                "product_title": request.title if hasattr(request, 'title') else "Unknown",
-                "store": request.store if hasattr(request, 'store') else "Unknown",
                 "timestamp": datetime.utcnow().isoformat()
             }
         }
