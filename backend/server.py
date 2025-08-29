@@ -2889,15 +2889,28 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
             print(f"🧪 TEST MODE: Simulating Facebook post for WooCommerce webhook")
             return await simulate_facebook_post_for_test(post, page_access_token)
         
-        # Extract URLs from post content for Facebook link preview
+        # ENHANCED: Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
         
-        # Check if we have a product link to make images clickable
+        # ENHANCED: Check if we have a product link to make images clickable
+        # Priority: link_metadata > comment_link > URLs in content  
         product_link = None
-        if post.link_metadata and len(post.link_metadata) > 0:
+        link_source = ""
+        
+        if post.link_metadata and len(post.link_metadata) > 0 and post.link_metadata[0].get("url"):
             product_link = post.link_metadata[0].get("url")
-        elif post.comment_link:
+            link_source = "link_metadata (highest priority)"
+        elif hasattr(post, 'comment_link') and post.comment_link:
             product_link = post.comment_link
+            link_source = "comment_link"
+        elif urls_in_content:
+            product_link = urls_in_content[0]
+            link_source = "content URLs"
+        
+        if product_link:
+            print(f"🔗 ENHANCED: Product link detected from {link_source}: {product_link}")
+        else:
+            print("🔍 No product link detected - will use standard upload method")
         
         # ENHANCED PRIORITY LOGIC: CLICKABLE IMAGES FOR PRODUCTS
         if post.media_urls:
