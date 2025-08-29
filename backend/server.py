@@ -6508,15 +6508,15 @@ async def webhook_endpoint(request: Request):
             clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
             clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
             
-            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}' ({media_type})")
+            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}' (media: {media_url})")
             print(f"📋 Metadata: {metadata}")
-            print(f"📁 File: {media_file.filename} ({media_file.content_type})")
+            print(f"🎯 Stratégie utilisée: {'1C (image URL accessible)' if use_strategy_1c else 'Fallback multipart local'}")
             
             # Create ProductPublishRequest for multipart
             product_request = ProductPublishRequest(
                 title=clean_title,
                 description=clean_description,
-                image_url=media_url,  # Use uploaded file URL
+                image_url=media_url,  # Use either accessible URL or uploaded file URL
                 product_url=metadata["url"],
                 shop_type=metadata["store"],
                 user_id=None,
@@ -6524,20 +6524,22 @@ async def webhook_endpoint(request: Request):
                 api_key=None
             )
             
-            # Store media type for frontend display logic
-            processing_result = await create_product_post_from_local_image(product_request, media_url)
-            
-            # Add media type to result for frontend rendering
-            if isinstance(processing_result, dict):
-                processing_result["media_type"] = media_type
-                processing_result["media_filename"] = media_file.filename
-                processing_result["n8n_multipart"] = True
+            # Choisir le bon traitement selon la stratégie
+            if use_strategy_1c:
+                # Stratégie 1C: Image URL accessible - utiliser create_product_post avec force_strategy_1c=True
+                print(f"🎯 Exécution Stratégie 1C avec image URL: {media_url}")
+                processing_result = await create_product_post(product_request, force_strategy_1c=True)
+            else:
+                # Fallback: Upload local - utiliser create_product_post_from_local_image
+                print(f"📁 Exécution fallback upload local: {media_url}")
+                processing_result = await create_product_post_from_local_image(product_request, media_url)
             
             return {
                 "success": True,
                 "status": "published",
                 "message": f"N8N multipart content '{clean_title}' published successfully",
-                "media_type": media_type,
+                "strategy_used": "1C" if use_strategy_1c else "fallback_multipart",
+                "image_source": "url" if use_strategy_1c else "upload",
                 "data": processing_result
             }
             
