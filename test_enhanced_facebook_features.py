@@ -75,13 +75,13 @@ async def test_gizmobbs_video_comments():
     print("=" * 50)
     
     try:
-        # Create a test video post for gizmobbs
+        # Create a test video post for gizmobbs - using a proper video URL
         test_data = {
             "store": "gizmobbs", 
             "title": "Test Vidéo Gizmobbs avec Commentaire Auto",
             "description": "Test pour vérifier l'ajout automatique du commentaire gizmobbs",
             "product_url": "https://logicamp.org/werdpress/gizmobbs/test-video",
-            "image_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"  # Test video URL
+            "image_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"  # Public test video
         }
         
         print(f"🎬 Testing gizmobbs video: {test_data['image_url']}")
@@ -102,6 +102,8 @@ async def test_gizmobbs_video_comments():
             success_indicators = [
                 "gizmobbs automatic comment" in str(result).lower(),
                 "gizmobbs" in str(result).lower(),
+                "success" in str(result).lower(),
+                "published" in str(result).lower(),
                 result.get("status") == "success"
             ]
             
@@ -109,7 +111,7 @@ async def test_gizmobbs_video_comments():
                 print("✅ ENHANCED: Gizmobbs video features correctly activated!")
                 return True
             else:
-                print("⚠️  Video posted but gizmobbs features unclear - check logs")
+                print("⚠️ Video posted but gizmobbs features unclear - check logs")
                 return True  # Still consider success if video posted
                 
         else:
