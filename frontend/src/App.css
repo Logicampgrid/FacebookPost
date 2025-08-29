@@ -1,3 +1,68 @@
+/* Media Display Styles for N8N Webhook Integration */
+.media-display {
+  max-width: 300px;
+}
+
+.video-display video {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-display img {
+  transition: all 0.2s ease-in-out;
+}
+
+.image-display:hover img {
+  transform: scale(1.02);
+}
+
+.media-display .no-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Video overlay styles */
+.video-display .absolute {
+  pointer-events: none;
+}
+
+.video-display:hover .absolute {
+  opacity: 0.8;
+}
+
+/* Click hint animation */
+.image-display .inline-flex {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive media display */
+@media (max-width: 768px) {
+  .media-display {
+    max-width: 200px;
+  }
+  
+  .video-display video {
+    max-height: 150px;
+  }
+}
+
 /* Additional custom styles for Facebook-like interface */
 .App {
   text-align: center;
