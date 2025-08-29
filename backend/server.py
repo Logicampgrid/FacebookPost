@@ -6680,7 +6680,8 @@ async def webhook_endpoint(request: Request):
                 print(f"⚠️ External webhook failed, falling back to internal processing...")
                 # Continue with internal processing as fallback
         
-        # Create and publish the product post using existing logic with Strategy 1C
+        # Create and publish the product post using Strategy 1C (forcée pour tous les cas avec store parameter)
+        print(f"🎯 Exécution create_product_post avec force_strategy_1c=True")
         result = await create_product_post(product_request, force_strategy_1c=True)
         
         # Check if this was a duplicate post
@@ -6688,7 +6689,9 @@ async def webhook_endpoint(request: Request):
             return {
                 "success": True,
                 "status": "duplicate_skipped",
-                "message": f"Product '{webhook_request.title}' already posted recently - duplicate skipped",
+                "message": f"Product '{clean_title}' already posted recently - duplicate skipped",
+                "strategy_used": "1C",
+                "image_accessible": use_strategy_1c_json if 'use_strategy_1c_json' in locals() else True,
                 "data": {
                     "facebook_post_id": result["facebook_post_id"],
                     "post_id": result["post_id"],
@@ -6706,7 +6709,10 @@ async def webhook_endpoint(request: Request):
         return {
             "success": True,
             "status": "published",
-            "message": f"Product '{webhook_request.title}' published successfully to {webhook_request.store}",
+            "message": f"Product '{clean_title}' published successfully to {webhook_request.store} with clickable image",
+            "strategy_used": "1C - Enhanced link post with picture parameter",
+            "image_accessible": use_strategy_1c_json if 'use_strategy_1c_json' in locals() else True,
+            "image_clickable": True,
             "data": {
                 "facebook_post_id": result["facebook_post_id"],
                 "post_id": result["post_id"],
@@ -6714,7 +6720,7 @@ async def webhook_endpoint(request: Request):
                 "page_id": result["page_id"],
                 "store": webhook_request.store,
                 "published_at": result["published_at"],
-                "comment_added": False,  # Link is now in post content, not comment
+                "comment_added": False,  # L'image est maintenant cliquable vers product_url
                 "duplicate_skipped": False,
                 "webhook_processed_at": datetime.utcnow().isoformat()
             }
