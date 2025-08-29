@@ -6439,44 +6439,70 @@ async def webhook_endpoint(request: Request):
                 if field not in metadata:
                     raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
             
-            # Check for binary file (image OR video, not both)
-            media_file = image if image else video
-            media_type = "image" if image else "video" if video else None
+            # NOUVELLE LOGIQUE: Vérifier d'abord si une image_url est présente dans json_data
+            image_url_from_json = metadata.get("image") or metadata.get("image_url") or metadata.get("imageUrl")
             
-            if not media_file:
-                raise HTTPException(status_code=400, detail="Either 'image' or 'video' file is required")
+            media_url = None
+            use_strategy_1c = False
             
-            if image and video:
-                raise HTTPException(status_code=400, detail="Cannot upload both image and video in the same request")
+            if image_url_from_json:
+                print(f"🔍 Image URL détectée dans json_data: {image_url_from_json}")
+                
+                # Vérifier l'accessibilité de l'image URL
+                if await check_image_url_accessibility(image_url_from_json):
+                    print(f"✅ Image URL accessible - Utilisation Stratégie 1C")
+                    media_url = image_url_from_json
+                    use_strategy_1c = True
+                else:
+                    print(f"❌ Image URL non accessible - Fallback vers upload multipart local")
+                    use_strategy_1c = False
+            else:
+                print(f"🔍 Aucune image URL dans json_data - Utilisation upload multipart requis")
+                use_strategy_1c = False
             
-            # Validate file type
-            allowed_image_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-            allowed_video_types = ["video/mp4", "video/mov", "video/avi", "video/webm"]
-            
-            if media_type == "image" and media_file.content_type not in allowed_image_types:
-                raise HTTPException(status_code=400, detail=f"Invalid image type: {media_file.content_type}. Allowed: {allowed_image_types}")
-            elif media_type == "video" and media_file.content_type not in allowed_video_types:
-                raise HTTPException(status_code=400, detail=f"Invalid video type: {media_file.content_type}. Allowed: {allowed_video_types}")
-            
-            # Save the uploaded file
-            file_extension = media_file.filename.split('.')[-1].lower() if '.' in media_file.filename else ('jpg' if media_type == 'image' else 'mp4')
-            unique_filename = f"n8n_{media_type}_{uuid.uuid4().hex[:8]}.{file_extension}"
-            file_path = f"uploads/{unique_filename}"
-            
-            # Read and save file content
-            content = await media_file.read()
-            with open(file_path, "wb") as f:
-                f.write(content)
-            
-            # Generate public URL
-            base_url = os.getenv("PUBLIC_BASE_URL", "https://social-bridge-5.preview.emergentagent.com")
-            media_url = f"{base_url}/api/uploads/{unique_filename}"
-            
-            # Optimize image if it's an image
-            if media_type == "image":
-                optimize_image(file_path, instagram_mode=False)
-            
-            print(f"📁 Saved {media_type}: {file_path} -> {media_url}")
+            # Si pas de Stratégie 1C, utiliser le fallback multipart local
+            if not use_strategy_1c:
+                # Check for binary file (image OR video, not both)
+                media_file = image if image else video
+                media_type = "image" if image else "video" if video else None
+                
+                if not media_file:
+                    if image_url_from_json:
+                        raise HTTPException(status_code=400, detail=f"Image URL '{image_url_from_json}' is not accessible (codes 400/403/404). Please provide a binary image file instead.")
+                    else:
+                        raise HTTPException(status_code=400, detail="Either a valid 'image' URL in json_data or a binary 'image'/'video' file is required")
+                
+                if image and video:
+                    raise HTTPException(status_code=400, detail="Cannot upload both image and video in the same request")
+                
+                # Validate file type
+                allowed_image_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+                allowed_video_types = ["video/mp4", "video/mov", "video/avi", "video/webm"]
+                
+                if media_type == "image" and media_file.content_type not in allowed_image_types:
+                    raise HTTPException(status_code=400, detail=f"Invalid image type: {media_file.content_type}. Allowed: {allowed_image_types}")
+                elif media_type == "video" and media_file.content_type not in allowed_video_types:
+                    raise HTTPException(status_code=400, detail=f"Invalid video type: {media_file.content_type}. Allowed: {allowed_video_types}")
+                
+                # Save the uploaded file
+                file_extension = media_file.filename.split('.')[-1].lower() if '.' in media_file.filename else ('jpg' if media_type == 'image' else 'mp4')
+                unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+                file_path = f"uploads/{unique_filename}"
+                
+                # Read and save file content
+                content = await media_file.read()
+                with open(file_path, "wb") as f:
+                    f.write(content)
+                
+                # Generate public URL
+                base_url = os.getenv("PUBLIC_BASE_URL", "https://social-bridge-5.preview.emergentagent.com")
+                media_url = f"{base_url}/api/uploads/{unique_filename}"
+                
+                # Optimize image if it's an image
+                if media_type == "image":
+                    optimize_image(file_path, instagram_mode=False)
+                
+                print(f"📁 Fallback upload - Saved {media_type}: {file_path} -> {media_url}")
             
             # Clean metadata fields
             clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
