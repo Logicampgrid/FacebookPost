@@ -3030,10 +3030,27 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 print(f"Facebook upload response: {response.status_code} - {result}")
                 
                 if response.status_code == 200 and 'id' in result:
-                    print("✅ SUCCESS: Facebook media upload successful - IMAGE WILL DISPLAY AS IMAGE!")
+                    print("✅ SUCCESS: Facebook media upload successful - MEDIA WILL DISPLAY CORRECTLY!")
                     
-                    # If we have a product link, add it as a comment for clickability
-                    if product_link:
+                    # SPECIAL LOGIC FOR GIZMOBBS VIDEOS: Auto-add gizmobbs link comment
+                    if is_video and shop_type == "gizmobbs":
+                        try:
+                            gizmobbs_link = "https://logicamp.org/wordpress/gizmobbs"
+                            print(f"🎬 GIZMOBBS VIDEO: Adding automatic comment with link: {gizmobbs_link}")
+                            gizmobbs_comment_result = await add_comment_to_facebook_post(
+                                result["id"], 
+                                gizmobbs_link,
+                                page_access_token
+                            )
+                            if gizmobbs_comment_result:
+                                print("✅ Gizmobbs automatic comment added successfully!")
+                            else:
+                                print("⚠️ Gizmobbs comment addition failed, but video posted successfully")
+                        except Exception as gizmobbs_comment_error:
+                            print(f"⚠️ Gizmobbs comment addition error: {gizmobbs_comment_error} (video still posted successfully)")
+                    
+                    # If we have a product link, add it as a comment for clickability (for non-gizmobbs or images)
+                    if product_link and not (is_video and shop_type == "gizmobbs"):
                         try:
                             print(f"🔗 Adding clickable comment with product link: {product_link}")
                             comment_result = await add_comment_to_facebook_post(
@@ -3044,9 +3061,9 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                             if comment_result:
                                 print("✅ Clickable product comment added successfully!")
                             else:
-                                print("⚠️ Comment addition failed, but image posted successfully")
+                                print("⚠️ Comment addition failed, but media posted successfully")
                         except Exception as comment_error:
-                            print(f"⚠️ Comment addition error: {comment_error} (image still posted successfully)")
+                            print(f"⚠️ Comment addition error: {comment_error} (media still posted successfully)")
                     
                     return result
                 else:
