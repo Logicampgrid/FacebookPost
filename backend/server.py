@@ -6444,21 +6444,27 @@ async def webhook_debug(request: Request):
         }
 
 @app.post("/api/webhook")
-async def webhook_endpoint(request: N8NWebhookRequest):
+async def webhook_endpoint(
+    request: Request,
+    json_data: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    video: Optional[UploadFile] = File(None)
+):
     """
-    Webhook endpoint for N8N integration - accepts transformed product data
+    Webhook endpoint for N8N integration - supports both JSON and multipart/form-data
     
-    This endpoint accepts the exact format from your N8N transformation script:
+    MULTIPART FORMAT (for n8n):
+    - json_data: string containing {"store": "gizmobbs", "title": "...", "url": "...", "description": "..."}
+    - image or video: binary file (mutually exclusive)
+    
+    JSON FORMAT (legacy):
     {
         "store": "gizmobbs" | "outdoor" | "logicantiq",
         "title": "Product Name", 
-        "description": "Product Description (HTML will be stripped)",
+        "description": "Product Description",
         "product_url": "https://...",
         "image_url": "https://..."
     }
-    
-    The description will be automatically cleaned from HTML tags using stripHtml function,
-    matching the N8N transformation logic.
     """
     try:
         print(f"🔗 N8N Webhook POST received: {request.title} for store '{request.store}'")
