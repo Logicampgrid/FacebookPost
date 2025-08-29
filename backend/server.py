@@ -3032,14 +3032,14 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 if response.status_code == 200 and 'id' in result:
                     print("✅ SUCCESS: Facebook media upload successful - MEDIA WILL DISPLAY CORRECTLY!")
                     
-                    # SPECIAL LOGIC FOR GIZMOBBS VIDEOS: Auto-add gizmobbs link comment
+                    # ENHANCED LOGIC FOR GIZMOBBS: Auto-add gizmobbs link comment for ALL videos
                     if is_video and shop_type == "gizmobbs":
                         try:
-                            gizmobbs_link = "https://logicamp.org/wordpress/gizmobbs"
-                            print(f"🎬 GIZMOBBS VIDEO: Adding automatic comment with link: {gizmobbs_link}")
+                            gizmobbs_comment_text = "Découvrez ce produit sur notre boutique : https://logicamp.org/werdpress/gizmobbs"
+                            print(f"🎬 GIZMOBBS VIDEO: Adding automatic comment: {gizmobbs_comment_text}")
                             gizmobbs_comment_result = await add_comment_to_facebook_post(
                                 result["id"], 
-                                gizmobbs_link,
+                                gizmobbs_comment_text,
                                 page_access_token
                             )
                             if gizmobbs_comment_result:
@@ -3049,21 +3049,41 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                         except Exception as gizmobbs_comment_error:
                             print(f"⚠️ Gizmobbs comment addition error: {gizmobbs_comment_error} (video still posted successfully)")
                     
-                    # If we have a product link, add it as a comment for clickability (for non-gizmobbs or images)
-                    if product_link and not (is_video and shop_type == "gizmobbs"):
+                    # ENHANCED: Add product link comment for ALL media with product links
+                    # This will be IN ADDITION to gizmobbs comments, not replacing them
+                    if product_link:
                         try:
                             print(f"🔗 Adding clickable comment with product link: {product_link}")
+                            # Create an informative comment with the product link
+                            product_comment_text = f"🛒 Voir le produit: {product_link}"
+                            
                             comment_result = await add_comment_to_facebook_post(
                                 result["id"], 
-                                f"🛒 Voir le produit: {product_link}",
+                                product_comment_text,
                                 page_access_token
                             )
                             if comment_result:
                                 print("✅ Clickable product comment added successfully!")
                             else:
-                                print("⚠️ Comment addition failed, but media posted successfully")
+                                print("⚠️ Product comment addition failed, but media posted successfully")
                         except Exception as comment_error:
-                            print(f"⚠️ Comment addition error: {comment_error} (media still posted successfully)")
+                            print(f"⚠️ Product comment addition error: {comment_error} (media still posted successfully)")
+                    
+                    # ENHANCED: Handle existing comment_link functionality (backward compatibility)
+                    if hasattr(post, 'comment_link') and post.comment_link and post.comment_link != product_link:
+                        try:
+                            print(f"📝 Adding additional comment link: {post.comment_link}")
+                            additional_comment_result = await add_comment_to_facebook_post(
+                                result["id"], 
+                                post.comment_link,
+                                page_access_token
+                            )
+                            if additional_comment_result:
+                                print("✅ Additional comment link added successfully!")
+                            else:
+                                print("⚠️ Additional comment link addition failed")
+                        except Exception as additional_comment_error:
+                            print(f"⚠️ Additional comment error: {additional_comment_error}")
                     
                     return result
                 else:
