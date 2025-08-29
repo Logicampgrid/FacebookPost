@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://media-enhance-1.preview.emergentagent.com"
+BASE_URL = "https://gizmobbs-media-api.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
