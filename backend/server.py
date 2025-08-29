@@ -2738,46 +2738,77 @@ async def get_page_connected_instagram(page_access_token: str, page_id: str):
         print(f"❌ Error getting page connected Instagram: {e}")
         return None
 
-async def simulate_facebook_post_for_test(post: Post, page_access_token: str):
-    """Simulate Facebook post for test mode - demonstrates clickable images functionality"""
+async def simulate_facebook_post_for_test(post: Post, page_access_token: str, shop_type: Optional[str] = None):
+    """Simulate Facebook post for test mode - demonstrates enhanced clickable images and gizmobbs features"""
     try:
-        print("🎭 SIMULATION: Facebook post with clickable images")
+        print("🎭 SIMULATION: Facebook post with enhanced features")
         
         # Extract product link for clickable image demo
         product_link = None
-        if post.link_metadata and len(post.link_metadata) > 0:
+        link_source = ""
+        
+        if post.link_metadata and len(post.link_metadata) > 0 and post.link_metadata[0].get("url"):
             product_link = post.link_metadata[0].get("url")
-        elif post.comment_link:
+            link_source = "link_metadata (highest priority)"
+        elif hasattr(post, 'comment_link') and post.comment_link:
             product_link = post.comment_link
+            link_source = "comment_link"
         
         # Generate test post ID
         test_post_id = f"test_fb_post_{uuid.uuid4().hex[:8]}"
         
-        # Log the clickable image configuration
+        # Log the enhanced clickable image configuration
         if post.media_urls and product_link:
-            print(f"🔗 IMAGES CLIQUABLES SIMULÉES:")
+            print(f"🔗 ENHANCED IMAGES CLIQUABLES SIMULÉES:")
             print(f"   📸 Image: {post.media_urls[0]}")
             print(f"   🎯 Lien cible: {product_link}")
+            print(f"   🔍 Source du lien: {link_source}")
             print(f"   💬 Message: {post.content}")
             print(f"   ✅ L'image sera cliquable et redirigera vers: {product_link}")
-            print(f"   ✅ Un commentaire avec le lien sera ajouté automatiquement")
+            print(f"   ✅ Commentaire produit ajouté automatiquement")
+        
+        # ENHANCED: Check for video + gizmobbs combination
+        is_video = False
+        if post.media_urls:
+            media_url = post.media_urls[0]
+            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
+        
+        # ENHANCED: Simulate gizmobbs video comment feature
+        gizmobbs_comment_added = False
+        if is_video and shop_type == "gizmobbs":
+            gizmobbs_comment_text = "Découvrez ce produit sur notre boutique : https://logicamp.org/werdpress/gizmobbs"
+            print(f"🎬 ENHANCED GIZMOBBS VIDEO FEATURE SIMULÉE:")
+            print(f"   📹 Vidéo détectée: {post.media_urls[0]}")
+            print(f"   🏪 Store: {shop_type}")
+            print(f"   💬 Commentaire auto ajouté: {gizmobbs_comment_text}")
+            print(f"   ✅ Commentaire gizmobbs sera ajouté EN PLUS des autres commentaires")
+            gizmobbs_comment_added = True
         
         # Simulate successful post creation
         result = {
             "id": test_post_id,
             "post_id": f"{post.target_id}_{test_post_id}",
-            "message": "Test mode: Facebook post simulated successfully",
+            "message": "Test mode: Enhanced Facebook post simulated successfully",
             "test_mode": True,
-            "clickable_image_configured": bool(post.media_urls and product_link),
-            "product_url": product_link if product_link else None,
-            "image_url": post.media_urls[0] if post.media_urls else None
+            "enhanced_features": {
+                "clickable_image_configured": bool(post.media_urls and product_link),
+                "product_url": product_link if product_link else None,
+                "link_source": link_source if product_link else None,
+                "gizmobbs_video_comment": gizmobbs_comment_added,
+                "shop_type": shop_type
+            },
+            "image_url": post.media_urls[0] if post.media_urls else None,
+            "is_video": is_video
         }
         
-        print(f"✅ TEST: Facebook post simulé avec succès: {test_post_id}")
+        print(f"✅ TEST: Enhanced Facebook post simulé avec succès: {test_post_id}")
         
         # Simulate comment addition for clickable functionality
         if product_link:
             print(f"✅ TEST: Commentaire avec lien produit simulé: {product_link}")
+        
+        if gizmobbs_comment_added:
+            print(f"✅ TEST: Commentaire gizmobbs automatique simulé")
         
         return result
         
