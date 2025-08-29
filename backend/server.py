@@ -6589,7 +6589,7 @@ async def webhook_endpoint(
         clean_description = strip_html(webhook_request.description) if webhook_request.description else "Découvrez ce produit"
         clean_title = strip_html(webhook_request.title) if webhook_request.title else "Sans titre"
         
-        print(f"📋 Processed data: store={request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
+        print(f"📋 Processed data: store={webhook_request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={webhook_request.product_url}, image_url={webhook_request.image_url}")
         
         # Validate required fields with cleaned data
         if not clean_title or clean_title.strip() == "" or clean_title.lower() in ['null', 'undefined', 'none', 'sans titre']:
@@ -6600,43 +6600,43 @@ async def webhook_endpoint(
             clean_description = "Découvrez ce produit"  # Default fallback as in N8N script
             print(f"🔄 Using default description: '{clean_description}'")
         
-        if not request.image_url or request.image_url.strip() == "":
+        if not webhook_request.image_url or webhook_request.image_url.strip() == "":
             print(f"⚠️ Warning: No image URL provided")
             # Don't fail - some products might not have images
-        elif not request.image_url.startswith('http'):
-            print(f"❌ Validation failed: Invalid image URL format: {request.image_url}")
+        elif not webhook_request.image_url.startswith('http'):
+            print(f"❌ Validation failed: Invalid image URL format: {webhook_request.image_url}")
             raise HTTPException(status_code=400, detail="Image URL must be a valid HTTP/HTTPS URL")
         
-        if not request.product_url or not request.product_url.startswith('http'):
-            print(f"❌ Validation failed: Invalid product URL: {request.product_url}")
+        if not webhook_request.product_url or not webhook_request.product_url.startswith('http'):
+            print(f"❌ Validation failed: Invalid product URL: {webhook_request.product_url}")
             raise HTTPException(status_code=400, detail="Valid product URL is required")
         
         # Validate store type (support both "gizmobbs" and "gimobbs")
-        if not request.store or request.store not in SHOP_PAGE_MAPPING:
+        if not webhook_request.store or webhook_request.store not in SHOP_PAGE_MAPPING:
             available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
-            print(f"❌ Validation failed: Invalid store '{request.store}'. Available: {available_stores}")
+            print(f"❌ Validation failed: Invalid store '{webhook_request.store}'. Available: {available_stores}")
             raise HTTPException(
                 status_code=400, 
-                detail=f"Invalid store type '{request.store}'. Available stores: {available_stores}"
+                detail=f"Invalid store type '{webhook_request.store}'. Available stores: {available_stores}"
             )
         
         # Convert N8N webhook format to ProductPublishRequest format with cleaned data
         product_request = ProductPublishRequest(
             title=clean_title,
             description=clean_description,
-            image_url=request.image_url,
-            product_url=request.product_url,
-            shop_type=request.store,  # Map 'store' to 'shop_type'
+            image_url=webhook_request.image_url,
+            product_url=webhook_request.product_url,
+            shop_type=webhook_request.store,  # Map 'store' to 'shop_type'
             user_id=None,  # Will be determined automatically
             page_id=None,  # Will be determined from shop_type mapping
             api_key=None
         )
         
-        print(f"🏪 Processing webhook for store: {request.store}")
+        print(f"🏪 Processing webhook for store: {webhook_request.store}")
         print(f"📦 Product: {clean_title}")
         print(f"📝 Description: {clean_description}")
-        print(f"🔗 URL: {request.product_url}")
-        print(f"📸 Image: {request.image_url}")
+        print(f"🔗 URL: {webhook_request.product_url}")
+        print(f"📸 Image: {webhook_request.image_url}")
         print(f"🎯 Strategy: Using Strategy 1C (store parameter detected)")
         
         # Check if external webhook is enabled
@@ -6645,17 +6645,17 @@ async def webhook_endpoint(
             
             # Prepare data for external webhook
             external_data = {
-                "store": request.store,
+                "store": webhook_request.store,
                 "title": clean_title,
                 "description": clean_description,
-                "product_url": request.product_url,
-                "image_url": request.image_url,
+                "product_url": webhook_request.product_url,
+                "image_url": webhook_request.image_url,
                 "strategy": "1C",
-                "original_request": request.dict()
+                "original_request": webhook_request.dict()
             }
             
             # Send to external webhook
-            external_result = await send_to_external_webhook(external_data, request.store)
+            external_result = await send_to_external_webhook(external_data, webhook_request.store)
             
             if external_result["success"]:
                 return {
@@ -6678,13 +6678,13 @@ async def webhook_endpoint(
             return {
                 "success": True,
                 "status": "duplicate_skipped",
-                "message": f"Product '{request.title}' already posted recently - duplicate skipped",
+                "message": f"Product '{webhook_request.title}' already posted recently - duplicate skipped",
                 "data": {
                     "facebook_post_id": result["facebook_post_id"],
                     "post_id": result["post_id"],
                     "page_name": result.get("page_name", "Cached Page"),
                     "page_id": result.get("page_id", "cached"),
-                    "store": request.store,
+                    "store": webhook_request.store,
                     "published_at": result["published_at"],
                     "comment_added": False,
                     "duplicate_skipped": True,
@@ -6696,13 +6696,13 @@ async def webhook_endpoint(
         return {
             "success": True,
             "status": "published",
-            "message": f"Product '{request.title}' published successfully to {request.store}",
+            "message": f"Product '{webhook_request.title}' published successfully to {webhook_request.store}",
             "data": {
                 "facebook_post_id": result["facebook_post_id"],
                 "post_id": result["post_id"],
                 "page_name": result["page_name"],
                 "page_id": result["page_id"],
-                "store": request.store,
+                "store": webhook_request.store,
                 "published_at": result["published_at"],
                 "comment_added": False,  # Link is now in post content, not comment
                 "duplicate_skipped": False,
