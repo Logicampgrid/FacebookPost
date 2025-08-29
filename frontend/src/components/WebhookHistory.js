@@ -164,19 +164,13 @@ const WebhookHistory = () => {
             {webhookPosts.map((post, index) => (
               <div key={post.id || index} className="p-6">
                 <div className="flex items-start space-x-4">
-                  {/* Product Image */}
+                  {/* Media Display - NEW: Videos show comments, Images are clickable */}
                   <div className="flex-shrink-0">
-                    {post.image_url ? (
-                      <img
-                        src={post.image_url}
-                        alt={post.title}
-                        className="w-16 h-16 rounded-lg object-contain bg-gray-100 border"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <Package className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
+                    <MediaDisplay 
+                      post={post} 
+                      showClickableImages={true} 
+                      showVideoComments={true} 
+                    />
                   </div>
 
                   {/* Content */}
