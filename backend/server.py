@@ -6467,11 +6467,127 @@ async def webhook_endpoint(
     }
     """
     try:
-        print(f"🔗 N8N Webhook POST received: {request.title} for store '{request.store}'")
+        # Detect request type and process accordingly
+        content_type = request.headers.get("content-type", "").lower()
+        
+        if "multipart/form-data" in content_type:
+            # N8N Multipart Request Processing
+            print("🔗 N8N Multipart Webhook received")
+            
+            # Validate json_data
+            if not json_data:
+                raise HTTPException(status_code=400, detail="json_data field is required for multipart requests")
+            
+            # Parse JSON metadata
+            try:
+                metadata = json.loads(json_data)
+            except json.JSONDecodeError as e:
+                raise HTTPException(status_code=400, detail=f"Invalid JSON in json_data field: {str(e)}")
+            
+            # Validate required fields in metadata
+            required_fields = ["store", "title", "url", "description"]
+            for field in required_fields:
+                if field not in metadata:
+                    raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
+            
+            # Check for binary file (image OR video, not both)
+            media_file = image if image else video
+            media_type = "image" if image else "video" if video else None
+            
+            if not media_file:
+                raise HTTPException(status_code=400, detail="Either 'image' or 'video' file is required")
+            
+            if image and video:
+                raise HTTPException(status_code=400, detail="Cannot upload both image and video in the same request")
+            
+            # Validate file type
+            allowed_image_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+            allowed_video_types = ["video/mp4", "video/mov", "video/avi", "video/webm"]
+            
+            if media_type == "image" and media_file.content_type not in allowed_image_types:
+                raise HTTPException(status_code=400, detail=f"Invalid image type: {media_file.content_type}. Allowed: {allowed_image_types}")
+            elif media_type == "video" and media_file.content_type not in allowed_video_types:
+                raise HTTPException(status_code=400, detail=f"Invalid video type: {media_file.content_type}. Allowed: {allowed_video_types}")
+            
+            # Save the uploaded file
+            file_extension = media_file.filename.split('.')[-1].lower() if '.' in media_file.filename else ('jpg' if media_type == 'image' else 'mp4')
+            unique_filename = f"n8n_{media_type}_{uuid.uuid4().hex[:8]}.{file_extension}"
+            file_path = f"uploads/{unique_filename}"
+            
+            # Read and save file content
+            content = await media_file.read()
+            with open(file_path, "wb") as f:
+                f.write(content)
+            
+            # Generate public URL
+            base_url = os.getenv("PUBLIC_BASE_URL", "https://gizmobbs-media-api.preview.emergentagent.com")
+            media_url = f"{base_url}/api/uploads/{unique_filename}"
+            
+            # Optimize image if it's an image
+            if media_type == "image":
+                optimize_image(file_path, instagram_mode=False)
+            
+            print(f"📁 Saved {media_type}: {file_path} -> {media_url}")
+            
+            # Clean metadata fields
+            clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
+            clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
+            
+            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}' ({media_type})")
+            print(f"📋 Metadata: {metadata}")
+            print(f"📁 File: {media_file.filename} ({media_file.content_type})")
+            
+            # Create ProductPublishRequest for multipart
+            product_request = ProductPublishRequest(
+                title=clean_title,
+                description=clean_description,
+                image_url=media_url,  # Use uploaded file URL
+                product_url=metadata["url"],
+                shop_type=metadata["store"],
+                user_id=None,
+                page_id=None,
+                api_key=None
+            )
+            
+            # Store media type for frontend display logic
+            processing_result = await create_product_post_from_local_image(product_request, media_url)
+            
+            # Add media type to result for frontend rendering
+            if isinstance(processing_result, dict):
+                processing_result["media_type"] = media_type
+                processing_result["media_filename"] = media_file.filename
+                processing_result["n8n_multipart"] = True
+            
+            return {
+                "success": True,
+                "status": "published",
+                "message": f"N8N multipart content '{clean_title}' published successfully",
+                "media_type": media_type,
+                "data": processing_result
+            }
+            
+        else:
+            # Legacy JSON Request Processing
+            print("🔗 Legacy JSON Webhook received")
+            
+            # Parse request body as JSON
+            body = await request.body()
+            try:
+                json_request = json.loads(body.decode('utf-8'))
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid JSON in request body")
+            
+            # Convert to N8NWebhookRequest for validation
+            try:
+                webhook_request = N8NWebhookRequest(**json_request)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+            
+            print(f"🔗 N8N Webhook POST received: {webhook_request.title} for store '{webhook_request.store}'")
         
         # Clean HTML from description using the same logic as N8N stripHtml function
-        clean_description = strip_html(request.description) if request.description else "Découvrez ce produit"
-        clean_title = strip_html(request.title) if request.title else "Sans titre"
+        clean_description = strip_html(webhook_request.description) if webhook_request.description else "Découvrez ce produit"
+        clean_title = strip_html(webhook_request.title) if webhook_request.title else "Sans titre"
         
         print(f"📋 Processed data: store={request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={request.product_url}, image_url={request.image_url}")
         
