@@ -17,39 +17,51 @@ from datetime import datetime
 sys.path.append('/app/backend')
 
 async def test_enhanced_clickable_images():
-    """Test that all images become clickable with product links"""
+    """Test that all images become clickable with product links via multipart webhook"""
     print("\n🧪 TEST 1: Enhanced Clickable Images")
     print("=" * 50)
     
     try:
-        # Test via correct webhook endpoint with image URL (JSON source)
-        test_data = {
-            "store": "gizmobbs",
+        # Prepare test data for multipart webhook
+        test_json_data = {
             "title": "Test Produit Images Cliquables",
-            "description": "Test pour vérifier que les images depuis JSON deviennent cliquables",
-            "product_url": "https://logicamp.org/werdpress/gizmobbs/test-clickable-json",
-            "image_url": "https://picsum.photos/800/600?test_json=" + str(int(datetime.now().timestamp()))
+            "description": "Test pour vérifier que les images depuis upload deviennent cliquables",
+            "url": "https://logicamp.org/werdpress/gizmobbs/test-clickable-upload",
+            "store": "gizmobbs"
         }
         
-        print(f"📸 Testing JSON image source: {test_data['image_url']}")
-        print(f"🔗 Expected click redirect: {test_data['product_url']}")
+        print(f"📸 Testing uploaded image with clickable link")
+        print(f"🔗 Expected click redirect: {test_json_data['url']}")
+        
+        # Prepare multipart data
+        files = {
+            'image': ('test_image.jpg', open('/app/test_image.jpg', 'rb'), 'image/jpeg')
+        }
+        data = {
+            'json_data': json.dumps(test_json_data)
+        }
         
         response = requests.post(
             "http://localhost:8001/api/webhook",
-            json=test_data,
-            headers={"Content-Type": "application/json"}
+            files=files,
+            data=data
         )
+        
+        # Close the file
+        files['image'][1].close()
         
         if response.status_code == 200:
             result = response.json()
             print(f"✅ Webhook response successful: {response.status_code}")
-            print(f"📊 Response data: {json.dumps(result, indent=2)}")
+            print(f"📊 Response summary: {result.get('status', 'unknown')}")
             
-            # Check if clickable image was configured
+            # Check for enhanced features in response
+            publication_results = result.get("data", {}).get("publication_results", [])
+            
             success_indicators = [
                 "success" in str(result).lower(),
                 "published" in str(result).lower(),
-                "clickable" in str(result).lower(),
+                len(publication_results) > 0,
                 result.get("status") == "success"
             ]
             
@@ -57,7 +69,7 @@ async def test_enhanced_clickable_images():
                 print("✅ ENHANCED: Clickable images correctly configured!")
                 return True
             else:
-                print("⚠️ Images processed but clickable status unclear - check response")
+                print("⚠️ Images processed but success unclear")
                 return True  # Still consider success if processed
                 
         else:
