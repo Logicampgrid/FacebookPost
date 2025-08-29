@@ -5536,7 +5536,7 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
                 print(f"✅ Simulated Facebook post: {facebook_result['id']}")
             else:
                 # Real Facebook API call with enhanced clickable image handling for local images
-                facebook_result = await post_to_facebook(facebook_post_obj, access_token)
+                facebook_result = await post_to_facebook(facebook_post_obj, access_token, shop_type=request.shop_type)
             
             if not facebook_result or "id" not in facebook_result:
                 raise Exception("Facebook publishing failed")
