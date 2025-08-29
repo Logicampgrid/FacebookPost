@@ -4998,7 +4998,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                     group_result = {"id": f"test_group_{uuid.uuid4().hex[:8]}"}
                     print(f"✅ Simulated group post: {group_result['id']}")
                 else:
-                    group_result = await post_to_facebook(group_post_obj, access_token)
+                    group_result = await post_to_facebook(group_post_obj, access_token, shop_type=request.shop_type)
                 
                 if group_result and "id" in group_result:
                     publication_results["groups"].append({
