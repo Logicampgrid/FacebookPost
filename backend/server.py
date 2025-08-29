@@ -2918,7 +2918,7 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
         # TEST MODE: Handle test tokens (for WooCommerce webhook testing)
         if page_access_token.startswith("test_"):
             print(f"🧪 TEST MODE: Simulating Facebook post for WooCommerce webhook")
-            return await simulate_facebook_post_for_test(post, page_access_token)
+            return await simulate_facebook_post_for_test(post, page_access_token, shop_type)
         
         # ENHANCED: Extract URLs from post content for Facebook link preview
         urls_in_content = extract_urls_from_text(post.content) if post.content else []
