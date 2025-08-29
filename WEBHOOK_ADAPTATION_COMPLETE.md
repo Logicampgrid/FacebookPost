@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://gizmobbs-media-api.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-bridge-5.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://gizmobbs-media-api.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://gizmobbs-media-api.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://gizmobbs-media-api.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-bridge-5.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-bridge-5.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-bridge-5.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://gizmobbs-media-api.preview.emergentagent.com
+🔗 https://social-bridge-5.preview.emergentagent.com

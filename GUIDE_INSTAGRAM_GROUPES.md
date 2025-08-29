@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://gizmobbs-media-api.preview.emergentagent.com
+URL : https://social-bridge-5.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -247,7 +247,7 @@ SHOP_PAGE_MAPPING = {
 ### **Test Stratégie 1C (paramètre store)**
 ```bash
 # Test avec store = déclenchement automatique 1C
-curl -X POST "https://gizmobbs-media-api.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://social-bridge-5.preview.emergentagent.com/api/webhook" \
   -H "Content-Type: application/json" \
   -d '{
     "store": "gizmobbs",
@@ -265,7 +265,7 @@ export EXTERNAL_WEBHOOK_ENABLED=true
 export NGROK_URL=https://bbf80c7dd1d5.ngrok-free.app
 
 # 2. Test avec transfert NGROK
-curl -X POST "https://gizmobbs-media-api.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://social-bridge-5.preview.emergentagent.com/api/webhook" \
   -H "Content-Type: application/json" \
   -d '{
     "store": "outdoor",
@@ -279,13 +279,13 @@ curl -X POST "https://gizmobbs-media-api.preview.emergentagent.com/api/webhook" 
 ### **Vérification des Stratégies**
 ```bash
 # Info sur toutes les stratégies disponibles
-curl -X GET "https://gizmobbs-media-api.preview.emergentagent.com/api/debug/facebook-image-fix"
+curl -X GET "https://social-bridge-5.preview.emergentagent.com/api/debug/facebook-image-fix"
 
 # Info webhook standard
-curl -X GET "https://gizmobbs-media-api.preview.emergentagent.com/api/webhook"
+curl -X GET "https://social-bridge-5.preview.emergentagent.com/api/webhook"
 
 # Info webhook enhanced  
-curl -X GET "https://gizmobbs-media-api.preview.emergentagent.com/api/webhook/enhanced"
+curl -X GET "https://social-bridge-5.preview.emergentagent.com/api/webhook/enhanced"
 ```
 
 ---
@@ -327,7 +327,7 @@ return items.map(item => {
 ```
 
 ### **Nœud HTTP Request N8N**
-- **URL** : `https://gizmobbs-media-api.preview.emergentagent.com/api/webhook/enhanced`
+- **URL** : `https://social-bridge-5.preview.emergentagent.com/api/webhook/enhanced`
 - **Method** : `POST`
 - **Body Type** : `Multipart-Form Data`
 - **Fields** :
