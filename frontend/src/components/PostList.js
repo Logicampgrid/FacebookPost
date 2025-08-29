@@ -185,26 +185,31 @@ const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
                   </div>
                 )}
                 
-                {/* Media URLs */}
-                {post.media_urls && post.media_urls.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-sm font-medium text-gray-600">Médias attachés:</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {post.media_urls.map((url, index) => (
-                        <div key={index} className="relative">
-                          <img 
-                            src={process.env.REACT_APP_BACKEND_URL + url} 
-                            alt={`Media ${index + 1}`}
-                            className="w-full h-16 object-contain bg-gray-100 rounded border"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {/* Media URLs - Updated to use MediaDisplay */}
+                {(post.media_urls && post.media_urls.length > 0) || post.image_url ? (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Contenu multimédia :</p>
+                    {post.image_url ? (
+                      <MediaDisplay 
+                        post={{...post, image_url: post.image_url}}
+                        showClickableImages={true}
+                        showVideoComments={true}
+                      />
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {post.media_urls.map((url, index) => (
+                          <div key={index} className="relative">
+                            <MediaDisplay 
+                              post={{...post, image_url: process.env.REACT_APP_BACKEND_URL + url}}
+                              showClickableImages={true}
+                              showVideoComments={true}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
