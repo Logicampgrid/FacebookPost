@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, CheckCircle, XCircle, Send, Trash2, RefreshCw, MessageCircle } from 'lucide-react';
+import MediaDisplay from './MediaDisplay';
 
 const PostList = ({ posts, loading, onDelete, onPublish, onRefresh }) => {
   const getStatusIcon = (status) => {
