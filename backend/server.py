@@ -6444,12 +6444,7 @@ async def webhook_debug(request: Request):
         }
 
 @app.post("/api/webhook")
-async def webhook_endpoint(
-    request: Request,
-    json_data: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    video: Optional[UploadFile] = File(None)
-):
+async def webhook_endpoint(request: Request):
     """
     Webhook endpoint for N8N integration - supports both JSON and multipart/form-data
     
@@ -6473,6 +6468,12 @@ async def webhook_endpoint(
         if "multipart/form-data" in content_type:
             # N8N Multipart Request Processing
             print("🔗 N8N Multipart Webhook received")
+            
+            # Parse multipart form data
+            form = await request.form()
+            json_data = form.get("json_data")
+            image = form.get("image")
+            video = form.get("video")
             
             # Validate json_data
             if not json_data:
