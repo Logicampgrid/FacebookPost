@@ -6439,29 +6439,32 @@ async def webhook_endpoint(request: Request):
                 if field not in metadata:
                     raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
             
-            # NOUVELLE LOGIQUE: Vérifier d'abord si une image_url est présente dans json_data
-            image_url_from_json = metadata.get("image") or metadata.get("image_url") or metadata.get("imageUrl")
+            # PRIORISATION STRATÉGIE 1C: Rechercher image_url dans json_data en priorité
+            image_url_from_json = metadata.get("image") or metadata.get("image_url") or metadata.get("imageUrl") or metadata.get("picture")
             
             media_url = None
-            use_strategy_1c = False
+            use_feed_strategy = False
+            strategy_name = "fallback_multipart"
             
+            # PRIORITÉ 1: Image URL dans json_data (Stratégie 1C avec /feed)
             if image_url_from_json:
-                print(f"🔍 Image URL détectée dans json_data: {image_url_from_json}")
+                print(f"🎯 PRIORITÉ 1: Image URL détectée dans json_data: {image_url_from_json}")
                 
                 # Vérifier l'accessibilité de l'image URL
                 if await check_image_url_accessibility(image_url_from_json):
-                    print(f"✅ Image URL accessible - Utilisation Stratégie 1C")
+                    print(f"✅ Image URL accessible - Utilisation Stratégie 1C (/feed avec picture)")
                     media_url = image_url_from_json
-                    use_strategy_1c = True
+                    use_feed_strategy = True
+                    strategy_name = "feed_with_picture"
                 else:
-                    print(f"❌ Image URL non accessible - Fallback vers upload multipart local")
-                    use_strategy_1c = False
+                    print(f"❌ Image URL non accessible - Fallback vers upload local puis Stratégie 1C")
+                    use_feed_strategy = False
             else:
-                print(f"🔍 Aucune image URL dans json_data - Utilisation upload multipart requis")
-                use_strategy_1c = False
+                print(f"🔍 Aucune image URL dans json_data - Tentative upload local puis Stratégie 1C")
+                use_feed_strategy = False
             
-            # Si pas de Stratégie 1C, utiliser le fallback multipart local
-            if not use_strategy_1c:
+            # PRIORITÉ 2: Upload local puis Stratégie 1C (/feed avec picture)
+            if not use_feed_strategy:
                 # Check for binary file (image OR video, not both)
                 media_file = image if image else video
                 media_type = "image" if image else "video" if video else None
