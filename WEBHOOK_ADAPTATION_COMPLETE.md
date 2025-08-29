@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://product-share-hub.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fb-graph-updater.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://product-share-hub.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://product-share-hub.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://product-share-hub.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fb-graph-updater.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fb-graph-updater.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fb-graph-updater.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

@@ -3,7 +3,7 @@
 ## ❌ Problème Initial
 Les médias (images et vidéos) ne s'affichaient pas correctement sur Facebook et apparaissaient comme des liens texte :
 ```
-📸 Media: https://product-share-hub.preview.emergentagent.com/.../aa496d...
+📸 Media: https://fb-graph-updater.preview.emergentagent.com/.../aa496d...
 ```
 Au lieu de l'image/vidéo réelle.
 
@@ -103,7 +103,7 @@ data = {
 
 ### ✅ **AVANT** (Problème)
 ```
-📸 Media: https://product-share-hub.preview.emergentagent.com/.../aa496d...
+📸 Media: https://fb-graph-updater.preview.emergentagent.com/.../aa496d...
 ```
 
 ### 🎉 **APRÈS** (Solution)
@@ -124,7 +124,7 @@ data = {
 
 ### Variables d'Environnement
 ```bash
-PUBLIC_BASE_URL=https://product-share-hub.preview.emergentagent.com
+PUBLIC_BASE_URL=https://fb-graph-updater.preview.emergentagent.com
 FACEBOOK_APP_ID=5664227323683118
 FACEBOOK_APP_SECRET=[configuré]
 ```

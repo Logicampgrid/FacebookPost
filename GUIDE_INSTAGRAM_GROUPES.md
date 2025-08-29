@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://product-share-hub.preview.emergentagent.com
+URL : https://fb-graph-updater.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
