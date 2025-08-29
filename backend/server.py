@@ -2879,7 +2879,7 @@ async def send_to_external_webhook(post_data: dict, store: str = None):
             "error": str(error)
         }
 
-async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_forced: bool = False):
+async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_forced: bool = False, shop_type: Optional[str] = None):
     """Post content to Facebook page/group - GUARANTEED IMAGE DISPLAY"""
     try:
         print(f"🎯 GUARANTEED IMAGE DISPLAY - Processing post to Facebook")
