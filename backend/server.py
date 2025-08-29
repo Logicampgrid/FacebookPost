@@ -6349,14 +6349,56 @@ async def webhook_debug(request: Request):
             "url": str(request.url)
         }
 
+async def check_image_url_accessibility(image_url: str) -> bool:
+    """
+    Vérifier si une URL d'image est accessible publiquement
+    Retourne True si accessible (codes 200-299), False sinon (400, 403, 404, etc.)
+    """
+    try:
+        print(f"🔍 Vérification accessibilité image: {image_url}")
+        
+        # Vérifier que l'URL est valide
+        if not image_url or not image_url.startswith(('http://', 'https://')):
+            print(f"❌ URL invalide: {image_url}")
+            return False
+        
+        # Test HEAD request pour vérifier l'accessibilité sans télécharger l'image complète
+        response = requests.head(image_url, timeout=10, allow_redirects=True)
+        
+        print(f"📊 Status Code: {response.status_code}")
+        
+        # Codes de succès (200-299)
+        if 200 <= response.status_code <= 299:
+            print(f"✅ Image accessible: {image_url}")
+            return True
+        # Codes d'erreur spécifiés (400, 403, 404) 
+        elif response.status_code in [400, 403, 404]:
+            print(f"❌ Image non accessible (code {response.status_code}): {image_url}")
+            return False
+        else:
+            # Autres codes d'erreur - traiter comme non accessible
+            print(f"⚠️ Image potentiellement inaccessible (code {response.status_code}): {image_url}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print(f"⏰ Timeout lors de la vérification: {image_url}")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erreur réseau lors de la vérification: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Erreur inattendue lors de la vérification: {e}")
+        return False
+
 @app.post("/api/webhook")
 async def webhook_endpoint(request: Request):
     """
     Webhook endpoint for N8N integration - supports both JSON and multipart/form-data
+    Implémente la Stratégie 1C avec vérification d'accessibilité d'image
     
     MULTIPART FORMAT (for n8n):
-    - json_data: string containing {"store": "gizmobbs", "title": "...", "url": "...", "description": "..."}
-    - image or video: binary file (mutually exclusive)
+    - json_data: string containing {"store": "gizmobbs", "title": "...", "url": "...", "description": "...", "image": "https://..."}
+    - image or video: binary file (mutually exclusive with image URL)
     
     JSON FORMAT (legacy):
     {
@@ -6364,7 +6406,7 @@ async def webhook_endpoint(request: Request):
         "title": "Product Name", 
         "description": "Product Description",
         "product_url": "https://...",
-        "image_url": "https://..."
+        "image_url": "https://..." OR "image": "https://..."
     }
     """
     try:
