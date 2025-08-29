@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration
-API_BASE = "https://fb-graph-updater.preview.emergentagent.com"
+API_BASE = "https://media-enhance-1.preview.emergentagent.com"
 
 def test_product_publication_with_clickable_image():
     """Test de publication d'un produit avec image cliquable"""
@@ -90,7 +90,7 @@ def test_manual_post_with_clickable_image():
     """Test manuel pour créer un post avec image cliquable"""
     print("\n📋 INSTRUCTIONS POUR TEST MANUEL:")
     print("=" * 60)
-    print("1. Connectez-vous à l'application: https://fb-graph-updater.preview.emergentagent.com")
+    print("1. Connectez-vous à l'application: https://media-enhance-1.preview.emergentagent.com")
     print("2. Authentifiez-vous avec Facebook")
     print("3. Créez un nouveau post avec:")
     print("   - ✅ Une image (uploadée)")

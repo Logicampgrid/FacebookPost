@@ -267,7 +267,7 @@ async def facebook_image_display_diagnostic():
         }
         
         # Test image accessibility
-        public_base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-graph-updater.preview.emergentagent.com")
+        public_base_url = os.getenv("PUBLIC_BASE_URL", "https://media-enhance-1.preview.emergentagent.com")
         test_image_scenarios = [
             {
                 "scenario": "Local image file upload",
@@ -1842,7 +1842,7 @@ async def test_outdoor_mapping():
 
 def get_dynamic_base_url() -> str:
     """Get the base URL for media files from environment configuration only"""
-    base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-graph-updater.preview.emergentagent.com")
+    base_url = os.getenv("PUBLIC_BASE_URL", "https://media-enhance-1.preview.emergentagent.com")
     return base_url.rstrip('/')  # Remove trailing slash
 
 # Shop Type to Page Mapping Configuration
@@ -6548,7 +6548,7 @@ async def save_binary_image(filename: str, mimetype: str, base64_data: str) -> s
             optimize_image(file_path, instagram_mode=False)
         
         # Return public URL
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-graph-updater.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://media-enhance-1.preview.emergentagent.com")
         public_url = f"{base_url}/api/uploads/{unique_filename}"
         
         print(f"📁 Saved binary image: {file_path} -> {public_url}")
@@ -6899,7 +6899,7 @@ async def enhanced_webhook_endpoint(request: Request):
             optimize_image(file_path, instagram_mode=False)
         
         # Generate public URL for the image
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-graph-updater.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://media-enhance-1.preview.emergentagent.com")
         image_url = f"{base_url}/api/uploads/{unique_filename}"
         
         print(f"📸 Image saved and optimized: {file_path} -> {image_url}")
@@ -8092,7 +8092,7 @@ async def test_clickable_and_instagram(request: dict):
         
         # Test 3: Check image access
         test_image_path = "/api/uploads/0017f703-5aee-4639-85db-f54c70cf7afc.jpg"
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-graph-updater.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://media-enhance-1.preview.emergentagent.com")
         full_image_url = f"{base_url}{test_image_path}"
         
         # Test 4: Prepare test data

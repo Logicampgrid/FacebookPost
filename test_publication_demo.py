@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration de base
-API_BASE = "https://fb-graph-updater.preview.emergentagent.com"
+API_BASE = "https://media-enhance-1.preview.emergentagent.com"
 
 def test_backend_connection():
     """Test de connexion au backend"""
