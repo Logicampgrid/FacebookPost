@@ -7689,30 +7689,7 @@ async def webhook_endpoint(request: Request):
                     print(f"❌ AUTO-ROUTING échoué: {routing_result.get('error')}")
                     print(f"🔄 Fallback vers stratégies existantes...")
                     # Continuer vers le fallback existant
-                
-                # Exécuter la nouvelle stratégie
-                photo_link_result = await execute_photo_with_link_strategy(
-                    message=message_content,
-                    product_link=product_url,
-                    image_source=image_source,
-                    shop_type=metadata["store"],
-                    fallback_binary=fallback_binary
-                )
-                
-                # Si la nouvelle stratégie réussit, retourner le résultat
-                if photo_link_result.get("success"):
-                    return {
-                        "success": True,
-                        "status": "published",
-                        "message": f"N8N multipart content '{clean_title}' published successfully with clickable image",
-                        "strategy_used": "photo_with_link",
-                        "image_final_url": photo_link_result.get("image_final_url"),
-                        "image_clickable": True,
-                        "data": photo_link_result
-                    }
-                else:
-                    print(f"❌ Nouvelle stratégie échouée: {photo_link_result.get('error')}")
-                    print(f"🔄 Fallback vers stratégies existantes...")
+
             
             # ============================================================================
             # FALLBACK: STRATÉGIES EXISTANTES 1B et 1C
