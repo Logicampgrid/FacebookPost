@@ -247,7 +247,7 @@ async def facebook_image_display_diagnostic():
             "strategies_available": [
                 "Strategy 1A: Direct image upload (multipart) - GUARANTEED IMAGE DISPLAY",
                 "Strategy 1B: URL-based photo post - GUARANTEED IMAGE DISPLAY", 
-                "Strategy 1C: Enhanced link post with picture parameter - FORCED IMAGE PREVIEW",
+                "Strategy 1C: Enhanced link post SANS paramètre picture - APERÇU AUTO-GÉNÉRÉ",
                 "Emergency Fallback: Text post with image URLs (only as last resort)"
             ],
             "improvements_implemented": [
