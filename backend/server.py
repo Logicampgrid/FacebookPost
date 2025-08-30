@@ -3067,7 +3067,7 @@ async def webhook_info():
             "url": "Product or content URL (required)",
             "store": "Optional store for auto-publishing: outdoor, gizmobbs, logicantiq, ma-boutique"
         },
-        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "available_stores": list(get_shop_page_mapping().keys()),
         "example_curl": """
 curl -X POST "https://your-domain.com/api/webhook" \\
   -F "image=@/path/to/image.jpg" \\
