@@ -408,8 +408,7 @@ class WebhookStrategy1CTester:
             )
             
             if success:
-                data_section = response.get('data', {})
-                strategy_used = data_section.get('strategy_used')
+                strategy_used = response.get('strategy_used')
                 consistent_results.append(strategy_used)
                 print(f"   Test {i+1} strategy: {strategy_used}")
         
