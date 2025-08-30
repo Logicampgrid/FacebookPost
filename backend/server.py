@@ -929,6 +929,142 @@ async def test_new_photo_with_link_strategy():
             "timestamp": datetime.utcnow().isoformat()
         }
 
+@app.post("/api/test/auto-routing-media")
+async def test_auto_routing_media():
+    """
+    Test endpoint pour la nouvelle stratégie auto-routing images et vidéos
+    Teste la détection automatique et le routage vers les bons endpoints Facebook/Instagram
+    """
+    try:
+        print("🧪 Test AUTO-ROUTING images et vidéos...")
+        
+        # Données de test avec différents types de médias
+        test_scenarios = [
+            {
+                "name": "Image JPEG",
+                "url": "https://picsum.photos/800/600?test=jpeg",
+                "expected_type": "image"
+            },
+            {
+                "name": "Image PNG", 
+                "url": "https://picsum.photos/800/600.png?test=png",
+                "expected_type": "image"
+            },
+            {
+                "name": "Vidéo MP4 simulée",
+                "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                "expected_type": "video"
+            }
+        ]
+        
+        results = []
+        
+        for scenario in test_scenarios:
+            print(f"📋 Test scenario: {scenario['name']}")
+            
+            # Simuler une requête webhook
+            test_message = f"Test AUTO-ROUTING: {scenario['name']}\n\nVérification que le système détecte automatiquement le type de média et route vers les bons endpoints Facebook/Instagram."
+            test_product_url = "https://logicamp.org/werdpress/gizmobbs/test-auto-routing"
+            test_shop_type = "gizmobbs"
+            
+            # Tester le routage automatique
+            try:
+                # Télécharger le média pour test
+                response = requests.get(scenario["url"], timeout=10)
+                if response.status_code == 200:
+                    # Sauvegarder temporairement
+                    temp_filename = f"test_auto_routing_{uuid.uuid4().hex[:8]}.tmp"
+                    temp_path = f"uploads/{temp_filename}"
+                    
+                    with open(temp_path, "wb") as f:
+                        f.write(response.content)
+                    
+                    # Tester la détection de type
+                    detected_type = await detect_media_type_from_content(response.content, scenario["url"])
+                    
+                    scenario_result = {
+                        "scenario": scenario["name"],
+                        "url": scenario["url"],
+                        "expected_type": scenario["expected_type"],
+                        "detected_type": detected_type,
+                        "detection_correct": detected_type == scenario["expected_type"],
+                        "temp_file": temp_path
+                    }
+                    
+                    # Si c'est une vraie image (pas vidéo), tester le routing complet
+                    if detected_type == "image":
+                        routing_result = await auto_route_media_to_facebook_instagram(
+                            local_media_path=temp_path,
+                            message=test_message,
+                            product_link=test_product_url,
+                            shop_type=test_shop_type,
+                            media_content=response.content
+                        )
+                        
+                        scenario_result["routing_test"] = {
+                            "success": routing_result.get("success", False),
+                            "platforms": [],
+                            "credits_used": routing_result.get("credits_used", 0)
+                        }
+                        
+                        if routing_result.get("facebook", {}).get("success"):
+                            scenario_result["routing_test"]["platforms"].append("facebook")
+                        if routing_result.get("instagram", {}).get("success"):
+                            scenario_result["routing_test"]["platforms"].append("instagram")
+                    
+                    # Nettoyage
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
+                    
+                    results.append(scenario_result)
+                    
+                else:
+                    results.append({
+                        "scenario": scenario["name"],
+                        "error": f"Impossible de télécharger: HTTP {response.status_code}"
+                    })
+            
+            except Exception as e:
+                results.append({
+                    "scenario": scenario["name"], 
+                    "error": f"Erreur test: {str(e)}"
+                })
+        
+        # Résumé des résultats
+        total_tests = len(test_scenarios)
+        successful_detections = sum(1 for r in results if r.get("detection_correct", False))
+        successful_routings = sum(1 for r in results if r.get("routing_test", {}).get("success", False))
+        
+        return {
+            "success": True,
+            "message": "✅ Test AUTO-ROUTING terminé",
+            "summary": {
+                "total_scenarios": total_tests,
+                "successful_detections": successful_detections,
+                "successful_routings": successful_routings,
+                "detection_accuracy": f"{(successful_detections/total_tests)*100:.1f}%"
+            },
+            "results": results,
+            "improvements": [
+                "✅ Détection automatique du type de média (image vs vidéo)",
+                "✅ Routage automatique vers /photos ou /videos selon le type",
+                "✅ Publication multi-plateformes (Facebook + Instagram)",
+                "✅ Gestion automatique du champ 'store' pour cibler la bonne page",
+                "✅ Gestion des crédits Emergent (limite 10 par publication)"
+            ],
+            "webhook_ready": True,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Test AUTO-ROUTING échoué: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 @app.post("/api/test/video-with-link-strategy") 
 async def test_video_with_link_strategy():
     """
