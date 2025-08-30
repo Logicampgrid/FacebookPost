@@ -7048,15 +7048,15 @@ async def webhook_endpoint(request: Request):
                     print(f"❌ Ancienne stratégie 1C échouée aussi, fallback vers multipart traditionnel")
                     strategy_name = "multipart_upload_final_fallback"
             
-            # FALLBACK: Utiliser l'approche multipart traditionnelle
-            print(f"📁 Exécution fallback multipart upload")
+            # FALLBACK FINAL: Utiliser l'approche multipart traditionnelle
+            print(f"📁 Exécution fallback final multipart upload")
             
             # Create ProductPublishRequest for multipart fallback
             product_request = ProductPublishRequest(
                 title=clean_title,
                 description=clean_description,
                 image_url=media_url,
-                product_url=metadata["url"],
+                product_url=product_url,
                 shop_type=metadata["store"],
                 user_id=None,
                 page_id=None,
@@ -7068,14 +7068,17 @@ async def webhook_endpoint(request: Request):
             return {
                 "success": True,
                 "status": "published", 
-                "message": f"N8N multipart content '{clean_title}' published successfully",
+                "message": f"N8N multipart content '{clean_title}' published successfully (final fallback)",
                 "strategy_used": strategy_name,
+                "image_final_url": media_url,
                 "image_source": "upload" if not image_url_from_json else "url",
                 "data": processing_result
             }
             
         else:
-            # Legacy JSON Request Processing
+            # ============================================================================
+            # LEGACY JSON REQUEST PROCESSING avec nouvelle stratégie "photo_with_link"
+            # ============================================================================
             print("🔗 Legacy JSON Webhook received")
             
             # Parse request body as JSON
@@ -7118,36 +7121,63 @@ async def webhook_endpoint(request: Request):
             )
             
             print(f"🔗 N8N JSON Webhook POST received: {webhook_request.title} for store '{webhook_request.store}'")
-        
-        # Clean HTML from description using the same logic as N8N stripHtml function  
-        clean_description = strip_html(webhook_request.description) if webhook_request.description else "Découvrez ce produit"
-        clean_title = strip_html(webhook_request.title) if webhook_request.title else "Sans titre"
-        
-        print(f"📋 Processed data: store={webhook_request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={webhook_request.product_url}, image_url={webhook_request.image_url}")
-        
-        # Validate required fields with cleaned data
-        if not clean_title or clean_title.strip() == "" or clean_title.lower() in ['null', 'undefined', 'none', 'sans titre']:
-            print(f"❌ Validation failed: Invalid title after HTML cleaning: '{clean_title}'")
-            raise HTTPException(status_code=400, detail="Product title is required and cannot be empty, null, or undefined")
-        
-        if not clean_description or clean_description.strip() == "" or clean_description.lower() in ['null', 'undefined', 'none']:
-            clean_description = "Découvrez ce produit"  # Default fallback as in N8N script
-            print(f"🔄 Using default description: '{clean_description}'")
-        
-        if not webhook_request.product_url or not webhook_request.product_url.startswith('http'):
-            print(f"❌ Validation failed: Invalid product URL: {webhook_request.product_url}")
-            raise HTTPException(status_code=400, detail="Valid product URL is required")
-        
-        # Validate store type (support both "gizmobbs" and "gimobbs")
-        if not webhook_request.store or webhook_request.store not in SHOP_PAGE_MAPPING:
-            available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
-            print(f"❌ Validation failed: Invalid store '{webhook_request.store}'. Available: {available_stores}")
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid store type '{webhook_request.store}'. Available stores: {available_stores}"
+            
+            # Clean HTML from description using the same logic as N8N stripHtml function  
+            clean_description = strip_html(webhook_request.description) if webhook_request.description else "Découvrez ce produit"
+            clean_title = strip_html(webhook_request.title) if webhook_request.title else "Sans titre"
+            
+            print(f"📋 Processed data: store={webhook_request.store}, title='{clean_title}', description='{clean_description[:50]}...', product_url={webhook_request.product_url}, image_url={webhook_request.image_url}")
+            
+            # Validate required fields with cleaned data
+            if not clean_title or clean_title.strip() == "" or clean_title.lower() in ['null', 'undefined', 'none', 'sans titre']:
+                print(f"❌ Validation failed: Invalid title after HTML cleaning: '{clean_title}'")
+                raise HTTPException(status_code=400, detail="Product title is required and cannot be empty, null, or undefined")
+            
+            if not clean_description or clean_description.strip() == "" or clean_description.lower() in ['null', 'undefined', 'none']:
+                clean_description = "Découvrez ce produit"  # Default fallback as in N8N script
+                print(f"🔄 Using default description: '{clean_description}'")
+            
+            if not webhook_request.product_url or not webhook_request.product_url.startswith('http'):
+                print(f"❌ Validation failed: Invalid product URL: {webhook_request.product_url}")
+                raise HTTPException(status_code=400, detail="Valid product URL is required")
+            
+            # Validate store type (support both "gizmobbs" and "gimobbs")
+            if not webhook_request.store or webhook_request.store not in SHOP_PAGE_MAPPING:
+                available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
+                print(f"❌ Validation failed: Invalid store '{webhook_request.store}'. Available: {available_stores}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid store type '{webhook_request.store}'. Available stores: {available_stores}"
+                )
+            
+            # NOUVELLE LOGIQUE JSON: Prioriser nouvelle stratégie "photo_with_link"
+            message_content = f"{clean_title}\n\n{clean_description}".strip()
+            
+            # Tentative nouvelle stratégie pour les requêtes JSON
+            print(f"🎯 JSON Request: Tentative nouvelle stratégie photo_with_link")
+            
+            json_photo_link_result = await execute_photo_with_link_strategy(
+                message=message_content,
+                product_link=webhook_request.product_url,
+                image_source=webhook_request.image_url,
+                shop_type=webhook_request.store,
+                fallback_binary=None  # Pas de binaire pour les requêtes JSON
             )
-        
-        # NOUVELLE LOGIQUE JSON: Prioriser Stratégie 1C avec fallback intelligent
+            
+            # Si la nouvelle stratégie réussit
+            if json_photo_link_result.get("success"):
+                return {
+                    "success": True,
+                    "status": "published",
+                    "message": f"JSON content '{clean_title}' published successfully with clickable image",
+                    "strategy_used": "photo_with_link",
+                    "image_final_url": json_photo_link_result.get("image_final_url"),
+                    "image_clickable": True,
+                    "data": json_photo_link_result
+                }
+            else:
+                print(f"❌ Nouvelle stratégie échouée pour JSON: {json_photo_link_result.get('error')}")
+                print(f"🔄 Fallback vers anciennes stratégies pour JSON...")
         final_image_url = webhook_request.image_url
         strategy_attempted = "feed_with_picture"
         
