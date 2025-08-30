@@ -314,7 +314,7 @@ class WebhookStrategy1CTester:
             "Webhook - No Image URL",
             "POST",
             "api/webhook",
-            200,
+            400,  # Expect 400 since image_url is required
             data=test_data
         )
         
