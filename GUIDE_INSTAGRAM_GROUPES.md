@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fb-store-publisher.preview.emergentagent.com
+URL : https://fb-media-manager.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

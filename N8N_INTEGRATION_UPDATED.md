@@ -23,7 +23,7 @@ L'application peut maintenant publier automatiquement sur **3 pages spécifiques
 
 ### **Endpoint Principal**
 ```
-POST https://fb-store-publisher.preview.emergentagent.com/api/publishProduct
+POST https://fb-media-manager.preview.emergentagent.com/api/publishProduct
 ```
 
 ### **Payload JSON avec Sélection de Boutique**
@@ -55,7 +55,7 @@ POST https://fb-store-publisher.preview.emergentagent.com/api/publishProduct
 ```json
 {
   "method": "POST",
-  "url": "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct",
+  "url": "https://fb-media-manager.preview.emergentagent.com/api/publishProduct",
   "headers": {
     "Content-Type": "application/json"
   },
@@ -75,7 +75,7 @@ POST https://fb-store-publisher.preview.emergentagent.com/api/publishProduct
 ```json
 {
   "method": "POST", 
-  "url": "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct",
+  "url": "https://fb-media-manager.preview.emergentagent.com/api/publishProduct",
   "headers": {
     "Content-Type": "application/json"
   },
@@ -95,7 +95,7 @@ POST https://fb-store-publisher.preview.emergentagent.com/api/publishProduct
 ```json
 {
   "method": "POST",
-  "url": "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct", 
+  "url": "https://fb-media-manager.preview.emergentagent.com/api/publishProduct", 
   "headers": {
     "Content-Type": "application/json"
   },
@@ -209,7 +209,7 @@ return [{ json: item }];
 
 ### **Endpoint Historique**
 ```
-GET https://fb-store-publisher.preview.emergentagent.com/api/webhook-history?limit=100
+GET https://fb-media-manager.preview.emergentagent.com/api/webhook-history?limit=100
 ```
 
 **Réponse :**
@@ -253,7 +253,7 @@ GET https://fb-store-publisher.preview.emergentagent.com/api/webhook-history?lim
 
 **Outdoor :**
 ```bash
-curl -X POST "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://fb-media-manager.preview.emergentagent.com/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Tente 2 places ultra-légère",
@@ -266,7 +266,7 @@ curl -X POST "https://fb-store-publisher.preview.emergentagent.com/api/publishPr
 
 **Gizmobbs :**
 ```bash
-curl -X POST "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://fb-media-manager.preview.emergentagent.com/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Smartphone 5G 128GB",
@@ -279,7 +279,7 @@ curl -X POST "https://fb-store-publisher.preview.emergentagent.com/api/publishPr
 
 **LogicAntiq :**
 ```bash
-curl -X POST "https://fb-store-publisher.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://fb-media-manager.preview.emergentagent.com/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Commode Louis XVI",
