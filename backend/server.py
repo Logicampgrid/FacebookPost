@@ -1639,7 +1639,7 @@ async def auto_route_media_to_facebook_instagram(
         if not target_page_id or not page_access_token:
             return {
                 "success": False,
-                "error": f"Page Facebook non trouvée pour store '{shop_type}'. Vérifiez la configuration SHOP_PAGE_MAPPING.",
+                "error": f"Page Facebook non trouvée pour store '{shop_type}'. Vérifiez la configuration get_shop_page_mapping().",
                 "credits_used": 0
             }
         
