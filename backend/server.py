@@ -404,18 +404,86 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
         unique_id = uuid.uuid4().hex[:8]
         
         if media_type == 'image':
-            print(f"🖼️ CONVERSION IMAGE: Optimisation pour Instagram/Facebook")
+            print(f"🖼️ CONVERSION IMAGE ULTRA-ROBUSTE: Optimisation pour Instagram/Facebook")
             
-            # Déterminer le format d'origine
+            # Déterminer le format d'origine et propriétés
+            original_format = "UNKNOWN"
+            original_size = (0, 0)
+            original_mode = "UNKNOWN"
+            has_transparency = False
+            
             try:
                 with Image.open(input_path) as img:
                     original_format = img.format
                     original_size = img.size
                     original_mode = img.mode
+                    has_transparency = img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)
+                    
                     print(f"📋 Format original: {original_format}, Taille: {original_size}, Mode: {original_mode}")
+                    print(f"🔍 Transparence détectée: {has_transparency}")
+                    print(f"📐 Résolution: {original_size[0]}x{original_size[1]} pixels")
+                    
+                    # Analyse critique pour sélection de stratégie
+                    pixels_total = original_size[0] * original_size[1]
+                    print(f"📊 Pixels totaux: {pixels_total:,} ({pixels_total/1000000:.1f}MP)")
+                    
             except Exception as detection_error:
                 print(f"⚠️ Impossible de détecter le format: {str(detection_error)}")
-                original_format = "UNKNOWN"
+                
+            # LOGIQUE DE SÉLECTION INTELLIGENTE DES STRATÉGIES
+            print(f"🧠 SÉLECTION INTELLIGENTE DE STRATÉGIE:")
+            
+            # Déterminer stratégies à utiliser selon les caractéristiques
+            selected_strategies = []
+            
+            # Règle 1: Images très lourdes (>10MB) -> JPEG compact obligatoire
+            if file_size_mb > 10:
+                print(f"🔥 IMAGE TRÈS LOURDE ({file_size_mb:.1f}MB) -> Stratégie JPEG compact prioritaire")
+                selected_strategies.append("jpeg_compact")
+                selected_strategies.append("jpeg_facebook_optimized")
+                
+            # Règle 2: Images moyennement lourdes (5-10MB) -> JPEG optimisé
+            elif file_size_mb > 5:
+                print(f"⚠️ IMAGE LOURDE ({file_size_mb:.1f}MB) -> Stratégie JPEG optimisé prioritaire")
+                selected_strategies.append("jpeg_facebook_optimized")
+                selected_strategies.append("jpeg_compact")
+                
+            # Règle 3: WebP ou PNG lourdes -> Force JPEG (résout problèmes Facebook)
+            elif original_format in ['WEBP', 'PNG'] and file_size_mb > 2:
+                print(f"🔄 {original_format} LOURD ({file_size_mb:.1f}MB) -> Conversion JPEG forcée")
+                selected_strategies.append("jpeg_facebook_optimized")
+                selected_strategies.append("jpeg_high_quality")
+                
+            # Règle 4: Transparence nécessaire ET taille raisonnable -> PNG puis JPEG
+            elif has_transparency and file_size_mb < 5:
+                print(f"✨ TRANSPARENCE DÉTECTÉE -> Tentative PNG puis fallback JPEG")
+                selected_strategies.append("png_transparency_only")
+                selected_strategies.append("jpeg_facebook_optimized")
+                
+            # Règle 5: Images normales -> Stratégies standards
+            else:
+                print(f"📷 IMAGE NORMALE -> Stratégies standards par ordre de préférence")
+                selected_strategies.append("jpeg_facebook_optimized")
+                selected_strategies.append("jpeg_high_quality")
+                if has_transparency:
+                    selected_strategies.append("png_transparency_only")
+            
+            # Toujours ajouter fallback compact en dernier recours
+            if "jpeg_compact" not in selected_strategies:
+                selected_strategies.append("jpeg_compact")
+                
+            print(f"🎯 Stratégies sélectionnées: {selected_strategies}")
+            
+            # Filtrer les stratégies de conversion selon la sélection
+            filtered_strategies = [s for s in conversion_strategies if s["name"] in selected_strategies]
+            # Réorganiser selon l'ordre de priorité
+            ordered_strategies = []
+            for selected_name in selected_strategies:
+                for strategy in conversion_strategies:
+                    if strategy["name"] == selected_name:
+                        ordered_strategies.append(strategy)
+                        break
+            conversion_strategies = ordered_strategies
             
             # Stratégies de conversion images ULTRA-ROBUSTES pour Facebook/Instagram
             conversion_strategies = [
