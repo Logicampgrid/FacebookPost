@@ -6756,19 +6756,28 @@ async def webhook_endpoint(request: Request):
                 detail=f"Invalid store type '{webhook_request.store}'. Available stores: {available_stores}"
             )
         
-        # NOUVELLE LOGIQUE JSON: Vérifier l'accessibilité de l'image URL
-        use_strategy_1c_json = False
+        # NOUVELLE LOGIQUE JSON: Prioriser Stratégie 1C avec fallback intelligent
+        final_image_url = webhook_request.image_url
+        strategy_attempted = "feed_with_picture"
+        
         if webhook_request.image_url:
             print(f"🔍 Vérification accessibilité image URL JSON: {webhook_request.image_url}")
             if await check_image_url_accessibility(webhook_request.image_url):
-                print(f"✅ Image URL JSON accessible - Utilisation Stratégie 1C")
-                use_strategy_1c_json = True
+                print(f"✅ Image URL JSON accessible - Utilisation Stratégie 1C avec URL distante")
+                final_image_url = webhook_request.image_url
             else:
-                print(f"❌ Image URL JSON non accessible")
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Image URL '{webhook_request.image_url}' is not accessible (HTTP error 400/403/404). Please provide an accessible image URL."
-                )
+                print(f"❌ Image URL JSON non accessible - Téléchargement et fallback vers URL locale")
+                try:
+                    # Télécharger l'image et obtenir une URL locale  
+                    local_image_url = await download_product_image(webhook_request.image_url)
+                    final_image_url = local_image_url
+                    print(f"✅ Image téléchargée avec succès: {local_image_url}")
+                except Exception as download_error:
+                    print(f"❌ Échec du téléchargement d'image: {download_error}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Image URL '{webhook_request.image_url}' is not accessible and download failed: {str(download_error)}"
+                    )
         
         # Convert N8N webhook format to ProductPublishRequest format with cleaned data
         product_request = ProductPublishRequest(
