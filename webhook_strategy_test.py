@@ -453,25 +453,24 @@ class WebhookStrategy1CTester:
                 print(f"❌ Missing response fields: {missing_fields}")
                 return False
             
-            # Check data section structure
-            data_section = response.get('data', {})
-            expected_data_fields = ['strategy_used', 'image_clickable']
+            # Check top-level response fields for Strategy 1C
+            expected_fields = ['strategy_used', 'image_clickable']
             
-            for field in expected_data_fields:
-                if field in data_section:
-                    print(f"✅ Data field '{field}' present: {data_section[field]}")
+            for field in expected_fields:
+                if field in response:
+                    print(f"✅ Response field '{field}' present: {response[field]}")
                 else:
-                    print(f"⚠️  Data field '{field}' missing")
+                    print(f"⚠️  Response field '{field}' missing")
             
             # Verify strategy_used format
-            strategy_used = data_section.get('strategy_used')
+            strategy_used = response.get('strategy_used')
             if strategy_used == "feed_with_picture":
                 print("✅ strategy_used has correct value for Strategy 1C")
             else:
                 print(f"⚠️  strategy_used value: {strategy_used}")
             
             # Verify image_clickable is boolean
-            image_clickable = data_section.get('image_clickable')
+            image_clickable = response.get('image_clickable')
             if isinstance(image_clickable, bool):
                 print(f"✅ image_clickable is boolean: {image_clickable}")
             else:
