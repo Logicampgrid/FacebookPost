@@ -8868,7 +8868,7 @@ async def enhanced_webhook_info():
             "product_url": "Product URL",
             "comment": "Comment for the post"
         },
-        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "available_stores": list(get_shop_page_mapping().keys()),
         "n8n_transformation_example": '''
 return items.map(item => {
   return {
