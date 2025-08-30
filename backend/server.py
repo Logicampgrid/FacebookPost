@@ -1234,21 +1234,30 @@ async def save_fallback_binary_image(binary_content: bytes) -> tuple:
         print(f"❌ Erreur sauvegarde fallback binaire: {str(e)}")
         return False, None, f"Erreur fallback: {str(e)}"
 
-async def upload_image_to_facebook_photos(local_image_path: str, page_access_token: str, page_id: str) -> tuple:
+async def upload_media_to_facebook_photos(local_media_path: str, page_access_token: str, page_id: str, is_video: bool = False) -> tuple:
     """
-    Upload une image locale vers l'endpoint Facebook /photos
-    Retourne (success: bool, photo_id: str, image_url: str, error_message: str)
+    Upload une image ou vidéo locale vers l'endpoint Facebook /photos ou /videos
+    Retourne (success: bool, media_id: str, media_url: str, error_message: str)
     """
     try:
-        print(f"📤 Upload image vers Facebook /photos: {local_image_path}")
+        media_type = "video" if is_video else "image"
+        print(f"📤 Upload {media_type} vers Facebook: {local_media_path}")
         
-        if not os.path.exists(local_image_path):
-            return False, None, None, f"Fichier image introuvable: {local_image_path}"
+        if not os.path.exists(local_media_path):
+            return False, None, None, f"Fichier {media_type} introuvable: {local_media_path}"
+        
+        # Déterminer le type MIME
+        if is_video:
+            mime_type = "video/mp4"
+            endpoint_suffix = "videos"
+        else:
+            mime_type = "image/jpeg"
+            endpoint_suffix = "photos"
         
         # Préparer le fichier pour l'upload
-        with open(local_image_path, 'rb') as image_file:
+        with open(local_media_path, 'rb') as media_file:
             files = {
-                'file': (os.path.basename(local_image_path), image_file, 'image/jpeg')
+                'file': (os.path.basename(local_media_path), media_file, mime_type)
             }
             
             data = {
@@ -1256,55 +1265,61 @@ async def upload_image_to_facebook_photos(local_image_path: str, page_access_tok
                 'published': 'false'  # Ne pas publier immédiatement, juste uploader
             }
             
-            endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/photos"
-            print(f"🚀 Endpoint Facebook /photos: {endpoint}")
+            endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/{endpoint_suffix}"
+            print(f"🚀 Endpoint Facebook /{endpoint_suffix}: {endpoint}")
             
-            response = requests.post(endpoint, data=data, files=files, timeout=30)
+            response = requests.post(endpoint, data=data, files=files, timeout=60)  # Plus de temps pour les vidéos
             result = response.json()
             
-            print(f"📊 Réponse Facebook /photos: {response.status_code} - {result}")
+            print(f"📊 Réponse Facebook /{endpoint_suffix}: {response.status_code} - {result}")
             
             if response.status_code == 200 and 'id' in result:
-                photo_id = result['id']
+                media_id = result['id']
                 
-                # Récupérer l'URL finale de l'image uploadée
-                photo_details_response = requests.get(
-                    f"{FACEBOOK_GRAPH_URL}/{photo_id}",
-                    params={
-                        'access_token': page_access_token,
-                        'fields': 'source,images'
-                    }
-                )
-                
-                final_image_url = None
-                if photo_details_response.status_code == 200:
-                    photo_data = photo_details_response.json()
-                    final_image_url = photo_data.get('source') or (
-                        photo_data.get('images', [{}])[0].get('source') if photo_data.get('images') else None
+                # Pour les vidéos, récupérer l'URL finale peut prendre du temps
+                final_media_url = None
+                if not is_video:
+                    # Pour les images, récupérer l'URL finale immédiatement
+                    photo_details_response = requests.get(
+                        f"{FACEBOOK_GRAPH_URL}/{media_id}",
+                        params={
+                            'access_token': page_access_token,
+                            'fields': 'source,images'
+                        }
                     )
+                    
+                    if photo_details_response.status_code == 200:
+                        photo_data = photo_details_response.json()
+                        final_media_url = photo_data.get('source') or (
+                            photo_data.get('images', [{}])[0].get('source') if photo_data.get('images') else None
+                        )
+                else:
+                    # Pour les vidéos, juste indiquer que l'upload a réussi
+                    final_media_url = f"https://www.facebook.com/video.php?v={media_id}"
                 
-                print(f"✅ Upload Facebook réussi - Photo ID: {photo_id}")
-                print(f"🖼️ URL finale image: {final_image_url}")
+                print(f"✅ Upload Facebook réussi - {media_type.title()} ID: {media_id}")
+                print(f"🖼️ URL finale {media_type}: {final_media_url}")
                 
-                return True, photo_id, final_image_url, "success"
+                return True, media_id, final_media_url, "success"
             else:
-                error_msg = result.get('error', {}).get('message', 'Upload failed')
+                error_msg = result.get('error', {}).get('message', f'{media_type.title()} upload failed')
                 print(f"❌ Échec upload Facebook: {error_msg}")
                 return False, None, None, error_msg
                 
     except Exception as e:
-        print(f"❌ Erreur upload_image_to_facebook_photos: {str(e)}")
+        print(f"❌ Erreur upload_media_to_facebook_photos: {str(e)}")
         return False, None, None, str(e)
 
-async def create_clickable_post_with_attachment(photo_id: str, message: str, product_link: str, 
-                                               page_access_token: str, page_id: str) -> tuple:
+async def create_clickable_post_with_media_attachment(media_id: str, message: str, product_link: str, 
+                                                     page_access_token: str, page_id: str, is_video: bool = False) -> tuple:
     """
-    Crée un post cliquable en utilisant object_attachment avec le photo_id uploadé
+    Crée un post cliquable en utilisant object_attachment avec le media_id uploadé (image ou vidéo)
     Retourne (success: bool, post_id: str, post_data: dict, error_message: str)
     """
     try:
-        print(f"🔗 Création post cliquable avec attachment...")
-        print(f"📸 Photo ID: {photo_id}")
+        media_type = "vidéo" if is_video else "image"
+        print(f"🔗 Création post cliquable avec {media_type} attachment...")
+        print(f"📸 Media ID: {media_id}")
         print(f"🔗 Product Link: {product_link}")
         print(f"💬 Message: {message}")
         
@@ -1312,7 +1327,7 @@ async def create_clickable_post_with_attachment(photo_id: str, message: str, pro
         data = {
             'access_token': page_access_token,
             'message': message,
-            'object_attachment': photo_id,  # L'ID de l'image uploadée
+            'object_attachment': media_id,  # L'ID du média uploadé
             'link': product_link  # Le lien vers le produit
         }
         
@@ -1322,38 +1337,47 @@ async def create_clickable_post_with_attachment(photo_id: str, message: str, pro
         response = requests.post(endpoint, data=data, timeout=30)
         result = response.json()
         
-        print(f"📊 Réponse Facebook post cliquable: {response.status_code} - {result}")
+        print(f"📊 Réponse Facebook post cliquable {media_type}: {response.status_code} - {result}")
         
         if response.status_code == 200 and 'id' in result:
             post_id = result['id']
             
-            print(f"✅ Post cliquable créé avec succès - Post ID: {post_id}")
-            print(f"🎯 Image cliquable redirige vers: {product_link}")
+            print(f"✅ Post cliquable avec {media_type} créé avec succès - Post ID: {post_id}")
+            print(f"🎯 {media_type.title()} cliquable redirige vers: {product_link}")
             
             return True, post_id, result, "success"
         else:
-            error_msg = result.get('error', {}).get('message', 'Post creation failed')
-            print(f"❌ Échec création post cliquable: {error_msg}")
+            error_msg = result.get('error', {}).get('message', f'{media_type.title()} post creation failed')
+            print(f"❌ Échec création post cliquable {media_type}: {error_msg}")
             return False, None, result, error_msg
             
     except Exception as e:
-        print(f"❌ Erreur create_clickable_post_with_attachment: {str(e)}")
+        print(f"❌ Erreur create_clickable_post_with_media_attachment: {str(e)}")
         return False, None, None, str(e)
 
 async def execute_photo_with_link_strategy(message: str, product_link: str, image_source: str, 
                                          shop_type: str, fallback_binary: bytes = None) -> dict:
     """
     Exécute la nouvelle stratégie "photo_with_link":
-    1. Upload local image vers /photos
+    1. Upload local média vers /photos ou /videos
     2. Créer post cliquable avec object_attachment et link
+    Gère maintenant les images ET les vidéos
     """
     try:
         print(f"🎯 NOUVELLE STRATÉGIE: photo_with_link")
-        print(f"📸 Image source: {image_source}")
+        print(f"📸 Media source: {image_source}")
         print(f"🔗 Product link: {product_link}")
         print(f"🏪 Shop type: {shop_type}")
         
-        # Étape 1: Télécharger/préparer l'image localement
+        # Déterminer si c'est une vidéo ou une image
+        is_video = False
+        if isinstance(image_source, str):
+            is_video = image_source.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm'))
+        
+        media_type = "vidéo" if is_video else "image"
+        print(f"🎬 Type de média détecté: {media_type}")
+        
+        # Étape 1: Télécharger/préparer le média localement
         if image_source.startswith('http'):
             # C'est une URL - télécharger avec fallback
             success, local_path, error = await download_image_with_fallback(image_source, fallback_binary)
@@ -1367,7 +1391,7 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
             return {
                 "success": False,
                 "strategy_used": "photo_with_link_failed",
-                "error": f"Échec préparation image: {error}",
+                "error": f"Échec préparation {media_type}: {error}",
                 "fallback_needed": True
             }
         
@@ -1422,29 +1446,29 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
                 "fallback_needed": True
             }
         
-        # Étape 3: Upload image vers Facebook /photos
-        upload_success, photo_id, final_image_url, upload_error = await upload_image_to_facebook_photos(
-            local_path, page_access_token, target_page_id
+        # Étape 3: Upload média vers Facebook /photos ou /videos
+        upload_success, media_id, final_media_url, upload_error = await upload_media_to_facebook_photos(
+            local_path, page_access_token, target_page_id, is_video
         )
         
         if not upload_success:
             return {
                 "success": False,
                 "strategy_used": "photo_with_link_failed",
-                "error": f"Échec upload Facebook: {upload_error}",
+                "error": f"Échec upload Facebook {media_type}: {upload_error}",
                 "fallback_needed": True
             }
         
         # Étape 4: Créer post cliquable avec object_attachment
-        post_success, post_id, post_data, post_error = await create_clickable_post_with_attachment(
-            photo_id, message, product_link, page_access_token, target_page_id
+        post_success, post_id, post_data, post_error = await create_clickable_post_with_media_attachment(
+            media_id, message, product_link, page_access_token, target_page_id, is_video
         )
         
         if not post_success:
             return {
                 "success": False,
                 "strategy_used": "photo_with_link_failed",
-                "error": f"Échec création post: {post_error}",
+                "error": f"Échec création post {media_type}: {post_error}",
                 "fallback_needed": True
             }
         
@@ -1456,12 +1480,13 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
             "post_id": str(uuid.uuid4()),
             "page_name": page_name,
             "page_id": target_page_id,
-            "photo_id": photo_id,
-            "image_final_url": final_image_url,
+            "media_id": media_id,
+            "image_final_url": final_media_url,
             "user_name": user.get("name", "Utilisateur"),
             "published_at": datetime.utcnow().isoformat(),
-            "message": "✅ Image uploadée et post cliquable créé avec succès",
+            "message": f"✅ {media_type.title()} uploadé(e) et post cliquable créé avec succès",
             "image_clickable": True,
+            "media_type": media_type,
             "clickable_to": product_link
         }
         
