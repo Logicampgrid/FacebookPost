@@ -5588,7 +5588,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
         media_url = await download_product_image(request.image_url)
         
         # Check shop configuration for publication strategy
-        shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
+        shop_config = get_shop_page_mapping().get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
         should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         should_use_multi = shop_config.get("platform") == "multi"
