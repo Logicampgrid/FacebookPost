@@ -6499,27 +6499,80 @@ async def webhook_endpoint(request: Request):
                 
                 # Generate public URL
                 base_url = os.getenv("PUBLIC_BASE_URL", "https://social-bridge-5.preview.emergentagent.com")
-                media_url = f"{base_url}/api/uploads/{unique_filename}"
+                local_media_url = f"{base_url}/api/uploads/{unique_filename}"
                 
                 # Optimize image if it's an image
                 if media_type == "image":
                     optimize_image(file_path, instagram_mode=False)
                 
-                print(f"📁 Fallback upload - Saved {media_type}: {file_path} -> {media_url}")
+                print(f"📁 Upload local réussi - Saved {media_type}: {file_path} -> {local_media_url}")
+                
+                # IMPORTANT: Prioriser Stratégie 1C même pour les images uploadées
+                if media_type == "image":
+                    print(f"🎯 Image uploadée - Utilisation Stratégie 1C (/feed avec picture)")
+                    media_url = local_media_url
+                    use_feed_strategy = True
+                    strategy_name = "feed_with_picture"
+                else:
+                    # Pour les vidéos, garder l'approche actuelle
+                    print(f"🎬 Vidéo uploadée - Utilisation approche upload multipart")
+                    media_url = local_media_url
+                    use_feed_strategy = False
+                    strategy_name = "multipart_upload"
             
             # Clean metadata fields
             clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
             clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
             
-            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}' (media: {media_url})")
-            print(f"📋 Metadata: {metadata}")
-            print(f"🎯 Stratégie utilisée: {'1C (image URL accessible)' if use_strategy_1c else 'Fallback multipart local'}")
+            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}'")
+            print(f"📸 Media URL finale: {media_url}")
+            print(f"🎯 Stratégie choisie: {strategy_name}")
             
-            # Create ProductPublishRequest for multipart
+            # Traitement selon la stratégie choisie
+            if use_feed_strategy:
+                # STRATÉGIE 1C: Utiliser /feed avec paramètres message, link, picture
+                print(f"🚀 Exécution Stratégie 1C (/feed avec picture)")
+                
+                # Construire le message selon les spécifications  
+                message_content = f"{clean_title}\n\n{clean_description}".strip()
+                
+                # Create ProductPublishRequest for feed strategy
+                product_request = ProductPublishRequest(
+                    title=clean_title,
+                    description=clean_description,
+                    image_url=media_url,
+                    product_url=metadata["url"],
+                    shop_type=metadata["store"],
+                    user_id=None,
+                    page_id=None,
+                    api_key=None
+                )
+                
+                # Use existing create_product_post with force_strategy_1c=True
+                result = await create_product_post(product_request, force_strategy_1c=True)
+                
+                if result.get("success"):
+                    return {
+                        "success": True,
+                        "status": "published",
+                        "message": f"N8N multipart content '{clean_title}' published successfully with clickable image",
+                        "strategy_used": "feed_with_picture",
+                        "image_clickable": True,
+                        "data": result
+                    }
+                else:
+                    # Fallback en cas d'échec de la Stratégie 1C
+                    print(f"❌ Stratégie 1C échouée, fallback vers multipart upload")
+                    strategy_name = "multipart_upload_fallback"
+            
+            # FALLBACK: Utiliser l'approche multipart traditionnelle
+            print(f"📁 Exécution fallback multipart upload")
+            
+            # Create ProductPublishRequest for multipart fallback
             product_request = ProductPublishRequest(
                 title=clean_title,
                 description=clean_description,
-                image_url=media_url,  # Use either accessible URL or uploaded file URL
+                image_url=media_url,
                 product_url=metadata["url"],
                 shop_type=metadata["store"],
                 user_id=None,
@@ -6527,22 +6580,14 @@ async def webhook_endpoint(request: Request):
                 api_key=None
             )
             
-            # Choisir le bon traitement selon la stratégie
-            if use_strategy_1c:
-                # Stratégie 1C: Image URL accessible - utiliser create_product_post avec force_strategy_1c=True
-                print(f"🎯 Exécution Stratégie 1C avec image URL: {media_url}")
-                processing_result = await create_product_post(product_request, force_strategy_1c=True)
-            else:
-                # Fallback: Upload local - utiliser create_product_post_from_local_image
-                print(f"📁 Exécution fallback upload local: {media_url}")
-                processing_result = await create_product_post_from_local_image(product_request, media_url)
+            processing_result = await create_product_post_from_local_image(product_request, media_url)
             
             return {
                 "success": True,
-                "status": "published",
+                "status": "published", 
                 "message": f"N8N multipart content '{clean_title}' published successfully",
-                "strategy_used": "1C" if use_strategy_1c else "fallback_multipart",
-                "image_source": "url" if use_strategy_1c else "upload",
+                "strategy_used": strategy_name,
+                "image_source": "upload" if not image_url_from_json else "url",
                 "data": processing_result
             }
             
