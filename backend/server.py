@@ -2399,6 +2399,67 @@ async def test_outdoor_mapping():
             "error": f"Test failed: {str(e)}"
         }
 
+@app.post("/api/debug/test-feed-link-only")
+async def test_feed_link_only():
+    """Test endpoint pour vérifier la nouvelle stratégie /feed avec uniquement le paramètre link"""
+    try:
+        print("🧪 Test de la nouvelle stratégie /feed avec UNIQUEMENT le paramètre link")
+        
+        # Données de test
+        test_message = "🧪 TEST NOUVELLE STRATÉGIE\n\nTest de publication Facebook avec aperçu auto-généré par Facebook. Le lien ci-dessous devrait afficher un aperçu avec image et description automatiquement générés par Facebook."
+        test_link = "https://logicamp.org/werdpress/gizmobbs/test-link-only-strategy"
+        test_shop = "gizmobbs"
+        
+        print(f"📝 Message de test: {test_message}")
+        print(f"🔗 Lien de test: {test_link}")
+        print(f"🏪 Shop de test: {test_shop}")
+        
+        # Tester la fonction modifiée
+        result = await publish_with_feed_strategy(
+            message=test_message,
+            link=test_link,
+            picture="",  # Paramètre ignoré maintenant
+            shop_type=test_shop
+        )
+        
+        if result.get("success"):
+            return {
+                "success": True,
+                "message": "✅ NOUVELLE STRATÉGIE /feed LINK ONLY - Test réussi!",
+                "test_results": result,
+                "strategy_benefits": [
+                    "✅ Facebook génère automatiquement l'aperçu du lien",
+                    "✅ Plus d'erreurs liées aux images inaccessibles",
+                    "✅ Compatibilité conservée avec N8N multipart",
+                    "✅ Fallback vers upload local toujours disponible"
+                ],
+                "verification_steps": [
+                    "1. Vérifiez que le post apparaît sur Facebook",
+                    "2. Confirmez que l'aperçu du lien est généré automatiquement",
+                    "3. Vérifiez que le lien est cliquable",
+                    "4. Confirmez que le texte du message s'affiche correctement"
+                ],
+                "facebook_post_url": f"https://facebook.com/{result.get('facebook_post_id')}",
+                "modification_applied": "Paramètre 'picture' retiré de l'API /feed",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "message": "❌ Test de la nouvelle stratégie échoué",
+                "error": result.get("error"),
+                "fallback_info": "Le fallback vers upload local multipart traditionnel reste disponible",
+                "debug_info": result
+            }
+        
+    except Exception as e:
+        print(f"❌ Erreur test nouvelle stratégie: {e}")
+        return {
+            "success": False,
+            "error": f"Test échoué: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 def get_dynamic_base_url() -> str:
     """Get the base URL for media files from environment configuration only"""
     base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-link-poster.preview.emergentagent.com")
