@@ -7044,9 +7044,9 @@ async def webhook_endpoint(request: Request):
                         "data": result
                     }
                 else:
-                    # Fallback en cas d'échec de la Stratégie 1C
-                    print(f"❌ Stratégie 1C échouée, fallback vers multipart upload")
-                    strategy_name = "multipart_upload_fallback"
+                    # Échec total - essayer le multipart traditionnel
+                    print(f"❌ Ancienne stratégie 1C échouée aussi, fallback vers multipart traditionnel")
+                    strategy_name = "multipart_upload_final_fallback"
             
             # FALLBACK: Utiliser l'approche multipart traditionnelle
             print(f"📁 Exécution fallback multipart upload")
