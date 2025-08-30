@@ -5091,10 +5091,10 @@ async def find_instagram_by_shop_type(user, shop_type: str):
 async def find_page_by_shop_type(user, shop_type: str):
     """Find the appropriate Facebook page based on shop type"""
     try:
-        if not shop_type or shop_type not in SHOP_PAGE_MAPPING:
+        if not shop_type or shop_type not in get_shop_page_mapping():
             return None
             
-        shop_config = SHOP_PAGE_MAPPING[shop_type]
+        shop_config = get_shop_page_mapping()[shop_type]
         expected_name = shop_config["name"]
         expected_id = shop_config.get("expected_id")
         
