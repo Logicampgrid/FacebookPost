@@ -7437,7 +7437,7 @@ async def webhook_info():
         "url": "/api/webhook", 
         "content_type": "application/json",
         "required_fields": ["store", "title", "description", "product_url", "image_url"],
-        "available_stores": list(SHOP_PAGE_MAPPING.keys()),
+        "available_stores": list(get_shop_page_mapping().keys()),
         "example_payload": {
             "store": "gizmobbs",  # ou "gimobbs", "outdoor", "logicantiq"
             "title": "Product Name",
