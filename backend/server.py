@@ -19,6 +19,9 @@ from bson import ObjectId
 from PIL import Image
 import io
 import tempfile
+import subprocess
+import mimetypes
+from pathlib import Path
 
 load_dotenv()
 
