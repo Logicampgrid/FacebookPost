@@ -2535,41 +2535,162 @@ async def check_instagram_permissions_status():
 
 async def detect_media_type_from_content(content: bytes, filename: str = None) -> str:
     """
-    Détecte automatiquement si le contenu est une image ou une vidéo
-    Retourne 'image' ou 'video'
+    Détection automatique robuste du type de média (image ou vidéo)
+    Optimisé pour JPEG, PNG, WebP, MP4 avec logs détaillés
+    
+    Args:
+        content: Contenu binaire du fichier
+        filename: Nom de fichier optionnel pour hint d'extension
+    
+    Returns:
+        str: 'image' ou 'video'
     """
     try:
-        # Détection par extension de fichier en premier
+        print(f"🔍 DÉTECTION MÉDIA: Analyse de {len(content)} bytes, filename: {filename}")
+        
+        detected_type = None
+        detection_method = ""
+        
+        # Étape 1: Détection par extension de fichier (rapide et fiable)
         if filename:
-            ext = filename.lower().split('.')[-1] if '.' in filename else ''
-            if ext in ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v']:
-                return 'video'
-            elif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
-                return 'image'
-        
-        # Détection par magic bytes si pas d'extension claire
-        if len(content) > 12:
-            # Vérifier les signatures de fichiers vidéo
-            if content.startswith(b'\x00\x00\x00\x18ftypmp4') or \
-               content.startswith(b'\x00\x00\x00\x20ftypmp4') or \
-               content[4:8] == b'ftyp':
-                return 'video'
+            # Extraire l'extension depuis filename ou URL
+            if '?' in filename:  # Nettoyer les paramètres URL
+                filename = filename.split('?')[0]
             
-            # Vérifier les signatures d'images
-            if content.startswith(b'\xFF\xD8\xFF'):  # JPEG
-                return 'image'
-            elif content.startswith(b'\x89PNG\r\n\x1a\n'):  # PNG
-                return 'image'
-            elif content.startswith(b'GIF8'):  # GIF
-                return 'image'
-            elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:  # WebP
-                return 'image'
+            ext = filename.lower().split('.')[-1] if '.' in filename else ''
+            print(f"🔍 Extension détectée: '{ext}'")
+            
+            # Extensions vidéo supportées (priorité MP4 pour Instagram)
+            video_extensions = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'flv', '3gp']
+            # Extensions image supportées (priorité JPEG, PNG, WebP pour Instagram)
+            image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg']
+            
+            if ext in video_extensions:
+                detected_type = 'video'
+                detection_method = f"extension_{ext}"
+                print(f"✅ VIDÉO détectée par extension: {ext}")
+            elif ext in image_extensions:
+                detected_type = 'image'
+                detection_method = f"extension_{ext}"
+                print(f"✅ IMAGE détectée par extension: {ext}")
         
-        # Par défaut, traiter comme image
-        return 'image'
+        # Étape 2: Détection par magic bytes (analyse binaire)
+        if not detected_type and len(content) >= 16:
+            print(f"🔍 Analyse magic bytes des {min(32, len(content))} premiers bytes...")
+            
+            # Signatures vidéo étendues
+            video_signatures = [
+                (b'\x00\x00\x00\x18ftypmp4', 'mp4_type1'),  # MP4 variant 1
+                (b'\x00\x00\x00\x20ftypmp4', 'mp4_type2'),  # MP4 variant 2
+                (b'\x00\x00\x00\x1cftypisom', 'mp4_isom'),  # MP4 ISO
+                (b'\x00\x00\x00\x20ftypisom', 'mp4_isom2'), # MP4 ISO variant
+                (b'RIFF', 'avi_check'),  # AVI/WebM (need further check)
+                (b'\x1aE\xdf\xa3', 'webm'),  # WebM/MKV
+                (b'\x00\x00\x00\x14ftyp', 'mp4_type3'),  # MP4 variant 3
+            ]
+            
+            # Signatures image étendues
+            image_signatures = [
+                (b'\xFF\xD8\xFF', 'jpeg'),  # JPEG
+                (b'\x89PNG\r\n\x1a\n', 'png'),  # PNG
+                (b'GIF87a', 'gif87'),  # GIF 87a
+                (b'GIF89a', 'gif89'),  # GIF 89a
+                (b'RIFF', 'webp_check'),  # WebP (need further check)
+                (b'BM', 'bmp'),  # BMP
+                (b'II\x2a\x00', 'tiff_le'),  # TIFF Little Endian
+                (b'MM\x00\x2a', 'tiff_be'),  # TIFF Big Endian
+            ]
+            
+            # Vérifier signatures vidéo
+            for signature, format_name in video_signatures:
+                if content.startswith(signature):
+                    # Vérifications spéciales
+                    if format_name == 'avi_check':
+                        # Différencier AVI de WebP
+                        if b'AVI ' in content[:32]:
+                            detected_type = 'video'
+                            detection_method = 'magic_bytes_avi'
+                            print(f"✅ VIDÉO AVI détectée par magic bytes")
+                            break
+                        elif b'WEBM' in content[:32]:
+                            detected_type = 'video'
+                            detection_method = 'magic_bytes_webm'
+                            print(f"✅ VIDÉO WebM détectée par magic bytes")
+                            break
+                    else:
+                        detected_type = 'video'
+                        detection_method = f'magic_bytes_{format_name}'
+                        print(f"✅ VIDÉO {format_name} détectée par magic bytes")
+                        break
+            
+            # Vérifier signatures image si pas de vidéo détectée
+            if not detected_type:
+                for signature, format_name in image_signatures:
+                    if content.startswith(signature):
+                        # Vérifications spéciales
+                        if format_name == 'webp_check':
+                            # Vérifier que c'est bien WebP
+                            if b'WEBP' in content[:16]:
+                                detected_type = 'image'
+                                detection_method = 'magic_bytes_webp'
+                                print(f"✅ IMAGE WebP détectée par magic bytes")
+                                break
+                        else:
+                            detected_type = 'image'
+                            detection_method = f'magic_bytes_{format_name}'
+                            print(f"✅ IMAGE {format_name} détectée par magic bytes")
+                            break
+        
+        # Étape 3: Analyse heuristique avancée
+        if not detected_type and len(content) >= 100:
+            print(f"🔍 Analyse heuristique avancée...")
+            
+            # Rechercher des patterns vidéo dans les premiers KB
+            sample_size = min(2048, len(content))
+            content_sample = content[:sample_size]
+            
+            video_patterns = [b'ftyp', b'moov', b'mdat', b'mvhd', b'trak']
+            image_patterns = [b'JFIF', b'Exif', b'IHDR', b'PLTE']
+            
+            video_score = sum(1 for pattern in video_patterns if pattern in content_sample)
+            image_score = sum(1 for pattern in image_patterns if pattern in content_sample)
+            
+            if video_score > image_score and video_score > 0:
+                detected_type = 'video'
+                detection_method = f'heuristic_video_score_{video_score}'
+                print(f"✅ VIDÉO détectée par heuristique (score: {video_score})")
+            elif image_score > 0:
+                detected_type = 'image'
+                detection_method = f'heuristic_image_score_{image_score}'
+                print(f"✅ IMAGE détectée par heuristique (score: {image_score})")
+        
+        # Étape 4: Fallback basé sur la taille de fichier (règle empirique)
+        if not detected_type:
+            # Règle empirique: fichiers > 10MB probablement vidéo, < 10MB probablement image
+            file_size_mb = len(content) / (1024 * 1024)
+            print(f"🔍 Fallback taille fichier: {file_size_mb:.2f}MB")
+            
+            if file_size_mb > 10:
+                detected_type = 'video'
+                detection_method = f'fallback_size_{file_size_mb:.1f}MB'
+                print(f"⚠️ VIDÉO supposée par taille (>{file_size_mb:.1f}MB)")
+            else:
+                detected_type = 'image'
+                detection_method = f'fallback_size_{file_size_mb:.1f}MB'
+                print(f"⚠️ IMAGE supposée par taille (<{file_size_mb:.1f}MB)")
+        
+        # Étape 5: Fallback ultime
+        if not detected_type:
+            detected_type = 'image'
+            detection_method = 'ultimate_fallback'
+            print(f"⚠️ FALLBACK ULTIME: Traitement comme image")
+        
+        print(f"🎯 DÉTECTION FINALE: {detected_type.upper()} (méthode: {detection_method})")
+        return detected_type
         
     except Exception as e:
-        print(f"⚠️ Erreur détection type média: {e}, default à 'image'")
+        print(f"❌ ERREUR DÉTECTION MÉDIA: {str(e)}")
+        print(f"🔄 FALLBACK SÉCURISÉ: Traitement comme image")
         return 'image'
 
 async def auto_route_media_to_facebook_instagram(
