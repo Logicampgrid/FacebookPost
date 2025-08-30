@@ -7869,13 +7869,8 @@ async def publish_with_feed_strategy(message: str, link: str, picture: str, shop
         
         # Mapper le shop_type vers la page Facebook appropriée
         from collections import defaultdict
-        SHOP_PAGE_MAPPING = {
-            "gizmobbs": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
-            "outdoor": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
-            "logicantiq": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}
-        }
-        
-        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        SHOP_PAGE_MAPPING_LOCAL = get_shop_page_mapping()
+        shop_config = SHOP_PAGE_MAPPING_LOCAL.get(shop_type)
         if not shop_config:
             raise Exception(f"Configuration non trouvée pour shop_type: {shop_type}")
         
