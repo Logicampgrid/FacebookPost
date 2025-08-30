@@ -192,7 +192,8 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
 
 async def convert_media_for_social_platforms(input_path: str, media_type: str) -> tuple:
     """
-    Convertit les médias pour garantir la compatibilité Instagram/Facebook
+    Conversion optimisée de médias pour Instagram/Facebook avec logs détaillés
+    Optimisé spécifiquement pour JPEG, PNG, WebP et MP4
     
     Args:
         input_path: Chemin du fichier d'entrée
@@ -202,130 +203,283 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
         tuple: (success: bool, output_path: str, error_msg: str)
     """
     try:
-        print(f"🔄 CONVERSION MÉDIA: Début conversion {media_type} pour compatibilité sociale")
+        print(f"🔄 CONVERSION MÉDIA: Début conversion {media_type} pour compatibilité Instagram/Facebook")
+        print(f"📁 Fichier source: {input_path}")
         
         if not os.path.exists(input_path):
-            return False, None, f"Fichier d'entrée introuvable: {input_path}"
+            error_msg = f"Fichier d'entrée introuvable: {input_path}"
+            print(f"❌ {error_msg}")
+            return False, None, error_msg
+        
+        # Vérifier la taille du fichier source
+        file_size = os.path.getsize(input_path)
+        file_size_mb = file_size / (1024 * 1024)
+        print(f"📊 Taille fichier source: {file_size_mb:.2f}MB")
         
         unique_id = uuid.uuid4().hex[:8]
         
         if media_type == 'image':
-            # Conversion image -> JPEG optimisé pour Instagram
+            print(f"🖼️ CONVERSION IMAGE: Optimisation pour Instagram/Facebook")
+            
+            # Déterminer le format d'origine
             try:
-                output_path = f"uploads/processed/converted_image_{unique_id}.jpg"
-                
                 with Image.open(input_path) as img:
-                    # Conversion en RGB si nécessaire (pour PNG avec transparence)
-                    if img.mode in ('RGBA', 'LA', 'P'):
-                        # Créer fond blanc pour transparence
-                        rgb_img = Image.new('RGB', img.size, (255, 255, 255))
-                        if img.mode == 'P':
-                            img = img.convert('RGBA')
-                        rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                        img = rgb_img
-                    elif img.mode != 'RGB':
-                        img = img.convert('RGB')
+                    original_format = img.format
+                    original_size = img.size
+                    original_mode = img.mode
+                    print(f"📋 Format original: {original_format}, Taille: {original_size}, Mode: {original_mode}")
+            except Exception as detection_error:
+                print(f"⚠️ Impossible de détecter le format: {str(detection_error)}")
+                original_format = "UNKNOWN"
+            
+            # Stratégie de conversion basée sur le format
+            conversion_strategies = [
+                # Stratégie 1: Conversion JPEG optimisée (format privilégié)
+                {
+                    "name": "jpeg_optimized",
+                    "extension": ".jpg",
+                    "format": "JPEG",
+                    "quality": 95,
+                    "optimize": True
+                },
+                # Stratégie 2: PNG si transparence requise
+                {
+                    "name": "png_fallback", 
+                    "extension": ".png",
+                    "format": "PNG",
+                    "quality": None,
+                    "optimize": True
+                },
+                # Stratégie 3: WebP moderne (si supporté)
+                {
+                    "name": "webp_modern",
+                    "extension": ".webp", 
+                    "format": "WebP",
+                    "quality": 90,
+                    "optimize": True
+                }
+            ]
+            
+            output_path = None
+            conversion_success = False
+            
+            for strategy in conversion_strategies:
+                try:
+                    print(f"🔄 Tentative stratégie: {strategy['name']}")
                     
-                    # Correction orientation EXIF
-                    try:
-                        from PIL.ExifTags import ORIENTATION
-                        exif = img._getexif()
-                        if exif is not None:
-                            orientation = exif.get(ORIENTATION)
-                            if orientation == 3:
-                                img = img.rotate(180, expand=True)
-                            elif orientation == 6:
-                                img = img.rotate(270, expand=True)
-                            elif orientation == 8:
-                                img = img.rotate(90, expand=True)
-                    except:
-                        pass  # Pas d'EXIF, pas de problème
+                    temp_output_path = f"uploads/processed/converted_image_{unique_id}_{strategy['name']}{strategy['extension']}"
                     
-                    # Optimisation taille pour Instagram (max 1080x1080 recommandé)
-                    max_size = 1080
-                    if img.width > max_size or img.height > max_size:
-                        img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                    with Image.open(input_path) as img:
+                        # Gestion de la transparence et modes couleur
+                        if strategy['format'] == 'JPEG':
+                            # JPEG ne supporte pas la transparence
+                            if img.mode in ('RGBA', 'LA', 'P'):
+                                print(f"🔄 Conversion transparence -> fond blanc pour JPEG")
+                                # Créer fond blanc pour transparence
+                                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                                if img.mode == 'P':
+                                    img = img.convert('RGBA')
+                                rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                                img = rgb_img
+                            elif img.mode != 'RGB':
+                                img = img.convert('RGB')
+                        elif strategy['format'] == 'PNG':
+                            # PNG peut garder la transparence
+                            if img.mode not in ('RGBA', 'RGB', 'P'):
+                                img = img.convert('RGBA')
+                        elif strategy['format'] == 'WebP':
+                            # WebP supporte la transparence
+                            if img.mode not in ('RGBA', 'RGB'):
+                                img = img.convert('RGBA')
+                        
+                        # Correction orientation EXIF (critique pour Instagram)
+                        try:
+                            from PIL.ExifTags import ORIENTATION
+                            exif = img._getexif()
+                            if exif is not None:
+                                orientation = exif.get(ORIENTATION)
+                                if orientation == 3:
+                                    img = img.rotate(180, expand=True)
+                                    print(f"🔄 Rotation EXIF: 180°")
+                                elif orientation == 6:
+                                    img = img.rotate(270, expand=True)
+                                    print(f"🔄 Rotation EXIF: 270°")
+                                elif orientation == 8:
+                                    img = img.rotate(90, expand=True)
+                                    print(f"🔄 Rotation EXIF: 90°")
+                        except Exception as exif_error:
+                            print(f"⚠️ Pas de données EXIF: {str(exif_error)}")
+                        
+                        # Optimisation taille pour Instagram/Facebook
+                        # Instagram: max 1080px, Facebook: max 2048px (on privilégie Instagram)
+                        max_dimension = 1080
+                        if img.width > max_dimension or img.height > max_dimension:
+                            original_dimensions = (img.width, img.height)
+                            img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+                            print(f"🔄 Redimensionnement: {original_dimensions} -> {img.size}")
+                        
+                        # Sauvegarde avec paramètres optimisés
+                        save_params = {'format': strategy['format'], 'optimize': strategy['optimize']}
+                        if strategy['quality'] is not None:
+                            save_params['quality'] = strategy['quality']
+                            
+                        # Paramètres spéciaux pour WebP
+                        if strategy['format'] == 'WebP':
+                            save_params['method'] = 6  # Meilleur compression WebP
+                            
+                        img.save(temp_output_path, **save_params)
                     
-                    # Sauvegarde optimisée
-                    img.save(output_path, 'JPEG', quality=95, optimize=True)
-                
-                print(f"✅ CONVERSION IMAGE RÉUSSIE: {output_path}")
-                return True, output_path, None
-                
-            except Exception as img_error:
-                print(f"❌ CONVERSION IMAGE ÉCHOUÉE: {str(img_error)}")
-                # Fallback: copier le fichier original
+                    # Vérifier le résultat
+                    if os.path.exists(temp_output_path):
+                        converted_size = os.path.getsize(temp_output_path)
+                        converted_size_mb = converted_size / (1024 * 1024)
+                        print(f"✅ CONVERSION {strategy['name']} RÉUSSIE: {temp_output_path}")
+                        print(f"📊 Taille convertie: {converted_size_mb:.2f}MB (original: {file_size_mb:.2f}MB)")
+                        
+                        output_path = temp_output_path
+                        conversion_success = True
+                        break
+                    else:
+                        print(f"❌ Fichier de sortie non créé pour {strategy['name']}")
+                        
+                except Exception as strategy_error:
+                    print(f"❌ Stratégie {strategy['name']} échouée: {str(strategy_error)}")
+                    continue
+            
+            if not conversion_success:
+                print(f"⚠️ Toutes les stratégies de conversion ont échoué, tentative de fallback")
+                # Fallback: copier le fichier original avec extension appropriée
                 try:
                     fallback_path = f"uploads/processed/fallback_image_{unique_id}.jpg"
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK IMAGE: Fichier copié sans conversion: {fallback_path}")
-                    return True, fallback_path, None
+                    return True, fallback_path, "Conversion échouée, fichier original utilisé"
                 except Exception as fallback_error:
-                    return False, None, f"Conversion et fallback échoués: {str(fallback_error)}"
+                    error_msg = f"Conversion et fallback échoués: {str(fallback_error)}"
+                    print(f"❌ {error_msg}")
+                    return False, None, error_msg
+            
+            return True, output_path, None
         
         elif media_type == 'video':
-            # Conversion vidéo -> MP4 H.264/AAC pour Instagram
-            try:
-                output_path = f"uploads/processed/converted_video_{unique_id}.mp4"
-                
-                # Commande FFmpeg pour conversion optimale Instagram
-                ffmpeg_cmd = [
-                    'ffmpeg', '-y',  # Overwrite output
-                    '-i', input_path,  # Input file
-                    '-c:v', 'libx264',  # H.264 codec
-                    '-preset', 'fast',  # Encoding speed
-                    '-crf', '23',  # Quality (lower = better)
-                    '-c:a', 'aac',  # AAC audio codec
-                    '-b:a', '128k',  # Audio bitrate
-                    '-movflags', '+faststart',  # Optimisation streaming
-                    '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:black',  # Instagram 1:1 format
-                    '-t', '60',  # Limite à 60 secondes pour Instagram
-                    output_path
-                ]
-                
-                print(f"🎬 Exécution FFmpeg pour conversion vidéo...")
-                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
-                
-                if result.returncode == 0 and os.path.exists(output_path):
-                    print(f"✅ CONVERSION VIDÉO RÉUSSIE: {output_path}")
-                    return True, output_path, None
-                else:
-                    print(f"❌ FFmpeg échoué: {result.stderr}")
-                    raise Exception(f"FFmpeg failed: {result.stderr}")
+            print(f"🎬 CONVERSION VIDÉO: Optimisation MP4 pour Instagram/Facebook")
+            
+            output_path = f"uploads/processed/converted_video_{unique_id}.mp4"
+            
+            # Stratégies de conversion vidéo progressives
+            conversion_strategies = [
+                # Stratégie 1: Instagram optimisé (carré 1:1, 60s max)
+                {
+                    "name": "instagram_optimized",
+                    "params": [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+                        '-c:a', 'aac', '-b:a', '128k',
+                        '-movflags', '+faststart',
+                        '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:black',
+                        '-t', '60',  # Limite Instagram
+                        '-r', '30',  # 30 FPS max
+                        output_path
+                    ]
+                },
+                # Stratégie 2: Facebook optimisé (aspect original, 60s max)
+                {
+                    "name": "facebook_optimized", 
+                    "params": [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '25',
+                        '-c:a', 'aac', '-b:a', '128k',
+                        '-movflags', '+faststart',
+                        '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease',
+                        '-t', '60',
+                        '-r', '30',
+                        output_path
+                    ]
+                },
+                # Stratégie 3: Conversion minimale (garde format original)
+                {
+                    "name": "minimal_conversion",
+                    "params": [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                        '-c:a', 'aac', '-b:a', '64k',
+                        '-movflags', '+faststart',
+                        '-t', '60',
+                        output_path
+                    ]
+                }
+            ]
+            
+            conversion_success = False
+            
+            for strategy in conversion_strategies:
+                try:
+                    print(f"🔄 Tentative stratégie vidéo: {strategy['name']}")
+                    print(f"⚙️ Commande FFmpeg: {' '.join(strategy['params'][:8])}...")  # Log partiel pour lisibilité
                     
-            except subprocess.TimeoutExpired:
-                print(f"⏰ TIMEOUT CONVERSION VIDÉO")
-                return False, None, "Timeout de conversion vidéo (>120s)"
-            except FileNotFoundError:
-                print(f"❌ FFMPEG NON TROUVÉ - Installation requise")
+                    result = subprocess.run(
+                        strategy['params'], 
+                        capture_output=True, 
+                        text=True, 
+                        timeout=180  # 3 minutes max
+                    )
+                    
+                    if result.returncode == 0 and os.path.exists(output_path):
+                        converted_size = os.path.getsize(output_path)
+                        converted_size_mb = converted_size / (1024 * 1024)
+                        print(f"✅ CONVERSION VIDÉO {strategy['name']} RÉUSSIE: {output_path}")
+                        print(f"📊 Taille convertie: {converted_size_mb:.2f}MB (original: {file_size_mb:.2f}MB)")
+                        conversion_success = True
+                        break
+                    else:
+                        print(f"❌ FFmpeg {strategy['name']} échoué:")
+                        print(f"   Return code: {result.returncode}")
+                        print(f"   Stderr: {result.stderr[:200]}...")  # Log partiel
+                        
+                        # Nettoyer fichier de sortie partiel
+                        if os.path.exists(output_path):
+                            os.unlink(output_path)
+                        
+                except subprocess.TimeoutExpired:
+                    print(f"⏰ TIMEOUT pour stratégie {strategy['name']} (>180s)")
+                    if os.path.exists(output_path):
+                        os.unlink(output_path)
+                    continue
+                except FileNotFoundError:
+                    print(f"❌ FFMPEG NON TROUVÉ pour stratégie {strategy['name']}")
+                    break  # Pas besoin d'essayer les autres si FFmpeg manque
+                except Exception as strategy_error:
+                    print(f"❌ Erreur stratégie {strategy['name']}: {str(strategy_error)}")
+                    if os.path.exists(output_path):
+                        os.unlink(output_path)
+                    continue
+            
+            if not conversion_success:
+                print(f"⚠️ Toutes les stratégies vidéo ont échoué, tentative de fallback")
                 # Fallback: copier le fichier original
                 try:
                     fallback_path = f"uploads/processed/fallback_video_{unique_id}.mp4"
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
-                    return True, fallback_path, None
-                except:
-                    return False, None, "FFmpeg manquant et fallback échoué"
-            except Exception as vid_error:
-                print(f"❌ CONVERSION VIDÉO ÉCHOUÉE: {str(vid_error)}")
-                # Fallback: copier le fichier original
-                try:
-                    fallback_path = f"uploads/processed/fallback_video_{unique_id}.mp4"
-                    import shutil
-                    shutil.copy2(input_path, fallback_path)
-                    print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
-                    return True, fallback_path, None
-                except:
-                    return False, None, f"Conversion vidéo et fallback échoués: {str(vid_error)}"
+                    return True, fallback_path, "Conversion vidéo échouée, fichier original utilisé"
+                except Exception as fallback_error:
+                    error_msg = f"Conversion vidéo et fallback échoués: {str(fallback_error)}"
+                    print(f"❌ {error_msg}")
+                    return False, None, error_msg
+            
+            return True, output_path, None
         
         else:
-            return False, None, f"Type de média non supporté: {media_type}"
+            error_msg = f"Type de média non supporté: {media_type}"
+            print(f"❌ {error_msg}")
+            return False, None, error_msg
             
     except Exception as e:
-        print(f"💥 ERREUR CONVERSION MÉDIA: {str(e)}")
-        return False, None, f"Erreur générale conversion: {str(e)}"
+        error_msg = f"Erreur générale conversion: {str(e)}"
+        print(f"💥 ERREUR CONVERSION MÉDIA: {error_msg}")
+        return False, None, error_msg
 
 async def publish_media_to_social_platforms(
     media_path: str, 
