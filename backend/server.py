@@ -474,17 +474,6 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 
             print(f"🎯 Stratégies sélectionnées: {selected_strategies}")
             
-            # Filtrer les stratégies de conversion selon la sélection
-            filtered_strategies = [s for s in conversion_strategies if s["name"] in selected_strategies]
-            # Réorganiser selon l'ordre de priorité
-            ordered_strategies = []
-            for selected_name in selected_strategies:
-                for strategy in conversion_strategies:
-                    if strategy["name"] == selected_name:
-                        ordered_strategies.append(strategy)
-                        break
-            conversion_strategies = ordered_strategies
-            
             # Stratégies de conversion images ULTRA-ROBUSTES pour Facebook/Instagram
             conversion_strategies = [
                 # Stratégie 1: JPEG ultra-optimisé Facebook/Instagram (résout problèmes WebP/PNG lourdes)
