@@ -6869,8 +6869,7 @@ async def webhook_endpoint(request: Request):
                 "success": True,
                 "status": "duplicate_skipped",
                 "message": f"Product '{clean_title}' already posted recently - duplicate skipped",
-                "strategy_used": "1C",
-                "image_accessible": use_strategy_1c_json if 'use_strategy_1c_json' in locals() else True,
+                "strategy_used": result.get("strategy_used", "feed_with_picture"),
                 "data": {
                     "facebook_post_id": result["facebook_post_id"],
                     "post_id": result["post_id"],
@@ -6884,14 +6883,17 @@ async def webhook_endpoint(request: Request):
                 }
             }
         
+        # Déterminer la stratégie utilisée basée sur le résultat
+        final_strategy = result.get("strategy_used", "feed_with_picture")
+        image_is_clickable = final_strategy == "feed_with_picture"
+        
         # Return webhook-friendly response for new posts
         return {
             "success": True,
             "status": "published",
-            "message": f"Product '{clean_title}' published successfully to {webhook_request.store} with clickable image",
-            "strategy_used": "1C - Enhanced link post with picture parameter",
-            "image_accessible": use_strategy_1c_json if 'use_strategy_1c_json' in locals() else True,
-            "image_clickable": True,
+            "message": f"Product '{clean_title}' published successfully to {webhook_request.store}",
+            "strategy_used": final_strategy,
+            "image_clickable": image_is_clickable,
             "data": {
                 "facebook_post_id": result["facebook_post_id"],
                 "post_id": result["post_id"],
@@ -6899,7 +6901,7 @@ async def webhook_endpoint(request: Request):
                 "page_id": result["page_id"],
                 "store": webhook_request.store,
                 "published_at": result["published_at"],
-                "comment_added": False,  # L'image est maintenant cliquable vers product_url
+                "comment_added": result.get("comment_added", False),
                 "duplicate_skipped": False,
                 "webhook_processed_at": datetime.utcnow().isoformat()
             }
