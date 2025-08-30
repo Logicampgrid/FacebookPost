@@ -552,45 +552,96 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
             
             output_path = f"uploads/processed/converted_video_{unique_id}.mp4"
             
-            # Stratégies de conversion vidéo progressives
+            # Stratégies de conversion vidéo ULTRA-ROBUSTES pour Instagram/Facebook
             conversion_strategies = [
-                # Stratégie 1: Instagram optimisé (carré 1:1, 60s max)
+                # Stratégie 1: Instagram ULTRA-COMPATIBLE (résout "Failed to create media container")
                 {
-                    "name": "instagram_optimized",
+                    "name": "instagram_ultra_compatible",
+                    "description": "Optimisé Instagram avec contraintes strictes",
                     "params": [
                         'ffmpeg', '-y', '-i', input_path,
-                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                        '-c:a', 'aac', '-b:a', '128k',
-                        '-movflags', '+faststart',
-                        '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:black',
+                        # Codecs strictement compatibles Instagram
+                        '-c:v', 'libx264', '-profile:v', 'main', '-level', '3.1',
+                        '-preset', 'slow', '-crf', '23',
+                        # Audio compatible Instagram
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                        # Flags essentiels pour Instagram
+                        '-movflags', '+faststart+frag_keyframe+separate_moof+omit_tfhd_offset',
+                        # Contraintes Instagram strictes
+                        '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black',
+                        '-r', '30', '-g', '30', '-keyint_min', '30',  # GOP structure stricte
                         '-t', '60',  # Limite Instagram
-                        '-r', '30',  # 30 FPS max
+                        '-max_muxing_queue_size', '1024',  # Éviter problèmes de buffer
+                        '-bufsize', '2M', '-maxrate', '4M',  # Bitrate control
                         output_path
                     ]
                 },
-                # Stratégie 2: Facebook optimisé (aspect original, 60s max)
+                # Stratégie 2: Facebook haute compatibilité
                 {
-                    "name": "facebook_optimized", 
+                    "name": "facebook_ultra_compatible",
+                    "description": "Facebook optimisé avec contraintes strictes",
                     "params": [
                         'ffmpeg', '-y', '-i', input_path,
-                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '25',
+                        # Codecs compatibles Facebook
+                        '-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0',
+                        '-preset', 'medium', '-crf', '23',
+                        # Audio Facebook
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                        # Flags Facebook
+                        '-movflags', '+faststart+frag_keyframe+separate_moof',
+                        # Résolution Facebook (jusqu'à 1920x1080)
+                        '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+                        '-r', '30', '-g', '60',  # GOP plus flexible que Instagram
+                        '-t', '240',  # Facebook supporte 4 minutes
+                        '-max_muxing_queue_size', '1024',
+                        '-bufsize', '4M', '-maxrate', '8M',
+                        output_path
+                    ]
+                },
+                # Stratégie 3: Conversion conservatrice (maintient qualité)
+                {
+                    "name": "conservative_conversion",
+                    "description": "Conversion douce qui préserve les propriétés originales",
+                    "params": [
+                        'ffmpeg', '-y', '-i', input_path,
+                        # Paramètres conservateurs
+                        '-c:v', 'libx264', '-preset', 'slow', '-crf', '20',
                         '-c:a', 'aac', '-b:a', '128k',
                         '-movflags', '+faststart',
-                        '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease',
-                        '-t', '60',
+                        # Limiter seulement la taille si nécessaire
+                        '-vf', 'scale=min(1920\\,iw):min(1080\\,ih):force_original_aspect_ratio=decrease:force_divisible_by=2',
                         '-r', '30',
+                        '-t', '60',
                         output_path
                     ]
                 },
-                # Stratégie 3: Conversion minimale (garde format original)
+                # Stratégie 4: Minimal mais robuste (dernière chance)
                 {
-                    "name": "minimal_conversion",
+                    "name": "minimal_robust",
+                    "description": "Conversion minimale mais avec paramètres robustes",
                     "params": [
                         'ffmpeg', '-y', '-i', input_path,
-                        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
-                        '-c:a', 'aac', '-b:a', '64k',
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '28',
+                        '-c:a', 'aac', '-b:a', '96k',
                         '-movflags', '+faststart',
+                        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',  # Force dimensions paires
                         '-t', '60',
+                        output_path
+                    ]
+                },
+                # Stratégie 5: Force baseline (compatibilité maximale)
+                {
+                    "name": "baseline_compatibility",
+                    "description": "Profile baseline H.264 pour compatibilité maximale",
+                    "params": [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.0',
+                        '-preset', 'fast', '-crf', '25',
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k',
+                        '-movflags', '+faststart',
+                        '-vf', 'scale=640:640:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=640:640:(ow-iw)/2:(oh-ih)/2:color=black',
+                        '-r', '25',  # Frame rate plus conservateur
+                        '-t', '30',  # Durée courte pour compatibilité
                         output_path
                     ]
                 }
