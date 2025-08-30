@@ -3435,19 +3435,20 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
                 detection_method = f'fallback_size_{file_size_mb:.1f}MB'
                 print(f"⚠️ IMAGE supposée par taille (<{file_size_mb:.1f}MB)")
         
-        # Étape 5: Fallback ultime
+        # Étape 5: Fallback ultime avec préférence vidéo (pour éviter erreurs MP4)
         if not detected_type:
-            detected_type = 'image'
-            detection_method = 'ultimate_fallback'
-            print(f"⚠️ FALLBACK ULTIME: Traitement comme image")
+            # Nouveau: privilégier vidéo en cas de doute (mieux vaut essayer vidéo que rater un MP4)
+            detected_type = 'video'
+            detection_method = 'ultimate_fallback_video_preference'
+            print(f"⚠️ FALLBACK ULTIME: Traitement comme VIDÉO (pour éviter MP4 ratés)")
         
         print(f"🎯 DÉTECTION FINALE: {detected_type.upper()} (méthode: {detection_method})")
         return detected_type
         
     except Exception as e:
         print(f"❌ ERREUR DÉTECTION MÉDIA: {str(e)}")
-        print(f"🔄 FALLBACK SÉCURISÉ: Traitement comme image")
-        return 'image'
+        print(f"🔄 FALLBACK SÉCURISÉ: Traitement comme VIDÉO (préférence sécurisée)")
+        return 'video'  # Changement: préférer vidéo en cas d'erreur
 
 async def auto_route_media_to_facebook_instagram(
     local_media_path: str, 
