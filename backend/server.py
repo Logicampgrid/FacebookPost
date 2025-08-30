@@ -7545,58 +7545,150 @@ async def webhook_endpoint(request: Request):
                     raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
             
             # ============================================================================
-            # NOUVELLE STRATÉGIE PRIORITAIRE: "PHOTO_WITH_LINK" 
+            # NOUVELLE STRATÉGIE AUTO-ROUTING: IMAGE ET VIDÉO AUTOMATIQUE
             # ============================================================================
             
+            # Support des URLs d'images ET de vidéos
             image_url_from_json = metadata.get("image") or metadata.get("image_url") or metadata.get("imageUrl") or metadata.get("picture")
+            video_url_from_json = metadata.get("video") or metadata.get("video_url")
+            media_url_from_json = image_url_from_json or video_url_from_json
             
             # Clean metadata fields
             clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
             clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
             product_url = metadata["url"]
+            store_type = metadata["store"]
             
-            # Construire le message pour Facebook
+            # Construire le message pour Facebook et Instagram
             message_content = f"{clean_title}\n\n{clean_description}".strip()
             
-            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}'")
+            print(f"🚀 AUTO-ROUTING Webhook: {clean_title} pour store '{store_type}'")
             
-            # Préparer le contenu binaire comme fallback
+            # Déterminer quel media (image ou video) traiter
+            media_file = image or video  # N8N peut envoyer soit image soit video
+            
+            # Préparer le contenu binaire comme fallback pour compatibilité
             fallback_binary = None
-            if image and hasattr(image, 'file'):
-                fallback_binary = await image.read()
+            if media_file and hasattr(media_file, 'file'):
+                fallback_binary = await media_file.read()
                 # Remettre le curseur au début pour usage ultérieur
-                await image.seek(0) if hasattr(image, 'seek') else None
+                await media_file.seek(0) if hasattr(media_file, 'seek') else None
             
-            # PRIORITÉ 1: NOUVELLE STRATÉGIE "photo_with_link"
-            # Toujours uploader localement et créer post cliquable
-            if image_url_from_json or image:
-                print(f"🎯 NOUVELLE STRATÉGIE: Tentative photo_with_link")
+            # PRIORITÉ 1: NOUVELLE STRATÉGIE AUTO-ROUTING
+            if media_url_from_json or media_file:
+                print(f"🎯 AUTO-ROUTING: Détection et routage automatique du média")
                 
-                # Déterminer la source d'image à utiliser
-                if image_url_from_json:
-                    print(f"📸 Source image: URL dans json_data: {image_url_from_json}")
-                    image_source = image_url_from_json
-                else:
-                    print(f"📁 Source image: Fichier binaire uploadé")
-                    # Sauvegarder le fichier binaire temporairement
-                    if image:
-                        file_extension = "jpg"
-                        if hasattr(image, 'content_type'):
-                            if 'png' in image.content_type:
-                                file_extension = "png"
-                            elif 'webp' in image.content_type:
-                                file_extension = "webp"
-                        
-                        unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                        temp_file_path = f"uploads/{unique_filename}"
-                        
-                        content = await image.read()
-                        with open(temp_file_path, "wb") as f:
-                            f.write(content)
-                        
-                        image_source = temp_file_path
+                local_media_path = None
+                media_content = None
+                image_source = None  # Pour compatibilité avec le code existant
+                
+                # Option 1: Fichier binaire uploadé (priorité)
+                if media_file:
+                    print(f"📁 Source: Fichier binaire uploadé")
+                    
+                    # Lire le contenu pour détection de type
+                    media_content = await media_file.read()
+                    
+                    # Déterminer l'extension automatiquement
+                    detected_type = await detect_media_type_from_content(media_content, media_file.filename)
+                    
+                    if detected_type == 'video':
+                        file_extension = "mp4"
+                        if hasattr(media_file, 'content_type'):
+                            if 'mov' in media_file.content_type or media_file.filename.endswith('.mov'):
+                                file_extension = "mov"
+                            elif 'webm' in media_file.content_type:
+                                file_extension = "webm"
                     else:
-                        raise HTTPException(status_code=400, detail="Aucune image fournie (URL ou fichier binaire)")
+                        file_extension = "jpg"
+                        if hasattr(media_file, 'content_type'):
+                            if 'png' in media_file.content_type:
+                                file_extension = "png"
+                            elif 'webp' in media_file.content_type:
+                                file_extension = "webp"
+                            elif 'gif' in media_file.content_type:
+                                file_extension = "gif"
+                    
+                    unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+                    local_media_path = f"uploads/{unique_filename}"
+                    
+                    # Sauvegarder le fichier
+                    with open(local_media_path, "wb") as f:
+                        f.write(media_content)
+                    
+                    # Pour compatibilité avec le code existant
+                    image_source = local_media_path
+                    
+                    print(f"✅ Média sauvegardé: {local_media_path} (type: {detected_type})")
+                
+                # Option 2: URL distante
+                elif media_url_from_json:
+                    print(f"🌐 Source: URL distante: {media_url_from_json}")
+                    
+                    # Télécharger le média
+                    try:
+                        response = requests.get(media_url_from_json, timeout=10, headers={
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        })
+                        
+                        if response.status_code == 200:
+                            media_content = response.content
+                            
+                            # Détecter le type automatiquement  
+                            detected_type = await detect_media_type_from_content(media_content, media_url_from_json)
+                            
+                            # Déterminer l'extension
+                            if detected_type == 'video':
+                                file_extension = "mp4"
+                            else:
+                                content_type = response.headers.get('content-type', '')
+                                if 'png' in content_type:
+                                    file_extension = "png"
+                                elif 'webp' in content_type:
+                                    file_extension = "webp"
+                                else:
+                                    file_extension = "jpg"
+                            
+                            unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+                            local_media_path = f"uploads/{unique_filename}"
+                            
+                            with open(local_media_path, "wb") as f:
+                                f.write(media_content)
+                            
+                            # Pour compatibilité avec le code existant
+                            image_source = media_url_from_json
+                            
+                            print(f"✅ Média téléchargé: {local_media_path} (type: {detected_type})")
+                        else:
+                            raise HTTPException(status_code=400, detail=f"Impossible de télécharger le média: HTTP {response.status_code}")
+                    
+                    except Exception as e:
+                        raise HTTPException(status_code=400, detail=f"Erreur téléchargement média: {str(e)}")
+                
+                # Exécuter l'auto-routing vers Facebook et Instagram
+                routing_result = await auto_route_media_to_facebook_instagram(
+                    local_media_path=local_media_path,
+                    message=message_content,
+                    product_link=product_url,
+                    shop_type=store_type,
+                    media_content=media_content
+                )
+                
+                if routing_result["success"]:
+                    return {
+                        "success": True,
+                        "message": "✅ Média publié avec succès via AUTO-ROUTING!",
+                        "routing_result": routing_result,
+                        "media_path": local_media_path,
+                        "store": store_type,
+                        "platforms_used": ["facebook"] + (["instagram"] if routing_result.get("instagram", {}).get("success") else []),
+                        "credits_used": routing_result.get("credits_used", 0),
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                else:
+                    print(f"❌ AUTO-ROUTING échoué: {routing_result.get('error')}")
+                    print(f"🔄 Fallback vers stratégies existantes...")
+                    # Continuer vers le fallback existant
                 
                 # Exécuter la nouvelle stratégie
                 photo_link_result = await execute_photo_with_link_strategy(
