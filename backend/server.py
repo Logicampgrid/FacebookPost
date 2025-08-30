@@ -3734,8 +3734,8 @@ async def get_page_access_token_by_store_or_id(store: str, page_id: Optional[str
                         return page.get("access_token")
         
         # Otherwise, find page by store mapping
-        if store in SHOP_PAGE_MAPPING:
-            target_page_id = SHOP_PAGE_MAPPING[store]["page_id"]
+        if store in get_shop_page_mapping():
+            target_page_id = get_shop_page_mapping()[store]["expected_id"]
             for bm in user.get("business_managers", []):
                 for page in bm.get("pages", []):
                     if page.get("id") == target_page_id:
