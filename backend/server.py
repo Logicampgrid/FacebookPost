@@ -8781,7 +8781,7 @@ async def webhook_endpoint(request: Request):
                 result = await publish_with_feed_strategy(
                     message=message_content,
                     link=product_url, 
-                    picture=media_url,
+                    picture="",  # SUPPRIMÉ: Facebook génère l'aperçu automatiquement
                     shop_type=metadata["store"]
                 )
                 
