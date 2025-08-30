@@ -1372,6 +1372,287 @@ async def check_instagram_permissions_status():
 # NOUVELLES FONCTIONS POUR LA STRATÉGIE "PHOTO_WITH_LINK"
 # ============================================================================
 
+async def detect_media_type_from_content(content: bytes, filename: str = None) -> str:
+    """
+    Détecte automatiquement si le contenu est une image ou une vidéo
+    Retourne 'image' ou 'video'
+    """
+    try:
+        # Détection par extension de fichier en premier
+        if filename:
+            ext = filename.lower().split('.')[-1] if '.' in filename else ''
+            if ext in ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v']:
+                return 'video'
+            elif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+                return 'image'
+        
+        # Détection par magic bytes si pas d'extension claire
+        if len(content) > 12:
+            # Vérifier les signatures de fichiers vidéo
+            if content.startswith(b'\x00\x00\x00\x18ftypmp4') or \
+               content.startswith(b'\x00\x00\x00\x20ftypmp4') or \
+               content[4:8] == b'ftyp':
+                return 'video'
+            
+            # Vérifier les signatures d'images
+            if content.startswith(b'\xFF\xD8\xFF'):  # JPEG
+                return 'image'
+            elif content.startswith(b'\x89PNG\r\n\x1a\n'):  # PNG
+                return 'image'
+            elif content.startswith(b'GIF8'):  # GIF
+                return 'image'
+            elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:  # WebP
+                return 'image'
+        
+        # Par défaut, traiter comme image
+        return 'image'
+        
+    except Exception as e:
+        print(f"⚠️ Erreur détection type média: {e}, default à 'image'")
+        return 'image'
+
+async def auto_route_media_to_facebook_instagram(
+    local_media_path: str, 
+    message: str,
+    product_link: str, 
+    shop_type: str,
+    media_content: bytes = None
+) -> dict:
+    """
+    Fonction automatisée qui :
+    1. Détecte le type de média (image/vidéo)
+    2. Route vers le bon endpoint Facebook (/photos ou /videos)  
+    3. Publie sur la bonne page selon le store
+    4. Gère Instagram pour les deux types de média
+    5. Respecte la limite de 10 crédits Emergent
+    """
+    try:
+        print(f"🚀 AUTO-ROUTING: Traitement média pour shop '{shop_type}'")
+        
+        # Étape 1: Détecter le type de média
+        if media_content:
+            media_type = await detect_media_type_from_content(media_content, local_media_path)
+        else:
+            # Lire le fichier pour détecter le type
+            with open(local_media_path, 'rb') as f:
+                content_sample = f.read(1024)  # Lire les premiers 1024 bytes
+            media_type = await detect_media_type_from_content(content_sample, local_media_path)
+        
+        print(f"📋 Type détecté: {media_type}")
+        
+        # Étape 2: Obtenir la configuration du store
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé",
+                "credits_used": 0
+            }
+        
+        # Utiliser le SHOP_PAGE_MAPPING global défini dans le fichier
+        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        if not shop_config:
+            return {
+                "success": False,
+                "error": f"Configuration inconnue pour store '{shop_type}'. Stores disponibles: {list(SHOP_PAGE_MAPPING.keys())}",
+                "credits_used": 0
+            }
+        
+        # Étape 3: Trouver la page Facebook et Instagram correspondantes
+        target_page_id = None
+        page_access_token = None
+        page_name = None
+        instagram_account_id = None
+        
+        # Chercher dans les business managers de l'utilisateur
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                # Vérifier si cette page correspond au store
+                if (shop_config.get("expected_id") and page.get("id") == shop_config["expected_id"]) or \
+                   (shop_config.get("main_page_id") and page.get("id") == shop_config["main_page_id"]):
+                    target_page_id = page.get("id")
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name")
+                    
+                    # Chercher le compte Instagram associé si configuré
+                    if shop_config.get("platforms") and "instagram" in shop_config["platforms"]:
+                        try:
+                            ig_response = requests.get(
+                                f"{FACEBOOK_GRAPH_URL}/{page['id']}",
+                                params={
+                                    "access_token": page_access_token,
+                                    "fields": "instagram_business_account"
+                                }
+                            )
+                            if ig_response.status_code == 200:
+                                ig_data = ig_response.json()
+                                if "instagram_business_account" in ig_data:
+                                    instagram_account_id = ig_data["instagram_business_account"]["id"]
+                                    print(f"📱 Instagram account trouvé: {instagram_account_id}")
+                        except Exception as e:
+                            print(f"⚠️ Erreur recherche Instagram: {e}")
+                    
+                    break
+            
+            if target_page_id:
+                break
+        
+        if not target_page_id or not page_access_token:
+            return {
+                "success": False,
+                "error": f"Page Facebook non trouvée pour store '{shop_type}'. Vérifiez la configuration SHOP_PAGE_MAPPING.",
+                "credits_used": 0
+            }
+        
+        print(f"🎯 Page trouvée: {page_name} ({target_page_id})")
+        
+        # Étape 4: Upload du média vers Facebook
+        is_video = (media_type == 'video')
+        upload_success, media_id, media_url, upload_error = await upload_media_to_facebook_photos(
+            local_media_path, page_access_token, target_page_id, is_video
+        )
+        
+        if not upload_success:
+            return {
+                "success": False,
+                "error": f"Échec upload {media_type} vers Facebook: {upload_error}",
+                "credits_used": 1  # 1 crédit pour la tentative
+            }
+        
+        print(f"✅ {media_type.capitalize()} uploadé vers Facebook: {media_id}")
+        
+        # Étape 5: Créer le post avec lien vers le produit
+        post_data = {
+            'message': message,
+            'link': product_link,
+            'access_token': page_access_token
+        }
+        
+        # Attacher le média uploadé
+        if is_video:
+            post_data['attached_media'] = f'{{"media_fbid":"{media_id}"}}'
+        else:
+            post_data['object_attachment'] = media_id
+        
+        # Publier sur Facebook
+        fb_response = requests.post(
+            f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed",
+            data=post_data
+        )
+        
+        results = {
+            "facebook": {},
+            "instagram": {},
+            "credits_used": 2,  # 1 pour upload + 1 pour publication Facebook
+            "media_type": media_type,
+            "store": shop_type,
+            "page_name": page_name
+        }
+        
+        if fb_response.status_code == 200:
+            fb_result = fb_response.json()
+            results["facebook"] = {
+                "success": True,
+                "post_id": fb_result.get("id"),
+                "media_id": media_id,
+                "endpoint_used": f"/{target_page_id}/videos" if is_video else f"/{target_page_id}/photos"
+            }
+            print(f"✅ Publication Facebook réussie: {fb_result.get('id')}")
+        else:
+            results["facebook"] = {
+                "success": False,
+                "error": f"HTTP {fb_response.status_code}: {fb_response.text}"
+            }
+            print(f"❌ Échec publication Facebook: {fb_response.status_code}")
+        
+        # Étape 6: Publication sur Instagram si configuré
+        if instagram_account_id and shop_config.get("platforms") and "instagram" in shop_config["platforms"]:
+            try:
+                print(f"📱 Publication sur Instagram: {instagram_account_id}")
+                
+                # Créer le container Instagram (image ou vidéo)
+                ig_container_data = {
+                    'caption': f"{message}\n\n🔗 {product_link}",
+                    'access_token': page_access_token
+                }
+                
+                if is_video:
+                    # Pour les vidéos Instagram
+                    ig_container_data['media_type'] = 'VIDEO'
+                    ig_container_data['video_url'] = media_url or f"https://graph.facebook.com/{media_id}"
+                else:
+                    # Pour les images Instagram  
+                    ig_container_data['image_url'] = media_url or f"https://graph.facebook.com/{media_id}"
+                
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
+                    data=ig_container_data
+                )
+                
+                if container_response.status_code == 200:
+                    container_result = container_response.json()
+                    container_id = container_result.get("id")
+                    
+                    # Publier le container
+                    publish_response = requests.post(
+                        f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media_publish",
+                        data={
+                            'creation_id': container_id,
+                            'access_token': page_access_token
+                        }
+                    )
+                    
+                    if publish_response.status_code == 200:
+                        ig_result = publish_response.json()
+                        results["instagram"] = {
+                            "success": True,
+                            "post_id": ig_result.get("id"),
+                            "container_id": container_id
+                        }
+                        results["credits_used"] += 1  # +1 crédit pour Instagram
+                        print(f"✅ Publication Instagram réussie: {ig_result.get('id')}")
+                    else:
+                        results["instagram"] = {
+                            "success": False,
+                            "error": f"Échec publication Instagram: HTTP {publish_response.status_code}"
+                        }
+                        print(f"❌ Échec publication Instagram: {publish_response.status_code}")
+                else:
+                    results["instagram"] = {
+                        "success": False,
+                        "error": f"Échec création container Instagram: HTTP {container_response.status_code}"
+                    }
+                    print(f"❌ Échec container Instagram: {container_response.status_code}")
+                    
+            except Exception as e:
+                results["instagram"] = {
+                    "success": False,
+                    "error": f"Erreur Instagram: {str(e)}"
+                }
+                print(f"❌ Erreur Instagram: {e}")
+        
+        # Déterminer le succès global
+        facebook_success = results["facebook"].get("success", False)
+        instagram_success = results["instagram"].get("success", True)  # True si pas configuré
+        
+        results["success"] = facebook_success and instagram_success
+        results["summary"] = f"Publication {media_type} sur {shop_type}: Facebook {'✅' if facebook_success else '❌'}"
+        if instagram_account_id:
+            results["summary"] += f", Instagram {'✅' if results['instagram'].get('success') else '❌'}"
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Erreur auto-routing: {e}")
+        return {
+            "success": False,
+            "error": f"Erreur système: {str(e)}",
+            "credits_used": 1
+        }
+
 async def download_image_with_fallback(image_url: str, fallback_binary_content: bytes = None) -> tuple:
     """
     Télécharge une image distante avec fallback vers contenu binaire fourni par N8N
