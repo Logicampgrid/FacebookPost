@@ -4169,39 +4169,49 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 print(f"🎯 FORCED STRATEGY 1C: Store parameter detected - using Strategy 1C as requested")
                 return await use_strategy_1c(post, page_access_token, media_url, product_link)
             
-            # STRATEGY 1A: Direct multipart upload (GUARANTEED IMAGE DISPLAY)
+            # STRATÉGIE 1A AMÉLIORÉE: Multipart upload local prioritaire avec détection automatique
             try:
-                # Use local file for better performance if available
+                # PRIORITÉ: Utiliser fichier local si disponible (évite erreurs 404)
                 if local_file_path and os.path.exists(local_file_path):
-                    print(f"✅ Using local file for guaranteed image display: {local_file_path}")
+                    print(f"✅ PRIORITÉ: Utilisation fichier local (évite erreurs ngrok): {local_file_path}")
                     # Read local file content
                     with open(local_file_path, 'rb') as f:
                         media_content = f.read()
                     
-                    # Determine content type from file extension
+                    # DÉTECTION AUTOMATIQUE du type de média
+                    detected_media_type = await detect_media_type_from_content(media_content, local_file_path)
+                    print(f"🔍 Type de média détecté automatiquement: {detected_media_type}")
+                    
+                    # Determine content type from detection + file extension
                     file_ext = local_file_path.lower().split('.')[-1]
-                    if file_ext in ['jpg', 'jpeg']:
-                        content_type = 'image/jpeg'
-                    elif file_ext == 'png':
-                        content_type = 'image/png'
-                    elif file_ext == 'gif':
-                        content_type = 'image/gif'
-                    elif file_ext in ['mp4', 'mov', 'avi']:
+                    if detected_media_type == 'video' or file_ext in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
                         content_type = 'video/mp4'
-                    else:
-                        content_type = 'application/octet-stream'
+                        print(f"🎥 Média détecté comme VIDÉO - routage vers /videos")
+                    else:  # detected_media_type == 'image'
+                        if file_ext == 'png':
+                            content_type = 'image/png'
+                        elif file_ext == 'gif':
+                            content_type = 'image/gif'
+                        elif file_ext == 'webp':
+                            content_type = 'image/webp'
+                        else:
+                            content_type = 'image/jpeg'
+                        print(f"📸 Média détecté comme IMAGE - routage vers /photos")
                         
-                    print(f"📊 Local media info: size={len(media_content)} bytes, type={content_type}")
+                    print(f"📊 Info média local: taille={len(media_content)} bytes, type={content_type}")
                 else:
-                    print(f"⚠️ Local file not found, downloading from URL: {full_media_url}")
+                    print(f"⬇️ Fichier local non trouvé, téléchargement depuis URL: {full_media_url}")
                     # Fallback to download method
                     media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
+                    # Détection automatique sur contenu téléchargé
+                    detected_media_type = await detect_media_type_from_content(media_content, full_media_url)
+                    print(f"🔍 Type de média téléchargé détecté: {detected_media_type}")
                 
-                print(f"📊 Media info: size={len(media_content)} bytes, type={content_type}")
+                print(f"📊 Info média finale: taille={len(media_content)} bytes, type={content_type}")
                 
-                # Determine media type for Facebook API
-                is_video = content_type.startswith('video/') or media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
-                is_image = content_type.startswith('image/') or media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+                # ROUTAGE AUTOMATIQUE vers endpoint Facebook approprié
+                is_video = detected_media_type == 'video' or content_type.startswith('video/')
+                is_image = detected_media_type == 'image' or content_type.startswith('image/')
                 
                 # Prepare base data
                 base_data = {
