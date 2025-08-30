@@ -6349,6 +6349,106 @@ async def webhook_debug(request: Request):
             "url": str(request.url)
         }
 
+async def publish_with_feed_strategy(message: str, link: str, picture: str, shop_type: str):
+    """
+    Publication utilisant la Stratégie 1C avec l'endpoint /feed
+    Paramètres: message (titre + description), link (product_url), picture (image_url)
+    """
+    try:
+        print(f"🎯 STRATÉGIE 1C: Publication /feed avec image cliquable")
+        print(f"📝 Message: {message}")
+        print(f"🔗 Link: {link}")
+        print(f"📸 Picture: {picture}")
+        print(f"🏪 Shop: {shop_type}")
+        
+        # Trouver un utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            raise Exception("Aucun utilisateur authentifié trouvé")
+        
+        # Mapper le shop_type vers la page Facebook appropriée
+        from collections import defaultdict
+        SHOP_PAGE_MAPPING = {
+            "gizmobbs": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
+            "outdoor": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
+            "logicantiq": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}
+        }
+        
+        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        if not shop_config:
+            raise Exception(f"Configuration non trouvée pour shop_type: {shop_type}")
+        
+        target_page_id = shop_config["main_page_id"]
+        
+        # Trouver la page et son token d'accès
+        page_access_token = None
+        page_name = shop_config["name"]
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name", page_name)
+                    break
+            if page_access_token:
+                break
+        
+        if not page_access_token:
+            raise Exception(f"Token d'accès non trouvé pour la page {target_page_id}")
+        
+        # Préparer les données pour l'API Facebook /feed
+        data = {
+            "access_token": page_access_token,
+            "message": message,
+            "link": link,
+            "picture": picture
+        }
+        
+        # Appel à l'API Facebook /feed
+        endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed"
+        print(f"🚀 Appel API Facebook: {endpoint}")
+        
+        response = requests.post(endpoint, data=data, timeout=30)
+        result = response.json()
+        
+        print(f"📊 Réponse Facebook API: {response.status_code} - {result}")
+        
+        if response.status_code == 200 and 'id' in result:
+            print("✅ SUCCESS: Stratégie 1C - Image cliquable publiée avec succès!")
+            
+            return {
+                "success": True,
+                "facebook_post_id": result["id"],
+                "post_id": str(uuid.uuid4()),
+                "page_name": page_name,
+                "page_id": target_page_id,
+                "user_name": user.get("name", "Utilisateur"),
+                "media_url": picture,
+                "strategy_used": "feed_with_picture",
+                "image_clickable": True,
+                "published_at": datetime.utcnow().isoformat(),
+                "message": f"✅ Image cliquable publiée vers {link}"
+            }
+        else:
+            print(f"❌ Échec Stratégie 1C: {result}")
+            return {
+                "success": False,
+                "error": f"Facebook API error: {result}",
+                "strategy_used": "feed_with_picture_failed"
+            }
+            
+    except Exception as error:
+        print(f"❌ Erreur Stratégie 1C: {error}")
+        return {
+            "success": False,
+            "error": str(error),
+            "strategy_used": "feed_with_picture_failed"
+        }
+
 async def check_image_url_accessibility(image_url: str) -> bool:
     """
     Vérifier si une URL d'image est accessible publiquement
