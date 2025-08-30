@@ -4076,30 +4076,60 @@ async def auto_route_media_to_facebook_instagram(
                     container_result = container_response.json()
                     container_id = container_result.get("id")
                     
-                    # Publier le container
-                    publish_response = requests.post(
-                        f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media_publish",
-                        data={
-                            'creation_id': container_id,
-                            'access_token': page_access_token
-                        }
-                    )
+                    # CORRECTION: Attente spéciale pour les vidéos Instagram
+                    if is_video:
+                        print(f"🎬 Attente processing vidéo Instagram (30s)...")
+                        await asyncio.sleep(30)  # Attendre que Instagram traite la vidéo
                     
-                    if publish_response.status_code == 200:
-                        ig_result = publish_response.json()
-                        results["instagram"] = {
-                            "success": True,
-                            "post_id": ig_result.get("id"),
-                            "container_id": container_id
-                        }
-                        results["credits_used"] += 1  # +1 crédit pour Instagram
-                        print(f"✅ Publication Instagram réussie: {ig_result.get('id')}")
-                    else:
-                        results["instagram"] = {
-                            "success": False,
-                            "error": f"Échec publication Instagram: HTTP {publish_response.status_code}"
-                        }
-                        print(f"❌ Échec publication Instagram: {publish_response.status_code}")
+                    # Publier le container avec retry pour vidéos
+                    max_publish_attempts = 3 if is_video else 1
+                    publish_success = False
+                    
+                    for attempt in range(max_publish_attempts):
+                        try:
+                            print(f"📱 Publication Instagram tentative {attempt + 1}/{max_publish_attempts}")
+                            publish_response = requests.post(
+                                f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media_publish",
+                                data={
+                                    'creation_id': container_id,
+                                    'access_token': page_access_token
+                                },
+                                timeout=120  # 2 minutes timeout
+                            )
+                            
+                            if publish_response.status_code == 200:
+                                ig_result = publish_response.json()
+                                results["instagram"] = {
+                                    "success": True,
+                                    "post_id": ig_result.get("id"),
+                                    "container_id": container_id,
+                                    "media_type": "video" if is_video else "image"
+                                }
+                                results["credits_used"] += 1  # +1 crédit pour Instagram
+                                publish_success = True
+                                print(f"✅ Publication Instagram réussie: {ig_result.get('id')}")
+                                break
+                            else:
+                                if attempt < max_publish_attempts - 1:
+                                    print(f"⚠️ Tentative {attempt + 1} échouée, retry dans 15s...")
+                                    await asyncio.sleep(15)
+                                else:
+                                    error_details = publish_response.text[:200] if publish_response.text else "Unknown error"
+                                    results["instagram"] = {
+                                        "success": False,
+                                        "error": f"Échec publication Instagram après {max_publish_attempts} tentatives: HTTP {publish_response.status_code} - {error_details}"
+                                    }
+                                    print(f"❌ Échec publication Instagram définitif: {publish_response.status_code}")
+                        except Exception as publish_attempt_error:
+                            if attempt < max_publish_attempts - 1:
+                                print(f"⚠️ Erreur tentative {attempt + 1}: {str(publish_attempt_error)}, retry...")
+                                await asyncio.sleep(15)
+                            else:
+                                results["instagram"] = {
+                                    "success": False,
+                                    "error": f"Erreur publication Instagram: {str(publish_attempt_error)}"
+                                }
+                                break
                 else:
                     results["instagram"] = {
                         "success": False,
