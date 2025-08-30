@@ -3081,7 +3081,7 @@ curl -X POST "https://your-domain.com/api/webhook" \\
             "✅ Unique filename generation to prevent conflicts",
             "✅ Multi-platform support for gizmobbs (Facebook + Instagram)"
         ],
-        "shop_mapping": SHOP_PAGE_MAPPING
+        "shop_mapping": get_shop_page_mapping()
     }
 
 # Optimized static file serving with better performance for social media APIs
