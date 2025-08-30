@@ -4043,24 +4043,45 @@ async def auto_route_media_to_facebook_instagram(
             }
             print(f"❌ Échec publication Facebook: {fb_response.status_code}")
         
-        # Étape 6: Publication sur Instagram si configuré
+        # Étape 6: Publication sur Instagram si configuré - CORRECTION VIDÉOS INSTAGRAM
         if instagram_account_id and shop_config.get("platforms") and "instagram" in shop_config["platforms"]:
             try:
                 print(f"📱 Publication sur Instagram: {instagram_account_id}")
                 
-                # Créer le container Instagram (image ou vidéo)
-                ig_container_data = {
-                    'caption': f"{message}\n\n🔗 {product_link}",
-                    'access_token': page_access_token
-                }
-                
+                # CORRECTION INSTAGRAM: Traitement spécifique pour les vidéos
                 if is_video:
-                    # Pour les vidéos Instagram
-                    ig_container_data['media_type'] = 'VIDEO'
-                    ig_container_data['video_url'] = media_url or f"https://graph.facebook.com/{media_id}"
+                    print(f"🎬 CORRECTION INSTAGRAM VIDÉO: Upload direct multipart")
+                    
+                    # Pour les vidéos Instagram, utilisation d'upload multipart direct
+                    with open(local_media_path, 'rb') as video_file:
+                        files = {
+                            'source': (os.path.basename(local_media_path), video_file, 'video/mp4')
+                        }
+                        ig_container_data = {
+                            'media_type': 'VIDEO',
+                            'caption': f"{message}\n\n🔗 {product_link}",
+                            'access_token': page_access_token
+                        }
+                        
+                        # Créer container avec upload direct
+                        container_response = requests.post(
+                            f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
+                            data=ig_container_data,
+                            files=files,
+                            timeout=300  # 5 minutes pour vidéos
+                        )
                 else:
-                    # Pour les images Instagram  
-                    ig_container_data['image_url'] = media_url or f"https://graph.facebook.com/{media_id}"
+                    # Pour les images Instagram, méthode URL standard
+                    ig_container_data = {
+                        'caption': f"{message}\n\n🔗 {product_link}",
+                        'access_token': page_access_token,
+                        'image_url': media_url or f"https://graph.facebook.com/{media_id}"
+                    }
+                    
+                    container_response = requests.post(
+                        f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
+                        data=ig_container_data
+                    )
                 
                 container_response = requests.post(
                     f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
