@@ -4138,7 +4138,7 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
         else:
             print("🔍 No product link detected - will use standard upload method")
         
-        # ENHANCED PRIORITY LOGIC: CLICKABLE IMAGES FOR PRODUCTS
+        # AMÉLIORÉ: MULTIPART UPLOAD LOCAL PRIORITAIRE avec détection automatique
         if post.media_urls:
             media_url = post.media_urls[0]
             
@@ -4153,25 +4153,21 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 # Extract local file path for direct upload
                 local_file_path = media_url.replace('/api/uploads/', 'uploads/')
             
-            print(f"📸 ENHANCED: Processing media with clickable support: {full_media_url}")
-            print(f"📁 Local file path: {local_file_path}")
-            print(f"🔗 Product link available: {bool(product_link)}")
+            print(f"📸 AMÉLIORÉ: Traitement média avec détection automatique: {full_media_url}")
+            print(f"📁 Chemin fichier local: {local_file_path}")
+            print(f"🔗 Lien produit disponible: {bool(product_link)}")
             
-            # Determine media type
-            is_video = media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv'))
-            is_image = media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+            # PRIORISER l'upload multipart local si fichier disponible
+            if local_file_path and os.path.exists(local_file_path):
+                print(f"🚀 PRIORITÉ: Upload multipart local détecté - évite les erreurs ngrok")
+                # Procéder directement au multipart upload local
+            else:
+                print(f"⬇️ Fichier local non trouvé - téléchargement depuis URL nécessaire")
             
             # FORCED STRATEGY 1C: When store parameter is present, use Strategy 1C immediately
-            if use_strategy_1c_forced and is_image:
+            if use_strategy_1c_forced:
                 print(f"🎯 FORCED STRATEGY 1C: Store parameter detected - using Strategy 1C as requested")
                 return await use_strategy_1c(post, page_access_token, media_url, product_link)
-            
-            # PRIORITY: Skip problematic /feed strategy with "picture" parameter
-            # Aller directement au multipart upload pour éviter les problèmes ngrok
-            if product_link and is_image and not use_strategy_1c_forced:
-                print(f"🎯 SKIPPING problematic /feed strategy with 'picture' parameter")
-                print(f"🚀 Going directly to multipart upload to avoid ngrok issues")
-                # Skip this strategy and go directly to multipart upload
             
             # STRATEGY 1A: Direct multipart upload (GUARANTEED IMAGE DISPLAY)
             try:
