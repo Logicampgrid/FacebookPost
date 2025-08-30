@@ -2050,13 +2050,8 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
             }
         
         # Mapping des shops vers les pages
-        SHOP_PAGE_MAPPING = {
-            "gizmobbs": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
-            "outdoor": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}, 
-            "logicantiq": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}
-        }
-        
-        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        SHOP_PAGE_MAPPING_LOCAL = get_shop_page_mapping()
+        shop_config = SHOP_PAGE_MAPPING_LOCAL.get(shop_type)
         if not shop_config:
             return {
                 "success": False,
