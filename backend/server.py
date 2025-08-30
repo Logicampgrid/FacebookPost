@@ -1265,7 +1265,7 @@ async def debug_store_platforms(shop_type: str):
                     } for ig in all_platforms["instagram_accounts"]
                 ]
             },
-            "shop_mapping_config": SHOP_PAGE_MAPPING.get(shop_type, {})
+            "shop_mapping_config": get_shop_page_mapping().get(shop_type, {})
         }
         
     except Exception as e:
