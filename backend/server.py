@@ -4023,59 +4023,12 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 print(f"🎯 FORCED STRATEGY 1C: Store parameter detected - using Strategy 1C as requested")
                 return await use_strategy_1c(post, page_access_token, media_url, product_link)
             
-            # ENHANCED PRIORITY STRATEGY: CLICKABLE LINK POSTS FOR PRODUCTS WITH IMAGES
-            # This ensures ALL images with product links become clickable (uploaded or JSON)
+            # PRIORITY: Skip problematic /feed strategy with "picture" parameter
+            # Aller directement au multipart upload pour éviter les problèmes ngrok
             if product_link and is_image and not use_strategy_1c_forced:
-                print(f"🎯 ENHANCED PRIORITY: Creating CLICKABLE image post with product link: {product_link}")
-                print(f"🔍 Media source: {'uploaded' if not media_url.startswith('http') else 'URL from JSON'}")
-                try:
-                    # Enhanced message with better formatting
-                    clickable_message = post.content if post.content and post.content.strip() else "📸 Découvrez ce produit !"
-                    
-                    data = {
-                        "access_token": page_access_token,
-                        "message": clickable_message,
-                        "link": product_link,  # Makes the image clickable to product
-                        "picture": full_media_url,  # Display the image prominently
-                        "name": f"Voir le produit",  # Title for the link
-                        "description": "Cliquez sur l'image pour accéder directement au produit"  # Description
-                    }
-                    
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                    print(f"🔗 ENHANCED: Creating CLICKABLE image post: {full_media_url} -> {product_link}")
-                    print(f"🔗 Endpoint: {endpoint}")
-                    print(f"📸 Image URL: {full_media_url}")
-                    print(f"🎯 Target URL: {product_link}")
-                    print(f"💬 Message: {clickable_message}")
-                    
-                    response = requests.post(endpoint, data=data, timeout=30)
-                    result = response.json()
-                    
-                    print(f"Facebook enhanced clickable response: {response.status_code} - {result}")
-                    
-                    if response.status_code == 200 and 'id' in result:
-                        print("✅ ENHANCED: Clickable image post created successfully!")
-                        print("🎯 Image is now clickable and redirects to product URL")
-                        
-                        # ENHANCED: Add gizmobbs comment for videos (even for clickable posts)
-                        if is_video and shop_type == "gizmobbs":
-                            try:
-                                gizmobbs_comment_text = "Découvrez ce produit sur notre boutique : https://logicamp.org/werdpress/gizmobbs"
-                                print(f"🎬 GIZMOBBS VIDEO (clickable): Adding automatic comment: {gizmobbs_comment_text}")
-                                await add_comment_to_facebook_post(result["id"], gizmobbs_comment_text, page_access_token)
-                                print("✅ Gizmobbs comment added to clickable video post!")
-                            except Exception as gizmobbs_error:
-                                print(f"⚠️ Gizmobbs comment error on clickable post: {gizmobbs_error}")
-                        
-                        return result
-                    else:
-                        print(f"❌ Enhanced clickable image post failed: {result}")
-                        print("🔄 Falling back to direct upload method...")
-                        # Fall through to direct upload method
-                except Exception as clickable_error:
-                    print(f"❌ Enhanced clickable image post failed: {clickable_error}")
-                    print("🔄 Falling back to direct upload method...")
-                    # Fall through to direct upload method
+                print(f"🎯 SKIPPING problematic /feed strategy with 'picture' parameter")
+                print(f"🚀 Going directly to multipart upload to avoid ngrok issues")
+                # Skip this strategy and go directly to multipart upload
             
             # STRATEGY 1A: Direct multipart upload (GUARANTEED IMAGE DISPLAY)
             try:
