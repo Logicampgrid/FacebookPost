@@ -1228,7 +1228,8 @@ async def process_webhook_media_robustly(
     media_filename: str = None
 ) -> dict:
     """
-    Traite un média de webhook de façon robuste avec toutes les étapes
+    Traitement ultra-robuste de médias webhook avec logs détaillés et fallbacks garantis
+    Version optimisée pour assurer le succès des publications ou un fallback correct
     
     Args:
         metadata: Métadonnées du webhook (title, description, url, image_url, etc.)
@@ -1236,138 +1237,297 @@ async def process_webhook_media_robustly(
         media_filename: Nom de fichier du média
     
     Returns:
-        dict: Résultat complet du traitement et publication
+        dict: Résultat complet du traitement et publication avec métriques détaillées
     """
     try:
-        print(f"🚀 TRAITEMENT WEBHOOK ROBUSTE: Début du processus complet")
+        start_time = datetime.utcnow()
+        print(f"🚀 TRAITEMENT WEBHOOK ULTRA-ROBUSTE: Début du processus complet")
+        print(f"📋 Métadonnées reçues: {list(metadata.keys())}")
         
-        # Extraction des informations
-        title = metadata.get("title", "")
-        description = metadata.get("description", "")
-        permalink = metadata.get("url") or metadata.get("permalink", "")
-        store_type = metadata.get("store", "")
+        # PHASE 1: Validation et extraction des informations
+        print(f"🔍 PHASE 1: Validation et extraction")
         
-        # Sources possibles pour l'image/vidéo
-        media_url = (
-            metadata.get("image_url") or 
-            metadata.get("image") or 
-            metadata.get("video_url") or 
-            metadata.get("video") or
-            metadata.get("media_url")
-        )
+        # Extraction sécurisée des informations
+        title = str(metadata.get("title", "")).strip()
+        description = str(metadata.get("description", "")).strip()
+        permalink = str(metadata.get("url") or metadata.get("permalink", "")).strip()
+        store_type = str(metadata.get("store", "")).strip()
         
-        if not media_url and not media_binary:
-            return {
-                "success": False,
-                "error": "Aucune source média fournie (URL ou binaire)",
-                "step_failed": "validation"
-            }
+        # Sources possibles pour l'image/vidéo (ordre de priorité)
+        media_sources = [
+            metadata.get("image_url"),
+            metadata.get("image"), 
+            metadata.get("video_url"),
+            metadata.get("video"),
+            metadata.get("media_url"),
+            metadata.get("file_url")
+        ]
         
-        # Créer le message du post
-        message = f"{title}\n\n{description}".strip()
-        if len(message) > 2200:  # Limite Instagram
-            message = message[:2197] + "..."
+        # Prendre la première source non-vide
+        media_url = None
+        for source in media_sources:
+            if source and str(source).strip():
+                media_url = str(source).strip()
+                break
         
-        print(f"📝 Message créé: {len(message)} caractères")
+        print(f"📝 Titre: {title[:100]}..." if len(title) > 100 else f"📝 Titre: {title}")
+        print(f"📄 Description: {description[:100]}..." if len(description) > 100 else f"📄 Description: {description}")
         print(f"🔗 Permalink: {permalink}")
         print(f"🏪 Store: {store_type}")
+        print(f"🖼️ Média URL: {media_url}")
+        print(f"💾 Média binaire: {'Oui' if media_binary else 'Non'} ({len(media_binary) if media_binary else 0} bytes)")
         
+        # Validation des données critiques
+        validation_errors = []
+        if not media_url and not media_binary:
+            validation_errors.append("Aucune source média fournie (URL ou binaire)")
+        if not title and not description:
+            validation_errors.append("Ni titre ni description fournis")
+            
+        if validation_errors:
+            error_msg = "; ".join(validation_errors)
+            print(f"❌ VALIDATION ÉCHOUÉE: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg,
+                "step_failed": "validation",
+                "execution_time": 0,
+                "metadata": metadata
+            }
+        
+        # Création du message optimisé
+        message_parts = []
+        if title:
+            message_parts.append(title)
+        if description and description != title:  # Éviter duplication
+            message_parts.append(description)
+        
+        message = "\n\n".join(message_parts).strip()
+        
+        # Optimisation longueur pour Instagram (2200 caractères max)
+        if len(message) > 2200:
+            message = message[:2197] + "..."
+            print(f"✂️ Message tronqué à 2200 caractères")
+        
+        print(f"📝 Message final: {len(message)} caractères")
+        
+        # Structure de résultat détaillée
         result = {
             "success": False,
             "metadata": metadata,
-            "message": message,
-            "permalink": permalink,
-            "store_type": store_type,
+            "processed_data": {
+                "message": message,
+                "permalink": permalink,
+                "store_type": store_type,
+                "media_url": media_url,
+                "media_binary_size": len(media_binary) if media_binary else 0
+            },
             "steps": {
-                "download": {"success": False, "details": None},
-                "conversion": {"success": False, "details": None},
-                "publication": {"success": False, "details": None}
+                "validation": {"success": True, "details": "Validation réussie"},
+                "download": {"success": False, "details": None, "attempts": 0},
+                "conversion": {"success": False, "details": None, "attempts": 0},
+                "publication": {"success": False, "details": None, "attempts": 0}
+            },
+            "performance": {
+                "start_time": start_time.isoformat(),
+                "end_time": None,
+                "execution_time": 0,
+                "step_timings": {}
             },
             "final_result": None
         }
         
-        # Étape 1: Téléchargement fiable
-        print(f"🔄 ÉTAPE 1: Téléchargement fiable")
-        download_success, local_path, media_type, download_error = await download_media_reliably(
-            media_url, media_binary, media_filename
-        )
+        # PHASE 2: Téléchargement fiable avec métriques
+        print(f"🔄 PHASE 2: Téléchargement fiable")
+        step_start = datetime.utcnow()
         
+        download_attempts = 0
+        download_success = False
+        local_path = None
+        media_type = None
+        
+        # Tentatives de téléchargement avec retry intelligent
+        max_download_attempts = 3
+        for attempt in range(max_download_attempts):
+            download_attempts += 1
+            print(f"📥 Tentative téléchargement {attempt + 1}/{max_download_attempts}")
+            
+            download_success, local_path, media_type, download_error = await download_media_reliably(
+                media_url, media_binary, media_filename
+            )
+            
+            if download_success:
+                break
+            else:
+                print(f"❌ Tentative {attempt + 1} échouée: {download_error}")
+                if attempt < max_download_attempts - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"⏰ Attente {wait_time}s avant retry...")
+                    await asyncio.sleep(wait_time)
+        
+        step_time = (datetime.utcnow() - step_start).total_seconds()
+        result["performance"]["step_timings"]["download"] = step_time
         result["steps"]["download"] = {
             "success": download_success,
+            "attempts": download_attempts,
             "details": {
                 "local_path": local_path,
                 "media_type": media_type,
-                "error": download_error
+                "error": download_error if not download_success else None,
+                "execution_time": step_time
             }
         }
         
         if not download_success:
-            result["error"] = f"Échec téléchargement: {download_error}"
+            result["error"] = f"Échec téléchargement après {download_attempts} tentatives: {download_error}"
             result["step_failed"] = "download"
+            result["performance"]["end_time"] = datetime.utcnow().isoformat()
+            result["performance"]["execution_time"] = (datetime.utcnow() - start_time).total_seconds()
+            print(f"💥 ÉCHEC PHASE 2: {result['error']}")
             return result
         
-        # Étape 2: Conversion pour compatibilité
-        print(f"🔄 ÉTAPE 2: Conversion pour compatibilité sociale")
-        conversion_success, converted_path, conversion_error = await convert_media_for_social_platforms(
-            local_path, media_type
-        )
+        print(f"✅ PHASE 2 RÉUSSIE: {local_path} ({media_type}) en {step_time:.1f}s")
         
+        # PHASE 3: Conversion optimisée avec retry
+        print(f"🔄 PHASE 3: Conversion pour compatibilité sociale")
+        step_start = datetime.utcnow()
+        
+        conversion_attempts = 0
+        conversion_success = False
+        converted_path = None
+        
+        max_conversion_attempts = 2
+        for attempt in range(max_conversion_attempts):
+            conversion_attempts += 1
+            print(f"🔄 Tentative conversion {attempt + 1}/{max_conversion_attempts}")
+            
+            conversion_success, converted_path, conversion_error = await convert_media_for_social_platforms(
+                local_path, media_type
+            )
+            
+            if conversion_success:
+                break
+            else:
+                print(f"❌ Conversion tentative {attempt + 1} échouée: {conversion_error}")
+                if attempt < max_conversion_attempts - 1:
+                    print(f"⏰ Attente 3s avant retry conversion...")
+                    await asyncio.sleep(3)
+        
+        step_time = (datetime.utcnow() - step_start).total_seconds()
+        result["performance"]["step_timings"]["conversion"] = step_time
         result["steps"]["conversion"] = {
             "success": conversion_success,
+            "attempts": conversion_attempts,
             "details": {
                 "converted_path": converted_path,
-                "error": conversion_error
+                "error": conversion_error if not conversion_success else None,
+                "execution_time": step_time
             }
         }
         
         if not conversion_success:
-            result["error"] = f"Échec conversion: {conversion_error}"
+            result["error"] = f"Échec conversion après {conversion_attempts} tentatives: {conversion_error}"
             result["step_failed"] = "conversion"
+            result["performance"]["end_time"] = datetime.utcnow().isoformat()
+            result["performance"]["execution_time"] = (datetime.utcnow() - start_time).total_seconds()
+            print(f"💥 ÉCHEC PHASE 3: {result['error']}")
             return result
         
-        # Étape 3: Publication sur plateformes sociales
-        print(f"🔄 ÉTAPE 3: Publication sur plateformes sociales")
+        print(f"✅ PHASE 3 RÉUSSIE: {converted_path} en {step_time:.1f}s")
+        
+        # PHASE 4: Publication sur plateformes sociales
+        print(f"🔄 PHASE 4: Publication sur plateformes sociales")
+        step_start = datetime.utcnow()
+        
         publication_result = await publish_media_to_social_platforms(
             converted_path, media_type, message, permalink, store_type
         )
         
+        step_time = (datetime.utcnow() - step_start).total_seconds()
+        result["performance"]["step_timings"]["publication"] = step_time
         result["steps"]["publication"] = {
             "success": publication_result["success"],
-            "details": publication_result
+            "attempts": publication_result.get("total_attempts", 0),
+            "details": {
+                **publication_result,
+                "execution_time": step_time
+            }
         }
         
-        # Résultat final
+        # PHASE 5: Évaluation finale et métriques
+        end_time = datetime.utcnow()
+        total_execution_time = (end_time - start_time).total_seconds()
+        
         result["success"] = publication_result["success"]
         result["final_result"] = publication_result
+        result["performance"]["end_time"] = end_time.isoformat()
+        result["performance"]["execution_time"] = total_execution_time
         
+        # Logs finaux détaillés
         if result["success"]:
-            print(f"🎉 TRAITEMENT WEBHOOK ROBUSTE RÉUSSI!")
-            print(f"   - Facebook: {'✅' if publication_result['facebook']['success'] else '❌'}")
-            print(f"   - Instagram: {'✅' if publication_result['instagram']['success'] else '❌'}")
+            platforms_successful = publication_result.get("platforms_successful", 0)
+            platforms_attempted = publication_result.get("platforms_attempted", 0)
+            
+            print(f"🎉 TRAITEMENT WEBHOOK ULTRA-ROBUSTE RÉUSSI!")
+            print(f"   📊 Résumé: {platforms_successful}/{platforms_attempted} plateformes réussies")
+            print(f"   📘 Facebook: {'✅' if publication_result.get('facebook', {}).get('success') else '❌'}")
+            print(f"   📱 Instagram: {'✅' if publication_result.get('instagram', {}).get('success') else '❌'}")
+            print(f"   ⏱️ Temps total: {total_execution_time:.1f}s")
+            print(f"   🔄 Téléchargement: {result['steps']['download']['attempts']} tentatives")
+            print(f"   🔄 Conversion: {result['steps']['conversion']['attempts']} tentatives")
+            print(f"   🔄 Publication: {publication_result.get('total_attempts', 0)} tentatives")
         else:
             result["error"] = "Échec publication sur toutes les plateformes"
             result["step_failed"] = "publication"
-            print(f"❌ TRAITEMENT WEBHOOK ROBUSTE ÉCHOUÉ à l'étape publication")
+            print(f"❌ TRAITEMENT WEBHOOK ULTRA-ROBUSTE ÉCHOUÉ à la publication")
+            print(f"   📘 Facebook: {publication_result.get('facebook', {}).get('error', 'Non tenté')}")
+            print(f"   📱 Instagram: {publication_result.get('instagram', {}).get('error', 'Non tenté')}")
+            print(f"   ⏱️ Temps total: {total_execution_time:.1f}s")
         
-        # Nettoyage des fichiers temporaires
+        # PHASE 6: Nettoyage des fichiers temporaires
+        cleanup_summary = []
         try:
             if local_path and os.path.exists(local_path):
                 os.unlink(local_path)
+                cleanup_summary.append(f"✅ {local_path}")
             if converted_path and os.path.exists(converted_path) and converted_path != local_path:
                 os.unlink(converted_path)
-            print(f"🧹 Nettoyage fichiers temporaires effectué")
+                cleanup_summary.append(f"✅ {converted_path}")
+            
+            if cleanup_summary:
+                print(f"🧹 Nettoyage: {', '.join(cleanup_summary)}")
+            else:
+                print(f"🧹 Nettoyage: Aucun fichier temporaire à supprimer")
+                
         except Exception as cleanup_error:
             print(f"⚠️ Erreur nettoyage: {str(cleanup_error)}")
+            result["cleanup_warning"] = str(cleanup_error)
         
         return result
         
     except Exception as e:
-        print(f"💥 ERREUR TRAITEMENT WEBHOOK ROBUSTE: {str(e)}")
+        error_msg = f"Erreur générale traitement webhook: {str(e)}"
+        print(f"💥 ERREUR TRAITEMENT WEBHOOK ULTRA-ROBUSTE: {error_msg}")
+        
+        end_time = datetime.utcnow()
+        execution_time = (end_time - start_time).total_seconds() if 'start_time' in locals() else 0
+        
         return {
             "success": False,
-            "error": f"Erreur générale: {str(e)}",
+            "error": error_msg,
             "step_failed": "general",
-            "metadata": metadata
+            "metadata": metadata,
+            "performance": {
+                "execution_time": execution_time,
+                "end_time": end_time.isoformat(),
+                "error_occurred": True
+            },
+            "steps": {
+                "validation": {"success": False, "details": error_msg},
+                "download": {"success": False, "details": None, "attempts": 0},
+                "conversion": {"success": False, "details": None, "attempts": 0},
+                "publication": {"success": False, "details": None, "attempts": 0}
+            }
         }
 
 # Health check endpoint
