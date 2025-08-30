@@ -9210,27 +9210,8 @@ async def enhanced_webhook_upload(request: Request):
                         "method": "robust_media_processing",
                         "timestamp": datetime.utcnow().isoformat()
                     }
-                        )
-                        
-                        if upload_result["success"]:
-                            return {
-                                "success": True,
-                                "message": "✅ Image téléchargée et publiée",
-                                "upload_result": upload_result,
-                                "source_url": image_url,
-                                "method": "enhanced_url_download_upload",
-                                "timestamp": datetime.utcnow().isoformat()
-                            }
-                        else:
-                            print(f"❌ Upload échoué, fallback vers post texte")
-                            # Fallback vers post texte
-                    else:
-                        print(f"❌ Téléchargement échoué: HTTP {response.status_code}")
-                        # Fallback vers post texte
-                        
-                except Exception as e:
-                    print(f"❌ Erreur téléchargement: {e}")
-                    # Fallback vers post texte
+            else:
+                print("⚠️ AUCUN MÉDIA FOURNI - Fallback vers post texte")
             
             # ============================================================================
             # CAS 3: AUCUN MÉDIA - POST TEXTE SIMPLE
