@@ -1588,8 +1588,8 @@ async def auto_route_media_to_facebook_instagram(
                 "credits_used": 0
             }
         
-        # Utiliser le SHOP_PAGE_MAPPING global défini dans le fichier
-        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        # Utiliser le get_shop_page_mapping global défini dans le fichier
+        shop_config = get_shop_page_mapping().get(shop_type)
         if not shop_config:
             return {
                 "success": False,
