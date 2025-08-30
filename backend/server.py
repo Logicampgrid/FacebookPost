@@ -3870,7 +3870,7 @@ async def simulate_facebook_post_for_test(post: Post, page_access_token: str, sh
 
 async def use_strategy_1c(post: Post, page_access_token: str, media_url: str, product_link: str = None):
     """
-    Strategy 1C: Enhanced link post with picture parameter (Forces image preview)
+    Strategy 1C: Enhanced link post SANS paramètre picture (Aperçu auto-généré par Facebook)
     Used when 'store' parameter is present in webhook request
     """
     try:
