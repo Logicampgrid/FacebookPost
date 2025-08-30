@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://robust-social-post.preview.emergentagent.com"
+BASE_URL = "https://media-upload-fix-3.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
