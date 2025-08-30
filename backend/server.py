@@ -2982,60 +2982,74 @@ def get_dynamic_base_url() -> str:
     base_url = os.getenv("PUBLIC_BASE_URL", "https://smart-fb-poster.preview.emergentagent.com")
     return base_url.rstrip('/')  # Remove trailing slash
 
-# Shop Type to Page Mapping Configuration
-SHOP_PAGE_MAPPING = {
-    "outdoor": {
-        "name": "Logicamp Outdoor",  # Corrected name with space
-        "expected_id": "236260991673388",  # Added real page ID
-        "woocommerce_url": "https://logicampoutdoor.com",
-        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
-        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
-        "instagram_username": "logicamp_berger",  # Compte Instagram associé
-        "instagram_url": "https://www.instagram.com/logicamp_berger/"
-    },
-    "gizmobbs": {
-        "name": "Le Berger Blanc Suisse", 
-        "expected_id": "102401876209415",  # Real Facebook page ID from Didier's account
-        "business_manager_id": "284950785684706",  # CORRECTED: Use actual Business Manager ID that owns @logicamp_berger
-        "business_manager_name": "Entreprise de Didier Preud'homme",  # Exact name of the owner Business Manager
-        "woocommerce_url": "https://gizmobbs.com",
-        "platform": "multi",  # ✅ ACTIVÉ: Support Instagram + Facebook
-        "platforms": ["facebook", "instagram"],  # Instagram ACTIVÉ !
-        "instagram_username": "logicamp_berger",  # Target Instagram account
-        "instagram_url": "https://www.instagram.com/logicamp_berger/",
-        "instagram_priority": True,  # Priority to Instagram
-        "requires_instagram_auth": True,  # Instagram authentication required
-        "requires_owner_business_manager": True,  # Requires correct Business Manager
-        "note": "✅ MULTI-PLATFORM: Support Instagram + Facebook via Business Manager 'Entreprise de Didier Preud'homme'"
-    },
-    "gimobbs": {  # Alternative spelling for N8N compatibility
-        "name": "Le Berger Blanc Suisse", 
-        "expected_id": "102401876209415",  # Same page as gizmobbs
-        "woocommerce_url": "https://gizmobbs.com",
-        "platform": "multi",  # Publish to BOTH Instagram AND Facebook
-        "platforms": ["facebook", "instagram"],  # Explicit multi-platform support
-        "instagram_username": "logicamp_berger",  # Target Instagram account
-        "instagram_url": "https://www.instagram.com/logicamp_berger/"
-    },
-    "logicantiq": {
-        "name": "LogicAntiq",
-        "expected_id": "210654558802531",  # Existing page ID
-        "woocommerce_url": "https://logicantiq.com",
-        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
-        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
-        "instagram_username": "logicamp_berger",  # Compte Instagram associé
-        "instagram_url": "https://www.instagram.com/logicamp_berger/"
-    },
-    "ma-boutique": {
-        "name": "Le Berger Blanc Suisse",  # Using same page as gizmobbs
-        "expected_id": "102401876209415", 
-        "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/",
-        "platform": "multi",  # ✅ NOUVEAU: Support Instagram via webhook
-        "platforms": ["facebook", "instagram"],  # Support multi-plateformes
-        "instagram_username": "logicamp_berger",  # Compte Instagram associé
-        "instagram_url": "https://www.instagram.com/logicamp_berger/"
+# Shop Type to Page Mapping Configuration - Uses Environment Variables
+def get_shop_page_mapping():
+    """Get shop page mapping using environment variables for page IDs"""
+    return {
+        "outdoor": {
+            "name": "Logicamp Outdoor",
+            "expected_id": "236260991673388",
+            "woocommerce_url": "https://logicampoutdoor.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        },
+        "gizmobbs": {
+            "name": "Le Berger Blanc Suisse", 
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
+            "business_manager_id": "284950785684706",
+            "business_manager_name": "Entreprise de Didier Preud'homme",
+            "woocommerce_url": "https://gizmobbs.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/",
+            "instagram_priority": True,
+            "requires_instagram_auth": True,
+            "requires_owner_business_manager": True,
+            "note": "✅ MULTI-PLATFORM: Support Instagram + Facebook via Business Manager 'Entreprise de Didier Preud'homme'"
+        },
+        "gimobbs": {
+            "name": "Le Berger Blanc Suisse", 
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
+            "woocommerce_url": "https://gizmobbs.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        },
+        "logicantiq": {
+            "name": "LogicAntiq",
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICANTIQ", "210654558802531"),  # Use environment variable
+            "woocommerce_url": "https://logicantiq.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        },
+        "logicamp": {
+            "name": "Le Berger Blanc Suisse",
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
+            "woocommerce_url": "https://gizmobbs.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        },
+        "ma-boutique": {
+            "name": "Le Berger Blanc Suisse",
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
+            "woocommerce_url": "https://www.logicamp.org/wordpress/gizmobbs/",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        }
     }
-}
+
+# Initialize shop page mapping
+SHOP_PAGE_MAPPING = get_shop_page_mapping()
 
 
 @app.get("/api/webhook")
