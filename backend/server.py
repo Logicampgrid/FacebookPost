@@ -1222,104 +1222,232 @@ async def publish_media_to_social_platforms(
                     
                     print(f"🎯 Compte Instagram cible: {instagram_id}")
                     
-                    # Publication en 2 étapes: conteneur puis publication
-                    for attempt in range(3):
+                    # PUBLICATION INSTAGRAM ULTRA-ROBUSTE EN 2 ÉTAPES
+                    max_attempts = 4  # Instagram plus capricieux, plus d'attempts
+                    base_container_timeout = 180  # Plus de temps pour conteneur (vidéos)
+                    base_publish_timeout = 90     # Publication plus rapide
+                    
+                    for attempt in range(max_attempts):
                         try:
-                            print(f"📱 Instagram - Tentative {attempt + 1}/3...")
+                            # Timeouts adaptatifs selon le type et tentative
+                            container_timeout = base_container_timeout + (attempt * 60)  # 180s, 240s, 300s, 360s
+                            publish_timeout = base_publish_timeout + (attempt * 30)     # 90s, 120s, 150s, 180s
                             
-                            # Étape 1: Créer le conteneur média
+                            print(f"📱 Instagram - Tentative {attempt + 1}/{max_attempts} (conteneur: {container_timeout}s, publish: {publish_timeout}s)...")
+                            
+                            # ÉTAPE 1: CRÉER LE CONTENEUR MÉDIA AVEC PARAMÈTRES OPTIMISÉS
                             container_data = {
                                 "access_token": access_token,
                                 "caption": f"{message}\n\n🔗 {permalink}",
                                 "media_type": "VIDEO" if media_type == 'video' else "IMAGE"
                             }
                             
+                            # Optimisation des noms de fichier pour Instagram
+                            if media_type == 'video':
+                                filename = f"instagram_video_{attempt + 1}.mp4"
+                                content_type = 'video/mp4'
+                            else:
+                                filename = f"instagram_image_{attempt + 1}.jpg"
+                                content_type = 'image/jpeg'
+                            
                             files = {
-                                'source': (
-                                    'video.mp4' if media_type == 'video' else 'image.jpg',
-                                    media_content,
-                                    'video/mp4' if media_type == 'video' else 'image/jpeg'
-                                )
+                                'source': (filename, media_content, content_type)
                             }
                             
-                            print(f"📱 Création conteneur Instagram...")
+                            print(f"📱 Création conteneur Instagram ({filename})...")
                             container_response = requests.post(
                                 f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media",
                                 data=container_data,
                                 files=files,
-                                timeout=120  # Timeout augmenté pour vidéos
+                                timeout=container_timeout,
+                                headers={
+                                    'User-Agent': 'InstagramBot/1.0',
+                                    'Accept': 'application/json'
+                                }
                             )
                             
+                            # ANALYSE DE LA RÉPONSE CONTENEUR
                             if container_response.status_code == 200:
                                 container_result = container_response.json()
                                 container_id = container_result.get("id")
-                                print(f"✅ Conteneur créé: {container_id}")
+                                print(f"✅ Conteneur Instagram créé: {container_id}")
                                 
-                                # Attendre que le conteneur soit prêt (spécialement pour vidéos)
+                                # ATTENTE INTELLIGENTE SELON LE TYPE DE MÉDIA
                                 if media_type == 'video':
-                                    print(f"⏰ Attente traitement vidéo Instagram...")
-                                    await asyncio.sleep(10)
+                                    # Attente progressive pour vidéos (Instagram processing)
+                                    base_wait = 15 + (attempt * 10)  # 15s, 25s, 35s, 45s
+                                    print(f"⏰ Attente traitement vidéo Instagram ({base_wait}s)...")
+                                    await asyncio.sleep(base_wait)
+                                    
+                                    # Vérification optionnelle du status du conteneur
+                                    try:
+                                        status_response = requests.get(
+                                            f"{FACEBOOK_GRAPH_URL}/{container_id}",
+                                            params={"access_token": access_token, "fields": "status_code,status"},
+                                            timeout=30
+                                        )
+                                        if status_response.status_code == 200:
+                                            status_data = status_response.json()
+                                            status_code = status_data.get("status_code", "UNKNOWN")
+                                            print(f"📊 Status conteneur: {status_code}")
+                                            
+                                            if status_code == "ERROR":
+                                                print(f"❌ Conteneur en erreur, skip publication")
+                                                results["instagram"]["error"] = "Conteneur vidéo en erreur"
+                                                continue
+                                                
+                                    except Exception as status_error:
+                                        print(f"⚠️ Impossible de vérifier status conteneur: {str(status_error)}")
+                                        # Continuer quand même
+                                else:
+                                    # Attente minimale pour images
+                                    await asyncio.sleep(3)
                                 
-                                # Étape 2: Publier le conteneur
+                                # ÉTAPE 2: PUBLIER LE CONTENEUR AVEC RETRY INTELLIGENT
                                 publish_data = {
                                     "access_token": access_token,
                                     "creation_id": container_id
                                 }
                                 
-                                print(f"📱 Publication conteneur Instagram: {container_id}")
-                                publish_response = requests.post(
-                                    f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media_publish",
-                                    data=publish_data,
-                                    timeout=60
-                                )
+                                # Tentatives de publication avec backoff
+                                publish_success = False
+                                for pub_attempt in range(3):
+                                    try:
+                                        pub_wait = pub_attempt * 5  # 0s, 5s, 10s
+                                        if pub_attempt > 0:
+                                            print(f"⏰ Attente avant publication ({pub_wait}s)...")
+                                            await asyncio.sleep(pub_wait)
+                                        
+                                        print(f"📱 Publication conteneur Instagram (tentative {pub_attempt + 1}/3): {container_id}")
+                                        publish_response = requests.post(
+                                            f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media_publish",
+                                            data=publish_data,
+                                            timeout=publish_timeout,
+                                            headers={
+                                                'User-Agent': 'InstagramBot/1.0',
+                                                'Accept': 'application/json'
+                                            }
+                                        )
+                                        
+                                        if publish_response.status_code == 200:
+                                            ig_result = publish_response.json()
+                                            post_id = ig_result.get("id")
+                                            
+                                            results["instagram"]["success"] = True
+                                            results["instagram"]["post_id"] = post_id
+                                            results["platforms_successful"] += 1
+                                            instagram_success = True
+                                            publish_success = True
+                                            
+                                            print(f"✅ INSTAGRAM RÉUSSI: Post ID {post_id}")
+                                            break
+                                        else:
+                                            # Analyse détaillée erreur publication
+                                            try:
+                                                pub_error_details = publish_response.json()
+                                                pub_error_code = pub_error_details.get('error', {}).get('code', 'Unknown')
+                                                pub_error_message = pub_error_details.get('error', {}).get('message', 'Unknown')
+                                                pub_detailed_error = f"Instagram Publish Error - Code: {pub_error_code}, Message: {pub_error_message}"
+                                            except:
+                                                pub_detailed_error = f"HTTP {publish_response.status_code}: {publish_response.text[:200]}"
+                                            
+                                            print(f"❌ Publication Instagram échec (tentative {pub_attempt + 1}): {pub_detailed_error}")
+                                            
+                                            # Décision de retry publication
+                                            if publish_response.status_code in [429, 500, 502, 503, 504] and pub_attempt < 2:
+                                                continue  # Retry publication
+                                            else:
+                                                results["instagram"]["error"] = pub_detailed_error
+                                                break
+                                                
+                                    except requests.exceptions.Timeout:
+                                        print(f"⏰ Timeout publication Instagram (tentative {pub_attempt + 1})")
+                                        if pub_attempt < 2:
+                                            continue
+                                        results["instagram"]["error"] = "Timeout publication après 3 tentatives"
+                                        break
+                                    except Exception as pub_error:
+                                        print(f"❌ Erreur publication Instagram (tentative {pub_attempt + 1}): {str(pub_error)}")
+                                        if pub_attempt < 2:
+                                            continue
+                                        results["instagram"]["error"] = f"Erreur publication: {str(pub_error)}"
+                                        break
                                 
-                                if publish_response.status_code == 200:
-                                    ig_result = publish_response.json()
-                                    post_id = ig_result.get("id")
+                                if publish_success:
+                                    break  # Sortir de la boucle principale
                                     
-                                    results["instagram"]["success"] = True
-                                    results["instagram"]["post_id"] = post_id
-                                    results["platforms_successful"] += 1
-                                    instagram_success = True
-                                    
-                                    print(f"✅ INSTAGRAM RÉUSSI: Post ID {post_id}")
-                                    break
-                                else:
-                                    error_details = publish_response.json() if publish_response.headers.get('content-type', '').startswith('application/json') else publish_response.text
-                                    error_msg = f"Publication échouée - HTTP {publish_response.status_code}: {error_details}"
-                                    print(f"❌ Instagram publication échec: {error_msg}")
-                                    
-                                    if publish_response.status_code in [429, 500, 502, 503, 504] and attempt < 2:
-                                        await asyncio.sleep((attempt + 1) * 3)
-                                        continue
-                                    
-                                    results["instagram"]["error"] = error_msg
-                                    break
                             else:
-                                error_details = container_response.json() if container_response.headers.get('content-type', '').startswith('application/json') else container_response.text
-                                error_msg = f"Conteneur échoué - HTTP {container_response.status_code}: {error_details}"
-                                print(f"❌ Instagram conteneur échec: {error_msg}")
+                                # GESTION AVANCÉE DES ERREURS CONTENEUR
+                                try:
+                                    cont_error_details = container_response.json()
+                                    cont_error_code = cont_error_details.get('error', {}).get('code', 'Unknown')
+                                    cont_error_message = cont_error_details.get('error', {}).get('message', 'Unknown')
+                                    cont_error_type = cont_error_details.get('error', {}).get('error_subcode', '')
+                                    
+                                    cont_detailed_error = f"Instagram Container Error - Code: {cont_error_code}, Message: {cont_error_message}"
+                                    if cont_error_type:
+                                        cont_detailed_error += f", Subcode: {cont_error_type}"
+                                        
+                                except:
+                                    cont_detailed_error = f"HTTP {container_response.status_code}: {container_response.text[:200]}"
                                 
-                                if container_response.status_code in [429, 500, 502, 503, 504] and attempt < 2:
-                                    await asyncio.sleep((attempt + 1) * 3)
+                                print(f"❌ Conteneur Instagram échec (tentative {attempt + 1}): {cont_detailed_error}")
+                                
+                                # Analyser si "Failed to create media container" et essayer des solutions
+                                if "failed to create" in cont_detailed_error.lower() or container_response.status_code == 400:
+                                    print(f"🔧 Erreur 'Failed to create media container' détectée")
+                                    if media_type == 'video' and attempt < max_attempts - 1:
+                                        print(f"🎬 Essai avec attente supplémentaire pour traitement vidéo...")
+                                        await asyncio.sleep(20)  # Attente supplémentaire
+                                        continue
+                                
+                                # Stratégie de retry pour conteneur
+                                should_retry_container = False
+                                wait_time = 0
+                                
+                                if container_response.status_code in [429, 500, 502, 503, 504]:
+                                    should_retry_container = True
+                                    wait_time = min(60, (2 ** attempt) * 10)
+                                elif container_response.status_code == 400 and attempt < max_attempts - 1:
+                                    should_retry_container = True  # Essayer quand même
+                                    wait_time = 30
+                                
+                                if should_retry_container and attempt < max_attempts - 1:
+                                    print(f"🔄 Retry conteneur dans {wait_time}s...")
+                                    await asyncio.sleep(wait_time)
                                     continue
-                                
-                                results["instagram"]["error"] = error_msg
-                                break
+                                else:
+                                    results["instagram"]["error"] = cont_detailed_error
+                                    break
                                 
                         except requests.exceptions.Timeout:
-                            print(f"⏰ Timeout Instagram tentative {attempt + 1}")
-                            if attempt < 2:
-                                await asyncio.sleep(10)
+                            wait_time = min(45, (2 ** attempt) * 5)
+                            print(f"⏰ TIMEOUT Instagram tentative {attempt + 1} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
                                 continue
-                            results["instagram"]["error"] = "Timeout après 3 tentatives"
+                            results["instagram"]["error"] = f"Timeout après {max_attempts} tentatives"
                             break
-                        except Exception as request_error:
-                            print(f"❌ Erreur requête Instagram tentative {attempt + 1}: {str(request_error)}")
-                            if attempt < 2:
-                                await asyncio.sleep(5)
+                            
+                        except requests.exceptions.ConnectionError as conn_error:
+                            wait_time = min(30, (2 ** attempt) * 3)
+                            print(f"🔌 ERREUR CONNEXION Instagram tentative {attempt + 1}: {str(conn_error)} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
                                 continue
-                            results["instagram"]["error"] = f"Erreur requête: {str(request_error)}"
+                            results["instagram"]["error"] = f"Erreur connexion après {max_attempts} tentatives: {str(conn_error)}"
+                            break
+                            
+                        except Exception as request_error:
+                            wait_time = min(20, (2 ** attempt) * 2)
+                            print(f"❌ ERREUR REQUÊTE Instagram tentative {attempt + 1}: {str(request_error)} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
+                                continue
+                            results["instagram"]["error"] = f"Erreur requête après {max_attempts} tentatives: {str(request_error)}"
                             break
                     
                     if instagram_success:
