@@ -3912,6 +3912,149 @@ async def use_strategy_1c(post: Post, page_access_token: str, media_url: str, pr
         print(f"❌ Strategy 1C error: {error}")
         raise error
 
+@app.post("/api/test/enhanced-upload")
+async def test_enhanced_upload():
+    """
+    Test endpoint pour vérifier la nouvelle logique d'upload améliorée
+    """
+    try:
+        print("🧪 Test Enhanced Upload Logic")
+        
+        # Créer des données de test
+        test_image_url = f"https://picsum.photos/800/600?test={int(datetime.utcnow().timestamp())}"
+        test_message = "🧪 TEST: Upload amélioré avec détection automatique"
+        test_product_url = "https://logicamp.org/werdpress/gizmobbs/test-enhanced"
+        test_shop = "gizmobbs"
+        
+        # Télécharger l'image de test
+        try:
+            response = requests.get(test_image_url, timeout=10)
+            if response.status_code == 200:
+                media_content = response.content
+                
+                # Tester l'upload amélioré
+                upload_result = await enhanced_facebook_upload(
+                    media_content=media_content,
+                    filename="test_image.jpg",
+                    message=test_message,
+                    product_link=test_product_url,
+                    shop_type=test_shop
+                )
+                
+                if upload_result["success"]:
+                    return {
+                        "success": True,
+                        "message": "✅ Test Enhanced Upload RÉUSSI!",
+                        "upload_result": upload_result,
+                        "test_data": {
+                            "image_source": test_image_url,
+                            "message": test_message,
+                            "product_link": test_product_url,
+                            "shop_type": test_shop
+                        },
+                        "benefits": [
+                            "✅ Détection automatique du type de média",
+                            "✅ Upload multipart direct (/photos ou /videos)",
+                            "✅ Aucun paramètre 'picture' problématique",
+                            "✅ Contournement des limitations ngrok",
+                            "✅ Gestion d'erreurs robuste"
+                        ],
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": upload_result["error"],
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            else:
+                raise Exception(f"Impossible de télécharger l'image de test: HTTP {response.status_code}")
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Erreur test: {str(e)}",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Erreur générale: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@app.get("/api/enhanced-upload-info")
+async def enhanced_upload_info():
+    """
+    Information sur les améliorations apportées au système d'upload Facebook
+    """
+    return {
+        "status": "enhanced_upload_active",
+        "improvements": {
+            "automatic_detection": {
+                "description": "Détection automatique du type de média (image/vidéo)",
+                "benefits": [
+                    "🔍 Analyse du contenu binaire (magic numbers)",
+                    "🔍 Fallback sur l'extension du fichier",
+                    "🔍 Support images: JPG, PNG, WebP, GIF",
+                    "🔍 Support vidéos: MP4, MOV, AVI, WebM"
+                ]
+            },
+            "multipart_upload": {
+                "description": "Upload multipart direct vers les bons endpoints Facebook",
+                "benefits": [
+                    "📸 Images → /photos endpoint",
+                    "🎬 Vidéos → /videos endpoint", 
+                    "🚫 Évite l'endpoint /feed problématique",
+                    "🔄 Contourne les limitations ngrok"
+                ]
+            },
+            "no_picture_parameter": {
+                "description": "Suppression complète du paramètre 'picture' dans /feed",
+                "benefits": [
+                    "❌ Plus de paramètre 'picture' dans /feed",
+                    "✅ Facebook génère l'aperçu automatiquement",
+                    "🚫 Évite les erreurs 404 ngrok",
+                    "🔧 Résout les problèmes d'affichage"
+                ]
+            },
+            "fallback_strategies": {
+                "description": "Stratégies de fallback robustes",
+                "benefits": [
+                    "🔄 Post texte si aucun média",
+                    "🔄 Téléchargement d'URL si besoin",
+                    "🔄 Gestion d'erreurs complète",
+                    "🔄 Maintien de la compatibilité"
+                ]
+            }
+        },
+        "endpoints": {
+            "enhanced_webhook": "/api/webhook/enhanced-upload",
+            "test_endpoint": "/api/test/enhanced-upload",
+            "original_webhook": "/api/webhook (avec fallbacks)"
+        },
+        "implementation_status": {
+            "enhanced_facebook_upload": "✅ Implémenté",
+            "automatic_media_detection": "✅ Implémenté", 
+            "text_only_posts": "✅ Implémenté",
+            "picture_parameter_removed": "✅ Supprimé partout",
+            "backward_compatibility": "✅ Maintenue"
+        },
+        "webhook_formats": {
+            "multipart": {
+                "json_data": "JSON avec métadonnées",
+                "image": "Fichier image (optionnel)",
+                "video": "Fichier vidéo (optionnel)"
+            },
+            "json_legacy": {
+                "description": "Format JSON simple pour compatibilité",
+                "behavior": "Post texte uniquement"
+            }
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 async def send_to_external_webhook(post_data: dict, store: str = None):
     """
     Send data to external webhook (ngrok) instead of processing internally
