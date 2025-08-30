@@ -4083,11 +4083,6 @@ async def auto_route_media_to_facebook_instagram(
                         data=ig_container_data
                     )
                 
-                container_response = requests.post(
-                    f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
-                    data=ig_container_data
-                )
-                
                 if container_response.status_code == 200:
                     container_result = container_response.json()
                     container_id = container_result.get("id")
