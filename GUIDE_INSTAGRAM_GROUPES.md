@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://feed-link-update.preview.emergentagent.com
+URL : https://clickable-fb-posts.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

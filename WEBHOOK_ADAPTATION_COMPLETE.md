@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://feed-link-update.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://clickable-fb-posts.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://feed-link-update.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://feed-link-update.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://feed-link-update.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://clickable-fb-posts.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://clickable-fb-posts.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://clickable-fb-posts.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

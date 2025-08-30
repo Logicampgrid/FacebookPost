@@ -22,14 +22,14 @@ python3 test_instagram_tunnel.py
 
 ### URL du tunnel
 ```
-https://feed-link-update.preview.emergentagent.com/api/webhook
+https://clickable-fb-posts.preview.emergentagent.com/api/webhook
 ```
 
 ### Méthode d'utilisation
 
 #### Avec cURL :
 ```bash
-curl -X POST "https://feed-link-update.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://clickable-fb-posts.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/your/image.jpg" \
   -F 'json_data={"title":"Titre du post","description":"Description du produit","url":"https://votresite.com/produit","store":"gizmobbs"}'
 ```
