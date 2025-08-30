@@ -76,8 +76,703 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 NGROK_URL = os.getenv("NGROK_URL", "")
 EXTERNAL_WEBHOOK_ENABLED = os.getenv("EXTERNAL_WEBHOOK_ENABLED", "false").lower() == "true"
 
-# Create uploads directory
+# Create uploads directories
 os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/processed", exist_ok=True)
+
+# ============================================================================
+# NOUVELLES FONCTIONS ROBUSTES DE GESTION MÉDIAS POUR WEBHOOK N8N
+# ============================================================================
+
+async def download_media_reliably(media_url: str, fallback_binary: bytes = None, filename_hint: str = None) -> tuple:
+    """
+    Télécharge un fichier média de façon fiable avec fallback binaire
+    
+    Args:
+        media_url: URL du média à télécharger
+        fallback_binary: Données binaires de fallback si URL échoue
+        filename_hint: Nom de fichier suggéré pour déterminer l'extension
+    
+    Returns:
+        tuple: (success: bool, local_path: str, media_type: str, error_msg: str)
+    """
+    try:
+        print(f"📥 TÉLÉCHARGEMENT FIABLE: Début téléchargement depuis {media_url}")
+        
+        local_path = None
+        media_type = None
+        
+        # Étape 1: Tentative de téléchargement via URL
+        if media_url:
+            try:
+                print(f"🌐 Tentative téléchargement URL: {media_url}")
+                response = requests.get(media_url, timeout=30)
+                response.raise_for_status()
+                
+                # Déterminer l'extension du fichier
+                content_type = response.headers.get('content-type', '')
+                extension = None
+                
+                if 'image' in content_type:
+                    if 'jpeg' in content_type or 'jpg' in content_type:
+                        extension = '.jpg'
+                    elif 'png' in content_type:
+                        extension = '.png'
+                    elif 'webp' in content_type:
+                        extension = '.webp'
+                    elif 'gif' in content_type:
+                        extension = '.gif'
+                    else:
+                        extension = '.jpg'  # Défaut
+                elif 'video' in content_type:
+                    if 'mp4' in content_type:
+                        extension = '.mp4'
+                    elif 'mov' in content_type:
+                        extension = '.mov'
+                    elif 'avi' in content_type:
+                        extension = '.avi'
+                    else:
+                        extension = '.mp4'  # Défaut
+                else:
+                    # Tenter de déterminer depuis l'URL
+                    if media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')):
+                        extension = Path(media_url).suffix.lower()
+                    elif media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
+                        extension = Path(media_url).suffix.lower()
+                    else:
+                        # Détection par contenu
+                        detected_type = await detect_media_type_from_content(response.content, media_url)
+                        extension = '.jpg' if detected_type == 'image' else '.mp4'
+                
+                # Créer le fichier local
+                unique_id = uuid.uuid4().hex[:8]
+                local_path = f"uploads/processed/media_{unique_id}{extension}"
+                
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+                
+                media_type = await detect_media_type_from_content(response.content, local_path)
+                
+                print(f"✅ TÉLÉCHARGEMENT URL RÉUSSI: {local_path} (type: {media_type})")
+                return True, local_path, media_type, None
+                
+            except Exception as url_error:
+                print(f"❌ TÉLÉCHARGEMENT URL ÉCHOUÉ: {str(url_error)}")
+                if not fallback_binary:
+                    return False, None, None, f"URL échouée et pas de fallback: {str(url_error)}"
+        
+        # Étape 2: Fallback binaire si URL échoue
+        if fallback_binary:
+            try:
+                print(f"🔄 FALLBACK: Utilisation données binaires ({len(fallback_binary)} bytes)")
+                
+                # Détection du type de média
+                media_type = await detect_media_type_from_content(fallback_binary, filename_hint)
+                extension = '.jpg' if media_type == 'image' else '.mp4'
+                
+                # Créer le fichier local
+                unique_id = uuid.uuid4().hex[:8]
+                local_path = f"uploads/processed/media_{unique_id}{extension}"
+                
+                with open(local_path, 'wb') as f:
+                    f.write(fallback_binary)
+                
+                print(f"✅ FALLBACK RÉUSSI: {local_path} (type: {media_type})")
+                return True, local_path, media_type, None
+                
+            except Exception as binary_error:
+                print(f"❌ FALLBACK BINAIRE ÉCHOUÉ: {str(binary_error)}")
+                return False, None, None, f"URL et fallback binaire échoués: {str(binary_error)}"
+        
+        return False, None, None, "Aucune source de données disponible"
+        
+    except Exception as e:
+        print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {str(e)}")
+        return False, None, None, f"Erreur générale: {str(e)}"
+
+async def convert_media_for_social_platforms(input_path: str, media_type: str) -> tuple:
+    """
+    Convertit les médias pour garantir la compatibilité Instagram/Facebook
+    
+    Args:
+        input_path: Chemin du fichier d'entrée
+        media_type: 'image' ou 'video'
+    
+    Returns:
+        tuple: (success: bool, output_path: str, error_msg: str)
+    """
+    try:
+        print(f"🔄 CONVERSION MÉDIA: Début conversion {media_type} pour compatibilité sociale")
+        
+        if not os.path.exists(input_path):
+            return False, None, f"Fichier d'entrée introuvable: {input_path}"
+        
+        unique_id = uuid.uuid4().hex[:8]
+        
+        if media_type == 'image':
+            # Conversion image -> JPEG optimisé pour Instagram
+            try:
+                output_path = f"uploads/processed/converted_image_{unique_id}.jpg"
+                
+                with Image.open(input_path) as img:
+                    # Conversion en RGB si nécessaire (pour PNG avec transparence)
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        # Créer fond blanc pour transparence
+                        rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                        img = rgb_img
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    # Correction orientation EXIF
+                    try:
+                        from PIL.ExifTags import ORIENTATION
+                        exif = img._getexif()
+                        if exif is not None:
+                            orientation = exif.get(ORIENTATION)
+                            if orientation == 3:
+                                img = img.rotate(180, expand=True)
+                            elif orientation == 6:
+                                img = img.rotate(270, expand=True)
+                            elif orientation == 8:
+                                img = img.rotate(90, expand=True)
+                    except:
+                        pass  # Pas d'EXIF, pas de problème
+                    
+                    # Optimisation taille pour Instagram (max 1080x1080 recommandé)
+                    max_size = 1080
+                    if img.width > max_size or img.height > max_size:
+                        img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                    
+                    # Sauvegarde optimisée
+                    img.save(output_path, 'JPEG', quality=95, optimize=True)
+                
+                print(f"✅ CONVERSION IMAGE RÉUSSIE: {output_path}")
+                return True, output_path, None
+                
+            except Exception as img_error:
+                print(f"❌ CONVERSION IMAGE ÉCHOUÉE: {str(img_error)}")
+                # Fallback: copier le fichier original
+                try:
+                    fallback_path = f"uploads/processed/fallback_image_{unique_id}.jpg"
+                    import shutil
+                    shutil.copy2(input_path, fallback_path)
+                    print(f"🔄 FALLBACK IMAGE: Fichier copié sans conversion: {fallback_path}")
+                    return True, fallback_path, None
+                except Exception as fallback_error:
+                    return False, None, f"Conversion et fallback échoués: {str(fallback_error)}"
+        
+        elif media_type == 'video':
+            # Conversion vidéo -> MP4 H.264/AAC pour Instagram
+            try:
+                output_path = f"uploads/processed/converted_video_{unique_id}.mp4"
+                
+                # Commande FFmpeg pour conversion optimale Instagram
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y',  # Overwrite output
+                    '-i', input_path,  # Input file
+                    '-c:v', 'libx264',  # H.264 codec
+                    '-preset', 'fast',  # Encoding speed
+                    '-crf', '23',  # Quality (lower = better)
+                    '-c:a', 'aac',  # AAC audio codec
+                    '-b:a', '128k',  # Audio bitrate
+                    '-movflags', '+faststart',  # Optimisation streaming
+                    '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:black',  # Instagram 1:1 format
+                    '-t', '60',  # Limite à 60 secondes pour Instagram
+                    output_path
+                ]
+                
+                print(f"🎬 Exécution FFmpeg pour conversion vidéo...")
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
+                
+                if result.returncode == 0 and os.path.exists(output_path):
+                    print(f"✅ CONVERSION VIDÉO RÉUSSIE: {output_path}")
+                    return True, output_path, None
+                else:
+                    print(f"❌ FFmpeg échoué: {result.stderr}")
+                    raise Exception(f"FFmpeg failed: {result.stderr}")
+                    
+            except subprocess.TimeoutExpired:
+                print(f"⏰ TIMEOUT CONVERSION VIDÉO")
+                return False, None, "Timeout de conversion vidéo (>120s)"
+            except FileNotFoundError:
+                print(f"❌ FFMPEG NON TROUVÉ - Installation requise")
+                # Fallback: copier le fichier original
+                try:
+                    fallback_path = f"uploads/processed/fallback_video_{unique_id}.mp4"
+                    import shutil
+                    shutil.copy2(input_path, fallback_path)
+                    print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
+                    return True, fallback_path, None
+                except:
+                    return False, None, "FFmpeg manquant et fallback échoué"
+            except Exception as vid_error:
+                print(f"❌ CONVERSION VIDÉO ÉCHOUÉE: {str(vid_error)}")
+                # Fallback: copier le fichier original
+                try:
+                    fallback_path = f"uploads/processed/fallback_video_{unique_id}.mp4"
+                    import shutil
+                    shutil.copy2(input_path, fallback_path)
+                    print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
+                    return True, fallback_path, None
+                except:
+                    return False, None, f"Conversion vidéo et fallback échoués: {str(vid_error)}"
+        
+        else:
+            return False, None, f"Type de média non supporté: {media_type}"
+            
+    except Exception as e:
+        print(f"💥 ERREUR CONVERSION MÉDIA: {str(e)}")
+        return False, None, f"Erreur générale conversion: {str(e)}"
+
+async def publish_media_to_social_platforms(
+    media_path: str, 
+    media_type: str, 
+    message: str, 
+    permalink: str,
+    store_type: str
+) -> dict:
+    """
+    Publie un média sur Facebook et Instagram avec gestion d'erreurs robuste
+    
+    Args:
+        media_path: Chemin local du média converti
+        media_type: 'image' ou 'video'
+        message: Texte du post
+        permalink: Lien produit
+        store_type: Type de magasin pour routing
+    
+    Returns:
+        dict: Résultats détaillés avec succès/échecs par plateforme
+    """
+    try:
+        print(f"📤 PUBLICATION SOCIALE: Début publication {media_type} sur Facebook + Instagram")
+        
+        results = {
+            "success": False,
+            "facebook": {"success": False, "error": None, "post_id": None},
+            "instagram": {"success": False, "error": None, "post_id": None},
+            "media_path": media_path,
+            "media_type": media_type,
+            "platforms_attempted": 0,
+            "platforms_successful": 0
+        }
+        
+        if not os.path.exists(media_path):
+            error_msg = f"Fichier média introuvable: {media_path}"
+            print(f"❌ {error_msg}")
+            results["facebook"]["error"] = error_msg
+            results["instagram"]["error"] = error_msg
+            return results
+        
+        # Récupérer utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            error_msg = "Aucun utilisateur authentifié trouvé"
+            print(f"❌ {error_msg}")
+            results["facebook"]["error"] = error_msg
+            results["instagram"]["error"] = error_msg
+            return results
+        
+        # Publication Facebook
+        try:
+            print(f"📘 FACEBOOK: Tentative publication {media_type}")
+            results["platforms_attempted"] += 1
+            
+            # Trouver la page Facebook pour ce store
+            target_page = await get_facebook_page_for_store(user, store_type)
+            
+            if target_page:
+                # Lire le contenu du fichier
+                with open(media_path, 'rb') as f:
+                    media_content = f.read()
+                
+                # Préparer les données
+                post_data = {
+                    "access_token": target_page.get("access_token"),
+                    "message": f"{message}\n\n🔗 {permalink}"
+                }
+                
+                # Choisir l'endpoint selon le type
+                if media_type == 'video':
+                    files = {'source': ('video.mp4', media_content, 'video/mp4')}
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/videos"
+                else:  # image
+                    files = {'source': ('image.jpg', media_content, 'image/jpeg')}
+                    endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/photos"
+                
+                print(f"📤 Publication Facebook vers: {endpoint}")
+                response = requests.post(endpoint, data=post_data, files=files, timeout=60)
+                
+                if response.status_code == 200:
+                    fb_result = response.json()
+                    results["facebook"]["success"] = True
+                    results["facebook"]["post_id"] = fb_result.get("id")
+                    results["platforms_successful"] += 1
+                    print(f"✅ FACEBOOK RÉUSSI: Post ID {fb_result.get('id')}")
+                else:
+                    error_details = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                    results["facebook"]["error"] = f"HTTP {response.status_code}: {error_details}"
+                    print(f"❌ FACEBOOK ÉCHOUÉ: {results['facebook']['error']}")
+            else:
+                results["facebook"]["error"] = f"Aucune page Facebook trouvée pour store '{store_type}'"
+                print(f"❌ {results['facebook']['error']}")
+                
+        except Exception as fb_error:
+            results["facebook"]["error"] = f"Erreur Facebook: {str(fb_error)}"
+            print(f"❌ ERREUR FACEBOOK: {str(fb_error)}")
+        
+        # Publication Instagram
+        try:
+            print(f"📱 INSTAGRAM: Tentative publication {media_type}")
+            results["platforms_attempted"] += 1
+            
+            # Trouver le compte Instagram
+            instagram_account = await get_instagram_account_for_store(user, store_type)
+            
+            if instagram_account:
+                instagram_id = instagram_account["id"]
+                access_token = instagram_account["access_token"]
+                
+                # Lire le contenu du fichier
+                with open(media_path, 'rb') as f:
+                    media_content = f.read()
+                
+                # Créer conteneur média Instagram
+                if media_type == 'video':
+                    container_data = {
+                        "access_token": access_token,
+                        "caption": f"{message}\n\n🔗 {permalink}",
+                        "media_type": "VIDEO"
+                    }
+                    files = {'source': ('video.mp4', media_content, 'video/mp4')}
+                else:  # image
+                    container_data = {
+                        "access_token": access_token,
+                        "caption": f"{message}\n\n🔗 {permalink}",
+                        "media_type": "IMAGE"
+                    }
+                    files = {'source': ('image.jpg', media_content, 'image/jpeg')}
+                
+                # Créer le conteneur
+                print(f"📱 Création conteneur Instagram...")
+                container_response = requests.post(
+                    f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media",
+                    data=container_data,
+                    files=files,
+                    timeout=60
+                )
+                
+                if container_response.status_code == 200:
+                    container_result = container_response.json()
+                    container_id = container_result.get("id")
+                    
+                    # Publier le conteneur
+                    publish_data = {
+                        "access_token": access_token,
+                        "creation_id": container_id
+                    }
+                    
+                    print(f"📱 Publication conteneur Instagram: {container_id}")
+                    publish_response = requests.post(
+                        f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media_publish",
+                        data=publish_data,
+                        timeout=60
+                    )
+                    
+                    if publish_response.status_code == 200:
+                        ig_result = publish_response.json()
+                        results["instagram"]["success"] = True
+                        results["instagram"]["post_id"] = ig_result.get("id")
+                        results["platforms_successful"] += 1
+                        print(f"✅ INSTAGRAM RÉUSSI: Post ID {ig_result.get('id')}")
+                    else:
+                        error_details = publish_response.json() if publish_response.headers.get('content-type', '').startswith('application/json') else publish_response.text
+                        results["instagram"]["error"] = f"Publication échouée - HTTP {publish_response.status_code}: {error_details}"
+                        print(f"❌ INSTAGRAM PUBLICATION ÉCHOUÉE: {results['instagram']['error']}")
+                else:
+                    error_details = container_response.json() if container_response.headers.get('content-type', '').startswith('application/json') else container_response.text
+                    results["instagram"]["error"] = f"Conteneur échoué - HTTP {container_response.status_code}: {error_details}"
+                    print(f"❌ INSTAGRAM CONTENEUR ÉCHOUÉ: {results['instagram']['error']}")
+            else:
+                results["instagram"]["error"] = f"Aucun compte Instagram trouvé pour store '{store_type}'"
+                print(f"❌ {results['instagram']['error']}")
+                
+        except Exception as ig_error:
+            results["instagram"]["error"] = f"Erreur Instagram: {str(ig_error)}"
+            print(f"❌ ERREUR INSTAGRAM: {str(ig_error)}")
+        
+        # Évaluation finale
+        results["success"] = results["platforms_successful"] > 0
+        
+        if results["success"]:
+            print(f"🎉 PUBLICATION SOCIALE RÉUSSIE: {results['platforms_successful']}/{results['platforms_attempted']} plateformes")
+        else:
+            print(f"❌ PUBLICATION SOCIALE ÉCHOUÉE: 0/{results['platforms_attempted']} plateformes réussies")
+        
+        return results
+        
+    except Exception as e:
+        print(f"💥 ERREUR PUBLICATION SOCIALE: {str(e)}")
+        return {
+            "success": False,
+            "facebook": {"success": False, "error": f"Erreur générale: {str(e)}", "post_id": None},
+            "instagram": {"success": False, "error": f"Erreur générale: {str(e)}", "post_id": None},
+            "media_path": media_path,
+            "media_type": media_type,
+            "platforms_attempted": 0,
+            "platforms_successful": 0
+        }
+
+async def get_facebook_page_for_store(user: dict, store_type: str) -> dict:
+    """Trouve la page Facebook correspondant au store_type"""
+    try:
+        # Mapping des stores vers les pages Facebook
+        store_page_mapping = get_shop_page_mapping()
+        
+        if store_type not in store_page_mapping:
+            print(f"⚠️ Store type '{store_type}' non configuré dans le mapping")
+            return None
+        
+        target_page_id = store_page_mapping[store_type].get("facebook_page_id")
+        if not target_page_id:
+            print(f"⚠️ Pas de page Facebook configurée pour store '{store_type}'")
+            return None
+        
+        # Chercher dans les pages personnelles
+        for page in user.get("facebook_pages", []):
+            if page.get("id") == target_page_id:
+                return page
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    return page
+        
+        print(f"❌ Page Facebook {target_page_id} non trouvée pour store '{store_type}'")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erreur recherche page Facebook: {str(e)}")
+        return None
+
+async def get_instagram_account_for_store(user: dict, store_type: str) -> dict:
+    """Trouve le compte Instagram correspondant au store_type"""
+    try:
+        # D'abord, essayer de trouver via le mapping des stores
+        facebook_page = await get_facebook_page_for_store(user, store_type)
+        
+        if facebook_page:
+            page_id = facebook_page["id"]
+            access_token = facebook_page.get("access_token") or user.get("facebook_access_token")
+            
+            # Vérifier si cette page a un compte Instagram connecté
+            try:
+                response = requests.get(
+                    f"{FACEBOOK_GRAPH_URL}/{page_id}",
+                    params={
+                        "access_token": access_token,
+                        "fields": "instagram_business_account,name"
+                    }
+                )
+                
+                if response.status_code == 200:
+                    page_data = response.json()
+                    if "instagram_business_account" in page_data:
+                        return {
+                            "id": page_data["instagram_business_account"]["id"],
+                            "access_token": access_token,
+                            "connected_page": page_data.get("name")
+                        }
+            except:
+                pass
+        
+        # Fallback: Chercher n'importe quel compte Instagram disponible
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                if page_access_token:
+                    try:
+                        response = requests.get(
+                            f"{FACEBOOK_GRAPH_URL}/{page['id']}",
+                            params={
+                                "access_token": page_access_token,
+                                "fields": "instagram_business_account,name"
+                            }
+                        )
+                        
+                        if response.status_code == 200:
+                            page_data = response.json()
+                            if "instagram_business_account" in page_data:
+                                print(f"🔄 Utilisation compte Instagram fallback: {page_data.get('name')}")
+                                return {
+                                    "id": page_data["instagram_business_account"]["id"],
+                                    "access_token": page_access_token,
+                                    "connected_page": page_data.get("name")
+                                }
+                    except:
+                        continue
+        
+        print(f"❌ Aucun compte Instagram trouvé pour store '{store_type}'")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erreur recherche compte Instagram: {str(e)}")
+        return None
+
+async def process_webhook_media_robustly(
+    metadata: dict,
+    media_binary: bytes = None,
+    media_filename: str = None
+) -> dict:
+    """
+    Traite un média de webhook de façon robuste avec toutes les étapes
+    
+    Args:
+        metadata: Métadonnées du webhook (title, description, url, image_url, etc.)
+        media_binary: Données binaires du média (fallback)
+        media_filename: Nom de fichier du média
+    
+    Returns:
+        dict: Résultat complet du traitement et publication
+    """
+    try:
+        print(f"🚀 TRAITEMENT WEBHOOK ROBUSTE: Début du processus complet")
+        
+        # Extraction des informations
+        title = metadata.get("title", "")
+        description = metadata.get("description", "")
+        permalink = metadata.get("url") or metadata.get("permalink", "")
+        store_type = metadata.get("store", "")
+        
+        # Sources possibles pour l'image/vidéo
+        media_url = (
+            metadata.get("image_url") or 
+            metadata.get("image") or 
+            metadata.get("video_url") or 
+            metadata.get("video") or
+            metadata.get("media_url")
+        )
+        
+        if not media_url and not media_binary:
+            return {
+                "success": False,
+                "error": "Aucune source média fournie (URL ou binaire)",
+                "step_failed": "validation"
+            }
+        
+        # Créer le message du post
+        message = f"{title}\n\n{description}".strip()
+        if len(message) > 2200:  # Limite Instagram
+            message = message[:2197] + "..."
+        
+        print(f"📝 Message créé: {len(message)} caractères")
+        print(f"🔗 Permalink: {permalink}")
+        print(f"🏪 Store: {store_type}")
+        
+        result = {
+            "success": False,
+            "metadata": metadata,
+            "message": message,
+            "permalink": permalink,
+            "store_type": store_type,
+            "steps": {
+                "download": {"success": False, "details": None},
+                "conversion": {"success": False, "details": None},
+                "publication": {"success": False, "details": None}
+            },
+            "final_result": None
+        }
+        
+        # Étape 1: Téléchargement fiable
+        print(f"🔄 ÉTAPE 1: Téléchargement fiable")
+        download_success, local_path, media_type, download_error = await download_media_reliably(
+            media_url, media_binary, media_filename
+        )
+        
+        result["steps"]["download"] = {
+            "success": download_success,
+            "details": {
+                "local_path": local_path,
+                "media_type": media_type,
+                "error": download_error
+            }
+        }
+        
+        if not download_success:
+            result["error"] = f"Échec téléchargement: {download_error}"
+            result["step_failed"] = "download"
+            return result
+        
+        # Étape 2: Conversion pour compatibilité
+        print(f"🔄 ÉTAPE 2: Conversion pour compatibilité sociale")
+        conversion_success, converted_path, conversion_error = await convert_media_for_social_platforms(
+            local_path, media_type
+        )
+        
+        result["steps"]["conversion"] = {
+            "success": conversion_success,
+            "details": {
+                "converted_path": converted_path,
+                "error": conversion_error
+            }
+        }
+        
+        if not conversion_success:
+            result["error"] = f"Échec conversion: {conversion_error}"
+            result["step_failed"] = "conversion"
+            return result
+        
+        # Étape 3: Publication sur plateformes sociales
+        print(f"🔄 ÉTAPE 3: Publication sur plateformes sociales")
+        publication_result = await publish_media_to_social_platforms(
+            converted_path, media_type, message, permalink, store_type
+        )
+        
+        result["steps"]["publication"] = {
+            "success": publication_result["success"],
+            "details": publication_result
+        }
+        
+        # Résultat final
+        result["success"] = publication_result["success"]
+        result["final_result"] = publication_result
+        
+        if result["success"]:
+            print(f"🎉 TRAITEMENT WEBHOOK ROBUSTE RÉUSSI!")
+            print(f"   - Facebook: {'✅' if publication_result['facebook']['success'] else '❌'}")
+            print(f"   - Instagram: {'✅' if publication_result['instagram']['success'] else '❌'}")
+        else:
+            result["error"] = "Échec publication sur toutes les plateformes"
+            result["step_failed"] = "publication"
+            print(f"❌ TRAITEMENT WEBHOOK ROBUSTE ÉCHOUÉ à l'étape publication")
+        
+        # Nettoyage des fichiers temporaires
+        try:
+            if local_path and os.path.exists(local_path):
+                os.unlink(local_path)
+            if converted_path and os.path.exists(converted_path) and converted_path != local_path:
+                os.unlink(converted_path)
+            print(f"🧹 Nettoyage fichiers temporaires effectué")
+        except Exception as cleanup_error:
+            print(f"⚠️ Erreur nettoyage: {str(cleanup_error)}")
+        
+        return result
+        
+    except Exception as e:
+        print(f"💥 ERREUR TRAITEMENT WEBHOOK ROBUSTE: {str(e)}")
+        return {
+            "success": False,
+            "error": f"Erreur générale: {str(e)}",
+            "step_failed": "general",
+            "metadata": metadata
+        }
 
 # Health check endpoint
 @app.get("/api/health")
