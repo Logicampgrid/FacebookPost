@@ -4131,11 +4131,22 @@ async def auto_route_media_to_facebook_instagram(
                                 }
                                 break
                 else:
+                    # CORRECTION: Gestion d'erreurs améliorée pour container Instagram
+                    try:
+                        error_response = container_response.json()
+                        error_msg = error_response.get('error', {}).get('message', 'Unknown container error')
+                        error_code = error_response.get('error', {}).get('code', 'Unknown')
+                        detailed_error = f"Container creation failed - Code: {error_code}, Message: {error_msg}"
+                    except:
+                        detailed_error = f"HTTP {container_response.status_code}: {container_response.text[:200]}"
+                    
                     results["instagram"] = {
                         "success": False,
-                        "error": f"Échec création container Instagram: HTTP {container_response.status_code}"
+                        "error": f"Échec création container Instagram: {detailed_error}",
+                        "media_type": "video" if is_video else "image",
+                        "suggestion": "Vérifiez que le fichier vidéo est compatible Instagram (MP4, H.264)" if is_video else "Vérifiez l'URL de l'image"
                     }
-                    print(f"❌ Échec container Instagram: {container_response.status_code}")
+                    print(f"❌ Échec container Instagram: {detailed_error}")
                     
             except Exception as e:
                 results["instagram"] = {
