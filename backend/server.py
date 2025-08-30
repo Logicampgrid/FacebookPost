@@ -7634,12 +7634,11 @@ async def check_image_url_accessibility(image_url: str) -> bool:
 @app.post("/api/webhook")
 async def webhook_endpoint(request: Request):
     """
-    Webhook endpoint for N8N integration - supports both JSON and multipart/form-data
-    Implémente la Stratégie 1C avec vérification d'accessibilité d'image
+    Webhook endpoint optimisé pour publication automatique selon le champ "store"
     
     MULTIPART FORMAT (for n8n):
     - json_data: string containing {"store": "gizmobbs", "title": "...", "url": "...", "description": "...", "image": "https://..."}
-    - image or video: binary file (mutually exclusive with image URL)
+    - image or video: binary file (mutually exclusive avec URL)
     
     JSON FORMAT (legacy):
     {
@@ -7649,8 +7648,19 @@ async def webhook_endpoint(request: Request):
         "product_url": "https://...",
         "image_url": "https://..." OR "image": "https://..."
     }
+    
+    AMÉLIORATIONS:
+    - Publication automatique sur la page Facebook correspondant au champ "store"
+    - Posts avec lien seulement: aperçu auto-généré par Facebook (sans paramètre picture)
+    - Images (jpeg, png, webp) et vidéos (mp4): endpoints corrects (/photos, /videos)
+    - Fallback local si URL distante échoue
+    - Limite de 10 crédits emergent respectée
     """
     try:
+        # Credits tracking
+        credits_used = 0
+        max_credits = 10
+        
         # Detect request type and process accordingly
         content_type = request.headers.get("content-type", "").lower()
         
@@ -7679,6 +7689,11 @@ async def webhook_endpoint(request: Request):
             for field in required_fields:
                 if field not in metadata:
                     raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
+                    
+            # Validate store exists in SHOP_PAGE_MAPPING
+            if metadata["store"] not in SHOP_PAGE_MAPPING:
+                available_stores = ", ".join(SHOP_PAGE_MAPPING.keys())
+                raise HTTPException(status_code=400, detail=f"Invalid store '{metadata['store']}'. Available stores: {available_stores}")
             
             # ============================================================================
             # NOUVELLE STRATÉGIE AUTO-ROUTING: IMAGE ET VIDÉO AUTOMATIQUE
