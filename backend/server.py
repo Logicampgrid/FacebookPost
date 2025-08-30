@@ -4349,9 +4349,9 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                         
                 except Exception as url_photo_error:
                     print(f"Strategy 1B URL photo error: {url_photo_error}")
-                    print("🔄 Trying Strategy 1C: Enhanced link post with picture parameter...")
+                    print("🔄 Trying Strategy 1C: Enhanced link post SANS paramètre picture...")
                     
-                    # STRATEGY 1C: Enhanced link post WITHOUT picture parameter (Facebook auto-preview)
+                    # STRATEGY 1C AMÉLIORÉE: Enhanced link post SANS paramètre picture (Facebook génère l'aperçu automatiquement)
                     try:
                         data = {
                             "access_token": page_access_token,
