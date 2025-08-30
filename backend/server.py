@@ -489,7 +489,8 @@ async def publish_media_to_social_platforms(
     store_type: str
 ) -> dict:
     """
-    Publie un média sur Facebook et Instagram avec gestion d'erreurs robuste
+    Publication robuste de médias sur Facebook et Instagram avec gestion d'erreurs avancée
+    Optimisé pour garantir le succès des publications avec fallbacks multi-niveaux
     
     Args:
         media_path: Chemin local du média converti
@@ -503,16 +504,23 @@ async def publish_media_to_social_platforms(
     """
     try:
         print(f"📤 PUBLICATION SOCIALE: Début publication {media_type} sur Facebook + Instagram")
+        print(f"📁 Média: {media_path}")
+        print(f"🏪 Store: {store_type}")
+        print(f"📝 Message: {len(message)} caractères")
         
         results = {
             "success": False,
-            "facebook": {"success": False, "error": None, "post_id": None},
-            "instagram": {"success": False, "error": None, "post_id": None},
+            "facebook": {"success": False, "error": None, "post_id": None, "attempts": 0, "strategies_tried": []},
+            "instagram": {"success": False, "error": None, "post_id": None, "attempts": 0, "strategies_tried": []},
             "media_path": media_path,
             "media_type": media_type,
             "platforms_attempted": 0,
-            "platforms_successful": 0
+            "platforms_successful": 0,
+            "total_attempts": 0,
+            "execution_time": 0
         }
+        
+        start_time = datetime.utcnow()
         
         if not os.path.exists(media_path):
             error_msg = f"Fichier média introuvable: {media_path}"
@@ -521,166 +529,415 @@ async def publish_media_to_social_platforms(
             results["instagram"]["error"] = error_msg
             return results
         
-        # Récupérer utilisateur authentifié
-        user = await db.users.find_one({
-            "facebook_access_token": {"$exists": True, "$ne": None}
-        })
+        # Validation du contenu du fichier
+        try:
+            file_size = os.path.getsize(media_path)
+            file_size_mb = file_size / (1024 * 1024)
+            print(f"📊 Taille fichier: {file_size_mb:.2f}MB")
+            
+            if file_size == 0:
+                error_msg = "Fichier média vide"
+                print(f"❌ {error_msg}")
+                results["facebook"]["error"] = error_msg
+                results["instagram"]["error"] = error_msg
+                return results
+        except Exception as size_error:
+            print(f"⚠️ Impossible de vérifier la taille: {str(size_error)}")
+        
+        # Récupérer utilisateur authentifié avec retry
+        user = None
+        for attempt in range(3):
+            try:
+                user = await db.users.find_one({
+                    "facebook_access_token": {"$exists": True, "$ne": None}
+                })
+                if user:
+                    break
+                print(f"⚠️ Tentative {attempt + 1}/3: Aucun utilisateur authentifié trouvé")
+                await asyncio.sleep(1)  # Petit délai entre tentatives
+            except Exception as db_error:
+                print(f"❌ Erreur base de données (tentative {attempt + 1}/3): {str(db_error)}")
+                if attempt == 2:
+                    error_msg = f"Erreur base de données: {str(db_error)}"
+                    results["facebook"]["error"] = error_msg
+                    results["instagram"]["error"] = error_msg
+                    return results
         
         if not user:
-            error_msg = "Aucun utilisateur authentifié trouvé"
+            error_msg = "Aucun utilisateur authentifié trouvé après 3 tentatives"
             print(f"❌ {error_msg}")
             results["facebook"]["error"] = error_msg
             results["instagram"]["error"] = error_msg
             return results
         
-        # Publication Facebook
+        print(f"👤 Utilisateur authentifié: {user.get('name')}")
+        
+        # Préparer le contenu média (lecture unique)
         try:
-            print(f"📘 FACEBOOK: Tentative publication {media_type}")
+            with open(media_path, 'rb') as f:
+                media_content = f.read()
+            print(f"📖 Contenu média lu: {len(media_content)} bytes")
+        except Exception as read_error:
+            error_msg = f"Impossible de lire le fichier média: {str(read_error)}"
+            print(f"❌ {error_msg}")
+            results["facebook"]["error"] = error_msg
+            results["instagram"]["error"] = error_msg
+            return results
+        
+        # 🔵 PUBLICATION FACEBOOK avec stratégies multiples
+        try:
+            print(f"📘 FACEBOOK: Début tentatives de publication {media_type}")
             results["platforms_attempted"] += 1
+            results["facebook"]["attempts"] = 0
             
-            # Trouver la page Facebook pour ce store
-            target_page = await get_facebook_page_for_store(user, store_type)
-            
-            if target_page:
-                # Lire le contenu du fichier
-                with open(media_path, 'rb') as f:
-                    media_content = f.read()
-                
-                # Préparer les données
-                post_data = {
-                    "access_token": target_page.get("access_token"),
-                    "message": f"{message}\n\n🔗 {permalink}"
+            # Stratégies Facebook par ordre de priorité
+            facebook_strategies = [
+                {
+                    "name": "store_specific_page",
+                    "description": f"Page spécifique au store '{store_type}'"
+                },
+                {
+                    "name": "first_available_page", 
+                    "description": "Première page disponible"
+                },
+                {
+                    "name": "business_manager_fallback",
+                    "description": "Page depuis Business Manager"
                 }
-                
-                # Choisir l'endpoint selon le type
-                if media_type == 'video':
-                    files = {'source': ('video.mp4', media_content, 'video/mp4')}
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/videos"
-                else:  # image
-                    files = {'source': ('image.jpg', media_content, 'image/jpeg')}
-                    endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/photos"
-                
-                print(f"📤 Publication Facebook vers: {endpoint}")
-                response = requests.post(endpoint, data=post_data, files=files, timeout=60)
-                
-                if response.status_code == 200:
-                    fb_result = response.json()
-                    results["facebook"]["success"] = True
-                    results["facebook"]["post_id"] = fb_result.get("id")
-                    results["platforms_successful"] += 1
-                    print(f"✅ FACEBOOK RÉUSSI: Post ID {fb_result.get('id')}")
-                else:
-                    error_details = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-                    results["facebook"]["error"] = f"HTTP {response.status_code}: {error_details}"
-                    print(f"❌ FACEBOOK ÉCHOUÉ: {results['facebook']['error']}")
-            else:
-                results["facebook"]["error"] = f"Aucune page Facebook trouvée pour store '{store_type}'"
-                print(f"❌ {results['facebook']['error']}")
+            ]
+            
+            facebook_success = False
+            
+            for strategy in facebook_strategies:
+                if facebook_success:
+                    break
+                    
+                try:
+                    results["facebook"]["attempts"] += 1
+                    results["total_attempts"] += 1
+                    results["facebook"]["strategies_tried"].append(strategy["name"])
+                    
+                    print(f"🔄 Facebook - Stratégie: {strategy['description']}")
+                    
+                    # Obtenir la page cible selon la stratégie
+                    target_page = None
+                    
+                    if strategy["name"] == "store_specific_page":
+                        target_page = await get_facebook_page_for_store(user, store_type)
+                    elif strategy["name"] == "first_available_page":
+                        if user.get("facebook_pages"):
+                            target_page = user["facebook_pages"][0]
+                    elif strategy["name"] == "business_manager_fallback":
+                        for bm in user.get("business_managers", []):
+                            if bm.get("pages"):
+                                target_page = bm["pages"][0]
+                                break
+                    
+                    if not target_page:
+                        print(f"⚠️ Aucune page trouvée pour stratégie: {strategy['name']}")
+                        continue
+                    
+                    print(f"🎯 Page Facebook cible: {target_page.get('name')} (ID: {target_page.get('id')})")
+                    
+                    # Préparer les données selon le type de média
+                    access_token = target_page.get("access_token")
+                    if not access_token:
+                        print(f"❌ Pas de token d'accès pour la page {target_page.get('name')}")
+                        continue
+                    
+                    post_data = {
+                        "access_token": access_token,
+                        "message": f"{message}\n\n🔗 {permalink}"
+                    }
+                    
+                    # Choix de l'endpoint et préparation des fichiers
+                    if media_type == 'video':
+                        files = {'source': ('video.mp4', media_content, 'video/mp4')}
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/videos"
+                        print(f"🎬 Publication vidéo vers: {endpoint}")
+                    else:  # image
+                        files = {'source': ('image.jpg', media_content, 'image/jpeg')}
+                        endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/photos"
+                        print(f"🖼️ Publication image vers: {endpoint}")
+                    
+                    # Tentatives de publication avec retry
+                    for attempt in range(3):
+                        try:
+                            print(f"📤 Facebook - Tentative {attempt + 1}/3...")
+                            
+                            response = requests.post(
+                                endpoint, 
+                                data=post_data, 
+                                files=files, 
+                                timeout=90  # Timeout augmenté
+                            )
+                            
+                            if response.status_code == 200:
+                                fb_result = response.json()
+                                post_id = fb_result.get("id")
+                                
+                                results["facebook"]["success"] = True
+                                results["facebook"]["post_id"] = post_id
+                                results["platforms_successful"] += 1
+                                facebook_success = True
+                                
+                                print(f"✅ FACEBOOK RÉUSSI: Post ID {post_id}")
+                                print(f"🔗 URL Facebook: https://facebook.com/{post_id}")
+                                break
+                            else:
+                                error_details = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                                error_msg = f"HTTP {response.status_code}: {error_details}"
+                                print(f"❌ Facebook échec tentative {attempt + 1}: {error_msg}")
+                                
+                                # Analyser l'erreur pour décider si retry
+                                if response.status_code in [429, 500, 502, 503, 504]:  # Erreurs temporaires
+                                    if attempt < 2:
+                                        wait_time = (attempt + 1) * 2
+                                        print(f"⏰ Attente {wait_time}s avant retry...")
+                                        await asyncio.sleep(wait_time)
+                                        continue
+                                
+                                results["facebook"]["error"] = error_msg
+                                break
+                                
+                        except requests.exceptions.Timeout:
+                            print(f"⏰ Timeout Facebook tentative {attempt + 1}")
+                            if attempt < 2:
+                                await asyncio.sleep(5)
+                                continue
+                            results["facebook"]["error"] = "Timeout après 3 tentatives"
+                            break
+                        except Exception as request_error:
+                            print(f"❌ Erreur requête Facebook tentative {attempt + 1}: {str(request_error)}")
+                            if attempt < 2:
+                                await asyncio.sleep(2)
+                                continue
+                            results["facebook"]["error"] = f"Erreur requête: {str(request_error)}"
+                            break
+                    
+                    if facebook_success:
+                        break
+                        
+                except Exception as strategy_error:
+                    print(f"❌ Erreur stratégie Facebook {strategy['name']}: {str(strategy_error)}")
+                    results["facebook"]["error"] = f"Stratégie {strategy['name']}: {str(strategy_error)}"
+                    continue
+            
+            if not facebook_success:
+                print(f"❌ FACEBOOK: Toutes les stratégies ont échoué")
                 
         except Exception as fb_error:
-            results["facebook"]["error"] = f"Erreur Facebook: {str(fb_error)}"
-            print(f"❌ ERREUR FACEBOOK: {str(fb_error)}")
+            results["facebook"]["error"] = f"Erreur générale Facebook: {str(fb_error)}"
+            print(f"❌ ERREUR GÉNÉRALE FACEBOOK: {str(fb_error)}")
         
-        # Publication Instagram
+        # 📱 PUBLICATION INSTAGRAM avec stratégies multiples
         try:
-            print(f"📱 INSTAGRAM: Tentative publication {media_type}")
+            print(f"📱 INSTAGRAM: Début tentatives de publication {media_type}")
             results["platforms_attempted"] += 1
+            results["instagram"]["attempts"] = 0
             
-            # Trouver le compte Instagram
-            instagram_account = await get_instagram_account_for_store(user, store_type)
+            instagram_success = False
             
-            if instagram_account:
-                instagram_id = instagram_account["id"]
-                access_token = instagram_account["access_token"]
-                
-                # Lire le contenu du fichier
-                with open(media_path, 'rb') as f:
-                    media_content = f.read()
-                
-                # Créer conteneur média Instagram
-                if media_type == 'video':
-                    container_data = {
-                        "access_token": access_token,
-                        "caption": f"{message}\n\n🔗 {permalink}",
-                        "media_type": "VIDEO"
-                    }
-                    files = {'source': ('video.mp4', media_content, 'video/mp4')}
-                else:  # image
-                    container_data = {
-                        "access_token": access_token,
-                        "caption": f"{message}\n\n🔗 {permalink}",
-                        "media_type": "IMAGE"
-                    }
-                    files = {'source': ('image.jpg', media_content, 'image/jpeg')}
-                
-                # Créer le conteneur
-                print(f"📱 Création conteneur Instagram...")
-                container_response = requests.post(
-                    f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media",
-                    data=container_data,
-                    files=files,
-                    timeout=60
-                )
-                
-                if container_response.status_code == 200:
-                    container_result = container_response.json()
-                    container_id = container_result.get("id")
+            # Stratégies Instagram
+            instagram_strategies = [
+                {
+                    "name": "store_specific_instagram",
+                    "description": f"Compte Instagram du store '{store_type}'"
+                },
+                {
+                    "name": "any_available_instagram",
+                    "description": "Premier compte Instagram disponible"
+                }
+            ]
+            
+            for strategy in instagram_strategies:
+                if instagram_success:
+                    break
                     
-                    # Publier le conteneur
-                    publish_data = {
-                        "access_token": access_token,
-                        "creation_id": container_id
-                    }
+                try:
+                    results["instagram"]["attempts"] += 1
+                    results["total_attempts"] += 1
+                    results["instagram"]["strategies_tried"].append(strategy["name"])
                     
-                    print(f"📱 Publication conteneur Instagram: {container_id}")
-                    publish_response = requests.post(
-                        f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media_publish",
-                        data=publish_data,
-                        timeout=60
-                    )
+                    print(f"🔄 Instagram - Stratégie: {strategy['description']}")
                     
-                    if publish_response.status_code == 200:
-                        ig_result = publish_response.json()
-                        results["instagram"]["success"] = True
-                        results["instagram"]["post_id"] = ig_result.get("id")
-                        results["platforms_successful"] += 1
-                        print(f"✅ INSTAGRAM RÉUSSI: Post ID {ig_result.get('id')}")
-                    else:
-                        error_details = publish_response.json() if publish_response.headers.get('content-type', '').startswith('application/json') else publish_response.text
-                        results["instagram"]["error"] = f"Publication échouée - HTTP {publish_response.status_code}: {error_details}"
-                        print(f"❌ INSTAGRAM PUBLICATION ÉCHOUÉE: {results['instagram']['error']}")
-                else:
-                    error_details = container_response.json() if container_response.headers.get('content-type', '').startswith('application/json') else container_response.text
-                    results["instagram"]["error"] = f"Conteneur échoué - HTTP {container_response.status_code}: {error_details}"
-                    print(f"❌ INSTAGRAM CONTENEUR ÉCHOUÉ: {results['instagram']['error']}")
-            else:
-                results["instagram"]["error"] = f"Aucun compte Instagram trouvé pour store '{store_type}'"
-                print(f"❌ {results['instagram']['error']}")
+                    # Obtenir le compte Instagram
+                    instagram_account = None
+                    
+                    if strategy["name"] == "store_specific_instagram":
+                        instagram_account = await get_instagram_account_for_store(user, store_type)
+                    elif strategy["name"] == "any_available_instagram":
+                        # Chercher n'importe quel compte Instagram
+                        for bm in user.get("business_managers", []):
+                            for page in bm.get("pages", []):
+                                temp_account = await get_instagram_account_for_store(user, "fallback")
+                                if temp_account:
+                                    instagram_account = temp_account
+                                    break
+                            if instagram_account:
+                                break
+                    
+                    if not instagram_account:
+                        print(f"⚠️ Aucun compte Instagram trouvé pour stratégie: {strategy['name']}")
+                        continue
+                    
+                    instagram_id = instagram_account["id"]
+                    access_token = instagram_account["access_token"]
+                    
+                    print(f"🎯 Compte Instagram cible: {instagram_id}")
+                    
+                    # Publication en 2 étapes: conteneur puis publication
+                    for attempt in range(3):
+                        try:
+                            print(f"📱 Instagram - Tentative {attempt + 1}/3...")
+                            
+                            # Étape 1: Créer le conteneur média
+                            container_data = {
+                                "access_token": access_token,
+                                "caption": f"{message}\n\n🔗 {permalink}",
+                                "media_type": "VIDEO" if media_type == 'video' else "IMAGE"
+                            }
+                            
+                            files = {
+                                'source': (
+                                    'video.mp4' if media_type == 'video' else 'image.jpg',
+                                    media_content,
+                                    'video/mp4' if media_type == 'video' else 'image/jpeg'
+                                )
+                            }
+                            
+                            print(f"📱 Création conteneur Instagram...")
+                            container_response = requests.post(
+                                f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media",
+                                data=container_data,
+                                files=files,
+                                timeout=120  # Timeout augmenté pour vidéos
+                            )
+                            
+                            if container_response.status_code == 200:
+                                container_result = container_response.json()
+                                container_id = container_result.get("id")
+                                print(f"✅ Conteneur créé: {container_id}")
+                                
+                                # Attendre que le conteneur soit prêt (spécialement pour vidéos)
+                                if media_type == 'video':
+                                    print(f"⏰ Attente traitement vidéo Instagram...")
+                                    await asyncio.sleep(10)
+                                
+                                # Étape 2: Publier le conteneur
+                                publish_data = {
+                                    "access_token": access_token,
+                                    "creation_id": container_id
+                                }
+                                
+                                print(f"📱 Publication conteneur Instagram: {container_id}")
+                                publish_response = requests.post(
+                                    f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media_publish",
+                                    data=publish_data,
+                                    timeout=60
+                                )
+                                
+                                if publish_response.status_code == 200:
+                                    ig_result = publish_response.json()
+                                    post_id = ig_result.get("id")
+                                    
+                                    results["instagram"]["success"] = True
+                                    results["instagram"]["post_id"] = post_id
+                                    results["platforms_successful"] += 1
+                                    instagram_success = True
+                                    
+                                    print(f"✅ INSTAGRAM RÉUSSI: Post ID {post_id}")
+                                    break
+                                else:
+                                    error_details = publish_response.json() if publish_response.headers.get('content-type', '').startswith('application/json') else publish_response.text
+                                    error_msg = f"Publication échouée - HTTP {publish_response.status_code}: {error_details}"
+                                    print(f"❌ Instagram publication échec: {error_msg}")
+                                    
+                                    if publish_response.status_code in [429, 500, 502, 503, 504] and attempt < 2:
+                                        await asyncio.sleep((attempt + 1) * 3)
+                                        continue
+                                    
+                                    results["instagram"]["error"] = error_msg
+                                    break
+                            else:
+                                error_details = container_response.json() if container_response.headers.get('content-type', '').startswith('application/json') else container_response.text
+                                error_msg = f"Conteneur échoué - HTTP {container_response.status_code}: {error_details}"
+                                print(f"❌ Instagram conteneur échec: {error_msg}")
+                                
+                                if container_response.status_code in [429, 500, 502, 503, 504] and attempt < 2:
+                                    await asyncio.sleep((attempt + 1) * 3)
+                                    continue
+                                
+                                results["instagram"]["error"] = error_msg
+                                break
+                                
+                        except requests.exceptions.Timeout:
+                            print(f"⏰ Timeout Instagram tentative {attempt + 1}")
+                            if attempt < 2:
+                                await asyncio.sleep(10)
+                                continue
+                            results["instagram"]["error"] = "Timeout après 3 tentatives"
+                            break
+                        except Exception as request_error:
+                            print(f"❌ Erreur requête Instagram tentative {attempt + 1}: {str(request_error)}")
+                            if attempt < 2:
+                                await asyncio.sleep(5)
+                                continue
+                            results["instagram"]["error"] = f"Erreur requête: {str(request_error)}"
+                            break
+                    
+                    if instagram_success:
+                        break
+                        
+                except Exception as strategy_error:
+                    print(f"❌ Erreur stratégie Instagram {strategy['name']}: {str(strategy_error)}")
+                    results["instagram"]["error"] = f"Stratégie {strategy['name']}: {str(strategy_error)}"
+                    continue
+            
+            if not instagram_success:
+                print(f"❌ INSTAGRAM: Toutes les stratégies ont échoué")
                 
         except Exception as ig_error:
-            results["instagram"]["error"] = f"Erreur Instagram: {str(ig_error)}"
-            print(f"❌ ERREUR INSTAGRAM: {str(ig_error)}")
+            results["instagram"]["error"] = f"Erreur générale Instagram: {str(ig_error)}"
+            print(f"❌ ERREUR GÉNÉRALE INSTAGRAM: {str(ig_error)}")
+        
+        # Calcul du temps d'exécution
+        end_time = datetime.utcnow()
+        results["execution_time"] = (end_time - start_time).total_seconds()
         
         # Évaluation finale
         results["success"] = results["platforms_successful"] > 0
         
+        # Logs finaux détaillés
         if results["success"]:
-            print(f"🎉 PUBLICATION SOCIALE RÉUSSIE: {results['platforms_successful']}/{results['platforms_attempted']} plateformes")
+            print(f"🎉 PUBLICATION SOCIALE RÉUSSIE!")
+            print(f"   📊 Plateformes réussies: {results['platforms_successful']}/{results['platforms_attempted']}")
+            print(f"   📘 Facebook: {'✅' if results['facebook']['success'] else '❌'} (tentatives: {results['facebook']['attempts']})")
+            print(f"   📱 Instagram: {'✅' if results['instagram']['success'] else '❌'} (tentatives: {results['instagram']['attempts']})")
+            print(f"   ⏱️ Temps total: {results['execution_time']:.1f}s")
+            print(f"   🔄 Tentatives totales: {results['total_attempts']}")
         else:
             print(f"❌ PUBLICATION SOCIALE ÉCHOUÉE: 0/{results['platforms_attempted']} plateformes réussies")
+            print(f"   📘 Facebook: {results['facebook']['error']}")
+            print(f"   📱 Instagram: {results['instagram']['error']}")
+            print(f"   ⏱️ Temps total: {results['execution_time']:.1f}s")
+            print(f"   🔄 Tentatives totales: {results['total_attempts']}")
         
         return results
         
     except Exception as e:
-        print(f"💥 ERREUR PUBLICATION SOCIALE: {str(e)}")
+        error_msg = f"Erreur générale publication: {str(e)}"
+        print(f"💥 ERREUR PUBLICATION SOCIALE: {error_msg}")
         return {
             "success": False,
-            "facebook": {"success": False, "error": f"Erreur générale: {str(e)}", "post_id": None},
-            "instagram": {"success": False, "error": f"Erreur générale: {str(e)}", "post_id": None},
+            "facebook": {"success": False, "error": error_msg, "post_id": None, "attempts": 0, "strategies_tried": []},
+            "instagram": {"success": False, "error": error_msg, "post_id": None, "attempts": 0, "strategies_tried": []},
             "media_path": media_path,
             "media_type": media_type,
             "platforms_attempted": 0,
-            "platforms_successful": 0
+            "platforms_successful": 0,
+            "total_attempts": 0,
+            "execution_time": 0
         }
 
 async def get_facebook_page_for_store(user: dict, store_type: str) -> dict:
