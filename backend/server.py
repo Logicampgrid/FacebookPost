@@ -3381,6 +3381,13 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
                     else:
                         detected_type = 'video'
                         detection_method = f'magic_bytes_{format_name}'
+                        
+                        # Vérification additionnelle pour MP4 (atom structure)
+                        if 'mp4' in format_name or 'mov' in format_name:
+                            # Vérifier présence d'atoms MP4 typiques
+                            if b'moov' in content[:1024] or b'mdat' in content[:1024]:
+                                print(f"🎯 STRUCTURE MP4 CONFIRMÉE (atoms moov/mdat détectés)")
+                        
                         print(f"✅ VIDÉO {format_name} détectée par magic bytes")
                         break
             
