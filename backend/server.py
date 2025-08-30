@@ -6385,7 +6385,7 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
         facebook_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="facebook")
         
         # Check if this shop should publish to Instagram instead of Facebook
-        shop_config = SHOP_PAGE_MAPPING.get(request.shop_type, {})
+        shop_config = get_shop_page_mapping().get(request.shop_type, {})
         should_use_instagram = shop_config.get("platform") == "instagram"
         should_use_instagram_priority = shop_config.get("platform") == "instagram_priority"
         should_use_facebook_only = shop_config.get("platform") == "facebook_only"
