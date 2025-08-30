@@ -7486,6 +7486,357 @@ async def webhook_debug(request: Request):
             "url": str(request.url)
         }
 
+# ============================================================================
+# NOUVELLES FONCTIONS DE PUBLICATION SELON LE STORE ET TYPE DE MÉDIA
+# ============================================================================
+
+async def publish_image_to_facebook_by_store(local_image_path: str, message: str, product_link: str, store_type: str):
+    """
+    Publie une image sur Facebook en utilisant l'endpoint /photos selon le store configuré
+    """
+    try:
+        print(f"📸 Publication image pour store '{store_type}' via endpoint /photos")
+        
+        # Trouver l'utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"success": False, "error": "Aucun utilisateur authentifié trouvé"}
+        
+        # Obtenir la configuration de la page pour ce store
+        shop_config = SHOP_PAGE_MAPPING.get(store_type)
+        if not shop_config:
+            return {"success": False, "error": f"Configuration non trouvée pour store: {store_type}"}
+        
+        target_page_id = shop_config.get("expected_id")
+        if not target_page_id:
+            return {"success": False, "error": f"Page ID non trouvé pour store: {store_type}"}
+        
+        # Trouver le token d'accès pour cette page
+        page_access_token = None
+        page_name = shop_config["name"]
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name", page_name)
+                    break
+            if page_access_token:
+                break
+        
+        if not page_access_token:
+            return {"success": False, "error": f"Token d'accès non trouvé pour la page {target_page_id} du store {store_type}"}
+        
+        print(f"🎯 Publication sur page: {page_name} (ID: {target_page_id})")
+        
+        # Étape 1: Upload de l'image vers Facebook via /photos
+        with open(local_image_path, 'rb') as image_file:
+            files = {'file': image_file}
+            data = {
+                'access_token': page_access_token,
+                'message': message,
+                'published': 'false'  # Ne pas publier immédiatement, juste uploader
+            }
+            
+            upload_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{target_page_id}/photos",
+                files=files,
+                data=data,
+                timeout=30
+            )
+        
+        if upload_response.status_code != 200:
+            return {"success": False, "error": f"Échec upload image: {upload_response.text}"}
+        
+        upload_result = upload_response.json()
+        photo_id = upload_result.get('id')
+        
+        if not photo_id:
+            return {"success": False, "error": "Pas de photo_id retourné par l'upload"}
+        
+        print(f"✅ Image uploadée avec ID: {photo_id}")
+        
+        # Étape 2: Publier le post avec l'image attachée et lien cliquable  
+        post_data = {
+            'access_token': page_access_token,
+            'message': message,
+            'object_attachment': photo_id  # Attacher la photo uploadée
+        }
+        
+        # Si un lien produit est fourni, l'ajouter en commentaire pour le rendre cliquable
+        publish_response = requests.post(
+            f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed",
+            data=post_data,
+            timeout=30
+        )
+        
+        if publish_response.status_code != 200:
+            return {"success": False, "error": f"Échec publication post: {publish_response.text}"}
+        
+        publish_result = publish_response.json()
+        facebook_post_id = publish_result.get('id')
+        
+        print(f"✅ Post publié avec ID: {facebook_post_id}")
+        
+        # Étape 3: Ajouter le lien produit en commentaire si fourni
+        if product_link and facebook_post_id:
+            comment_data = {
+                'access_token': page_access_token,
+                'message': f"🛒 Voir le produit: {product_link}"
+            }
+            
+            comment_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{facebook_post_id}/comments",
+                data=comment_data,
+                timeout=30
+            )
+            
+            if comment_response.status_code == 200:
+                print(f"✅ Lien produit ajouté en commentaire")
+            else:
+                print(f"⚠️ Échec ajout commentaire: {comment_response.text}")
+        
+        return {
+            "success": True,
+            "facebook_post_id": facebook_post_id,
+            "photo_id": photo_id,
+            "page_name": page_name,
+            "page_id": target_page_id,
+            "message": "Image publiée avec succès via /photos endpoint"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur publication image: {e}")
+        return {"success": False, "error": str(e)}
+
+
+async def publish_video_to_facebook_by_store(local_video_path: str, message: str, product_link: str, store_type: str):
+    """
+    Publie une vidéo sur Facebook en utilisant l'endpoint /videos selon le store configuré
+    """
+    try:
+        print(f"🎬 Publication vidéo pour store '{store_type}' via endpoint /videos")
+        
+        # Trouver l'utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"success": False, "error": "Aucun utilisateur authentifié trouvé"}
+        
+        # Obtenir la configuration de la page pour ce store
+        shop_config = SHOP_PAGE_MAPPING.get(store_type)
+        if not shop_config:
+            return {"success": False, "error": f"Configuration non trouvée pour store: {store_type}"}
+        
+        target_page_id = shop_config.get("expected_id")
+        if not target_page_id:
+            return {"success": False, "error": f"Page ID non trouvé pour store: {store_type}"}
+        
+        # Trouver le token d'accès pour cette page
+        page_access_token = None
+        page_name = shop_config["name"]
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name", page_name)
+                    break
+            if page_access_token:
+                break
+        
+        if not page_access_token:
+            return {"success": False, "error": f"Token d'accès non trouvé pour la page {target_page_id} du store {store_type}"}
+        
+        print(f"🎯 Publication vidéo sur page: {page_name} (ID: {target_page_id})")
+        
+        # Upload de la vidéo vers Facebook via /videos
+        with open(local_video_path, 'rb') as video_file:
+            files = {'file': video_file}
+            data = {
+                'access_token': page_access_token,
+                'description': message
+            }
+            
+            upload_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{target_page_id}/videos",
+                files=files,
+                data=data,
+                timeout=60  # Timeout plus long pour les vidéos
+            )
+        
+        if upload_response.status_code != 200:
+            return {"success": False, "error": f"Échec upload vidéo: {upload_response.text}"}
+        
+        upload_result = upload_response.json()
+        video_id = upload_result.get('id')
+        
+        if not video_id:
+            return {"success": False, "error": "Pas de video_id retourné par l'upload"}
+        
+        print(f"✅ Vidéo uploadée et publiée avec ID: {video_id}")
+        
+        # Ajouter le lien produit en commentaire si fourni
+        if product_link and video_id:
+            comment_data = {
+                'access_token': page_access_token,
+                'message': f"🛒 Voir le produit: {product_link}"
+            }
+            
+            comment_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{video_id}/comments",
+                data=comment_data,
+                timeout=30
+            )
+            
+            if comment_response.status_code == 200:
+                print(f"✅ Lien produit ajouté en commentaire sur la vidéo")
+            else:
+                print(f"⚠️ Échec ajout commentaire sur vidéo: {comment_response.text}")
+        
+        return {
+            "success": True,
+            "facebook_post_id": video_id,
+            "video_id": video_id,
+            "page_name": page_name,
+            "page_id": target_page_id,
+            "message": "Vidéo publiée avec succès via /videos endpoint"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur publication vidéo: {e}")
+        return {"success": False, "error": str(e)}
+
+
+async def publish_link_only_to_facebook_by_store(message: str, product_link: str, store_type: str):
+    """
+    Publie un post avec lien seulement sur Facebook, aperçu généré automatiquement par Facebook
+    Utilise l'endpoint /feed SANS paramètre picture pour que Facebook génère l'aperçu
+    """
+    try:
+        print(f"🔗 Publication lien seulement pour store '{store_type}' - Aperçu auto-généré")
+        
+        # Trouver l'utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {"success": False, "error": "Aucun utilisateur authentifié trouvé"}
+        
+        # Obtenir la configuration de la page pour ce store
+        shop_config = SHOP_PAGE_MAPPING.get(store_type)
+        if not shop_config:
+            return {"success": False, "error": f"Configuration non trouvée pour store: {store_type}"}
+        
+        target_page_id = shop_config.get("expected_id")
+        if not target_page_id:
+            return {"success": False, "error": f"Page ID non trouvé pour store: {store_type}"}
+        
+        # Trouver le token d'accès pour cette page
+        page_access_token = None
+        page_name = shop_config["name"]
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name", page_name)
+                    break
+            if page_access_token:
+                break
+        
+        if not page_access_token:
+            return {"success": False, "error": f"Token d'accès non trouvé pour la page {target_page_id} du store {store_type}"}
+        
+        print(f"🎯 Publication lien sur page: {page_name} (ID: {target_page_id})")
+        
+        # Publier via /feed avec UNIQUEMENT message et link (PAS de picture)
+        # Facebook générera automatiquement l'aperçu du lien
+        post_data = {
+            'access_token': page_access_token,
+            'message': message,
+            'link': product_link
+            # PAS DE PARAMÈTRE 'picture' - Facebook génère l'aperçu automatiquement
+        }
+        
+        response = requests.post(
+            f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed",
+            data=post_data,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            return {"success": False, "error": f"Échec publication lien: {response.text}"}
+        
+        result = response.json()
+        facebook_post_id = result.get('id')
+        
+        if not facebook_post_id:
+            return {"success": False, "error": "Pas de post_id retourné par Facebook"}
+        
+        print(f"✅ Post avec lien publié avec ID: {facebook_post_id} - Aperçu généré par Facebook")
+        
+        return {
+            "success": True,
+            "facebook_post_id": facebook_post_id,
+            "page_name": page_name,
+            "page_id": target_page_id,
+            "auto_preview": True,
+            "message": "Post avec lien publié avec succès - Aperçu généré automatiquement par Facebook"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur publication lien: {e}")
+        return {"success": False, "error": str(e)}
+
+
+async def detect_media_type_from_content(content: bytes, filename: str = None) -> str:
+    """
+    Détecte le type de média (image ou vidéo) à partir du contenu binaire
+    """
+    try:
+        # Vérifier les magic numbers pour détecter le type de fichier
+        if content.startswith(b'\xff\xd8\xff'):  # JPEG
+            return "image"
+        elif content.startswith(b'\x89PNG\r\n\x1a\n'):  # PNG  
+            return "image"
+        elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:  # WebP
+            return "image"
+        elif content.startswith(b'GIF87a') or content.startswith(b'GIF89a'):  # GIF
+            return "image"
+        elif (content.startswith(b'\x00\x00\x00\x14ftypmp4') or  # MP4
+              content.startswith(b'\x00\x00\x00\x18ftypmp4') or
+              content.startswith(b'\x00\x00\x00\x1cftypisom')):
+            return "video"
+        elif content.startswith(b'\x1a\x45\xdf\xa3'):  # Matroska/WebM
+            return "video"
+        elif content.startswith(b'RIFF') and b'AVI ' in content[:12]:  # AVI
+            return "video"
+        
+        # Fallback sur l'extension du filename si fournie
+        if filename:
+            ext = filename.lower().split('.')[-1] if '.' in filename else ""
+            if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                return "image"
+            elif ext in ['mp4', 'avi', 'mov', 'webm', 'mkv']:
+                return "video"
+        
+        # Par défaut, considérer comme image
+        return "image"
+        
+    except Exception:
+        return "image"  # Défaut sécurisé
+
+
 async def publish_with_feed_strategy(message: str, link: str, picture: str, shop_type: str):
     """
     Publication utilisant la Stratégie 1C avec l'endpoint /feed
