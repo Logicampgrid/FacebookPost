@@ -8132,14 +8132,15 @@ async def publish_with_feed_strategy(message: str, link: str, picture: str, shop
     """
     Publication utilisant la Stratégie 1C avec l'endpoint /feed
     Paramètres: message (titre + description), link (product_url)
-    NOUVELLE VERSION: Utilise UNIQUEMENT le paramètre link pour aperçu auto-généré par Facebook
+    AMÉLIORÉ: Utilise UNIQUEMENT le paramètre link pour aperçu auto-généré par Facebook
+    Le paramètre picture est ignoré pour permettre à Facebook de générer l'aperçu automatiquement
     """
     try:
-        print(f"🎯 STRATÉGIE 1C MODIFIÉE: Publication /feed avec UNIQUEMENT link (aperçu auto-généré)")
+        print(f"🎯 STRATÉGIE 1C AMÉLIORÉE: Publication /feed SANS paramètre picture (aperçu auto-généré)")
         print(f"📝 Message: {message}")
         print(f"🔗 Link: {link}")
         print(f"🏪 Shop: {shop_type}")
-        print(f"❌ Picture: RETIRÉ (Facebook générera l'aperçu automatiquement)")
+        print(f"❌ Picture: IGNORÉ (Facebook génère l'aperçu automatiquement)")
         
         # Trouver un utilisateur authentifié
         user = await db.users.find_one({
