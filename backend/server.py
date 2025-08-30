@@ -3343,6 +3343,11 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
                 (b'RIFF', 'avi_check'),  # AVI/WebM (need further check)
                 (b'\x1aE\xdf\xa3', 'webm'),  # WebM/MKV
                 (b'\x00\x00\x00\x14ftyp', 'mp4_type3'),  # MP4 variant 3
+                # Nouvelles signatures MP4 renforcées
+                (b'ftypmp4', 'mp4_direct'),                     # MP4 signature directe
+                (b'ftypisom', 'mp4_isom_direct'),               # ISO direct
+                (b'ftypM4V', 'mp4_m4v'),                        # M4V Apple
+                (b'ftypqt', 'mov_quicktime'),                   # QuickTime MOV
             ]
             
             # Signatures image étendues
