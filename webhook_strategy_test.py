@@ -319,16 +319,14 @@ class WebhookStrategy1CTester:
         )
         
         if success:
-            data_section = response.get('data', {})
-            strategy_used = data_section.get('strategy_used')
+            # This should fail with 400 since image_url is required
+            detail = response.get('detail', '')
+            print(f"   Error detail: {detail}")
             
-            print(f"   Strategy used: {strategy_used}")
-            
-            # Should fallback to text-only or other strategy
-            if strategy_used != "feed_with_picture":
-                print("✅ Correctly avoided Strategy 1C when no image available")
+            if 'Image URL is required' in detail:
+                print("✅ Correctly requires image URL")
             else:
-                print("⚠️  Strategy 1C used without image (unexpected)")
+                print(f"⚠️  Unexpected error: {detail}")
         
         return success
 
