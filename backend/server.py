@@ -6849,7 +6849,7 @@ async def webhook_endpoint(request: Request):
             print(f"❌ Stratégie 1C échouée: {strategy_1c_result.get('error')}")
             print(f"🔄 FALLBACK: Tentative publication via /photos")
             
-            # Utiliser create_product_post qui utilise /photos par défaut
+            # Utiliser create_product_post_from_local_image pour éviter le re-téléchargement
             product_request_fallback = ProductPublishRequest(
                 title=clean_title,
                 description=clean_description,
@@ -6861,7 +6861,8 @@ async def webhook_endpoint(request: Request):
                 api_key=None
             )
             
-            result = await create_product_post(product_request_fallback, force_strategy_1c=False)
+            # Utiliser l'image déjà téléchargée/accessible sans re-téléchargement
+            result = await create_product_post_from_local_image(product_request_fallback, final_image_url, force_strategy_1c=False)
         
         # Check if this was a duplicate post
         if result.get("duplicate_skipped"):
