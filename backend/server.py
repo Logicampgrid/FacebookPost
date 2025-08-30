@@ -2670,7 +2670,7 @@ async def test_logicamp_berger_webhook():
         print(f"   Instagram cible: @logicamp_berger")
         
         # Vérifier configuration
-        shop_config = SHOP_PAGE_MAPPING.get("gizmobbs", {})
+        shop_config = get_shop_page_mapping().get("gizmobbs", {})
         print(f"📋 Configuration gizmobbs:")
         print(f"   platform: {shop_config.get('platform')}")
         print(f"   business_manager_id: {shop_config.get('business_manager_id')}")
