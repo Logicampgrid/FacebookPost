@@ -6636,20 +6636,12 @@ async def webhook_endpoint(request: Request):
                 # Construire le message selon les spécifications  
                 message_content = f"{clean_title}\n\n{clean_description}".strip()
                 
-                # Create ProductPublishRequest for feed strategy
-                product_request = ProductPublishRequest(
-                    title=clean_title,
-                    description=clean_description,
-                    image_url=media_url,
-                    product_url=metadata["url"],
-                    shop_type=metadata["store"],
-                    user_id=None,
-                    page_id=None,
-                    api_key=None
+                result = await publish_with_feed_strategy(
+                    message=message_content,
+                    link=metadata["url"], 
+                    picture=media_url,
+                    shop_type=metadata["store"]
                 )
-                
-                # Use existing create_product_post with force_strategy_1c=True
-                result = await create_product_post(product_request, force_strategy_1c=True)
                 
                 if result.get("success"):
                     return {
