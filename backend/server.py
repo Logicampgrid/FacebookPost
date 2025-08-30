@@ -6795,8 +6795,8 @@ async def webhook_endpoint(request: Request):
         print(f"📦 Product: {clean_title}")
         print(f"📝 Description: {clean_description}")
         print(f"🔗 URL: {webhook_request.product_url}")
-        print(f"📸 Image: {webhook_request.image_url}")
-        print(f"🎯 Strategy: Using Strategy 1C (image URL accessible)")
+        print(f"📸 Image finale: {final_image_url}")
+        print(f"🎯 Strategy: Prioriser Stratégie 1C avec fallback intelligent")
         
         # Check if external webhook is enabled
         if EXTERNAL_WEBHOOK_ENABLED:
@@ -6808,8 +6808,8 @@ async def webhook_endpoint(request: Request):
                 "title": clean_title,
                 "description": clean_description,
                 "product_url": webhook_request.product_url,
-                "image_url": webhook_request.image_url,
-                "strategy": "1C",
+                "image_url": final_image_url,
+                "strategy": "feed_with_picture",
                 "original_request": webhook_request.dict()
             }
             
@@ -6822,16 +6822,46 @@ async def webhook_endpoint(request: Request):
                     "status": "forwarded_to_external_webhook",
                     "message": f"Product '{clean_title}' forwarded to external webhook with Strategy 1C",
                     "external_webhook_url": NGROK_URL,
-                    "strategy_used": "1C",
+                    "strategy_used": "feed_with_picture",
                     "data": external_result
                 }
             else:
                 print(f"⚠️ External webhook failed, falling back to internal processing...")
                 # Continue with internal processing as fallback
         
-        # Create and publish the product post using Strategy 1C (forcée pour tous les cas avec store parameter)
-        print(f"🎯 Exécution create_product_post avec force_strategy_1c=True")
-        result = await create_product_post(product_request, force_strategy_1c=True)
+        # PRIORITÉ 1: Tenter Stratégie 1C avec /feed + picture
+        message_content = f"{clean_title}\n\n{clean_description}".strip()
+        
+        print(f"🎯 PRIORITÉ 1: Tentative Stratégie 1C (/feed avec picture)")
+        strategy_1c_result = await publish_with_feed_strategy(
+            message=message_content,
+            link=webhook_request.product_url,
+            picture=final_image_url,
+            shop_type=webhook_request.store
+        )
+        
+        # Si Stratégie 1C réussit
+        if strategy_1c_result.get("success"):
+            print("✅ SUCCESS: Stratégie 1C réussie - Image cliquable publiée!")
+            result = strategy_1c_result
+        else:
+            # FALLBACK: Utiliser endpoint /photos pour garantir l'affichage de l'image  
+            print(f"❌ Stratégie 1C échouée: {strategy_1c_result.get('error')}")
+            print(f"🔄 FALLBACK: Tentative publication via /photos")
+            
+            # Utiliser create_product_post qui utilise /photos par défaut
+            product_request_fallback = ProductPublishRequest(
+                title=clean_title,
+                description=clean_description,
+                image_url=final_image_url,
+                product_url=webhook_request.product_url,
+                shop_type=webhook_request.store,
+                user_id=None,
+                page_id=None,
+                api_key=None
+            )
+            
+            result = await create_product_post(product_request_fallback, force_strategy_1c=False)
         
         # Check if this was a duplicate post
         if result.get("duplicate_skipped"):
