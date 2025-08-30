@@ -6961,7 +6961,7 @@ async def webhook_endpoint(request: Request):
                 print(f"🔄 FALLBACK 2: Aucune image URL - Tentative upload local traditionnel")
                 use_feed_strategy = False
             
-            # PRIORITÉ 2: Upload local puis Stratégie 1C (/feed avec picture)
+            # FALLBACK 2: Upload local traditionnel si pas d'image URL ou si image URL inaccessible
             if not use_feed_strategy:
                 # Check for binary file (image OR video, not both)
                 media_file = image if image else video
@@ -7005,38 +7005,30 @@ async def webhook_endpoint(request: Request):
                 
                 print(f"📁 Upload local réussi - Saved {media_type}: {file_path} -> {local_media_url}")
                 
-                # IMPORTANT: Prioriser Stratégie 1C même pour les images uploadées
+                # Pour les images, utiliser l'ancienne Stratégie 1C comme fallback
                 if media_type == "image":
-                    print(f"🎯 Image uploadée - Utilisation Stratégie 1C (/feed avec picture)")
+                    print(f"🔄 Image uploadée - Utilisation ancienne Stratégie 1C comme fallback")
                     media_url = local_media_url
                     use_feed_strategy = True
-                    strategy_name = "feed_with_picture"
+                    strategy_name = "feed_with_picture_fallback"
                 else:
                     # Pour les vidéos, garder l'approche actuelle
                     print(f"🎬 Vidéo uploadée - Utilisation approche upload multipart")
                     media_url = local_media_url
                     use_feed_strategy = False
-                    strategy_name = "multipart_upload"
+                    strategy_name = "multipart_upload_fallback"
             
-            # Clean metadata fields
-            clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
-            clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
-            
-            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}'")
             print(f"📸 Media URL finale: {media_url}")
-            print(f"🎯 Stratégie choisie: {strategy_name}")
+            print(f"🎯 Stratégie fallback choisie: {strategy_name}")
             
-            # Traitement selon la stratégie choisie
+            # Traitement selon la stratégie de fallback choisie
             if use_feed_strategy:
-                # STRATÉGIE 1C: Utiliser /feed avec paramètres message, link, picture
-                print(f"🚀 Exécution Stratégie 1C (/feed avec picture)")
-                
-                # Construire le message selon les spécifications  
-                message_content = f"{clean_title}\n\n{clean_description}".strip()
+                # ANCIENNE STRATÉGIE 1C comme FALLBACK: /feed avec paramètres message, link, picture
+                print(f"🔄 Exécution ancienne Stratégie 1C comme fallback")
                 
                 result = await publish_with_feed_strategy(
                     message=message_content,
-                    link=metadata["url"], 
+                    link=product_url, 
                     picture=media_url,
                     shop_type=metadata["store"]
                 )
@@ -7045,8 +7037,9 @@ async def webhook_endpoint(request: Request):
                     return {
                         "success": True,
                         "status": "published",
-                        "message": f"N8N multipart content '{clean_title}' published successfully with clickable image",
-                        "strategy_used": "feed_with_picture",
+                        "message": f"N8N multipart content '{clean_title}' published successfully (fallback strategy)",
+                        "strategy_used": "feed_with_picture_fallback", 
+                        "image_final_url": media_url,
                         "image_clickable": True,
                         "data": result
                     }
