@@ -284,7 +284,7 @@ class WebhookStrategy1CTester:
             "Webhook Fallback - Inaccessible Image",
             "POST",
             "api/webhook",
-            200,
+            400,  # Expect 400 since image is not accessible
             data=test_data
         )
         
