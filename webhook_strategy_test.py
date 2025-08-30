@@ -344,7 +344,7 @@ class WebhookStrategy1CTester:
             "Webhook - Invalid Store",
             "POST",
             "api/webhook",
-            200,  # Should still work with fallback
+            400,  # Expect 400 for invalid store
             data=test_data
         )
         
