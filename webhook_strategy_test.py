@@ -349,18 +349,14 @@ class WebhookStrategy1CTester:
         )
         
         if success:
-            status = response.get('status')
-            data_section = response.get('data', {})
-            strategy_used = data_section.get('strategy_used')
+            # This should fail with 400 due to invalid store
+            detail = response.get('detail', '')
+            print(f"   Error detail: {detail}")
             
-            print(f"   Status: {status}")
-            print(f"   Strategy used: {strategy_used}")
-            
-            # Should still attempt Strategy 1C if image is available
-            if strategy_used == "feed_with_picture":
-                print("✅ Strategy 1C used even with invalid store (good fallback)")
+            if 'Invalid store type' in detail:
+                print("✅ Correctly validates store type")
             else:
-                print(f"⚠️  Strategy with invalid store: {strategy_used}")
+                print(f"⚠️  Unexpected error: {detail}")
         
         return success
 
