@@ -7451,7 +7451,7 @@ async def webhook_info():
             "Default title 'Sans titre' will be used if title is empty",
             "Both 'gizmobbs' and 'gimobbs' are supported for backward compatibility"
         ],
-        "shop_mapping": SHOP_PAGE_MAPPING,
+        "shop_mapping": get_shop_page_mapping(),
         "n8n_transformation_compatible": True
     }
 
