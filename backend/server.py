@@ -4202,18 +4202,18 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                     print(f"Strategy 1B URL photo error: {url_photo_error}")
                     print("🔄 Trying Strategy 1C: Enhanced link post with picture parameter...")
                     
-                    # STRATEGY 1C: Enhanced link post with picture parameter (Forces image preview)
+                    # STRATEGY 1C: Enhanced link post WITHOUT picture parameter (Facebook auto-preview)
                     try:
                         data = {
                             "access_token": page_access_token,
                             "message": post.content if post.content and post.content.strip() else "📸 Nouveau produit !",
                             "link": product_link if product_link else full_media_url,
-                            "picture": full_media_url,  # Force image to appear
+                            # picture: SUPPRIMÉ - Facebook générera l'aperçu automatiquement
                         }
                         
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/feed"
-                        print(f"🔗 STRATEGY 1C: Enhanced link post with forced image: {endpoint}")
-                        print(f"🖼️ Picture parameter: {full_media_url}")
+                        print(f"🔗 STRATEGY 1C: Enhanced link post with auto-preview: {endpoint}")
+                        print(f"❌ Picture parameter: SUPPRIMÉ (évite problèmes ngrok)")
                         print(f"🔗 Link parameter: {data['link']}")
                         
                         response = requests.post(endpoint, data=data, timeout=30)
@@ -4222,7 +4222,7 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                         print(f"Facebook enhanced link response: {response.status_code} - {result}")
                         
                         if response.status_code == 200 and 'id' in result:
-                            print("✅ SUCCESS: Enhanced link post with forced image successful!")
+                            print("✅ SUCCESS: Enhanced link post with auto-preview successful!")
                             return result
                         else:
                             print(f"❌ Enhanced link post failed: {result}")
