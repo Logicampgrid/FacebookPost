@@ -1901,6 +1901,8 @@ async def upload_media_to_facebook_photos(local_media_path: str, page_access_tok
             else:
                 mime_type = "image/jpeg"
             endpoint_suffix = "photos"
+            media_type = "image"
+            print(f"📸 ROUTAGE: Média dirigé vers endpoint /photos")
         
         # Préparer le fichier pour l'upload
         with open(local_media_path, 'rb') as media_file:
