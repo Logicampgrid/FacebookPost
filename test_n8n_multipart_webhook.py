@@ -12,7 +12,7 @@ import tempfile
 import os
 
 # Configuration
-API_BASE = "https://fb-insta-publisher.preview.emergentagent.com"
+API_BASE = "https://auto-fb-publisher-1.preview.emergentagent.com"
 WEBHOOK_URL = f"{API_BASE}/api/webhook"
 
 def create_test_image():
