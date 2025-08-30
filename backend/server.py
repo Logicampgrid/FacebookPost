@@ -1593,7 +1593,7 @@ async def auto_route_media_to_facebook_instagram(
         if not shop_config:
             return {
                 "success": False,
-                "error": f"Configuration inconnue pour store '{shop_type}'. Stores disponibles: {list(SHOP_PAGE_MAPPING.keys())}",
+                "error": f"Configuration inconnue pour store '{shop_type}'. Stores disponibles: {list(get_shop_page_mapping().keys())}",
                 "credits_used": 0
             }
         
