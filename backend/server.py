@@ -7337,7 +7337,7 @@ async def get_webhook_history(limit: int = 50):
             "data": {
                 "webhook_posts": webhook_posts,
                 "total_count": len(webhook_posts),
-                "shop_types_available": list(SHOP_PAGE_MAPPING.keys()),
+                "shop_types_available": list(get_shop_page_mapping().keys()),
                 "shop_mapping": get_shop_page_mapping()
             }
         }
