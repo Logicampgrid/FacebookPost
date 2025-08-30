@@ -7807,45 +7807,6 @@ async def publish_link_only_to_facebook_by_store(message: str, product_link: str
         print(f"❌ Erreur publication lien: {e}")
         return {"success": False, "error": str(e)}
 
-
-async def detect_media_type_from_content(content: bytes, filename: str = None) -> str:
-    """
-    Détecte le type de média (image ou vidéo) à partir du contenu binaire
-    """
-    try:
-        # Vérifier les magic numbers pour détecter le type de fichier
-        if content.startswith(b'\xff\xd8\xff'):  # JPEG
-            return "image"
-        elif content.startswith(b'\x89PNG\r\n\x1a\n'):  # PNG  
-            return "image"
-        elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:  # WebP
-            return "image"
-        elif content.startswith(b'GIF87a') or content.startswith(b'GIF89a'):  # GIF
-            return "image"
-        elif (content.startswith(b'\x00\x00\x00\x14ftypmp4') or  # MP4
-              content.startswith(b'\x00\x00\x00\x18ftypmp4') or
-              content.startswith(b'\x00\x00\x00\x1cftypisom')):
-            return "video"
-        elif content.startswith(b'\x1a\x45\xdf\xa3'):  # Matroska/WebM
-            return "video"
-        elif content.startswith(b'RIFF') and b'AVI ' in content[:12]:  # AVI
-            return "video"
-        
-        # Fallback sur l'extension du filename si fournie
-        if filename:
-            ext = filename.lower().split('.')[-1] if '.' in filename else ""
-            if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
-                return "image"
-            elif ext in ['mp4', 'avi', 'mov', 'webm', 'mkv']:
-                return "video"
-        
-        # Par défaut, considérer comme image
-        return "image"
-        
-    except Exception:
-        return "image"  # Défaut sécurisé
-
-
 async def publish_with_feed_strategy(message: str, link: str, picture: str, shop_type: str):
     """
     Publication utilisant la Stratégie 1C avec l'endpoint /feed
