@@ -1460,12 +1460,22 @@ async def upload_media_to_facebook_photos(local_media_path: str, page_access_tok
         if not os.path.exists(local_media_path):
             return False, None, None, f"Fichier {media_type} introuvable: {local_media_path}"
         
-        # Déterminer le type MIME
-        if is_video:
+        # Déterminer le type MIME automatiquement selon l'extension
+        file_extension = local_media_path.lower().split('.')[-1]
+        if is_video or file_extension in ['mp4', 'mov', 'avi', 'webm', 'mkv']:
             mime_type = "video/mp4"
             endpoint_suffix = "videos"
+            media_type = "video"
         else:
-            mime_type = "image/jpeg"
+            # Auto-détecter le type d'image
+            if file_extension == 'png':
+                mime_type = "image/png"
+            elif file_extension == 'webp':
+                mime_type = "image/webp"
+            elif file_extension in ['gif']:
+                mime_type = "image/gif"
+            else:
+                mime_type = "image/jpeg"
             endpoint_suffix = "photos"
         
         # Préparer le fichier pour l'upload
