@@ -229,9 +229,8 @@ class WebhookStrategy1CTester:
         )
         
         if success:
-            data_section = response.get('data', {})
-            strategy_used = data_section.get('strategy_used')
-            image_clickable = data_section.get('image_clickable')
+            strategy_used = response.get('strategy_used')
+            image_clickable = response.get('image_clickable')
             
             print(f"   Strategy used: {strategy_used}")
             print(f"   Image clickable: {image_clickable}")
