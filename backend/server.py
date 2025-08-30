@@ -3986,24 +3986,37 @@ async def auto_route_media_to_facebook_instagram(
         
         print(f"✅ {media_type.capitalize()} uploadé vers Facebook: {media_id}")
         
-        # Étape 5: Créer le post avec lien vers le produit
-        post_data = {
-            'message': message,
-            'link': product_link,
-            'access_token': page_access_token
-        }
-        
-        # Attacher le média uploadé
+        # Étape 5: Créer le post avec lien vers le produit - CORRECTION VIDÉOS FACEBOOK
         if is_video:
-            post_data['attached_media'] = f'{{"media_fbid":"{media_id}"}}'
+            # CORRECTION FACEBOOK: Pour les vidéos, publier directement sur /videos avec title et description
+            print(f"🎬 CORRECTION FACEBOOK VIDÉO: Publication native via /videos")
+            post_data = {
+                'title': message.split('\n')[0][:100],  # Premier ligne comme titre
+                'description': f"{message}\n\n🔗 {product_link}",
+                'access_token': page_access_token,
+                'published': 'true'  # Publier immédiatement
+            }
+            
+            # Pour les vidéos, utiliser l'endpoint /videos au lieu de /feed
+            fb_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{target_page_id}/videos",
+                data=post_data,
+                files={'source': open(local_media_path, 'rb')},
+                timeout=180  # Plus de temps pour les vidéos
+            )
         else:
-            post_data['object_attachment'] = media_id
-        
-        # Publier sur Facebook
-        fb_response = requests.post(
-            f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed",
-            data=post_data
-        )
+            # Pour les images, garder la méthode actuelle qui fonctionne
+            post_data = {
+                'message': f"{message}\n\n🔗 {product_link}",
+                'access_token': page_access_token,
+                'object_attachment': media_id
+            }
+            
+            # Publier sur Facebook
+            fb_response = requests.post(
+                f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed",
+                data=post_data
+            )
         
         results = {
             "facebook": {},
