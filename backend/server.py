@@ -7807,6 +7807,225 @@ async def publish_link_only_to_facebook_by_store(message: str, product_link: str
         print(f"❌ Erreur publication lien: {e}")
         return {"success": False, "error": str(e)}
 
+async def enhanced_facebook_upload(media_content: bytes, filename: str, message: str, product_link: str = None, shop_type: str = "gizmobbs") -> dict:
+    """
+    Upload intelligent vers Facebook qui détecte automatiquement le type de média
+    et utilise l'endpoint approprié (/photos ou /videos) sans paramètre picture
+    """
+    try:
+        print("🚀 Enhanced Facebook Upload - Démarrage")
+        
+        # 1. Détecter automatiquement le type de média
+        media_type = await detect_media_type_from_content(media_content, filename)
+        print(f"🔍 Type détecté: {media_type}")
+        
+        # 2. Trouver l'utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé"
+            }
+        
+        # 3. Obtenir la page Facebook correspondante au shop_type
+        target_page = await get_target_page_for_shop(user, shop_type)
+        if not target_page:
+            return {
+                "success": False,
+                "error": f"Aucune page Facebook trouvée pour le shop '{shop_type}'"
+            }
+        
+        page_id = target_page["id"]
+        access_token = target_page.get("access_token") or user.get("facebook_access_token")
+        
+        print(f"🎯 Publication vers: {target_page['name']} ({page_id})")
+        
+        # 4. Sauvegarder le fichier temporairement
+        file_extension = "mp4" if media_type == "video" else "jpg"
+        temp_filename = f"enhanced_upload_{uuid.uuid4().hex[:8]}.{file_extension}"
+        temp_path = f"uploads/{temp_filename}"
+        
+        with open(temp_path, "wb") as f:
+            f.write(media_content)
+        
+        # 5. Préparer les données de base
+        data = {
+            "access_token": access_token,
+            "message": message
+        }
+        
+        # Ajouter le lien produit au message si fourni
+        if product_link:
+            if data["message"]:
+                data["message"] += f"\n\n🛒 Voir le produit: {product_link}"
+            else:
+                data["message"] = f"🛒 Découvrez ce produit: {product_link}"
+        
+        # 6. Upload selon le type de média détecté
+        if media_type == "video":
+            # Upload vidéo vers /videos
+            endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/videos"
+            files = {'source': (temp_filename, media_content, 'video/mp4')}
+            print(f"🎬 Upload vidéo vers: {endpoint}")
+            
+        else:
+            # Upload image vers /photos  
+            endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/photos"
+            content_type = 'image/jpeg'
+            if filename and filename.lower().endswith('.png'):
+                content_type = 'image/png'
+            elif filename and filename.lower().endswith('.webp'):
+                content_type = 'image/webp'
+                
+            files = {'source': (temp_filename, media_content, content_type)}
+            print(f"📸 Upload image vers: {endpoint}")
+        
+        # 7. Effectuer l'upload
+        print(f"📤 Envoi vers Facebook...")
+        response = requests.post(endpoint, data=data, files=files, timeout=60)
+        result = response.json()
+        
+        print(f"📬 Réponse Facebook: {response.status_code} - {result}")
+        
+        # 8. Nettoyage du fichier temporaire
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+        
+        # 9. Traitement du résultat
+        if response.status_code == 200 and 'id' in result:
+            print(f"✅ Upload {media_type} réussi!")
+            
+            # Ajouter commentaire pour gizmobbs vidéos
+            if media_type == "video" and shop_type == "gizmobbs":
+                try:
+                    gizmobbs_comment = "🎬 Découvrez ce produit sur notre boutique : https://logicamp.org/werdpress/gizmobbs"
+                    await add_comment_to_facebook_post(result["id"], gizmobbs_comment, access_token)
+                    print("✅ Commentaire gizmobbs ajouté!")
+                except Exception as e:
+                    print(f"⚠️ Erreur commentaire gizmobbs: {e}")
+            
+            return {
+                "success": True,
+                "facebook_post_id": result["id"],
+                "media_type": media_type,
+                "endpoint_used": endpoint,
+                "page_name": target_page["name"],
+                "message": "Upload multipart direct réussi"
+            }
+        else:
+            error_msg = result.get("error", {}).get("message", "Erreur inconnue")
+            return {
+                "success": False,
+                "error": f"Échec upload Facebook: {error_msg}",
+                "response_code": response.status_code
+            }
+    
+    except Exception as e:
+        print(f"❌ Erreur enhanced_facebook_upload: {e}")
+        return {
+            "success": False,
+            "error": f"Erreur système: {str(e)}"
+        }
+
+async def get_target_page_for_shop(user: dict, shop_type: str) -> dict:
+    """Obtient la page Facebook cible pour un type de shop donné"""
+    try:
+        shop_mapping = get_shop_page_mapping()
+        target_page_id = shop_mapping.get(shop_type, {}).get("page_id")
+        
+        if not target_page_id:
+            return None
+        
+        # Chercher dans les pages personnelles
+        for page in user.get("facebook_pages", []):
+            if page.get("id") == target_page_id:
+                return page
+        
+        # Chercher dans les business managers
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    return page
+        
+        return None
+    except Exception as e:
+        print(f"❌ Erreur get_target_page_for_shop: {e}")
+        return None
+
+async def facebook_text_only_post(message: str, product_link: str = None, shop_type: str = "gizmobbs") -> dict:
+    """
+    Publie un post texte simple sur Facebook sans média
+    """
+    try:
+        print("📝 Facebook Text-Only Post")
+        
+        # Trouver l'utilisateur authentifié
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "error": "Aucun utilisateur authentifié trouvé"
+            }
+        
+        # Obtenir la page cible
+        target_page = await get_target_page_for_shop(user, shop_type)
+        if not target_page:
+            return {
+                "success": False,
+                "error": f"Aucune page Facebook trouvée pour le shop '{shop_type}'"
+            }
+        
+        page_id = target_page["id"]
+        access_token = target_page.get("access_token") or user.get("facebook_access_token")
+        
+        # Préparer le message
+        final_message = message
+        if product_link:
+            if final_message:
+                final_message += f"\n\n🔗 En savoir plus: {product_link}"
+            else:
+                final_message = f"🔗 Découvrez: {product_link}"
+        
+        # Publier le post texte
+        data = {
+            "access_token": access_token,
+            "message": final_message
+        }
+        
+        endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/feed"
+        print(f"📝 Post texte vers: {endpoint}")
+        
+        response = requests.post(endpoint, data=data, timeout=30)
+        result = response.json()
+        
+        if response.status_code == 200 and 'id' in result:
+            return {
+                "success": True,
+                "facebook_post_id": result["id"],
+                "page_name": target_page["name"],
+                "message": "Post texte publié avec succès"
+            }
+        else:
+            error_msg = result.get("error", {}).get("message", "Erreur inconnue")
+            return {
+                "success": False,
+                "error": f"Échec post texte: {error_msg}"
+            }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Erreur post texte: {str(e)}"
+        }
+
 async def publish_with_feed_strategy(message: str, link: str, picture: str, shop_type: str):
     """
     Publication utilisant la Stratégie 1C avec l'endpoint /feed
