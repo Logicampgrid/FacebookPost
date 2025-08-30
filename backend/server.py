@@ -334,7 +334,7 @@ async def debug_pages():
             "user_id": str(user.get("_id")),
             "personal_pages": [],
             "business_manager_pages": [],
-            "shop_mapping": SHOP_PAGE_MAPPING
+            "shop_mapping": get_shop_page_mapping()
         }
         
         # Personal pages
