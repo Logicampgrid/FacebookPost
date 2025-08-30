@@ -86,7 +86,8 @@ os.makedirs("uploads/processed", exist_ok=True)
 
 async def download_media_reliably(media_url: str, fallback_binary: bytes = None, filename_hint: str = None) -> tuple:
     """
-    Télécharge un fichier média de façon fiable avec fallback binaire
+    Téléchargement ultra-fiable de médias avec fallbacks multi-niveaux et logs détaillés
+    Optimisé pour gérer tous les cas d'échec possibles
     
     Args:
         media_url: URL du média à télécharger
@@ -97,98 +98,282 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
         tuple: (success: bool, local_path: str, media_type: str, error_msg: str)
     """
     try:
-        print(f"📥 TÉLÉCHARGEMENT FIABLE: Début téléchargement depuis {media_url}")
+        print(f"📥 TÉLÉCHARGEMENT FIABLE: Début du processus multi-niveaux")
+        print(f"🌐 Source URL: {media_url}")
+        print(f"💾 Fallback binaire: {'Oui' if fallback_binary else 'Non'} ({len(fallback_binary) if fallback_binary else 0} bytes)")
+        print(f"📋 Filename hint: {filename_hint}")
         
         local_path = None
         media_type = None
+        download_method = ""
         
-        # Étape 1: Tentative de téléchargement via URL
+        # Nettoyage de l'URL
+        clean_url = media_url
         if media_url:
-            try:
-                print(f"🌐 Tentative téléchargement URL: {media_url}")
-                response = requests.get(media_url, timeout=30)
-                response.raise_for_status()
-                
-                # Déterminer l'extension du fichier
-                content_type = response.headers.get('content-type', '')
-                extension = None
-                
-                if 'image' in content_type:
-                    if 'jpeg' in content_type or 'jpg' in content_type:
-                        extension = '.jpg'
-                    elif 'png' in content_type:
-                        extension = '.png'
-                    elif 'webp' in content_type:
-                        extension = '.webp'
-                    elif 'gif' in content_type:
-                        extension = '.gif'
-                    else:
-                        extension = '.jpg'  # Défaut
-                elif 'video' in content_type:
-                    if 'mp4' in content_type:
-                        extension = '.mp4'
-                    elif 'mov' in content_type:
-                        extension = '.mov'
-                    elif 'avi' in content_type:
-                        extension = '.avi'
-                    else:
-                        extension = '.mp4'  # Défaut
-                else:
-                    # Tenter de déterminer depuis l'URL
-                    if media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')):
-                        extension = Path(media_url).suffix.lower()
-                    elif media_url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
-                        extension = Path(media_url).suffix.lower()
-                    else:
-                        # Détection par contenu
-                        detected_type = await detect_media_type_from_content(response.content, media_url)
-                        extension = '.jpg' if detected_type == 'image' else '.mp4'
-                
-                # Créer le fichier local
-                unique_id = uuid.uuid4().hex[:8]
-                local_path = f"uploads/processed/media_{unique_id}{extension}"
-                
-                with open(local_path, 'wb') as f:
-                    f.write(response.content)
-                
-                media_type = await detect_media_type_from_content(response.content, local_path)
-                
-                print(f"✅ TÉLÉCHARGEMENT URL RÉUSSI: {local_path} (type: {media_type})")
-                return True, local_path, media_type, None
-                
-            except Exception as url_error:
-                print(f"❌ TÉLÉCHARGEMENT URL ÉCHOUÉ: {str(url_error)}")
-                if not fallback_binary:
-                    return False, None, None, f"URL échouée et pas de fallback: {str(url_error)}"
+            # Supprimer les espaces et caractères indésirables
+            clean_url = media_url.strip()
+            print(f"🧹 URL nettoyée: {clean_url}")
         
-        # Étape 2: Fallback binaire si URL échoue
+        # Stratégies de téléchargement par ordre de priorité
+        download_strategies = [
+            {
+                "name": "direct_download",
+                "description": "Téléchargement direct avec headers optimisés",
+                "timeout": 30,
+                "headers": {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'image/*,video/*,*/*;q=0.8',
+                    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                }
+            },
+            {
+                "name": "simple_download", 
+                "description": "Téléchargement simple sans headers spéciaux",
+                "timeout": 45,
+                "headers": {
+                    'User-Agent': 'Mozilla/5.0 (compatible; Social Media Bot/1.0)'
+                }
+            },
+            {
+                "name": "extended_timeout",
+                "description": "Téléchargement avec timeout étendu",
+                "timeout": 90,
+                "headers": {
+                    'User-Agent': 'curl/7.68.0',
+                    'Accept': '*/*'
+                }
+            },
+            {
+                "name": "no_verify_ssl",
+                "description": "Téléchargement sans vérification SSL (dernière chance)",
+                "timeout": 30,
+                "headers": {'User-Agent': 'Python-requests/2.28.0'},
+                "verify_ssl": False
+            }
+        ]
+        
+        # ÉTAPE 1: Tentatives de téléchargement URL avec stratégies multiples
+        if clean_url:
+            for strategy in download_strategies:
+                try:
+                    print(f"🔄 Stratégie: {strategy['description']}")
+                    
+                    # Préparation de la requête
+                    request_params = {
+                        'timeout': strategy['timeout'],
+                        'headers': strategy['headers'],
+                        'allow_redirects': True,
+                        'stream': True  # Stream pour gros fichiers
+                    }
+                    
+                    # Gestion SSL optionnelle
+                    if 'verify_ssl' in strategy:
+                        request_params['verify'] = strategy['verify_ssl']
+                        if not strategy['verify_ssl']:
+                            import urllib3
+                            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    
+                    print(f"📡 Téléchargement depuis: {clean_url}")
+                    print(f"⏰ Timeout: {strategy['timeout']}s")
+                    
+                    response = requests.get(clean_url, **request_params)
+                    response.raise_for_status()
+                    
+                    # Vérifier la taille de la réponse
+                    content_length = response.headers.get('content-length')
+                    if content_length:
+                        size_mb = int(content_length) / (1024 * 1024)
+                        print(f"📊 Taille annoncée: {size_mb:.2f}MB")
+                        
+                        # Limite de sécurité: 100MB max
+                        if size_mb > 100:
+                            print(f"⚠️ Fichier trop volumineux: {size_mb:.2f}MB > 100MB")
+                            continue
+                    
+                    # Télécharger le contenu par chunks pour gros fichiers
+                    content_chunks = []
+                    total_size = 0
+                    max_size = 100 * 1024 * 1024  # 100MB max
+                    
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            content_chunks.append(chunk)
+                            total_size += len(chunk)
+                            
+                            # Vérification de taille en cours de téléchargement
+                            if total_size > max_size:
+                                print(f"⚠️ Téléchargement interrompu: taille > 100MB")
+                                raise Exception("Fichier trop volumineux")
+                    
+                    content_data = b''.join(content_chunks)
+                    actual_size_mb = len(content_data) / (1024 * 1024)
+                    print(f"✅ Contenu téléchargé: {actual_size_mb:.2f}MB")
+                    
+                    # Validation du contenu téléchargé
+                    if len(content_data) == 0:
+                        print(f"❌ Contenu vide téléchargé")
+                        continue
+                    
+                    if len(content_data) < 100:  # Trop petit pour être un vrai média
+                        print(f"⚠️ Contenu suspicieusement petit: {len(content_data)} bytes")
+                        print(f"📋 Aperçu: {content_data[:50]}...")
+                        # Continuer quand même, peut-être une petite image
+                    
+                    # Déterminer l'extension du fichier
+                    extension = None
+                    content_type = response.headers.get('content-type', '').lower()
+                    print(f"📋 Content-Type: {content_type}")
+                    
+                    # Extension basée sur Content-Type
+                    content_type_mapping = {
+                        'image/jpeg': '.jpg',
+                        'image/jpg': '.jpg', 
+                        'image/png': '.png',
+                        'image/webp': '.webp',
+                        'image/gif': '.gif',
+                        'image/bmp': '.bmp',
+                        'video/mp4': '.mp4',
+                        'video/mpeg': '.mp4',
+                        'video/quicktime': '.mov',
+                        'video/x-msvideo': '.avi',
+                        'video/webm': '.webm'
+                    }
+                    
+                    if content_type in content_type_mapping:
+                        extension = content_type_mapping[content_type]
+                        print(f"🏷️ Extension via Content-Type: {extension}")
+                    else:
+                        # Fallback: extension depuis URL
+                        if '.' in clean_url.split('/')[-1]:
+                            url_ext = '.' + clean_url.split('.')[-1].split('?')[0].lower()
+                            if url_ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.avi']:
+                                extension = url_ext
+                                print(f"🏷️ Extension via URL: {extension}")
+                    
+                    # Détection du type de média
+                    media_type = await detect_media_type_from_content(content_data, filename_hint or clean_url)
+                    
+                    # Extension par défaut si toujours pas trouvée
+                    if not extension:
+                        extension = '.jpg' if media_type == 'image' else '.mp4'
+                        print(f"🏷️ Extension par défaut: {extension}")
+                    
+                    # Créer le fichier local avec nom unique
+                    unique_id = uuid.uuid4().hex[:8]
+                    timestamp = int(datetime.utcnow().timestamp())
+                    local_path = f"uploads/processed/media_{timestamp}_{unique_id}{extension}"
+                    
+                    # Sauvegarde sécurisée
+                    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                    with open(local_path, 'wb') as f:
+                        f.write(content_data)
+                    
+                    # Vérification finale du fichier créé
+                    if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
+                        download_method = f"url_{strategy['name']}"
+                        print(f"✅ TÉLÉCHARGEMENT URL RÉUSSI: {local_path}")
+                        print(f"🎯 Type détecté: {media_type}")
+                        print(f"⚙️ Méthode: {download_method}")
+                        return True, local_path, media_type, None
+                    else:
+                        print(f"❌ Fichier local non créé ou vide")
+                        if local_path and os.path.exists(local_path):
+                            os.unlink(local_path)
+                        continue
+                        
+                except requests.exceptions.Timeout:
+                    print(f"⏰ TIMEOUT pour stratégie {strategy['name']} ({strategy['timeout']}s)")
+                    continue
+                except requests.exceptions.ConnectionError:
+                    print(f"🔌 ERREUR CONNEXION pour stratégie {strategy['name']}")
+                    continue
+                except requests.exceptions.HTTPError as http_err:
+                    print(f"🌐 ERREUR HTTP pour stratégie {strategy['name']}: {http_err}")
+                    continue
+                except requests.exceptions.RequestException as req_err:
+                    print(f"📡 ERREUR REQUÊTE pour stratégie {strategy['name']}: {req_err}")
+                    continue
+                except Exception as strategy_error:
+                    print(f"❌ ERREUR STRATÉGIE {strategy['name']}: {str(strategy_error)}")
+                    continue
+            
+            print(f"❌ TOUTES LES STRATÉGIES URL ONT ÉCHOUÉ")
+        
+        # ÉTAPE 2: Fallback binaire avec validation renforcée
         if fallback_binary:
             try:
-                print(f"🔄 FALLBACK: Utilisation données binaires ({len(fallback_binary)} bytes)")
+                print(f"🔄 FALLBACK BINAIRE: Traitement de {len(fallback_binary)} bytes")
                 
-                # Détection du type de média
+                # Validation du contenu binaire
+                if len(fallback_binary) == 0:
+                    print(f"❌ Données binaires vides")
+                    return False, None, None, "Données binaires vides"
+                
+                if len(fallback_binary) < 100:
+                    print(f"⚠️ Données binaires suspicieusement petites: {len(fallback_binary)} bytes")
+                
+                # Détection avancée du type de média
                 media_type = await detect_media_type_from_content(fallback_binary, filename_hint)
+                print(f"🎯 Type détecté depuis binaire: {media_type}")
+                
+                # Extension appropriée
                 extension = '.jpg' if media_type == 'image' else '.mp4'
+                
+                # Si on a un filename_hint, essayer d'en extraire l'extension
+                if filename_hint:
+                    hint_clean = filename_hint.split('?')[0]  # Nettoyer params
+                    if '.' in hint_clean:
+                        hint_ext = '.' + hint_clean.split('.')[-1].lower()
+                        if hint_ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.avi']:
+                            extension = hint_ext
+                            print(f"🏷️ Extension via filename_hint: {extension}")
                 
                 # Créer le fichier local
                 unique_id = uuid.uuid4().hex[:8]
-                local_path = f"uploads/processed/media_{unique_id}{extension}"
+                timestamp = int(datetime.utcnow().timestamp())
+                local_path = f"uploads/processed/fallback_{timestamp}_{unique_id}{extension}"
                 
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 with open(local_path, 'wb') as f:
                     f.write(fallback_binary)
                 
-                print(f"✅ FALLBACK RÉUSSI: {local_path} (type: {media_type})")
-                return True, local_path, media_type, None
-                
+                # Vérification finale
+                if os.path.exists(local_path) and os.path.getsize(local_path) == len(fallback_binary):
+                    download_method = "binary_fallback"
+                    print(f"✅ FALLBACK BINAIRE RÉUSSI: {local_path}")
+                    print(f"🎯 Type: {media_type}")
+                    print(f"⚙️ Méthode: {download_method}")
+                    return True, local_path, media_type, None
+                else:
+                    print(f"❌ Erreur création fichier fallback")
+                    if local_path and os.path.exists(local_path):
+                        os.unlink(local_path)
+                    return False, None, None, "Erreur création fichier fallback"
+                    
             except Exception as binary_error:
-                print(f"❌ FALLBACK BINAIRE ÉCHOUÉ: {str(binary_error)}")
-                return False, None, None, f"URL et fallback binaire échoués: {str(binary_error)}"
+                print(f"❌ ERREUR FALLBACK BINAIRE: {str(binary_error)}")
+                return False, None, None, f"Erreur fallback binaire: {str(binary_error)}"
         
-        return False, None, None, "Aucune source de données disponible"
+        # ÉTAPE 3: Échec total
+        error_summary = "Échec téléchargement complet:"
+        if clean_url:
+            error_summary += f" URL '{clean_url}' inaccessible"
+        if fallback_binary:
+            error_summary += f" + fallback binaire échoué"
+        else:
+            error_summary += " + aucun fallback binaire"
+        
+        print(f"💥 {error_summary}")
+        return False, None, None, error_summary
         
     except Exception as e:
-        print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {str(e)}")
-        return False, None, None, f"Erreur générale: {str(e)}"
+        error_msg = f"Erreur générale téléchargement: {str(e)}"
+        print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {error_msg}")
+        return False, None, None, error_msg
 
 async def convert_media_for_social_platforms(input_path: str, media_type: str) -> tuple:
     """
