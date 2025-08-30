@@ -289,9 +289,8 @@ class WebhookStrategy1CTester:
         )
         
         if success:
-            data_section = response.get('data', {})
-            strategy_used = data_section.get('strategy_used')
-            fallback_reason = data_section.get('fallback_reason')
+            strategy_used = response.get('strategy_used')
+            fallback_reason = response.get('fallback_reason')
             
             print(f"   Strategy used: {strategy_used}")
             print(f"   Fallback reason: {fallback_reason}")
