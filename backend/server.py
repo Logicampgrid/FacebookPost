@@ -587,15 +587,28 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                             img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
                             print(f"🔄 Redimensionnement: {original_dimensions} -> {img.size}")
                         
-                        # Sauvegarde avec paramètres optimisés
+                        # Sauvegarde avec paramètres ULTRA-OPTIMISÉS
                         save_params = {'format': strategy['format'], 'optimize': strategy['optimize']}
-                        if strategy['quality'] is not None:
+                        
+                        # Configuration spécifique par format
+                        if strategy['format'] == 'JPEG':
                             save_params['quality'] = strategy['quality']
+                            if strategy.get('progressive'):
+                                save_params['progressive'] = strategy['progressive']
+                            # Paramètres additionnels pour réduire la taille
+                            save_params['optimize'] = True  # Force optimization
                             
-                        # Paramètres spéciaux pour WebP
-                        if strategy['format'] == 'WebP':
-                            save_params['method'] = 6  # Meilleur compression WebP
+                        elif strategy['format'] == 'PNG':
+                            if 'compress_level' in strategy:
+                                save_params['compress_level'] = strategy['compress_level']
+                            save_params['optimize'] = True
                             
+                        elif strategy['format'] == 'WebP':
+                            save_params['quality'] = strategy['quality']
+                            save_params['method'] = 6  # Meilleure compression WebP
+                            save_params['optimize'] = True
+                        
+                        print(f"💾 Sauvegarde avec paramètres: {save_params}")
                         img.save(temp_output_path, **save_params)
                     
                     # Vérifier le résultat
