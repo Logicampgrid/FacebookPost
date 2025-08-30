@@ -1030,16 +1030,27 @@ async def publish_media_to_social_platforms(
                         endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page['id']}/photos"
                         print(f"🖼️ Publication image vers: {endpoint}")
                     
-                    # Tentatives de publication avec retry
-                    for attempt in range(3):
+                    # TENTATIVES DE PUBLICATION AVEC BACKOFF EXPONENTIEL INTELLIGENT
+                    max_attempts = 5  # Augmenté pour plus de robustesse
+                    base_timeout = 120  # Timeout de base augmenté
+                    
+                    for attempt in range(max_attempts):
                         try:
-                            print(f"📤 Facebook - Tentative {attempt + 1}/3...")
+                            # Calcul timeout adaptatif (plus long pour les tentatives suivantes)
+                            current_timeout = base_timeout + (attempt * 30)  # 120s, 150s, 180s, etc.
+                            print(f"📤 Facebook - Tentative {attempt + 1}/{max_attempts} (timeout: {current_timeout}s)...")
                             
                             response = requests.post(
                                 endpoint, 
                                 data=post_data, 
                                 files=files, 
-                                timeout=90  # Timeout augmenté
+                                timeout=current_timeout,
+                                # Headers additionnels pour robustesse
+                                headers={
+                                    'User-Agent': 'SocialMediaBot/1.0',
+                                    'Accept': 'application/json',
+                                    'Accept-Encoding': 'gzip, deflate'
+                                }
                             )
                             
                             if response.status_code == 200:
@@ -1055,34 +1066,89 @@ async def publish_media_to_social_platforms(
                                 print(f"🔗 URL Facebook: https://facebook.com/{post_id}")
                                 break
                             else:
-                                error_details = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-                                error_msg = f"HTTP {response.status_code}: {error_details}"
-                                print(f"❌ Facebook échec tentative {attempt + 1}: {error_msg}")
+                                # Analyse détaillée de l'erreur
+                                try:
+                                    error_details = response.json()
+                                    error_code = error_details.get('error', {}).get('code', 'Unknown')
+                                    error_message = error_details.get('error', {}).get('message', 'Unknown error')
+                                    error_type = error_details.get('error', {}).get('type', 'Unknown')
+                                    
+                                    detailed_error = f"Facebook API Error - Code: {error_code}, Type: {error_type}, Message: {error_message}"
+                                except:
+                                    detailed_error = f"HTTP {response.status_code}: {response.text[:200]}"
                                 
-                                # Analyser l'erreur pour décider si retry
-                                if response.status_code in [429, 500, 502, 503, 504]:  # Erreurs temporaires
-                                    if attempt < 2:
-                                        wait_time = (attempt + 1) * 2
-                                        print(f"⏰ Attente {wait_time}s avant retry...")
-                                        await asyncio.sleep(wait_time)
-                                        continue
+                                print(f"❌ Facebook échec tentative {attempt + 1}: {detailed_error}")
                                 
-                                results["facebook"]["error"] = error_msg
-                                break
+                                # Stratégie de retry intelligente selon le type d'erreur
+                                should_retry = False
+                                wait_time = 0
+                                
+                                if response.status_code == 429:  # Rate limit
+                                    should_retry = True
+                                    wait_time = min(60, (2 ** attempt) * 5)  # Backoff exponentiel plafonné
+                                    print(f"🚦 RATE LIMIT détecté, attente {wait_time}s")
+                                    
+                                elif response.status_code in [500, 502, 503, 504]:  # Erreurs serveur
+                                    should_retry = True
+                                    wait_time = min(30, (2 ** attempt) * 2)  # Backoff plus court pour erreurs serveur
+                                    print(f"🔧 ERREUR SERVEUR Facebook, attente {wait_time}s")
+                                    
+                                elif response.status_code in [408, 504]:  # Timeouts
+                                    should_retry = True
+                                    wait_time = min(45, (2 ** attempt) * 3)
+                                    print(f"⏰ TIMEOUT Facebook, attente {wait_time}s")
+                                    
+                                elif response.status_code == 400:  # Bad request - analyser plus finement
+                                    if 'temporarily blocked' in detailed_error.lower() or 'rate limit' in detailed_error.lower():
+                                        should_retry = True
+                                        wait_time = 30
+                                        print(f"🚧 BLOCAGE TEMPORAIRE Facebook, attente {wait_time}s")
+                                    else:
+                                        print(f"❌ ERREUR 400 définitive (pas de retry)")
+                                        
+                                elif response.status_code in [401, 403]:  # Auth errors - pas de retry
+                                    print(f"🔐 ERREUR AUTHENTIFICATION Facebook (pas de retry)")
+                                    
+                                else:
+                                    print(f"❓ ERREUR INCONNUE Facebook (pas de retry)")
+                                
+                                # Exécuter le retry si pertinent
+                                if should_retry and attempt < max_attempts - 1:
+                                    print(f"🔄 Retry programmé dans {wait_time}s...")
+                                    await asyncio.sleep(wait_time)
+                                    continue
+                                else:
+                                    results["facebook"]["error"] = detailed_error
+                                    break
                                 
                         except requests.exceptions.Timeout:
-                            print(f"⏰ Timeout Facebook tentative {attempt + 1}")
-                            if attempt < 2:
-                                await asyncio.sleep(5)
+                            wait_time = min(30, (2 ** attempt) * 3)  # Backoff exponentiel pour timeouts
+                            print(f"⏰ TIMEOUT Facebook tentative {attempt + 1} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
                                 continue
-                            results["facebook"]["error"] = "Timeout après 3 tentatives"
+                            results["facebook"]["error"] = f"Timeout après {max_attempts} tentatives"
                             break
-                        except Exception as request_error:
-                            print(f"❌ Erreur requête Facebook tentative {attempt + 1}: {str(request_error)}")
-                            if attempt < 2:
-                                await asyncio.sleep(2)
+                            
+                        except requests.exceptions.ConnectionError as conn_error:
+                            wait_time = min(20, (2 ** attempt) * 2)
+                            print(f"🔌 ERREUR CONNEXION Facebook tentative {attempt + 1}: {str(conn_error)} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
                                 continue
-                            results["facebook"]["error"] = f"Erreur requête: {str(request_error)}"
+                            results["facebook"]["error"] = f"Erreur connexion après {max_attempts} tentatives: {str(conn_error)}"
+                            break
+                            
+                        except Exception as request_error:
+                            wait_time = min(15, (2 ** attempt) * 2)
+                            print(f"❌ ERREUR REQUÊTE Facebook tentative {attempt + 1}: {str(request_error)} (attente: {wait_time}s)")
+                            
+                            if attempt < max_attempts - 1:
+                                await asyncio.sleep(wait_time)
+                                continue
+                            results["facebook"]["error"] = f"Erreur requête après {max_attempts} tentatives: {str(request_error)}"
                             break
                     
                     if facebook_success:
