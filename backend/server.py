@@ -9140,64 +9140,76 @@ async def enhanced_webhook_upload(request: Request):
             print(f"📋 Données: {clean_title} pour shop '{shop_type}'")
             
             # ============================================================================
-            # CAS 1: FICHIER MULTIPART FOURNI (image OU vidéo)
+            # TRAITEMENT ROBUSTE AVEC NOUVELLES FONCTIONS
             # ============================================================================
+            
+            print(f"🚀 WEBHOOK ROBUSTE: Démarrage traitement média pour '{shop_type}'")
+            
+            # Préparation des données média
+            media_binary = None
+            media_filename = None
+            
+            # CAS 1: Fichier multipart fourni
             media_file = image_file or video_file
             if media_file:
-                print(f"📁 Fichier détecté: {media_file.filename}")
-                
-                # Lire le contenu du fichier
+                print(f"📁 Fichier multipart détecté: {media_file.filename}")
                 media_content = await media_file.read()
-                print(f"📊 Taille fichier: {len(media_content)} bytes")
+                media_binary = media_content
+                media_filename = media_file.filename
+                print(f"📊 Taille fichier: {len(media_binary)} bytes")
+            
+            # CAS 2: Vérification URL dans metadata (utilisée comme source principale ou fallback)
+            media_url = metadata.get("image") or metadata.get("image_url") or metadata.get("video") or metadata.get("video_url")
+            if media_url:
+                print(f"🌐 URL média trouvée: {media_url}")
+                # L'URL sera utilisée en premier par download_media_reliably, avec binary en fallback
+            
+            # Traitement robuste du média
+            if media_url or media_binary:
+                # Mettre l'URL média dans metadata pour process_webhook_media_robustly
+                if media_url:
+                    metadata["media_url"] = media_url
                 
-                # Upload intelligent avec détection automatique
-                upload_result = await enhanced_facebook_upload(
-                    media_content=media_content,
-                    filename=media_file.filename,
-                    message=message,
-                    product_link=product_url,
-                    shop_type=shop_type
+                robust_result = await process_webhook_media_robustly(
+                    metadata=metadata,
+                    media_binary=media_binary,
+                    media_filename=media_filename
                 )
                 
-                if upload_result["success"]:
-                    print("✅ Upload multipart réussi!")
+                if robust_result["success"]:
+                    print("🎉 TRAITEMENT ROBUSTE RÉUSSI!")
+                    
+                    # Retourner résultat détaillé
                     return {
                         "success": True,
-                        "message": "✅ Média publié avec upload multipart direct",
-                        "upload_result": upload_result,
-                        "media_type": upload_result.get("media_type"),
-                        "endpoint_used": upload_result.get("endpoint_used"),
+                        "message": f"✅ Média publié avec succès pour '{shop_type}'",
+                        "processing_result": robust_result,
+                        "platforms": {
+                            "facebook": robust_result["final_result"]["facebook"],
+                            "instagram": robust_result["final_result"]["instagram"]
+                        },
                         "shop_type": shop_type,
-                        "method": "enhanced_multipart_upload",
-                        "timestamp": datetime.utcnow().isoformat()
+                        "method": "robust_media_processing",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "summary": {
+                            "platforms_successful": robust_result["final_result"]["platforms_successful"],
+                            "platforms_attempted": robust_result["final_result"]["platforms_attempted"],
+                            "media_type": robust_result["final_result"]["media_type"]
+                        }
                     }
                 else:
-                    print(f"❌ Échec upload: {upload_result['error']}")
-                    raise HTTPException(status_code=500, detail=f"Échec upload: {upload_result['error']}")
-            
-            # ============================================================================
-            # CAS 2: URL D'IMAGE DANS JSON (sans fichier binaire)
-            # ============================================================================
-            image_url = metadata.get("image") or metadata.get("image_url")
-            if image_url:
-                print(f"🌐 URL image trouvée: {image_url}")
-                
-                try:
-                    # Télécharger l'image
-                    response = requests.get(image_url, timeout=10, headers={
-                        'User-Agent': 'Mozilla/5.0 (compatible; FacebookBot/1.0)'
-                    })
+                    print(f"❌ TRAITEMENT ROBUSTE ÉCHOUÉ: {robust_result.get('error', 'Erreur inconnue')}")
                     
-                    if response.status_code == 200:
-                        media_content = response.content
-                        
-                        # Upload intelligent  
-                        upload_result = await enhanced_facebook_upload(
-                            media_content=media_content,
-                            filename=image_url.split('/')[-1],
-                            message=message,
-                            product_link=product_url,
-                            shop_type=shop_type
+                    # Retourner détails de l'erreur pour debugging
+                    return {
+                        "success": False,
+                        "error": robust_result.get("error", "Traitement média échoué"),
+                        "step_failed": robust_result.get("step_failed", "unknown"),
+                        "processing_details": robust_result,
+                        "shop_type": shop_type,
+                        "method": "robust_media_processing",
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
                         )
                         
                         if upload_result["success"]:
