@@ -3317,19 +3317,42 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
             ext = filename.lower().split('.')[-1] if '.' in filename else ''
             print(f"🔍 Extension détectée: '{ext}'")
             
-            # Extensions vidéo supportées (priorité MP4 pour Instagram)
-            video_extensions = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'flv', '3gp']
-            # Extensions image supportées (priorité JPEG, PNG, WebP pour Instagram)
-            image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg']
+            # Extensions vidéo avec priorité spéciale pour MP4 (Instagram)
+            video_extensions = {
+                'mp4': 95,   # Priorité maximale pour Instagram
+                'mov': 90,   # QuickTime, bien supporté
+                'm4v': 85,   # Variant MP4
+                'avi': 70,   # Plus ancien mais supporté
+                'webm': 75,  # Web moderne
+                'mkv': 60,   # Container flexible
+                'flv': 50,   # Flash legacy
+                '3gp': 40,   # Mobile legacy
+                'wmv': 45    # Windows Media
+            }
+            
+            # Extensions image avec optimisation Facebook/Instagram
+            image_extensions = {
+                'jpg': 95,   # Format prioritaire Facebook/Instagram
+                'jpeg': 95,  # Idem
+                'png': 90,   # Très bien supporté
+                'webp': 85,  # Moderne, plus léger
+                'gif': 80,   # Animations supportées
+                'bmp': 60,   # Basique mais lourd
+                'tiff': 50,  # Professionnel mais lourd
+                'svg': 30,   # Vectoriel, support limité sur réseaux sociaux
+                'ico': 20    # Icônes, non adapté
+            }
             
             if ext in video_extensions:
                 detected_type = 'video'
-                detection_method = f"extension_{ext}"
-                print(f"✅ VIDÉO détectée par extension: {ext}")
+                confidence_score = video_extensions[ext]
+                detection_method = f"extension_{ext}_conf{confidence_score}"
+                print(f"✅ VIDÉO détectée par extension: {ext} (confiance: {confidence_score}%)")
             elif ext in image_extensions:
                 detected_type = 'image'
-                detection_method = f"extension_{ext}"
-                print(f"✅ IMAGE détectée par extension: {ext}")
+                confidence_score = image_extensions[ext]
+                detection_method = f"extension_{ext}_conf{confidence_score}"
+                print(f"✅ IMAGE détectée par extension: {ext} (confiance: {confidence_score}%)")
         
         # Étape 2: Détection par magic bytes (analyse binaire)
         if not detected_type and len(content) >= 16:
