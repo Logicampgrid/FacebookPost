@@ -1867,24 +1867,31 @@ async def save_fallback_binary_image(binary_content: bytes) -> tuple:
 
 async def upload_media_to_facebook_photos(local_media_path: str, page_access_token: str, page_id: str, is_video: bool = False) -> tuple:
     """
-    Upload une image ou vidéo locale vers l'endpoint Facebook /photos ou /videos
+    Upload une image ou vidéo locale vers l'endpoint Facebook /photos ou /videos avec détection automatique
+    AMÉLIORÉ: Détection automatique du type de média (image/vidéo) 
     Retourne (success: bool, media_id: str, media_url: str, error_message: str)
     """
     try:
-        media_type = "video" if is_video else "image"
-        print(f"📤 Upload {media_type} vers Facebook: {local_media_path}")
-        
         if not os.path.exists(local_media_path):
-            return False, None, None, f"Fichier {media_type} introuvable: {local_media_path}"
+            return False, None, None, f"Fichier introuvable: {local_media_path}"
         
-        # Déterminer le type MIME automatiquement selon l'extension
+        # DÉTECTION AUTOMATIQUE du type de média
+        with open(local_media_path, 'rb') as f:
+            media_content = f.read()
+        
+        detected_type = await detect_media_type_from_content(media_content, local_media_path)
+        print(f"📤 Upload média avec détection automatique: {local_media_path}")
+        print(f"🔍 Type détecté: {detected_type}")
+        
+        # ROUTAGE AUTOMATIQUE vers l'endpoint approprié
         file_extension = local_media_path.lower().split('.')[-1]
-        if is_video or file_extension in ['mp4', 'mov', 'avi', 'webm', 'mkv']:
+        if detected_type == 'video' or file_extension in ['mp4', 'mov', 'avi', 'webm', 'mkv']:
             mime_type = "video/mp4"
             endpoint_suffix = "videos"
-            media_type = "video"
+            media_type = "vidéo"
+            print(f"🎥 ROUTAGE: Média dirigé vers endpoint /videos")
         else:
-            # Auto-détecter le type d'image
+            # Auto-détecter le type d'image selon l'extension
             if file_extension == 'png':
                 mime_type = "image/png"
             elif file_extension == 'webp':
