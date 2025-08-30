@@ -3302,10 +3302,11 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
         str: 'image' ou 'video'
     """
     try:
-        print(f"🔍 DÉTECTION MÉDIA: Analyse de {len(content)} bytes, filename: {filename}")
+        print(f"🔍 DÉTECTION MÉDIA ULTRA-ROBUSTE: Analyse de {len(content)} bytes, filename: {filename}")
         
         detected_type = None
         detection_method = ""
+        confidence_score = 0
         
         # Étape 1: Détection par extension de fichier (rapide et fiable)
         if filename:
