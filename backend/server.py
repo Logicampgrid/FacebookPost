@@ -2983,7 +2983,7 @@ def get_shop_page_mapping():
     return {
         "outdoor": {
             "name": "Logicamp Outdoor",
-            "expected_id": "236260991673388",
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMPOUTDOOR", "236260991673388"),
             "woocommerce_url": "https://logicampoutdoor.com",
             "platform": "multi",
             "platforms": ["facebook", "instagram"],
