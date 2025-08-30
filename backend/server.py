@@ -6859,28 +6859,106 @@ async def webhook_endpoint(request: Request):
                 if field not in metadata:
                     raise HTTPException(status_code=400, detail=f"Missing required field '{field}' in json_data")
             
-            # PRIORISATION STRATÉGIE 1C: Rechercher image_url dans json_data en priorité
+            # ============================================================================
+            # NOUVELLE STRATÉGIE PRIORITAIRE: "PHOTO_WITH_LINK" 
+            # ============================================================================
+            
             image_url_from_json = metadata.get("image") or metadata.get("image_url") or metadata.get("imageUrl") or metadata.get("picture")
+            
+            # Clean metadata fields
+            clean_title = strip_html(metadata["title"]) if metadata["title"] else "Sans titre"
+            clean_description = strip_html(metadata["description"]) if metadata["description"] else "Découvrez ce contenu"
+            product_url = metadata["url"]
+            
+            # Construire le message pour Facebook
+            message_content = f"{clean_title}\n\n{clean_description}".strip()
+            
+            print(f"🔗 N8N Multipart Webhook: {clean_title} for store '{metadata['store']}'")
+            
+            # Préparer le contenu binaire comme fallback
+            fallback_binary = None
+            if image and hasattr(image, 'file'):
+                fallback_binary = await image.read()
+                # Remettre le curseur au début pour usage ultérieur
+                await image.seek(0) if hasattr(image, 'seek') else None
+            
+            # PRIORITÉ 1: NOUVELLE STRATÉGIE "photo_with_link"
+            # Toujours uploader localement et créer post cliquable
+            if image_url_from_json or image:
+                print(f"🎯 NOUVELLE STRATÉGIE: Tentative photo_with_link")
+                
+                # Déterminer la source d'image à utiliser
+                if image_url_from_json:
+                    print(f"📸 Source image: URL dans json_data: {image_url_from_json}")
+                    image_source = image_url_from_json
+                else:
+                    print(f"📁 Source image: Fichier binaire uploadé")
+                    # Sauvegarder le fichier binaire temporairement
+                    if image:
+                        file_extension = "jpg"
+                        if hasattr(image, 'content_type'):
+                            if 'png' in image.content_type:
+                                file_extension = "png"
+                            elif 'webp' in image.content_type:
+                                file_extension = "webp"
+                        
+                        unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+                        temp_file_path = f"uploads/{unique_filename}"
+                        
+                        content = await image.read()
+                        with open(temp_file_path, "wb") as f:
+                            f.write(content)
+                        
+                        image_source = temp_file_path
+                    else:
+                        raise HTTPException(status_code=400, detail="Aucune image fournie (URL ou fichier binaire)")
+                
+                # Exécuter la nouvelle stratégie
+                photo_link_result = await execute_photo_with_link_strategy(
+                    message=message_content,
+                    product_link=product_url,
+                    image_source=image_source,
+                    shop_type=metadata["store"],
+                    fallback_binary=fallback_binary
+                )
+                
+                # Si la nouvelle stratégie réussit, retourner le résultat
+                if photo_link_result.get("success"):
+                    return {
+                        "success": True,
+                        "status": "published",
+                        "message": f"N8N multipart content '{clean_title}' published successfully with clickable image",
+                        "strategy_used": "photo_with_link",
+                        "image_final_url": photo_link_result.get("image_final_url"),
+                        "image_clickable": True,
+                        "data": photo_link_result
+                    }
+                else:
+                    print(f"❌ Nouvelle stratégie échouée: {photo_link_result.get('error')}")
+                    print(f"🔄 Fallback vers stratégies existantes...")
+            
+            # ============================================================================
+            # FALLBACK: STRATÉGIES EXISTANTES 1B et 1C
+            # ============================================================================
             
             media_url = None
             use_feed_strategy = False
             strategy_name = "fallback_multipart"
             
-            # PRIORITÉ 1: Image URL dans json_data (Stratégie 1C avec /feed)
+            # FALLBACK 1: Essayer ancienne Stratégie 1C avec image URL si accessible
             if image_url_from_json:
-                print(f"🎯 PRIORITÉ 1: Image URL détectée dans json_data: {image_url_from_json}")
+                print(f"🔄 FALLBACK 1: Test ancienne Stratégie 1C avec URL: {image_url_from_json}")
                 
-                # Vérifier l'accessibilité de l'image URL
                 if await check_image_url_accessibility(image_url_from_json):
-                    print(f"✅ Image URL accessible - Utilisation Stratégie 1C (/feed avec picture)")
+                    print(f"✅ Image URL accessible - Utilisation ancienne Stratégie 1C")
                     media_url = image_url_from_json
                     use_feed_strategy = True
-                    strategy_name = "feed_with_picture"
+                    strategy_name = "feed_with_picture_fallback"
                 else:
-                    print(f"❌ Image URL non accessible - Fallback vers upload local puis Stratégie 1C")
+                    print(f"❌ Image URL non accessible - Fallback vers upload local")
                     use_feed_strategy = False
             else:
-                print(f"🔍 Aucune image URL dans json_data - Tentative upload local puis Stratégie 1C")
+                print(f"🔄 FALLBACK 2: Aucune image URL - Tentative upload local traditionnel")
                 use_feed_strategy = False
             
             # PRIORITÉ 2: Upload local puis Stratégie 1C (/feed avec picture)
