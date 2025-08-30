@@ -417,31 +417,47 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 print(f"⚠️ Impossible de détecter le format: {str(detection_error)}")
                 original_format = "UNKNOWN"
             
-            # Stratégie de conversion basée sur le format
+            # Stratégies de conversion images ULTRA-ROBUSTES pour Facebook/Instagram
             conversion_strategies = [
-                # Stratégie 1: Conversion JPEG optimisée (format privilégié)
+                # Stratégie 1: JPEG ultra-optimisé Facebook/Instagram (résout problèmes WebP/PNG lourdes)
                 {
-                    "name": "jpeg_optimized",
+                    "name": "jpeg_facebook_optimized",
+                    "extension": ".jpg",
+                    "format": "JPEG",
+                    "quality": 85,  # Qualité optimale pour réseaux sociaux
+                    "optimize": True,
+                    "progressive": True,  # Chargement progressif
+                    "description": "JPEG optimisé spécialement pour Facebook/Instagram"
+                },
+                # Stratégie 2: JPEG haute qualité (pour images importantes)
+                {
+                    "name": "jpeg_high_quality",
                     "extension": ".jpg",
                     "format": "JPEG",
                     "quality": 95,
-                    "optimize": True
+                    "optimize": True,
+                    "progressive": False,
+                    "description": "JPEG haute qualité pour contenu premium"
                 },
-                # Stratégie 2: PNG si transparence requise
+                # Stratégie 3: JPEG compact (pour images lourdes)
                 {
-                    "name": "png_fallback", 
+                    "name": "jpeg_compact",
+                    "extension": ".jpg",
+                    "format": "JPEG",
+                    "quality": 75,  # Plus compressé pour images très lourdes
+                    "optimize": True,
+                    "progressive": True,
+                    "description": "JPEG compact pour réduire la taille des images lourdes"
+                },
+                # Stratégie 4: PNG seulement si transparence absolument nécessaire
+                {
+                    "name": "png_transparency_only", 
                     "extension": ".png",
                     "format": "PNG",
                     "quality": None,
-                    "optimize": True
-                },
-                # Stratégie 3: WebP moderne (si supporté)
-                {
-                    "name": "webp_modern",
-                    "extension": ".webp", 
-                    "format": "WebP",
-                    "quality": 90,
-                    "optimize": True
+                    "optimize": True,
+                    "compress_level": 9,  # Maximum compression PNG
+                    "description": "PNG uniquement pour transparence critique"
                 }
             ]
             
