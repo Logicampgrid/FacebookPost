@@ -5011,12 +5011,12 @@ async def find_instagram_by_shop_type(user, shop_type: str):
     try:
         print(f"🔍 Recherche d'un compte Instagram pour shop_type: {shop_type}")
         
-        if not shop_type or shop_type not in SHOP_PAGE_MAPPING:
+        if not shop_type or shop_type not in get_shop_page_mapping():
             print(f"⚠️ Shop_type '{shop_type}' non configuré, recherche du premier Instagram disponible...")
             # Fallback: retourner le premier compte Instagram trouvé
             return await find_any_available_instagram_account(user)
             
-        shop_config = SHOP_PAGE_MAPPING[shop_type]
+        shop_config = get_shop_page_mapping()[shop_type]
         
         # ✅ SPÉCIAL: Traitement spécifique pour gizmobbs → @logicamp_berger
         if shop_type == "gizmobbs":
