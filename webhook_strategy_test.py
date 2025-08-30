@@ -289,20 +289,14 @@ class WebhookStrategy1CTester:
         )
         
         if success:
-            strategy_used = response.get('strategy_used')
-            fallback_reason = response.get('fallback_reason')
+            # This should fail with 400, so check error message
+            detail = response.get('detail', '')
+            print(f"   Error detail: {detail}")
             
-            print(f"   Strategy used: {strategy_used}")
-            print(f"   Fallback reason: {fallback_reason}")
-            
-            # Should either download and use Strategy 1C or fallback to /photos
-            if strategy_used in ["feed_with_picture", "photos"]:
-                print("✅ Appropriate fallback strategy used")
+            if 'not accessible' in detail and 'download failed' in detail:
+                print("✅ Correctly identified inaccessible image and failed download")
             else:
-                print(f"⚠️  Unexpected fallback strategy: {strategy_used}")
-                
-            if fallback_reason:
-                print(f"✅ Fallback reason provided: {fallback_reason}")
+                print(f"⚠️  Unexpected error message: {detail}")
         
         return success
 
