@@ -8166,6 +8166,216 @@ async def check_image_url_accessibility(image_url: str) -> bool:
         print(f"❌ Erreur inattendue lors de la vérification: {e}")
         return False
 
+@app.post("/api/webhook/enhanced-upload")
+async def enhanced_webhook_upload(request: Request):
+    """
+    Webhook amélioré avec détection automatique et upload multipart direct
+    
+    FONCTIONNALITÉS:
+    - Détection automatique image/vidéo
+    - Upload multipart direct vers /photos ou /videos
+    - Pas de paramètre "picture" dans /feed (évite les problèmes ngrok)
+    - Post texte si aucun fichier fourni
+    - Gestion d'erreurs robuste
+    
+    FORMAT MULTIPART:
+    - json_data: {"store": "gizmobbs", "title": "...", "url": "...", "description": "..."}
+    - image: fichier image (optionnel)
+    - video: fichier vidéo (optionnel)
+    
+    FORMAT JSON LEGACY:
+    - Même structure mais sans fichiers binaires
+    """
+    try:
+        print("🚀 Enhanced Webhook Upload - Démarrage")
+        
+        content_type = request.headers.get("content-type", "").lower()
+        
+        # ============================================================================
+        # TRAITEMENT MULTIPART (N8N avec fichiers)
+        # ============================================================================
+        if "multipart/form-data" in content_type:
+            print("📁 Requête multipart détectée")
+            
+            # Parse form data
+            form = await request.form()
+            json_data = form.get("json_data")
+            image_file = form.get("image")
+            video_file = form.get("video")
+            
+            # Validation JSON data
+            if not json_data:
+                raise HTTPException(status_code=400, detail="json_data requis pour multipart")
+            
+            try:
+                metadata = json.loads(json_data)
+            except json.JSONDecodeError as e:
+                raise HTTPException(status_code=400, detail=f"JSON invalide: {str(e)}")
+            
+            # Validation des champs requis
+            required_fields = ["store", "title", "url", "description"]
+            for field in required_fields:
+                if field not in metadata:
+                    raise HTTPException(status_code=400, detail=f"Champ manquant: '{field}'")
+            
+            # Préparation des données
+            clean_title = strip_html(metadata["title"])
+            clean_description = strip_html(metadata["description"])
+            message = f"{clean_title}\n\n{clean_description}".strip()
+            product_url = metadata["url"]
+            shop_type = metadata["store"]
+            
+            print(f"📋 Données: {clean_title} pour shop '{shop_type}'")
+            
+            # ============================================================================
+            # CAS 1: FICHIER MULTIPART FOURNI (image OU vidéo)
+            # ============================================================================
+            media_file = image_file or video_file
+            if media_file:
+                print(f"📁 Fichier détecté: {media_file.filename}")
+                
+                # Lire le contenu du fichier
+                media_content = await media_file.read()
+                print(f"📊 Taille fichier: {len(media_content)} bytes")
+                
+                # Upload intelligent avec détection automatique
+                upload_result = await enhanced_facebook_upload(
+                    media_content=media_content,
+                    filename=media_file.filename,
+                    message=message,
+                    product_link=product_url,
+                    shop_type=shop_type
+                )
+                
+                if upload_result["success"]:
+                    print("✅ Upload multipart réussi!")
+                    return {
+                        "success": True,
+                        "message": "✅ Média publié avec upload multipart direct",
+                        "upload_result": upload_result,
+                        "media_type": upload_result.get("media_type"),
+                        "endpoint_used": upload_result.get("endpoint_used"),
+                        "shop_type": shop_type,
+                        "method": "enhanced_multipart_upload",
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                else:
+                    print(f"❌ Échec upload: {upload_result['error']}")
+                    raise HTTPException(status_code=500, detail=f"Échec upload: {upload_result['error']}")
+            
+            # ============================================================================
+            # CAS 2: URL D'IMAGE DANS JSON (sans fichier binaire)
+            # ============================================================================
+            image_url = metadata.get("image") or metadata.get("image_url")
+            if image_url:
+                print(f"🌐 URL image trouvée: {image_url}")
+                
+                try:
+                    # Télécharger l'image
+                    response = requests.get(image_url, timeout=10, headers={
+                        'User-Agent': 'Mozilla/5.0 (compatible; FacebookBot/1.0)'
+                    })
+                    
+                    if response.status_code == 200:
+                        media_content = response.content
+                        
+                        # Upload intelligent  
+                        upload_result = await enhanced_facebook_upload(
+                            media_content=media_content,
+                            filename=image_url.split('/')[-1],
+                            message=message,
+                            product_link=product_url,
+                            shop_type=shop_type
+                        )
+                        
+                        if upload_result["success"]:
+                            return {
+                                "success": True,
+                                "message": "✅ Image téléchargée et publiée",
+                                "upload_result": upload_result,
+                                "source_url": image_url,
+                                "method": "enhanced_url_download_upload",
+                                "timestamp": datetime.utcnow().isoformat()
+                            }
+                        else:
+                            print(f"❌ Upload échoué, fallback vers post texte")
+                            # Fallback vers post texte
+                    else:
+                        print(f"❌ Téléchargement échoué: HTTP {response.status_code}")
+                        # Fallback vers post texte
+                        
+                except Exception as e:
+                    print(f"❌ Erreur téléchargement: {e}")
+                    # Fallback vers post texte
+            
+            # ============================================================================
+            # CAS 3: AUCUN MÉDIA - POST TEXTE SIMPLE
+            # ============================================================================
+            print("📝 Aucun média fourni - Publication post texte")
+            
+            text_result = await facebook_text_only_post(
+                message=message,
+                product_link=product_url,
+                shop_type=shop_type
+            )
+            
+            if text_result["success"]:
+                return {
+                    "success": True,
+                    "message": "✅ Post texte publié avec succès",
+                    "text_result": text_result,
+                    "method": "text_only_post",
+                    "shop_type": shop_type,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            else:
+                raise HTTPException(status_code=500, detail=f"Échec post texte: {text_result['error']}")
+        
+        # ============================================================================
+        # TRAITEMENT JSON LEGACY
+        # ============================================================================
+        else:
+            print("📄 Requête JSON legacy détectée")
+            
+            try:
+                data = await request.json()
+            except:
+                raise HTTPException(status_code=400, detail="JSON invalide")
+            
+            # Validation des champs
+            required_fields = ["store", "title", "description", "product_url"]
+            for field in required_fields:
+                if field not in data:
+                    raise HTTPException(status_code=400, detail=f"Champ manquant: '{field}'")
+            
+            clean_title = strip_html(data["title"])
+            clean_description = strip_html(data["description"])
+            message = f"{clean_title}\n\n{clean_description}".strip()
+            
+            # Post texte simple pour JSON legacy
+            text_result = await facebook_text_only_post(
+                message=message,
+                product_link=data["product_url"],
+                shop_type=data["store"]
+            )
+            
+            if text_result["success"]:
+                return {
+                    "success": True,
+                    "message": "✅ Post texte publié (JSON legacy)",
+                    "text_result": text_result,
+                    "method": "json_legacy_text_post",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            else:
+                raise HTTPException(status_code=500, detail=f"Échec: {text_result['error']}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erreur webhook: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+
 @app.post("/api/webhook")
 async def webhook_endpoint(request: Request):
     """
