@@ -183,9 +183,9 @@ class WebhookStrategy1CTester:
             
             print(f"   Status: {status}")
             
-            # Check Strategy 1C indicators
-            strategy_used = data_section.get('strategy_used')
-            image_clickable = data_section.get('image_clickable')
+            # Check Strategy 1C indicators (at top level of response)
+            strategy_used = response.get('strategy_used')
+            image_clickable = response.get('image_clickable')
             image_filename = data_section.get('image_filename')
             
             print(f"   Strategy used: {strategy_used}")
