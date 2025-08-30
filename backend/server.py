@@ -6911,14 +6911,15 @@ async def webhook_debug(request: Request):
 async def publish_with_feed_strategy(message: str, link: str, picture: str, shop_type: str):
     """
     Publication utilisant la Stratégie 1C avec l'endpoint /feed
-    Paramètres: message (titre + description), link (product_url), picture (image_url)
+    Paramètres: message (titre + description), link (product_url)
+    NOUVELLE VERSION: Utilise UNIQUEMENT le paramètre link pour aperçu auto-généré par Facebook
     """
     try:
-        print(f"🎯 STRATÉGIE 1C: Publication /feed avec image cliquable")
+        print(f"🎯 STRATÉGIE 1C MODIFIÉE: Publication /feed avec UNIQUEMENT link (aperçu auto-généré)")
         print(f"📝 Message: {message}")
         print(f"🔗 Link: {link}")
-        print(f"📸 Picture: {picture}")
         print(f"🏪 Shop: {shop_type}")
+        print(f"❌ Picture: RETIRÉ (Facebook générera l'aperçu automatiquement)")
         
         # Trouver un utilisateur authentifié
         user = await db.users.find_one({
@@ -6960,16 +6961,18 @@ async def publish_with_feed_strategy(message: str, link: str, picture: str, shop
             raise Exception(f"Token d'accès non trouvé pour la page {target_page_id}")
         
         # Préparer les données pour l'API Facebook /feed
+        # MODIFICATION PRINCIPALE : Retirer le paramètre picture
         data = {
             "access_token": page_access_token,
             "message": message,
-            "link": link,
-            "picture": picture
+            "link": link
+            # picture: RETIRÉ - Facebook générera l'aperçu automatiquement
         }
         
         # Appel à l'API Facebook /feed
         endpoint = f"{FACEBOOK_GRAPH_URL}/{target_page_id}/feed"
         print(f"🚀 Appel API Facebook: {endpoint}")
+        print(f"📋 Données envoyées: message + link seulement (pas de picture)")
         
         response = requests.post(endpoint, data=data, timeout=30)
         result = response.json()
@@ -6977,7 +6980,7 @@ async def publish_with_feed_strategy(message: str, link: str, picture: str, shop
         print(f"📊 Réponse Facebook API: {response.status_code} - {result}")
         
         if response.status_code == 200 and 'id' in result:
-            print("✅ SUCCESS: Stratégie 1C - Image cliquable publiée avec succès!")
+            print("✅ SUCCESS: Stratégie 1C MODIFIÉE - Lien avec aperçu auto-généré publié avec succès!")
             
             return {
                 "success": True,
@@ -6986,26 +6989,27 @@ async def publish_with_feed_strategy(message: str, link: str, picture: str, shop
                 "page_name": page_name,
                 "page_id": target_page_id,
                 "user_name": user.get("name", "Utilisateur"),
-                "media_url": picture,
-                "strategy_used": "feed_with_picture",
+                "media_url": None,  # Pas d'URL d'image spécifique, Facebook génère l'aperçu
+                "strategy_used": "feed_with_link_only",
                 "image_clickable": True,
+                "auto_preview": True,  # Nouveau : indique que Facebook génère l'aperçu
                 "published_at": datetime.utcnow().isoformat(),
-                "message": f"✅ Image cliquable publiée vers {link}"
+                "message": f"✅ Lien avec aperçu auto-généré publié vers {link}"
             }
         else:
-            print(f"❌ Échec Stratégie 1C: {result}")
+            print(f"❌ Échec Stratégie 1C MODIFIÉE: {result}")
             return {
                 "success": False,
                 "error": f"Facebook API error: {result}",
-                "strategy_used": "feed_with_picture_failed"
+                "strategy_used": "feed_with_link_only_failed"
             }
             
     except Exception as error:
-        print(f"❌ Erreur Stratégie 1C: {error}")
+        print(f"❌ Erreur Stratégie 1C MODIFIÉE: {error}")
         return {
             "success": False,
             "error": str(error),
-            "strategy_used": "feed_with_picture_failed"
+            "strategy_used": "feed_with_link_only_failed"
         }
 
 async def check_image_url_accessibility(image_url: str) -> bool:
