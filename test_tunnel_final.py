@@ -12,7 +12,7 @@ from datetime import datetime
 # Configuration
 API_BASE = "http://localhost:8001"
 FRONTEND_URL = "http://localhost:3000"
-WEBHOOK_URL = "https://smart-fb-poster.preview.emergentagent.com/api/webhook"
+WEBHOOK_URL = "https://fb-store-publisher.preview.emergentagent.com/api/webhook"
 
 def check_all_services():
     """Vérifie que tous les services sont opérationnels"""

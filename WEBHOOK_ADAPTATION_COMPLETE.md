@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://smart-fb-poster.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fb-store-publisher.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://smart-fb-poster.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://smart-fb-poster.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://smart-fb-poster.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fb-store-publisher.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fb-store-publisher.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fb-store-publisher.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://smart-fb-poster.preview.emergentagent.com
+🔗 https://fb-store-publisher.preview.emergentagent.com
