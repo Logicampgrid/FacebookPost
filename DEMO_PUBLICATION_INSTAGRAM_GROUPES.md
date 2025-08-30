@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://social-post-enhancer.preview.emergentagent.com
+🔗 https://robust-social-post.preview.emergentagent.com

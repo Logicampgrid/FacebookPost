@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-post-enhancer.preview.emergentagent.com
+URL : https://robust-social-post.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

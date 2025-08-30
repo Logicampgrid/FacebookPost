@@ -5,7 +5,7 @@
 ### 1. Node HTTP Request - Configuration générale
 ```
 Method: POST
-URL: https://social-post-enhancer.preview.emergentagent.com/api/webhook
+URL: https://robust-social-post.preview.emergentagent.com/api/webhook
 Authentication: None
 ```
 
@@ -42,7 +42,7 @@ Content-Type: multipart/form-data
 ### Configuration complète node HTTP Request:
 
 1. **Method**: `POST`
-2. **URL**: `https://social-post-enhancer.preview.emergentagent.com/api/webhook`
+2. **URL**: `https://robust-social-post.preview.emergentagent.com/api/webhook`
 3. **Body**: `Form-Data`
 4. **Form Fields**:
    - `json_data` (String): 
@@ -162,7 +162,7 @@ return items.map(item => {
 ## Test manuel avec curl
 
 ```bash
-curl -X POST "https://social-post-enhancer.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://robust-social-post.preview.emergentagent.com/api/webhook" \
   -F 'json_data={"store":"gizmobbs","title":"Test Produit","url":"https://exemple.com","description":"Ceci est un test"}' \
   -F 'image=@test_image.jpg'
 ```
