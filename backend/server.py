@@ -3479,6 +3479,14 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
             print(f"⚠️ FALLBACK ULTIME: Traitement comme VIDÉO (pour éviter MP4 ratés)")
         
         print(f"🎯 DÉTECTION FINALE: {detected_type.upper()} (méthode: {detection_method})")
+        
+        # Log de debugging pour analyse post-mortem
+        if confidence_score > 0 and confidence_score < 70:
+            print(f"⚠️ CONFIANCE FAIBLE ({confidence_score}%) - Recommandé de vérifier manuellement")
+            print(f"   Taille: {len(content)} bytes ({len(content)/1024/1024:.2f}MB)")
+            print(f"   Premiers 32 bytes: {content[:32]}")
+            print(f"   Filename: {filename}")
+        
         return detected_type
         
     except Exception as e:
