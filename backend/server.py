@@ -1154,6 +1154,326 @@ async def check_instagram_permissions_status():
             "permissions_ready": False
         }
 
+# ============================================================================
+# NOUVELLES FONCTIONS POUR LA STRATÉGIE "PHOTO_WITH_LINK"
+# ============================================================================
+
+async def download_image_with_fallback(image_url: str, fallback_binary_content: bytes = None) -> tuple:
+    """
+    Télécharge une image distante avec fallback vers contenu binaire fourni par N8N
+    Retourne (success: bool, local_path: str, error_message: str)
+    """
+    try:
+        print(f"🌐 Tentative de téléchargement image distante: {image_url}")
+        
+        # Essayer de télécharger l'image distante
+        try:
+            response = requests.get(image_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            
+            if response.status_code == 200:
+                # Succès - sauvegarder l'image téléchargée
+                file_extension = "jpg"  # Défaut
+                content_type = response.headers.get('content-type', '')
+                if 'png' in content_type:
+                    file_extension = "png"
+                elif 'webp' in content_type:
+                    file_extension = "webp"
+                
+                unique_filename = f"download_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
+                file_path = f"uploads/{unique_filename}"
+                
+                with open(file_path, "wb") as f:
+                    f.write(response.content)
+                
+                print(f"✅ Image distante téléchargée avec succès: {file_path}")
+                return True, file_path, "success"
+                
+            else:
+                print(f"❌ Erreur HTTP {response.status_code} pour l'image distante")
+                # Fallback vers contenu binaire si disponible
+                if fallback_binary_content:
+                    return await save_fallback_binary_image(fallback_binary_content)
+                else:
+                    return False, None, f"HTTP {response.status_code} et pas de fallback binaire"
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Exception réseau lors du téléchargement: {str(e)}")
+            # Fallback vers contenu binaire si disponible
+            if fallback_binary_content:
+                return await save_fallback_binary_image(fallback_binary_content)
+            else:
+                return False, None, f"Erreur réseau: {str(e)}"
+            
+    except Exception as e:
+        print(f"❌ Erreur générale download_image_with_fallback: {str(e)}")
+        if fallback_binary_content:
+            return await save_fallback_binary_image(fallback_binary_content)
+        else:
+            return False, None, f"Erreur générale: {str(e)}"
+
+async def save_fallback_binary_image(binary_content: bytes) -> tuple:
+    """
+    Sauvegarde le contenu binaire fourni par N8N comme fallback
+    Retourne (success: bool, local_path: str, error_message: str)
+    """
+    try:
+        print("📁 Utilisation du fallback binaire N8N...")
+        
+        unique_filename = f"fallback_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.jpg"
+        file_path = f"uploads/{unique_filename}"
+        
+        with open(file_path, "wb") as f:
+            f.write(binary_content)
+        
+        print(f"✅ Image fallback sauvegardée: {file_path}")
+        return True, file_path, "fallback_binary_used"
+        
+    except Exception as e:
+        print(f"❌ Erreur sauvegarde fallback binaire: {str(e)}")
+        return False, None, f"Erreur fallback: {str(e)}"
+
+async def upload_image_to_facebook_photos(local_image_path: str, page_access_token: str, page_id: str) -> tuple:
+    """
+    Upload une image locale vers l'endpoint Facebook /photos
+    Retourne (success: bool, photo_id: str, image_url: str, error_message: str)
+    """
+    try:
+        print(f"📤 Upload image vers Facebook /photos: {local_image_path}")
+        
+        if not os.path.exists(local_image_path):
+            return False, None, None, f"Fichier image introuvable: {local_image_path}"
+        
+        # Préparer le fichier pour l'upload
+        with open(local_image_path, 'rb') as image_file:
+            files = {
+                'file': (os.path.basename(local_image_path), image_file, 'image/jpeg')
+            }
+            
+            data = {
+                'access_token': page_access_token,
+                'published': 'false'  # Ne pas publier immédiatement, juste uploader
+            }
+            
+            endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/photos"
+            print(f"🚀 Endpoint Facebook /photos: {endpoint}")
+            
+            response = requests.post(endpoint, data=data, files=files, timeout=30)
+            result = response.json()
+            
+            print(f"📊 Réponse Facebook /photos: {response.status_code} - {result}")
+            
+            if response.status_code == 200 and 'id' in result:
+                photo_id = result['id']
+                
+                # Récupérer l'URL finale de l'image uploadée
+                photo_details_response = requests.get(
+                    f"{FACEBOOK_GRAPH_URL}/{photo_id}",
+                    params={
+                        'access_token': page_access_token,
+                        'fields': 'source,images'
+                    }
+                )
+                
+                final_image_url = None
+                if photo_details_response.status_code == 200:
+                    photo_data = photo_details_response.json()
+                    final_image_url = photo_data.get('source') or (
+                        photo_data.get('images', [{}])[0].get('source') if photo_data.get('images') else None
+                    )
+                
+                print(f"✅ Upload Facebook réussi - Photo ID: {photo_id}")
+                print(f"🖼️ URL finale image: {final_image_url}")
+                
+                return True, photo_id, final_image_url, "success"
+            else:
+                error_msg = result.get('error', {}).get('message', 'Upload failed')
+                print(f"❌ Échec upload Facebook: {error_msg}")
+                return False, None, None, error_msg
+                
+    except Exception as e:
+        print(f"❌ Erreur upload_image_to_facebook_photos: {str(e)}")
+        return False, None, None, str(e)
+
+async def create_clickable_post_with_attachment(photo_id: str, message: str, product_link: str, 
+                                               page_access_token: str, page_id: str) -> tuple:
+    """
+    Crée un post cliquable en utilisant object_attachment avec le photo_id uploadé
+    Retourne (success: bool, post_id: str, post_data: dict, error_message: str)
+    """
+    try:
+        print(f"🔗 Création post cliquable avec attachment...")
+        print(f"📸 Photo ID: {photo_id}")
+        print(f"🔗 Product Link: {product_link}")
+        print(f"💬 Message: {message}")
+        
+        # Données pour créer le post cliquable
+        data = {
+            'access_token': page_access_token,
+            'message': message,
+            'object_attachment': photo_id,  # L'ID de l'image uploadée
+            'link': product_link  # Le lien vers le produit
+        }
+        
+        endpoint = f"{FACEBOOK_GRAPH_URL}/{page_id}/feed"
+        print(f"🚀 Endpoint Facebook /feed avec object_attachment: {endpoint}")
+        
+        response = requests.post(endpoint, data=data, timeout=30)
+        result = response.json()
+        
+        print(f"📊 Réponse Facebook post cliquable: {response.status_code} - {result}")
+        
+        if response.status_code == 200 and 'id' in result:
+            post_id = result['id']
+            
+            print(f"✅ Post cliquable créé avec succès - Post ID: {post_id}")
+            print(f"🎯 Image cliquable redirige vers: {product_link}")
+            
+            return True, post_id, result, "success"
+        else:
+            error_msg = result.get('error', {}).get('message', 'Post creation failed')
+            print(f"❌ Échec création post cliquable: {error_msg}")
+            return False, None, result, error_msg
+            
+    except Exception as e:
+        print(f"❌ Erreur create_clickable_post_with_attachment: {str(e)}")
+        return False, None, None, str(e)
+
+async def execute_photo_with_link_strategy(message: str, product_link: str, image_source: str, 
+                                         shop_type: str, fallback_binary: bytes = None) -> dict:
+    """
+    Exécute la nouvelle stratégie "photo_with_link":
+    1. Upload local image vers /photos
+    2. Créer post cliquable avec object_attachment et link
+    """
+    try:
+        print(f"🎯 NOUVELLE STRATÉGIE: photo_with_link")
+        print(f"📸 Image source: {image_source}")
+        print(f"🔗 Product link: {product_link}")
+        print(f"🏪 Shop type: {shop_type}")
+        
+        # Étape 1: Télécharger/préparer l'image localement
+        if image_source.startswith('http'):
+            # C'est une URL - télécharger avec fallback
+            success, local_path, error = await download_image_with_fallback(image_source, fallback_binary)
+        else:
+            # C'est déjà un chemin local
+            success = True
+            local_path = image_source.replace('/api/uploads/', 'uploads/')
+            error = "local_file"
+        
+        if not success:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed",
+                "error": f"Échec préparation image: {error}",
+                "fallback_needed": True
+            }
+        
+        # Étape 2: Trouver la page Facebook appropriée
+        user = await db.users.find_one({
+            "facebook_access_token": {"$exists": True, "$ne": None}
+        })
+        
+        if not user:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed", 
+                "error": "Aucun utilisateur authentifié",
+                "fallback_needed": True
+            }
+        
+        # Mapping des shops vers les pages
+        SHOP_PAGE_MAPPING = {
+            "gizmobbs": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"},
+            "outdoor": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}, 
+            "logicantiq": {"main_page_id": "102401876209415", "name": "Le Berger Blanc Suisse"}
+        }
+        
+        shop_config = SHOP_PAGE_MAPPING.get(shop_type)
+        if not shop_config:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed",
+                "error": f"Configuration inconnue pour shop_type: {shop_type}",
+                "fallback_needed": True
+            }
+        
+        target_page_id = shop_config["main_page_id"]
+        page_access_token = None
+        page_name = shop_config["name"]
+        
+        # Chercher le token d'accès pour cette page
+        for bm in user.get("business_managers", []):
+            for page in bm.get("pages", []):
+                if page.get("id") == target_page_id:
+                    page_access_token = page.get("access_token") or user.get("facebook_access_token")
+                    page_name = page.get("name", page_name)
+                    break
+            if page_access_token:
+                break
+        
+        if not page_access_token:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed",
+                "error": f"Token d'accès non trouvé pour page {target_page_id}",
+                "fallback_needed": True
+            }
+        
+        # Étape 3: Upload image vers Facebook /photos
+        upload_success, photo_id, final_image_url, upload_error = await upload_image_to_facebook_photos(
+            local_path, page_access_token, target_page_id
+        )
+        
+        if not upload_success:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed",
+                "error": f"Échec upload Facebook: {upload_error}",
+                "fallback_needed": True
+            }
+        
+        # Étape 4: Créer post cliquable avec object_attachment
+        post_success, post_id, post_data, post_error = await create_clickable_post_with_attachment(
+            photo_id, message, product_link, page_access_token, target_page_id
+        )
+        
+        if not post_success:
+            return {
+                "success": False,
+                "strategy_used": "photo_with_link_failed",
+                "error": f"Échec création post: {post_error}",
+                "fallback_needed": True
+            }
+        
+        # Succès de la nouvelle stratégie !
+        return {
+            "success": True,
+            "strategy_used": "photo_with_link",
+            "facebook_post_id": post_id,
+            "post_id": str(uuid.uuid4()),
+            "page_name": page_name,
+            "page_id": target_page_id,
+            "photo_id": photo_id,
+            "image_final_url": final_image_url,
+            "user_name": user.get("name", "Utilisateur"),
+            "published_at": datetime.utcnow().isoformat(),
+            "message": "✅ Image uploadée et post cliquable créé avec succès",
+            "image_clickable": True,
+            "clickable_to": product_link
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur execute_photo_with_link_strategy: {str(e)}")
+        return {
+            "success": False,
+            "strategy_used": "photo_with_link_failed",
+            "error": str(e),
+            "fallback_needed": True
+        }
+
 # Debug endpoint for Business Manager access issues
 @app.get("/api/debug/business-manager-access")
 async def debug_business_manager_access():
