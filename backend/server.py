@@ -611,21 +611,58 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                         print(f"💾 Sauvegarde avec paramètres: {save_params}")
                         img.save(temp_output_path, **save_params)
                     
-                    # Vérifier le résultat
+                    # VALIDATION POST-CONVERSION RENFORCÉE
                     if os.path.exists(temp_output_path):
                         converted_size = os.path.getsize(temp_output_path)
                         converted_size_mb = converted_size / (1024 * 1024)
-                        print(f"✅ CONVERSION {strategy['name']} RÉUSSIE: {temp_output_path}")
-                        print(f"📊 Taille convertie: {converted_size_mb:.2f}MB (original: {file_size_mb:.2f}MB)")
                         
-                        output_path = temp_output_path
-                        conversion_success = True
-                        break
+                        # Métriques de qualité
+                        compression_ratio = (file_size - converted_size) / file_size * 100 if file_size > 0 else 0
+                        size_acceptable = converted_size_mb < 8  # Limite Facebook/Instagram
+                        
+                        print(f"✅ CONVERSION {strategy['name']} RÉUSSIE: {temp_output_path}")
+                        print(f"📊 Taille: {converted_size_mb:.2f}MB (original: {file_size_mb:.2f}MB)")
+                        print(f"📉 Compression: {compression_ratio:.1f}% de réduction")
+                        print(f"✔️ Taille acceptable pour réseaux sociaux: {size_acceptable}")
+                        
+                        # Validation finale
+                        try:
+                            # Vérifier que l'image convertie est valide
+                            with Image.open(temp_output_path) as test_img:
+                                test_width, test_height = test_img.size
+                                print(f"✔️ Image convertie valide: {test_width}x{test_height}")
+                                
+                                # Vérifier limites Instagram/Facebook
+                                if test_width <= 1080 and test_height <= 1080:
+                                    print(f"✔️ Dimensions compatibles Instagram: {test_width}x{test_height}")
+                                elif test_width <= 2048 and test_height <= 2048:
+                                    print(f"✔️ Dimensions compatibles Facebook: {test_width}x{test_height}")
+                                else:
+                                    print(f"⚠️ Dimensions importantes: {test_width}x{test_height} (peut être redimensionné par les plateformes)")
+                                
+                        except Exception as validation_error:
+                            print(f"⚠️ Validation image convertie échouée: {str(validation_error)}")
+                            # Continuer quand même si le fichier existe
+                        
+                        # Accepter la conversion si taille < 8MB (limite pratique)
+                        if size_acceptable:
+                            output_path = temp_output_path
+                            conversion_success = True
+                            print(f"🎉 STRATÉGIE {strategy['name']} ACCEPTÉE")
+                            break
+                        else:
+                            print(f"⚠️ Taille encore trop importante ({converted_size_mb:.2f}MB), essai stratégie suivante")
+                            # Garder ce fichier mais continuer avec une stratégie plus compressive
+                            if not output_path:  # Premier résultat, le garder en backup
+                                output_path = temp_output_path
+                            continue
                     else:
                         print(f"❌ Fichier de sortie non créé pour {strategy['name']}")
                         
                 except Exception as strategy_error:
                     print(f"❌ Stratégie {strategy['name']} échouée: {str(strategy_error)}")
+                    import traceback
+                    print(f"   Détails: {traceback.format_exc()}")
                     continue
             
             if not conversion_success:
