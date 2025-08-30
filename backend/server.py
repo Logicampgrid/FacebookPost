@@ -4230,16 +4230,16 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                         base_data["message"] = f"📸 Découvrez ce produit: {product_link}"
                 
                 if is_video:
-                    # For videos, use /videos endpoint
+                    # ROUTAGE AUTOMATIQUE: Vidéos → endpoint /videos
                     files = {'source': ('video.mp4', media_content, content_type)}
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/videos"
-                    print(f"🎥 GUARANTEED: Uploading video to display as video: {endpoint}")
+                    print(f"🎥 ROUTAGE AUTO: Upload vidéo vers endpoint /videos: {endpoint}")
                 else:
-                    # For images, use /photos endpoint - GUARANTEED IMAGE DISPLAY
+                    # ROUTAGE AUTOMATIQUE: Images → endpoint /photos (AFFICHAGE GARANTI)
                     files = {'source': ('image.jpg', media_content, content_type)}
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                    print(f"📸 GUARANTEED: Uploading image to display as image: {endpoint}")
-                    print(f"💬 With message: {base_data.get('message', 'No message')}")
+                    print(f"📸 ROUTAGE AUTO: Upload image vers endpoint /photos: {endpoint}")
+                    print(f"💬 Avec message: {base_data.get('message', 'Aucun message')}")
                 
                 response = requests.post(endpoint, data=base_data, files=files, timeout=60)
                 result = response.json()
