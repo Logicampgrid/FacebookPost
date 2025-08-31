@@ -7031,9 +7031,9 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 # Determine media type
                 file_ext = upload_file_path.lower().split('.')[-1]
                 if file_ext in ['mp4', 'mov', 'avi']:
-                    media_type = "VIDEO"
+                    media_type = "REELS"
                     content_type = 'video/mp4'
-                    container_data["media_type"] = "VIDEO"
+                    container_data["media_type"] = "REELS"
                 else:
                     media_type = "IMAGE"
                     content_type = 'image/jpeg'
