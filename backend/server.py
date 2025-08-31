@@ -7109,9 +7109,9 @@ async def post_to_instagram(post: Post, page_access_token: str):
                         "caption": caption,
                         "image_url": public_image_url
                     }
-                
-                print(f"📸 Instagram image: {public_image_url}")
-                print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
+                    
+                    print(f"📸 Instagram image: {public_image_url}")
+                    print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
                 
                 container_response = requests.post(
                     f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
