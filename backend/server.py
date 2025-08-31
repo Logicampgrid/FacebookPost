@@ -1232,10 +1232,10 @@ async def publish_media_to_social_platforms(
                             
                             # Paramètres spécifiques selon le type de média
                             if media_type == 'video':
-                                container_data["media_type"] = "VIDEO"
+                                container_data["media_type"] = "REELS"
                                 filename = f"instagram_video_{attempt + 1}.mp4"
                                 content_type = 'video/mp4'
-                                print(f"🎬 Conteneur vidéo Instagram avec media_type=VIDEO")
+                                print(f"🎬 Conteneur vidéo Instagram avec media_type=REELS")
                             else:
                                 container_data["media_type"] = "IMAGE"
                                 filename = f"instagram_image_{attempt + 1}.jpg"
