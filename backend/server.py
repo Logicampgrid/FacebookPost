@@ -1564,7 +1564,7 @@ async def get_facebook_page_for_store(user: dict, store_type: str) -> dict:
         print(f"❌ Erreur recherche page Facebook: {str(e)}")
         return None
 
-async def wait_for_video_container_ready(container_id: str, access_token: str, max_wait_time: int = 300) -> bool:
+async def wait_for_video_container_ready(container_id: str, access_token: str, max_wait_time: int = 60) -> bool:
     """
     Attend que le conteneur vidéo Instagram soit prêt pour publication
     
