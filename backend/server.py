@@ -7213,9 +7213,11 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     
             except Exception as publish_error:
                 print(f"❌ Instagram publish error: {publish_error}")
-                return {"status": "error", "message": f"Publish error: {str(publish_error)}"}
+                print(f"📋 Container ID: {container_id}")
+                return {"status": "error", "message": f"Publish error: {str(publish_error)}", "container_id": container_id}
         else:
             print("❌ No container ID available - Instagram posting failed")
+            print("🚫 Soit l'upload multipart a échoué, soit le fallback URL n'est pas applicable (vidéo)")
             return {"status": "error", "message": "Failed to create Instagram media container"}
             
     except Exception as e:
