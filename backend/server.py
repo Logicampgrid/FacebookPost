@@ -403,9 +403,334 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
         print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {error_msg}")
         return False, None, None, error_msg
 
+async def validate_and_convert_media_for_social(input_path: str, target_platform: str = "instagram") -> tuple:
+    """
+    NOUVELLE FONCTION : Validation et conversion préventive des médias pour Instagram/Facebook
+    Effectue toutes les vérifications et conversions AVANT l'upload pour éviter les erreurs
+    
+    Args:
+        input_path: Chemin du fichier média à valider/convertir
+        target_platform: "instagram" ou "facebook" pour optimisations spécifiques
+    
+    Returns:
+        tuple: (success: bool, converted_path: str, media_type: str, error_msg: str)
+    """
+    try:
+        print(f"🔍 VALIDATION PRÉVENTIVE MÉDIA: {input_path} pour {target_platform}")
+        print("=" * 60)
+        
+        if not os.path.exists(input_path):
+            return False, None, None, f"Fichier introuvable: {input_path}"
+        
+        # Analyse initiale du fichier
+        file_size = os.path.getsize(input_path)
+        file_size_mb = file_size / (1024 * 1024)
+        print(f"📊 Taille originale: {file_size_mb:.2f}MB")
+        
+        # Détection du type de média
+        media_type = await detect_media_type_from_content(open(input_path, 'rb').read(), input_path)
+        print(f"🎯 Type détecté: {media_type}")
+        
+        # Limites spécifiques par plateforme
+        if target_platform == "instagram":
+            max_image_size_mb = 8.0  # Instagram limite
+            max_video_size_mb = 100.0
+            max_video_duration = 60  # 60 secondes pour stories/posts
+        else:  # Facebook
+            max_image_size_mb = 25.0  # Facebook plus tolérant
+            max_video_size_mb = 250.0
+            max_video_duration = 240  # 4 minutes pour Facebook
+        
+        converted_path = input_path  # Par défaut, même fichier
+        conversion_needed = False
+        
+        # ================================
+        # VALIDATION ET CONVERSION IMAGES
+        # ================================
+        if media_type == 'image':
+            try:
+                with Image.open(input_path) as img:
+                    format_original = img.format
+                    size_original = img.size
+                    mode_original = img.mode
+                    
+                    print(f"🖼️ IMAGE ANALYSIS:")
+                    print(f"   Format: {format_original}")
+                    print(f"   Résolution: {size_original[0]}x{size_original[1]}")
+                    print(f"   Mode couleur: {mode_original}")
+                    print(f"   Transparence: {'Oui' if mode_original in ('RGBA', 'LA') else 'Non'}")
+                    
+                    # RÈGLE 1: WebP TOUJOURS converti (Instagram/Facebook problématique)
+                    if format_original == 'WEBP':
+                        print(f"🔄 CONVERSION REQUISE: WebP → JPEG (compatibilité {target_platform})")
+                        conversion_needed = True
+                        
+                    # RÈGLE 2: PNG avec transparence → JPEG avec fond blanc (plus fiable)
+                    elif format_original == 'PNG' and mode_original in ('RGBA', 'LA'):
+                        print(f"🔄 CONVERSION RECOMMANDÉE: PNG transparent → JPEG (meilleure compatibilité)")
+                        conversion_needed = True
+                        
+                    # RÈGLE 3: Images trop lourdes → compression
+                    elif file_size_mb > max_image_size_mb:
+                        print(f"🔄 COMPRESSION REQUISE: {file_size_mb:.1f}MB > {max_image_size_mb}MB")
+                        conversion_needed = True
+                        
+                    # RÈGLE 4: Résolution excessive → redimensionnement
+                    elif size_original[0] > 1080 or size_original[1] > 1080:
+                        if target_platform == "instagram":
+                            print(f"🔄 REDIMENSIONNEMENT REQUIS: {size_original} → max 1080px (Instagram)")
+                            conversion_needed = True
+                    
+                    # Effectuer la conversion si nécessaire
+                    if conversion_needed:
+                        print(f"⚙️ DÉBUT CONVERSION PRÉVENTIVE IMAGE...")
+                        
+                        # Générer nom de fichier optimisé
+                        unique_id = uuid.uuid4().hex[:8]
+                        timestamp = int(datetime.utcnow().timestamp())
+                        converted_path = f"uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.jpg"
+                        
+                        # Conversion avec paramètres optimisés pour la plateforme
+                        conversion_img = img.copy()
+                        
+                        # Gestion transparence → fond blanc
+                        if conversion_img.mode in ('RGBA', 'LA', 'P'):
+                            print(f"   🎨 Conversion transparence → fond blanc")
+                            rgb_img = Image.new('RGB', conversion_img.size, (255, 255, 255))
+                            if conversion_img.mode == 'P':
+                                conversion_img = conversion_img.convert('RGBA')
+                            rgb_img.paste(conversion_img, mask=conversion_img.split()[-1] if conversion_img.mode in ('RGBA', 'LA') else None)
+                            conversion_img = rgb_img
+                        elif conversion_img.mode != 'RGB':
+                            conversion_img = conversion_img.convert('RGB')
+                        
+                        # Redimensionnement intelligent
+                        if target_platform == "instagram":
+                            max_dim = 1080
+                        else:  # Facebook
+                            max_dim = 2048
+                        
+                        if conversion_img.width > max_dim or conversion_img.height > max_dim:
+                            original_size = conversion_img.size
+                            conversion_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                            print(f"   📐 Redimensionnement: {original_size} → {conversion_img.size}")
+                        
+                        # Correction orientation EXIF
+                        try:
+                            from PIL.ExifTags import ORIENTATION
+                            exif = conversion_img._getexif()
+                            if exif and ORIENTATION in exif:
+                                orientation = exif[ORIENTATION]
+                                if orientation == 3:
+                                    conversion_img = conversion_img.rotate(180, expand=True)
+                                elif orientation == 6:
+                                    conversion_img = conversion_img.rotate(270, expand=True)
+                                elif orientation == 8:
+                                    conversion_img = conversion_img.rotate(90, expand=True)
+                                print(f"   🔄 Rotation EXIF appliquée")
+                        except:
+                            pass
+                        
+                        # Paramètres de sauvegarde optimisés par plateforme
+                        if target_platform == "instagram":
+                            quality = 85  # Instagram préfère qualité modérée
+                            optimize = True
+                            progressive = True
+                        else:  # Facebook
+                            quality = 90  # Facebook peut gérer plus haute qualité
+                            optimize = True
+                            progressive = False
+                        
+                        os.makedirs(os.path.dirname(converted_path), exist_ok=True)
+                        conversion_img.save(converted_path, 'JPEG', 
+                                          quality=quality, 
+                                          optimize=optimize, 
+                                          progressive=progressive)
+                        
+                        # Validation post-conversion
+                        converted_size = os.path.getsize(converted_path)
+                        converted_size_mb = converted_size / (1024 * 1024)
+                        
+                        print(f"✅ CONVERSION IMAGE RÉUSSIE:")
+                        print(f"   📁 Fichier: {converted_path}")
+                        print(f"   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB")
+                        print(f"   💾 Réduction: {((file_size - converted_size) / file_size * 100):.1f}%")
+                        
+                        # Vérifier que la conversion respecte les limites
+                        if converted_size_mb > max_image_size_mb:
+                            print(f"⚠️ ATTENTION: Taille encore élevée ({converted_size_mb:.1f}MB)")
+                    else:
+                        print(f"✅ IMAGE DÉJÀ COMPATIBLE: Aucune conversion nécessaire")
+                        
+            except Exception as img_error:
+                return False, None, None, f"Erreur analyse image: {str(img_error)}"
+        
+        # ================================
+        # VALIDATION ET CONVERSION VIDÉOS
+        # ================================
+        elif media_type == 'video':
+            print(f"🎬 VIDEO ANALYSIS:")
+            
+            # Analyser propriétés vidéo avec ffprobe si disponible
+            try:
+                result = subprocess.run([
+                    'ffprobe', '-v', 'quiet', '-print_format', 'json', 
+                    '-show_format', '-show_streams', input_path
+                ], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    video_info = json.loads(result.stdout)
+                    format_info = video_info.get('format', {})
+                    video_streams = [s for s in video_info.get('streams', []) if s.get('codec_type') == 'video']
+                    
+                    duration = float(format_info.get('duration', 0))
+                    format_name = format_info.get('format_name', 'unknown')
+                    
+                    print(f"   Format: {format_name}")
+                    print(f"   Durée: {duration:.1f}s")
+                    print(f"   Taille: {file_size_mb:.2f}MB")
+                    
+                    if video_streams:
+                        video_stream = video_streams[0]
+                        codec = video_stream.get('codec_name', 'unknown')
+                        width = video_stream.get('width', 0)
+                        height = video_stream.get('height', 0)
+                        
+                        print(f"   Codec: {codec}")
+                        print(f"   Résolution: {width}x{height}")
+                        
+                        # RÈGLES DE CONVERSION VIDÉO
+                        conversion_reasons = []
+                        
+                        # RÈGLE 1: Codec non compatible
+                        if codec != 'h264':
+                            conversion_reasons.append(f"Codec {codec} → H.264 requis")
+                        
+                        # RÈGLE 2: Durée excessive
+                        if duration > max_video_duration:
+                            conversion_reasons.append(f"Durée {duration:.1f}s → max {max_video_duration}s")
+                        
+                        # RÈGLE 3: Taille excessive
+                        if file_size_mb > max_video_size_mb:
+                            conversion_reasons.append(f"Taille {file_size_mb:.1f}MB → max {max_video_size_mb}MB")
+                        
+                        # RÈGLE 4: Résolution excessive pour Instagram
+                        if target_platform == "instagram" and (width > 1080 or height > 1080):
+                            conversion_reasons.append(f"Résolution {width}x{height} → max 1080x1080")
+                        
+                        # Effectuer conversion si nécessaire
+                        if conversion_reasons:
+                            print(f"🔄 CONVERSION VIDÉO REQUISE:")
+                            for reason in conversion_reasons:
+                                print(f"   • {reason}")
+                            
+                            unique_id = uuid.uuid4().hex[:8]
+                            timestamp = int(datetime.utcnow().timestamp())
+                            converted_path = f"uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                            
+                            # Paramètres de conversion optimisés par plateforme
+                            if target_platform == "instagram":
+                                ffmpeg_params = [
+                                    'ffmpeg', '-y', '-i', input_path,
+                                    '-c:v', 'libx264', '-profile:v', 'main', '-level', '3.1',
+                                    '-preset', 'medium', '-crf', '23',
+                                    '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                                    '-movflags', '+faststart+frag_keyframe+separate_moof',
+                                    '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black',
+                                    '-r', '30', '-g', '30',
+                                    '-t', str(min(duration, max_video_duration)),
+                                    '-max_muxing_queue_size', '1024',
+                                    converted_path
+                                ]
+                            else:  # Facebook
+                                ffmpeg_params = [
+                                    'ffmpeg', '-y', '-i', input_path,
+                                    '-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0',
+                                    '-preset', 'medium', '-crf', '23',
+                                    '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                                    '-movflags', '+faststart',
+                                    '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+                                    '-r', '30', '-g', '60',
+                                    '-t', str(min(duration, max_video_duration)),
+                                    converted_path
+                                ]
+                            
+                            print(f"⚙️ DÉBUT CONVERSION FFmpeg...")
+                            os.makedirs(os.path.dirname(converted_path), exist_ok=True)
+                            
+                            result = subprocess.run(ffmpeg_params, capture_output=True, text=True, timeout=300)
+                            
+                            if result.returncode == 0 and os.path.exists(converted_path):
+                                converted_size = os.path.getsize(converted_path)
+                                converted_size_mb = converted_size / (1024 * 1024)
+                                
+                                print(f"✅ CONVERSION VIDÉO RÉUSSIE:")
+                                print(f"   📁 Fichier: {converted_path}")
+                                print(f"   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB")
+                                print(f"   💾 Réduction: {((file_size - converted_size) / file_size * 100):.1f}%")
+                            else:
+                                print(f"❌ ÉCHEC CONVERSION FFmpeg:")
+                                print(f"   Return code: {result.returncode}")
+                                print(f"   Stderr: {result.stderr[:300]}...")
+                                return False, None, None, f"Échec conversion vidéo: {result.stderr[:100]}"
+                        else:
+                            print(f"✅ VIDÉO DÉJÀ COMPATIBLE: Aucune conversion nécessaire")
+                    
+                else:
+                    print(f"⚠️ Impossible d'analyser la vidéo avec ffprobe")
+                    # Conversion conservatrice si analyse échoue
+                    print(f"🔄 CONVERSION CONSERVATRICE appliquée...")
+                    unique_id = uuid.uuid4().hex[:8]
+                    timestamp = int(datetime.utcnow().timestamp())
+                    converted_path = f"uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                    
+                    # Conversion basique mais robuste
+                    ffmpeg_params = [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+                        '-c:a', 'aac', '-b:a', '128k',
+                        '-movflags', '+faststart',
+                        '-t', str(max_video_duration),
+                        converted_path
+                    ]
+                    
+                    result = subprocess.run(ffmpeg_params, capture_output=True, text=True, timeout=300)
+                    if result.returncode != 0:
+                        return False, None, None, f"Conversion vidéo conservatrice échouée"
+                        
+            except FileNotFoundError:
+                return False, None, None, "FFmpeg/ffprobe non disponible pour validation vidéo"
+            except Exception as video_error:
+                return False, None, None, f"Erreur analyse vidéo: {str(video_error)}"
+        
+        else:
+            return False, None, None, f"Type de média non supporté: {media_type}"
+        
+        # Validation finale
+        if converted_path and os.path.exists(converted_path):
+            final_size = os.path.getsize(converted_path)
+            final_size_mb = final_size / (1024 * 1024)
+            
+            print(f"🎉 VALIDATION RÉUSSIE:")
+            print(f"   ✅ Fichier prêt pour {target_platform}")
+            print(f"   📁 Chemin: {converted_path}")
+            print(f"   📊 Taille finale: {final_size_mb:.2f}MB")
+            print(f"   🎯 Type: {media_type}")
+            print("=" * 60)
+            
+            return True, converted_path, media_type, None
+        else:
+            return False, None, None, "Fichier final non créé"
+            
+    except Exception as e:
+        error_msg = f"Erreur validation préventive: {str(e)}"
+        print(f"❌ {error_msg}")
+        return False, None, None, error_msg
+
 async def convert_webp_to_jpeg(input_path: str) -> tuple:
     """
     Convertit automatiquement un fichier WebP en JPEG avec qualité maximale
+    (CONSERVÉ pour compatibilité, mais recommend d'utiliser validate_and_convert_media_for_social)
     
     Args:
         input_path: Chemin du fichier WebP à convertir
