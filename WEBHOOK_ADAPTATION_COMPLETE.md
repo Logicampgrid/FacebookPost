@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://instagram-upload.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://instagram-upload.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://instagram-upload.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://instagram-upload.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://meta-post-manager.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

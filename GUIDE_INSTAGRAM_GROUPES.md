@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://instagram-upload.preview.emergentagent.com
+URL : https://meta-post-manager.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
