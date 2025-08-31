@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://meta-post-manager.preview.emergentagent.com
+URL : https://video-post-feature.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://video-post-feature.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://meta-post-manager.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://video-post-feature.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://video-post-feature.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://video-post-feature.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

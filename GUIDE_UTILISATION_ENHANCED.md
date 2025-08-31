@@ -107,17 +107,17 @@ POST /api/webhook
 
 ### Test Complet du Système
 ```bash
-curl -X POST https://meta-post-manager.preview.emergentagent.com/api/test/enhanced-upload
+curl -X POST https://video-post-feature.preview.emergentagent.com/api/test/enhanced-upload
 ```
 
 ### Information Détaillée
 ```bash
-curl https://meta-post-manager.preview.emergentagent.com/api/enhanced-upload-info
+curl https://video-post-feature.preview.emergentagent.com/api/enhanced-upload-info
 ```
 
 ### Test Webhook N8N
 ```bash
-curl -X POST https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced-upload \
+curl -X POST https://video-post-feature.preview.emergentagent.com/api/webhook/enhanced-upload \
   -H "Content-Type: application/json" \
   -d '{"store":"gizmobbs","title":"Test","url":"https://example.com","description":"Test produit"}'
 ```
@@ -127,13 +127,13 @@ curl -X POST https://meta-post-manager.preview.emergentagent.com/api/webhook/enh
 ### Option 1: Mise à Jour Immédiate
 Changez votre URL webhook N8N vers :
 ```
-https://meta-post-manager.preview.emergentagent.com/api/webhook/enhanced-upload
+https://video-post-feature.preview.emergentagent.com/api/webhook/enhanced-upload
 ```
 
 ### Option 2: Transition Graduelle  
 Gardez votre URL actuelle :
 ```
-https://meta-post-manager.preview.emergentagent.com/api/webhook
+https://video-post-feature.preview.emergentagent.com/api/webhook
 ```
 *(Les améliorations sont automatiquement appliquées)*
 
@@ -187,13 +187,13 @@ tail -f /var/log/supervisor/backend.*.log
 ### Status Services
 ```bash
 # Vérifier le statut
-curl https://meta-post-manager.preview.emergentagent.com/api/health
+curl https://video-post-feature.preview.emergentagent.com/api/health
 ```
 
 ### Test de Connectivité
 ```bash
 # Test complet
-curl -X POST https://meta-post-manager.preview.emergentagent.com/api/test/enhanced-upload
+curl -X POST https://video-post-feature.preview.emergentagent.com/api/test/enhanced-upload
 ```
 
 ---
