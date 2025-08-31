@@ -4101,7 +4101,7 @@ async def auto_route_media_to_facebook_instagram(
                             'source': (os.path.basename(local_media_path), video_file, 'video/mp4')
                         }
                         ig_container_data = {
-                            'media_type': 'VIDEO',
+                            'media_type': 'REELS',
                             'caption': f"{message}\n\n🔗 {product_link}",
                             'access_token': page_access_token
                         }
