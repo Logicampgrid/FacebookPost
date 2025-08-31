@@ -278,6 +278,20 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
                         print(f"✅ TÉLÉCHARGEMENT URL RÉUSSI: {local_path}")
                         print(f"🎯 Type détecté: {media_type}")
                         print(f"⚙️ Méthode: {download_method}")
+                        
+                        # CONVERSION AUTOMATIQUE WebP → JPEG
+                        if media_type == 'image' and extension and extension.lower() == '.webp':
+                            print(f"[WebP DÉTECTÉ] Conversion automatique en JPEG requise")
+                            success, jpeg_path, error_msg = await convert_webp_to_jpeg(local_path)
+                            if success:
+                                # Supprimer le fichier WebP original et utiliser le JPEG
+                                os.unlink(local_path)
+                                local_path = jpeg_path
+                                print(f"[WebP CONVERTI] Fichier final → {local_path}")
+                            else:
+                                print(f"[WebP ERREUR] Conversion échouée: {error_msg}")
+                                # Continuer avec le WebP original si conversion échoue
+                        
                         return True, local_path, media_type, None
                     else:
                         print(f"❌ Fichier local non créé ou vide")
