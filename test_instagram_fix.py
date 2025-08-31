@@ -97,12 +97,13 @@ def test_webhook_basic():
         "url": "https://example.com/test"
     }
     
-    payload = {
-        "json_data": json.dumps(test_data)
+    # Utiliser le bon format multipart
+    files = {
+        "json_data": (None, json.dumps(test_data))
     }
     
     try:
-        response = requests.post(WEBHOOK_URL, data=payload)
+        response = requests.post(WEBHOOK_URL, files=files)
         print(f"  Status: HTTP {response.status_code}")
         
         if response.status_code == 200:
@@ -114,6 +115,16 @@ def test_webhook_basic():
                 print(f"    - Instagram: {'✅' if routing.get('instagram', {}).get('success') else '❌'}")
                 if not routing.get('instagram', {}).get('success'):
                     print(f"    - Erreur Instagram: {routing.get('instagram', {}).get('error')}")
+        elif response.status_code == 400:
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", "Unknown error")
+                if "image" in error_msg or "file" in error_msg:
+                    print(f"  ⚠️ Erreur attendue (pas de fichier média): {error_msg}")
+                else:
+                    print(f"  ❌ Erreur inattendue: {error_msg}")
+            except:
+                print(f"  ❌ Échec: {response.text}")
         else:
             print(f"  ❌ Échec: {response.text}")
             
