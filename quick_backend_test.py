@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class QuickAPITester:
-    def __init__(self, base_url="https://video-post-feature.preview.emergentagent.com"):
+    def __init__(self, base_url="https://media-converter-6.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
