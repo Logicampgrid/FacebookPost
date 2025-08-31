@@ -7535,22 +7535,25 @@ async def post_to_instagram(post: Post, page_access_token: str):
         
         if local_file_path and os.path.exists(local_file_path):
             try:
-                print(f"[Instagram] Upload multipart → Début")
+                print(f"[Instagram] VALIDATION PRÉVENTIVE → Début")
                 print(f"[Instagram] Fichier local → {local_file_path}")
                 
-                # CONVERSION AUTOMATIQUE WebP → JPEG pour fichiers locaux
-                upload_file_path = local_file_path
-                if media_type == "image" and local_file_path.lower().endswith('.webp'):
-                    print(f"[WebP DÉTECTÉ] Fichier local WebP → conversion JPEG requise")
-                    success, jpeg_path, error_msg = await convert_webp_to_jpeg(local_file_path)
-                    if success:
-                        upload_file_path = jpeg_path
-                        print(f"[WebP CONVERTI] Fichier Instagram → {upload_file_path}")
-                    else:
-                        print(f"[WebP ERREUR] Conversion échouée: {error_msg}, utilisation WebP original")
-                        upload_file_path = local_file_path
+                # NOUVELLE APPROCHE: VALIDATION ET CONVERSION PRÉVENTIVE POUR INSTAGRAM
+                validation_success, validated_path, detected_media_type, validation_error = await validate_and_convert_media_for_social(
+                    local_file_path, 
+                    target_platform="instagram"
+                )
+                
+                if validation_success:
+                    upload_file_path = validated_path
+                    media_type = detected_media_type  # Mise à jour du type détecté
+                    print(f"✅ [Instagram] MÉDIA VALIDÉ: {upload_file_path}")
+                    print(f"🎯 [Instagram] Type final: {media_type}")
                 else:
+                    print(f"❌ [Instagram] VALIDATION ÉCHOUÉE: {validation_error}")
+                    print(f"🔄 [Instagram] FALLBACK: Utilisation fichier original")
                     upload_file_path = local_file_path
+                    # Conserver le type détecté précédemment
                 
                 # Handle video and image differently
                 
