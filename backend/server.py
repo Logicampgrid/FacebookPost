@@ -1403,6 +1403,7 @@ async def publish_media_to_social_platforms(
                                     
                                     # Solutions spécifiques selon le type de média
                                     if media_type == 'video':
+                                        print(f"🚫 VIDÉO: Pas de fallback URL - seul l'upload multipart direct est autorisé")
                                         if attempt < max_attempts - 1:
                                             print(f"🎬 Solutions vidéo: attente supplémentaire + retry avec paramètres optimisés")
                                             await asyncio.sleep(30)  # Attente plus longue pour vidéos
@@ -1417,6 +1418,7 @@ async def publish_media_to_social_platforms(
                                             
                                             continue
                                         else:
+                                            print(f"❌ VIDÉO INSTAGRAM: Échec définitif - Instagram rejette souvent les vidéos via URL")
                                             results["instagram"]["error"] = f"Échec création conteneur vidéo après {max_attempts} tentatives: {cont_detailed_error}"
                                     else:
                                         if attempt < max_attempts - 1:
