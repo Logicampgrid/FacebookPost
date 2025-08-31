@@ -375,6 +375,59 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
         print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {error_msg}")
         return False, None, None, error_msg
 
+async def convert_webp_to_jpeg(input_path: str) -> tuple:
+    """
+    Convertit automatiquement un fichier WebP en JPEG avec qualité maximale
+    
+    Args:
+        input_path: Chemin du fichier WebP à convertir
+    
+    Returns:
+        tuple: (success: bool, jpeg_path: str, error_msg: str)
+    """
+    try:
+        # Vérifier que le fichier existe
+        if not os.path.exists(input_path):
+            return False, None, f"Fichier WebP introuvable: {input_path}"
+        
+        # Vérifier que c'est bien un fichier WebP
+        try:
+            with Image.open(input_path) as img:
+                if img.format != 'WEBP':
+                    return False, None, f"Le fichier n'est pas au format WebP: {img.format}"
+                
+                print(f"[CONVERSION WebP] Fichier détecté → {input_path}")
+                print(f"[CONVERSION WebP] Résolution originale → {img.size[0]}x{img.size[1]}")
+                print(f"[CONVERSION WebP] Mode couleur → {img.mode}")
+                
+                # Créer le chemin de sortie JPEG
+                output_path = input_path.rsplit('.', 1)[0] + '_converted.jpeg'
+                
+                # Convertir en RGB si nécessaire (JPEG ne supporte pas RGBA)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    print(f"[CONVERSION WebP] Conversion mode {img.mode} → RGB")
+                    # Créer un fond blanc pour les images avec transparence
+                    rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = rgb_img
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Sauvegarder en JPEG avec qualité maximale
+                img.save(output_path, 'JPEG', quality=95, optimize=True)
+                print(f"[CONVERSION WebP] Conversion réussie → {output_path}")
+                print(f"[CONVERSION WebP] Qualité JPEG → 95% (maximale)")
+                
+                return True, output_path, None
+                
+        except Exception as conversion_error:
+            return False, None, f"Erreur conversion WebP: {str(conversion_error)}"
+        
+    except Exception as e:
+        return False, None, f"Erreur générale conversion WebP: {str(e)}"
+
 async def convert_media_for_social_platforms(input_path: str, media_type: str) -> tuple:
     """
     Conversion optimisée de médias pour Instagram/Facebook avec logs détaillés
