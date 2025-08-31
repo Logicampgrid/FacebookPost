@@ -7112,43 +7112,43 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     
                     print(f"📸 Instagram image: {public_image_url}")
                     print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
-                
-                container_response = requests.post(
-                    f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
-                    data=container_data_url,
-                    timeout=60
-                )
-                
-                print(f"Instagram URL container response: {container_response.status_code}")
-                print(f"Response body: {container_response.text[:500]}...")
-                
-                if container_response.status_code == 200:
-                    container_result = container_response.json()
-                    if 'id' in container_result:
-                        container_id = container_result['id']
-                        print(f"✅ SUCCESS: Instagram URL container created: {container_id}")
+                    
+                    container_response = requests.post(
+                        f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
+                        data=container_data_url,
+                        timeout=60
+                    )
+                    
+                    print(f"Instagram URL container response: {container_response.status_code}")
+                    print(f"Response body: {container_response.text[:500]}...")
+                    
+                    if container_response.status_code == 200:
+                        container_result = container_response.json()
+                        if 'id' in container_result:
+                            container_id = container_result['id']
+                            print(f"✅ SUCCESS: Instagram URL container created: {container_id}")
+                        else:
+                            print(f"❌ No container ID in URL response: {container_result}")
                     else:
-                        print(f"❌ No container ID in URL response: {container_result}")
-                else:
-                    try:
-                        error_detail = container_response.json()
-                        print(f"❌ Instagram URL container failed: {error_detail}")
-                        
-                        # Handle specific Instagram errors
-                        if 'error' in error_detail:
-                            error_msg = error_detail['error'].get('message', 'Unknown error')
-                            error_code = error_detail['error'].get('code', 'No code')
-                            print(f"Instagram API Error: {error_code} - {error_msg}")
+                        try:
+                            error_detail = container_response.json()
+                            print(f"❌ Instagram URL container failed: {error_detail}")
                             
-                            if error_code == 9004:
-                                print("🔍 ERROR 9004: Instagram cannot access the image URL - this confirms the domain accessibility issue")
-                                print("💡 SOLUTION: The multipart upload method should work better for this case")
-                            elif error_code == 100 and 'permissions' in error_msg.lower():
-                                print("⚠️ Instagram publishing permission issue")
-                            elif error_code == 400 and 'media' in error_msg.lower():
-                                print("⚠️ Instagram media format issue")
-                    except:
-                        print(f"❌ Instagram URL container failed: {container_response.text}")
+                            # Handle specific Instagram errors
+                            if 'error' in error_detail:
+                                error_msg = error_detail['error'].get('message', 'Unknown error')
+                                error_code = error_detail['error'].get('code', 'No code')
+                                print(f"Instagram API Error: {error_code} - {error_msg}")
+                                
+                                if error_code == 9004:
+                                    print("🔍 ERROR 9004: Instagram cannot access the image URL - this confirms the domain accessibility issue")
+                                    print("💡 SOLUTION: The multipart upload method should work better for this case")
+                                elif error_code == 100 and 'permissions' in error_msg.lower():
+                                    print("⚠️ Instagram publishing permission issue")
+                                elif error_code == 400 and 'media' in error_msg.lower():
+                                    print("⚠️ Instagram media format issue")
+                        except:
+                            print(f"❌ Instagram URL container failed: {container_response.text}")
                                 
                 except Exception as url_error:
                     print(f"❌ URL fallback error (images only): {url_error}")
