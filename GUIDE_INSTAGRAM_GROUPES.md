@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://media-converter-6.preview.emergentagent.com
+URL : https://media-uploader-6.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

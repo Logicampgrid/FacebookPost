@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://media-converter-6.preview.emergentagent.com"
+BACKEND_URL = "https://media-uploader-6.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""
