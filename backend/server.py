@@ -1354,12 +1354,14 @@ async def publish_media_to_social_platforms(
                                                 pub_detailed_error = f"HTTP {publish_response.status_code}: {publish_response.text[:200]}"
                                             
                                             print(f"❌ Publication Instagram échec (tentative {pub_attempt + 1}): {pub_detailed_error}")
+                                            print(f"📋 Container ID: {container_id}, Status Code: {publish_response.status_code}")
                                             
                                             # Décision de retry publication
                                             if publish_response.status_code in [429, 500, 502, 503, 504] and pub_attempt < 2:
                                                 continue  # Retry publication
                                             else:
                                                 results["instagram"]["error"] = pub_detailed_error
+                                                results["instagram"]["container_id"] = container_id
                                                 break
                                                 
                                     except requests.exceptions.Timeout:
