@@ -7188,19 +7188,28 @@ async def post_to_instagram(post: Post, page_access_token: str):
                             }
                         else:
                             print(f"❌ No post ID returned in publish result: {publish_result}")
-                            return {"status": "error", "message": "No post ID returned from Instagram publish API"}
+                            print(f"📋 Container ID: {container_id}")
+                            return {"status": "error", "message": "No post ID returned from Instagram publish API", "container_id": container_id}
                     except Exception as json_error:
                         print(f"❌ Error parsing publish response JSON: {json_error}")
+                        print(f"📋 Container ID: {container_id}")
                         print(f"Raw response: {publish_response.text}")
-                        return {"status": "error", "message": "Invalid JSON response from Instagram publish API"}
+                        return {"status": "error", "message": "Invalid JSON response from Instagram publish API", "container_id": container_id}
                 else:
                     try:
                         error_detail = publish_response.json()
-                        print(f"❌ Instagram publish failed: {error_detail}")
-                        return {"status": "error", "message": f"Instagram publish failed: {error_detail}"}
+                        error_code = error_detail.get('error', {}).get('code', 'Unknown')
+                        error_message = error_detail.get('error', {}).get('message', 'Unknown error')
+                        print(f"❌ Instagram publish failed:")
+                        print(f"📋 Container ID: {container_id}")
+                        print(f"🔢 Error Code: {error_code}")
+                        print(f"📄 Error Message: {error_message}")
+                        return {"status": "error", "message": f"Instagram publish failed: Code {error_code} - {error_message}", "container_id": container_id}
                     except:
                         print(f"❌ Instagram publish failed: {publish_response.text}")
-                        return {"status": "error", "message": f"Instagram publish failed: {publish_response.text[:200]}"}
+                        print(f"📋 Container ID: {container_id}")
+                        print(f"🔢 HTTP Status Code: {publish_response.status_code}")
+                        return {"status": "error", "message": f"Instagram publish failed: HTTP {publish_response.status_code}", "container_id": container_id}
                     
             except Exception as publish_error:
                 print(f"❌ Instagram publish error: {publish_error}")
