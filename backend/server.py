@@ -7209,17 +7209,16 @@ async def post_to_instagram(post: Post, page_access_token: str):
         # STRATEGY 2: URL FALLBACK (IMAGES ONLY - if multipart failed and we have public URL)
         if not multipart_success and local_file_path:
             # Check if this is a video - NO URL fallback for videos
-            file_ext = local_file_path.lower().split('.')[-1]
-            if file_ext in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
-                print(f"🚫 VIDÉO: Pas de fallback URL - Instagram rejette les vidéos via URL")
-                print(f"❌ Upload multipart vidéo a échoué - arrêt des tentatives")
+            if media_type == "video":
+                print(f"[Instagram] Vidéo → Pas de fallback URL possible")
+                print(f"[Instagram] Upload multipart vidéo échoué → Arrêt")
             else:
                 try:
-                    print(f"🔄 STRATEGY 2: Trying URL method as fallback (IMAGES ONLY)")
+                    print(f"[Instagram] Fallback URL → Images seulement")
                     
                     # Use dynamic base URL as fallback
                     dynamic_base_url = get_dynamic_base_url()
-                    public_image_url = f"{dynamic_base_url}{media_url}"
+                    public_image_url = f"{dynamic_base_url}{selected_media}"
                     
                     container_data_url = {
                         "access_token": page_access_token,
@@ -7227,8 +7226,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                         "image_url": public_image_url
                     }
                     
-                    print(f"📸 Instagram image: {public_image_url}")
-                    print(f"⚠️ Note: If Instagram fails, the domain may not be accessible to Instagram's servers")
+                    print(f"[Instagram] Image URL → {public_image_url}")
                     
                     container_response = requests.post(
                         f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media",
@@ -7236,16 +7234,15 @@ async def post_to_instagram(post: Post, page_access_token: str):
                         timeout=60
                     )
                     
-                    print(f"Instagram URL container response: {container_response.status_code}")
-                    print(f"Response body: {container_response.text[:500]}...")
+                    print(f"[Instagram] Réponse container URL → {container_response.status_code}")
                     
                     if container_response.status_code == 200:
                         container_result = container_response.json()
                         if 'id' in container_result:
                             container_id = container_result['id']
-                            print(f"✅ SUCCESS: Instagram URL container created: {container_id}")
+                            print(f"[Instagram] Container URL créé → {container_id}")
                         else:
-                            print(f"❌ No container ID in URL response: {container_result}")
+                            print(f"[Instagram] Erreur → Pas d'ID container URL: {container_result}")
                     else:
                         try:
                             error_detail = container_response.json()
