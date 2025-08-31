@@ -6948,18 +6948,61 @@ async def simulate_instagram_post_for_test(post: Post, page_access_token: str):
         return {"status": "error", "message": f"Simulation failed: {str(e)}"}
 
 async def post_to_instagram(post: Post, page_access_token: str):
-    """Post content to Instagram Business account with MULTIPART UPLOAD for better compatibility"""
+    """Post content to Instagram Business account with enhanced video support and fallback logic"""
     try:
         # TEST MODE: Handle test tokens
         if page_access_token.startswith("test_"):
-            print(f"🧪 TEST MODE: Simulating Instagram post")
+            print(f"[Instagram] TEST MODE → Simulation")
             return await simulate_instagram_post_for_test(post, page_access_token)
         
         # Instagram posting requires a two-step process:
         # 1. Create media container
-        # 2. Publish the container
+        # 2. Publish the container (with polling for videos)
         
-        print(f"📸 Publishing to Instagram: @{post.target_name} ({post.target_id})")
+        print(f"[Instagram] Publication vers @{post.target_name} ({post.target_id})")
+        
+        # Check if we have media for Instagram posting
+        if not post.media_urls:
+            print("[Instagram] Erreur → Aucun média fourni")
+            return {"status": "error", "message": "No media provided for Instagram"}
+        
+        # ENHANCED: Analyze media URLs to separate videos and images
+        video_files = []
+        image_files = []
+        
+        for media_url in post.media_urls:
+            # Determine file extension
+            if media_url.startswith('http'):
+                # For external URLs, try to get extension from URL
+                file_ext = media_url.lower().split('.')[-1].split('?')[0]  # Remove query params
+            else:
+                # For local files
+                local_path = media_url.replace('/api/uploads/', 'uploads/')
+                file_ext = local_path.lower().split('.')[-1]
+            
+            # Classify media type based on extension
+            if file_ext in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
+                video_files.append(media_url)
+                print(f"[Instagram] Vidéo détectée → {file_ext}")
+            elif file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+                image_files.append(media_url)
+                print(f"[Instagram] Image détectée → {file_ext}")
+        
+        # FALLBACK LOGIC: Video first, then image
+        selected_media = None
+        media_type = None
+        
+        if video_files:
+            selected_media = video_files[0]  # Take first video
+            media_type = "video"
+            print(f"[Instagram] Fallback → Vidéo sélectionnée")
+        elif image_files:
+            selected_media = image_files[0]  # Take first image
+            media_type = "image"
+            print(f"[Instagram] Fallback → Image sélectionnée")
+        else:
+            print("[Instagram] Erreur → Aucun format supporté")
+            return {"status": "error", "message": "No supported media format found"}
         
         # Step 1: Create media container with MULTIPART UPLOAD
         container_data = {
@@ -6988,22 +7031,18 @@ async def post_to_instagram(post: Post, page_access_token: str):
         container_data["caption"] = caption
         
         # Step 2: Handle media with MULTIPART UPLOAD STRATEGY
-        media_url = None
         local_file_path = None
         
-        if post.media_urls:
-            media_url = post.media_urls[0]
-            
-            # Get local file path for multipart upload
-            if media_url.startswith('http'):
-                # External URL - try to download for multipart upload
-                print(f"📥 External media URL detected, will attempt download for multipart upload")
-                local_file_path = None
-            else:
-                # Local file path
-                local_file_path = media_url.replace('/api/uploads/', 'uploads/')
-                dynamic_base_url = get_dynamic_base_url()
-                full_media_url = f"{dynamic_base_url}{media_url}"
+        # Get local file path for multipart upload
+        if selected_media.startswith('http'):
+            # External URL - try to download for multipart upload
+            print(f"[Instagram] URL externe détectée → Téléchargement pour upload multipart")
+            local_file_path = None
+        else:
+            # Local file path
+            local_file_path = selected_media.replace('/api/uploads/', 'uploads/')
+            dynamic_base_url = get_dynamic_base_url()
+            full_media_url = f"{dynamic_base_url}{selected_media}"
         
         # Check if we have media for Instagram posting
         if not media_url:
