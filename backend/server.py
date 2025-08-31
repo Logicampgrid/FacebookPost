@@ -866,6 +866,23 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                         print(f"   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB")
                         print(f"   💾 Réduction: {((file_size - converted_size) / file_size * 100):.1f}%")
                         
+                        # Log détaillé de la conversion
+                        await log_media_conversion_details(
+                            "image_conversion",
+                            input_path,
+                            converted_path,
+                            "image",
+                            target_platform,
+                            success=True,
+                            additional_info={
+                                "original_size_mb": round(file_size_mb, 2),
+                                "converted_size_mb": round(converted_size_mb, 2),
+                                "compression_ratio": round(((file_size - converted_size) / file_size * 100), 1),
+                                "strategy_used": "preventive_validation",
+                                "quality_setting": quality
+                            }
+                        )
+                        
                         # Vérifier que la conversion respecte les limites
                         if converted_size_mb > max_image_size_mb:
                             print(f"⚠️ ATTENTION: Taille encore élevée ({converted_size_mb:.1f}MB)")
