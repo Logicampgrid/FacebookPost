@@ -7187,7 +7187,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
                             if not container_ready:
                                 print(f"[Instagram] Vidéo → Timeout ou erreur de traitement")
                                 return {"status": "error", "message": "Video container processing failed or timed out", "container_id": container_id}
-                            print(f"[Instagram] Vidéo → Prête pour publication")
+                            print(f"[Instagram] Container vidéo prêt → publication...")
                         
                     else:
                         print(f"[Instagram] Erreur → Pas d'ID container: {container_result}")
