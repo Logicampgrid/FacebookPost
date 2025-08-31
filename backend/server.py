@@ -7246,31 +7246,30 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     else:
                         try:
                             error_detail = container_response.json()
-                            print(f"❌ Instagram URL container failed: {error_detail}")
+                            print(f"[Instagram] Erreur container URL → {error_detail}")
                             
                             # Handle specific Instagram errors
                             if 'error' in error_detail:
                                 error_msg = error_detail['error'].get('message', 'Unknown error')
                                 error_code = error_detail['error'].get('code', 'No code')
-                                print(f"Instagram API Error: {error_code} - {error_msg}")
+                                print(f"[Instagram] Erreur API → {error_code} - {error_msg}")
                                 
                                 if error_code == 9004:
-                                    print("🔍 ERROR 9004: Instagram cannot access the image URL - this confirms the domain accessibility issue")
-                                    print("💡 SOLUTION: The multipart upload method should work better for this case")
+                                    print("[Instagram] Erreur 9004 → URL inaccessible, utiliser multipart")
                                 elif error_code == 100 and 'permissions' in error_msg.lower():
-                                    print("⚠️ Instagram publishing permission issue")
+                                    print("[Instagram] Erreur permissions → Vérifier autorisations")
                                 elif error_code == 400 and 'media' in error_msg.lower():
-                                    print("⚠️ Instagram media format issue")
+                                    print("[Instagram] Erreur format média → Vérifier compatibilité")
                         except:
-                            print(f"❌ Instagram URL container failed: {container_response.text}")
+                            print(f"[Instagram] Erreur container URL → {container_response.text}")
                                 
                 except Exception as url_error:
-                    print(f"❌ URL fallback error (images only): {url_error}")
+                    print(f"[Instagram] Erreur fallback URL → {url_error}")
         
         # Step 3: Publish the container if we have one
         if container_id:
             try:
-                print(f"📺 Publishing Instagram container: {container_id}")
+                print(f"[Instagram] Publication container → {container_id}")
                 
                 publish_response = requests.post(
                     f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish",
@@ -7281,61 +7280,55 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     timeout=30
                 )
                 
-                print(f"Instagram publish response: {publish_response.status_code}")
-                print(f"Publish response body: {publish_response.text[:500]}...")
+                print(f"[Instagram] Réponse publication → {publish_response.status_code}")
                 
                 if publish_response.status_code == 200:
                     try:
                         publish_result = publish_response.json()
                         if 'id' in publish_result:
                             instagram_post_id = publish_result['id']
-                            print(f"✅ Instagram post published successfully!")
-                            print(f"📋 Container ID: {container_id}")
-                            print(f"🎯 Post ID: {instagram_post_id}")
-                            print(f"⚙️ Method: {'multipart' if multipart_success else 'url'}")
+                            print(f"[Instagram] Publication réussie → {instagram_post_id}")
+                            print(f"[Instagram] Container ID → {container_id}")
+                            print(f"[Instagram] Méthode → {'multipart' if multipart_success else 'url'}")
+                            print(f"[Instagram] Type média → {media_type}")
                             return {
                                 "id": instagram_post_id,
                                 "platform": "instagram",
                                 "status": "success",
                                 "method": "multipart" if multipart_success else "url",
+                                "media_type": media_type,
                                 "container_id": container_id
                             }
                         else:
-                            print(f"❌ No post ID returned in publish result: {publish_result}")
-                            print(f"📋 Container ID: {container_id}")
+                            print(f"[Instagram] Erreur → Pas d'ID post: {publish_result}")
                             return {"status": "error", "message": "No post ID returned from Instagram publish API", "container_id": container_id}
                     except Exception as json_error:
-                        print(f"❌ Error parsing publish response JSON: {json_error}")
-                        print(f"📋 Container ID: {container_id}")
-                        print(f"Raw response: {publish_response.text}")
+                        print(f"[Instagram] Erreur parsing JSON → {json_error}")
+                        print(f"[Instagram] Réponse brute → {publish_response.text}")
                         return {"status": "error", "message": "Invalid JSON response from Instagram publish API", "container_id": container_id}
                 else:
                     try:
                         error_detail = publish_response.json()
                         error_code = error_detail.get('error', {}).get('code', 'Unknown')
                         error_message = error_detail.get('error', {}).get('message', 'Unknown error')
-                        print(f"❌ Instagram publish failed:")
-                        print(f"📋 Container ID: {container_id}")
-                        print(f"🔢 Error Code: {error_code}")
-                        print(f"📄 Error Message: {error_message}")
+                        print(f"[Instagram] Échec publication → Code: {error_code}")
+                        print(f"[Instagram] Message erreur → {error_message}")
                         return {"status": "error", "message": f"Instagram publish failed: Code {error_code} - {error_message}", "container_id": container_id}
                     except:
-                        print(f"❌ Instagram publish failed: {publish_response.text}")
-                        print(f"📋 Container ID: {container_id}")
-                        print(f"🔢 HTTP Status Code: {publish_response.status_code}")
+                        print(f"[Instagram] Échec publication → {publish_response.text}")
+                        print(f"[Instagram] Code HTTP → {publish_response.status_code}")
                         return {"status": "error", "message": f"Instagram publish failed: HTTP {publish_response.status_code}", "container_id": container_id}
                     
             except Exception as publish_error:
-                print(f"❌ Instagram publish error: {publish_error}")
-                print(f"📋 Container ID: {container_id}")
+                print(f"[Instagram] Erreur publication → {publish_error}")
                 return {"status": "error", "message": f"Publish error: {str(publish_error)}", "container_id": container_id}
         else:
-            print("❌ No container ID available - Instagram posting failed")
-            print("🚫 Soit l'upload multipart a échoué, soit le fallback URL n'est pas applicable (vidéo)")
+            print("[Instagram] Aucun container ID → Échec création")
+            print("[Instagram] Upload multipart ou fallback URL échoué")
             return {"status": "error", "message": "Failed to create Instagram media container"}
             
     except Exception as e:
-        print(f"💥 Error posting to Instagram: {e}")
+        print(f"[Instagram] Erreur générale → {e}")
         return {"status": "error", "message": f"Instagram error: {str(e)}"}
 
 async def cross_post_to_meta(post: Post, access_tokens: dict):
