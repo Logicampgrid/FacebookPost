@@ -1564,6 +1564,73 @@ async def get_facebook_page_for_store(user: dict, store_type: str) -> dict:
         print(f"❌ Erreur recherche page Facebook: {str(e)}")
         return None
 
+async def wait_for_video_container_ready(container_id: str, access_token: str, max_wait_time: int = 300) -> bool:
+    """
+    Attend que le conteneur vidéo Instagram soit prêt pour publication
+    
+    Args:
+        container_id: ID du conteneur média Instagram
+        access_token: Token d'accès pour l'API
+        max_wait_time: Temps d'attente maximum en secondes (défaut: 5 minutes)
+    
+    Returns:
+        bool: True si le conteneur est prêt, False sinon
+    """
+    try:
+        print(f"[Instagram] Polling conteneur vidéo → {container_id}")
+        start_time = datetime.utcnow()
+        check_interval = 10  # Vérifier toutes les 10 secondes
+        
+        while (datetime.utcnow() - start_time).total_seconds() < max_wait_time:
+            try:
+                # Vérifier le statut du conteneur
+                status_url = f"{FACEBOOK_GRAPH_URL}/{container_id}"
+                params = {
+                    'access_token': access_token,
+                    'fields': 'status_code,status'
+                }
+                
+                response = requests.get(status_url, params=params, timeout=30)
+                
+                if response.status_code == 200:
+                    status_data = response.json()
+                    status_code = status_data.get('status_code')
+                    status = status_data.get('status')
+                    
+                    print(f"[Instagram] Statut conteneur → {status_code} ({status})")
+                    
+                    # Statuts Instagram: EXPIRED, ERROR, FINISHED, IN_PROGRESS, PUBLISHED
+                    if status_code == 'FINISHED':
+                        print(f"[Instagram] Conteneur prêt → {container_id}")
+                        return True
+                    elif status_code in ['ERROR', 'EXPIRED']:
+                        print(f"[Instagram] Conteneur échoué → {status_code}")
+                        return False
+                    elif status_code in ['IN_PROGRESS']:
+                        print(f"[Instagram] Traitement en cours → attente {check_interval}s")
+                        await asyncio.sleep(check_interval)
+                        continue
+                    else:
+                        print(f"[Instagram] Statut inconnu → {status_code}")
+                        await asyncio.sleep(check_interval)
+                        continue
+                else:
+                    print(f"[Instagram] Erreur API statut → {response.status_code}")
+                    await asyncio.sleep(check_interval)
+                    continue
+                    
+            except Exception as check_error:
+                print(f"[Instagram] Erreur vérification statut → {str(check_error)}")
+                await asyncio.sleep(check_interval)
+                continue
+        
+        print(f"[Instagram] Timeout polling conteneur → {max_wait_time}s dépassé")
+        return False
+        
+    except Exception as e:
+        print(f"[Instagram] Erreur polling conteneur → {str(e)}")
+        return False
+
 async def get_instagram_account_for_store(user: dict, store_type: str) -> dict:
     """Trouve le compte Instagram correspondant au store_type"""
     try:
