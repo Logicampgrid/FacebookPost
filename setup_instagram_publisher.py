@@ -97,7 +97,7 @@ async def test_database_connection():
         import motor.motor_asyncio
         from dotenv import load_dotenv
         
-        load_dotenv()
+        load_dotenv('/app/backend/.env')
         
         MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
         client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
