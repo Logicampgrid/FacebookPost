@@ -26,13 +26,13 @@ def test_store_mapping():
             "url": f"https://example.com/test-{store}"
         }
         
-        # Test avec form-data (multipart)
-        payload = {
-            "json_data": json.dumps(test_data)
+        # Test avec form-data (multipart) - le bon format
+        files = {
+            "json_data": (None, json.dumps(test_data))
         }
         
         try:
-            response = requests.post(WEBHOOK_URL, data=payload)
+            response = requests.post(WEBHOOK_URL, files=files)
             print(f"  Store '{store}': HTTP {response.status_code}")
             
             if response.status_code == 400:
@@ -44,7 +44,7 @@ def test_store_mapping():
                     elif "json_data field is required" in error_msg:
                         print(f"    ❌ Format de données requis: {error_msg}")
                     elif "image" in error_msg or "file" in error_msg:
-                        print(f"    ⚠️ Manque fichier média (normal pour ce test): {error_msg}")
+                        print(f"    ✅ Store reconnu (manque juste le fichier média)")
                     else:
                         print(f"    ⚠️ Autre erreur: {error_msg}")
                 except:
