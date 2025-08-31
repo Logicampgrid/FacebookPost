@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://media-upload-fix-3.preview.emergentagent.com
+URL : https://insta-form-data.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
