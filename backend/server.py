@@ -1247,6 +1247,9 @@ async def publish_media_to_social_platforms(
                             }
                             
                             print(f"📱 Création conteneur Instagram ({filename})...")
+                            print(f"📋 Container data: {container_data}")
+                            print(f"📁 File info: {filename}, Content-Type: {content_type}, Size: {len(media_content)} bytes")
+                            
                             container_response = requests.post(
                                 f"{FACEBOOK_GRAPH_URL}/{instagram_id}/media",
                                 data=container_data,
