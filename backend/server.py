@@ -7159,8 +7159,8 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 
                 print(f"[Instagram] Taille média → {len(media_content)} bytes")
                 
-                print(f"📱 Creating Instagram media container with multipart upload for {post.target_name}")
-                print(f"📋 Container data: {container_data}")
+                print(f"[Instagram] Création container multipart → {post.target_name}")
+                print(f"[Instagram] Type de média → {media_type}")
                 
                 # Create media container with multipart file upload
                 files = {'source': (os.path.basename(upload_file_path), media_content, content_type)}
@@ -7172,30 +7172,39 @@ async def post_to_instagram(post: Post, page_access_token: str):
                     timeout=90  # Extended timeout for large files
                 )
                 
-                print(f"Instagram multipart container response: {container_response.status_code}")
-                print(f"Response body: {container_response.text[:500]}...")
+                print(f"[Instagram] Réponse container → {container_response.status_code}")
                 
                 if container_response.status_code == 200:
                     container_result = container_response.json()
                     if 'id' in container_result:
                         container_id = container_result['id']
                         multipart_success = True
-                        print(f"✅ SUCCESS: Instagram multipart container created: {container_id}")
+                        print(f"[Instagram] Container créé → {container_id}")
+                        
+                        # ENHANCED: For videos, implement polling to wait for processing
+                        if media_type == "video":
+                            print(f"[Instagram] Vidéo → Attente du traitement")
+                            container_ready = await wait_for_video_container_ready(container_id, page_access_token)
+                            if not container_ready:
+                                print(f"[Instagram] Vidéo → Timeout ou erreur de traitement")
+                                return {"status": "error", "message": "Video container processing failed or timed out", "container_id": container_id}
+                            print(f"[Instagram] Vidéo → Prête pour publication")
+                        
                     else:
-                        print(f"❌ No container ID in multipart response: {container_result}")
+                        print(f"[Instagram] Erreur → Pas d'ID container: {container_result}")
                 else:
                     try:
                         error_detail = container_response.json()
-                        print(f"❌ Instagram multipart container failed: {error_detail}")
+                        print(f"[Instagram] Erreur container → {error_detail}")
                     except:
-                        print(f"❌ Instagram multipart container failed: {container_response.text}")
+                        print(f"[Instagram] Erreur container → {container_response.text}")
                 
-                # Clean up optimized file
-                if upload_file_path.endswith('.instagram_optimized.jpg') and os.path.exists(upload_file_path):
+                # Clean up optimized file (only for images)
+                if media_type == "image" and upload_file_path.endswith('.instagram_optimized.jpg') and os.path.exists(upload_file_path):
                     os.remove(upload_file_path)
                     
             except Exception as multipart_error:
-                print(f"❌ Multipart upload error: {multipart_error}")
+                print(f"[Instagram] Erreur upload multipart → {multipart_error}")
         
         # STRATEGY 2: URL FALLBACK (IMAGES ONLY - if multipart failed and we have public URL)
         if not multipart_success and local_file_path:
