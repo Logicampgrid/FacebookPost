@@ -1335,11 +1335,13 @@ async def publish_media_to_social_platforms(
                                             
                                             results["instagram"]["success"] = True
                                             results["instagram"]["post_id"] = post_id
+                                            results["instagram"]["container_id"] = container_id
                                             results["platforms_successful"] += 1
                                             instagram_success = True
                                             publish_success = True
                                             
-                                            print(f"✅ INSTAGRAM RÉUSSI: Post ID {post_id}")
+                                            print(f"✅ INSTAGRAM RÉUSSI: Container ID {container_id}, Post ID {post_id}")
+                                            print(f"🎯 Publication Instagram finalisée avec succès")
                                             break
                                         else:
                                             # Analyse détaillée erreur publication
