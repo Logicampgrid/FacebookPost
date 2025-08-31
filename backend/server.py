@@ -1535,12 +1535,16 @@ async def get_facebook_page_for_store(user: dict, store_type: str) -> dict:
 async def get_instagram_account_for_store(user: dict, store_type: str) -> dict:
     """Trouve le compte Instagram correspondant au store_type"""
     try:
+        print(f"🔍 Recherche compte Instagram pour store: '{store_type}'")
+        
         # D'abord, essayer de trouver via le mapping des stores
         facebook_page = await get_facebook_page_for_store(user, store_type)
         
         if facebook_page:
             page_id = facebook_page["id"]
             access_token = facebook_page.get("access_token") or user.get("facebook_access_token")
+            
+            print(f"📘 Page Facebook trouvée: {facebook_page.get('name')} (ID: {page_id})")
             
             # Vérifier si cette page a un compte Instagram connecté
             try:
@@ -1555,16 +1559,26 @@ async def get_instagram_account_for_store(user: dict, store_type: str) -> dict:
                 if response.status_code == 200:
                     page_data = response.json()
                     if "instagram_business_account" in page_data:
-                        return {
+                        instagram_account = {
                             "id": page_data["instagram_business_account"]["id"],
                             "access_token": access_token,
                             "connected_page": page_data.get("name")
                         }
-            except:
-                pass
+                        print(f"✅ Compte Instagram connecté trouvé: {instagram_account['id']} via page {page_data.get('name')}")
+                        return instagram_account
+                    else:
+                        print(f"⚠️ Page {page_data.get('name')} n'a pas de compte Instagram connecté")
+                else:
+                    print(f"❌ Erreur lors de la vérification Instagram: HTTP {response.status_code}")
+            except Exception as ig_check_error:
+                print(f"⚠️ Impossible de vérifier Instagram pour cette page: {str(ig_check_error)}")
+        else:
+            print(f"❌ Aucune page Facebook trouvée pour store '{store_type}'")
         
         # Fallback: Chercher n'importe quel compte Instagram disponible
+        print(f"🔄 Fallback: Recherche d'un compte Instagram disponible...")
         for bm in user.get("business_managers", []):
+            print(f"🔍 Vérification Business Manager: {bm.get('name')}")
             for page in bm.get("pages", []):
                 page_access_token = page.get("access_token") or user.get("facebook_access_token")
                 if page_access_token:
@@ -1580,16 +1594,18 @@ async def get_instagram_account_for_store(user: dict, store_type: str) -> dict:
                         if response.status_code == 200:
                             page_data = response.json()
                             if "instagram_business_account" in page_data:
-                                print(f"🔄 Utilisation compte Instagram fallback: {page_data.get('name')}")
-                                return {
+                                instagram_account = {
                                     "id": page_data["instagram_business_account"]["id"],
                                     "access_token": page_access_token,
                                     "connected_page": page_data.get("name")
                                 }
-                    except:
+                                print(f"✅ Instagram fallback trouvé: {instagram_account['id']} via page {page_data.get('name')}")
+                                return instagram_account
+                    except Exception as fallback_error:
+                        print(f"⚠️ Erreur vérification fallback page {page.get('name', 'unknown')}: {str(fallback_error)}")
                         continue
         
-        print(f"❌ Aucun compte Instagram trouvé pour store '{store_type}'")
+        print(f"❌ Aucun compte Instagram trouvé pour store '{store_type}' après fallback")
         return None
         
     except Exception as e:
