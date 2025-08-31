@@ -995,6 +995,24 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                                 print(f"   📁 Fichier: {converted_path}")
                                 print(f"   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB")
                                 print(f"   💾 Réduction: {((file_size - converted_size) / file_size * 100):.1f}%")
+                                
+                                # Log détaillé de la conversion vidéo
+                                await log_media_conversion_details(
+                                    "video_conversion",
+                                    input_path,
+                                    converted_path,
+                                    "video",
+                                    target_platform,
+                                    success=True,
+                                    additional_info={
+                                        "original_size_mb": round(file_size_mb, 2),
+                                        "converted_size_mb": round(converted_size_mb, 2),
+                                        "compression_ratio": round(((file_size - converted_size) / file_size * 100), 1),
+                                        "strategy_used": "preventive_validation",
+                                        "duration_limit": max_video_duration,
+                                        "conversion_timeout": "300s"
+                                    }
+                                )
                             else:
                                 print(f"❌ ÉCHEC CONVERSION FFmpeg:")
                                 print(f"   Return code: {result.returncode}")
