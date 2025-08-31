@@ -30,7 +30,7 @@ import motor.motor_asyncio
 from dotenv import load_dotenv
 
 # Configuration
-load_dotenv()
+load_dotenv('/app/backend/.env')  # Charge le fichier .env du backend
 
 # Configuration logging
 logging.basicConfig(
