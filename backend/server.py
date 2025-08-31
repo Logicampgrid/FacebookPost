@@ -7149,9 +7149,9 @@ async def post_to_instagram(post: Post, page_access_token: str):
                                 print("⚠️ Instagram media format issue")
                     except:
                         print(f"❌ Instagram URL container failed: {container_response.text}")
-                            
-            except Exception as url_error:
-                print(f"❌ URL fallback error: {url_error}")
+                                
+                except Exception as url_error:
+                    print(f"❌ URL fallback error (images only): {url_error}")
         
         # Step 3: Publish the container if we have one
         if container_id:
