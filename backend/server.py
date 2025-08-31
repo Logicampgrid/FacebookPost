@@ -1571,7 +1571,7 @@ async def wait_for_video_container_ready(container_id: str, access_token: str, m
     Args:
         container_id: ID du conteneur média Instagram
         access_token: Token d'accès pour l'API
-        max_wait_time: Temps d'attente maximum en secondes (défaut: 5 minutes)
+        max_wait_time: Temps d'attente maximum en secondes (défaut: 60s)
     
     Returns:
         bool: True si le conteneur est prêt, False sinon
@@ -1579,7 +1579,7 @@ async def wait_for_video_container_ready(container_id: str, access_token: str, m
     try:
         print(f"[Instagram] Polling conteneur vidéo → {container_id}")
         start_time = datetime.utcnow()
-        check_interval = 10  # Vérifier toutes les 10 secondes
+        check_interval = 3  # Vérifier toutes les 3 secondes comme spécifié
         
         while (datetime.utcnow() - start_time).total_seconds() < max_wait_time:
             try:
@@ -1587,7 +1587,7 @@ async def wait_for_video_container_ready(container_id: str, access_token: str, m
                 status_url = f"{FACEBOOK_GRAPH_URL}/{container_id}"
                 params = {
                     'access_token': access_token,
-                    'fields': 'status_code,status'
+                    'fields': 'status_code'
                 }
                 
                 response = requests.get(status_url, params=params, timeout=30)
@@ -1595,13 +1595,12 @@ async def wait_for_video_container_ready(container_id: str, access_token: str, m
                 if response.status_code == 200:
                     status_data = response.json()
                     status_code = status_data.get('status_code')
-                    status = status_data.get('status')
                     
-                    print(f"[Instagram] Statut conteneur → {status_code} ({status})")
+                    print(f"[Instagram] Statut conteneur → {status_code}")
                     
                     # Statuts Instagram: EXPIRED, ERROR, FINISHED, IN_PROGRESS, PUBLISHED
                     if status_code == 'FINISHED':
-                        print(f"[Instagram] Conteneur prêt → {container_id}")
+                        print(f"[Instagram] Container vidéo prêt → publication...")
                         return True
                     elif status_code in ['ERROR', 'EXPIRED']:
                         print(f"[Instagram] Conteneur échoué → {status_code}")
@@ -1624,7 +1623,7 @@ async def wait_for_video_container_ready(container_id: str, access_token: str, m
                 await asyncio.sleep(check_interval)
                 continue
         
-        print(f"[Instagram] Timeout polling conteneur → {max_wait_time}s dépassé")
+        print(f"[Instagram] Timeout → {max_wait_time}s dépassé, abandon du conteneur")
         return False
         
     except Exception as e:
