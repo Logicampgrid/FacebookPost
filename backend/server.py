@@ -7286,6 +7286,8 @@ async def post_to_instagram(post: Post, page_access_token: str):
                         publish_result = publish_response.json()
                         if 'id' in publish_result:
                             instagram_post_id = publish_result['id']
+                            if media_type == "video":
+                                print(f"[Instagram] Upload vidéo réussi")
                             print(f"[Instagram] Publication réussie → {instagram_post_id}")
                             print(f"[Instagram] Container ID → {container_id}")
                             print(f"[Instagram] Méthode → {'multipart' if multipart_success else 'url'}")
