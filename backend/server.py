@@ -7205,8 +7205,21 @@ async def post_to_instagram(post: Post, page_access_token: str):
                 print(f"[Instagram] Upload multipart → Début")
                 print(f"[Instagram] Fichier local → {local_file_path}")
                 
-                # Handle video and image differently
+                # CONVERSION AUTOMATIQUE WebP → JPEG pour fichiers locaux
                 upload_file_path = local_file_path
+                if media_type == "image" and local_file_path.lower().endswith('.webp'):
+                    print(f"[WebP DÉTECTÉ] Fichier local WebP → conversion JPEG requise")
+                    success, jpeg_path, error_msg = await convert_webp_to_jpeg(local_file_path)
+                    if success:
+                        upload_file_path = jpeg_path
+                        print(f"[WebP CONVERTI] Fichier Instagram → {upload_file_path}")
+                    else:
+                        print(f"[WebP ERREUR] Conversion échouée: {error_msg}, utilisation WebP original")
+                        upload_file_path = local_file_path
+                else:
+                    upload_file_path = local_file_path
+                
+                # Handle video and image differently
                 
                 if media_type == "video":
                     # For videos: use original file, set media_type to VIDEO
