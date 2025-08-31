@@ -6769,12 +6769,25 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 # PRIORITÉ: Utiliser fichier local si disponible (évite erreurs 404)
                 if local_file_path and os.path.exists(local_file_path):
                     print(f"✅ PRIORITÉ: Utilisation fichier local (évite erreurs ngrok): {local_file_path}")
+                    
+                    # CONVERSION AUTOMATIQUE WebP → JPEG pour fichiers locaux Facebook
+                    upload_file_path = local_file_path
+                    if local_file_path.lower().endswith('.webp'):
+                        print(f"[WebP DÉTECTÉ] Fichier local WebP → conversion JPEG requise (Facebook)")
+                        success, jpeg_path, error_msg = await convert_webp_to_jpeg(local_file_path)
+                        if success:
+                            upload_file_path = jpeg_path
+                            print(f"[WebP CONVERTI] Fichier Facebook → {upload_file_path}")
+                        else:
+                            print(f"[WebP ERREUR] Conversion échouée: {error_msg}, utilisation WebP original")
+                            upload_file_path = local_file_path
+                    
                     # Read local file content
-                    with open(local_file_path, 'rb') as f:
+                    with open(upload_file_path, 'rb') as f:
                         media_content = f.read()
                     
                     # DÉTECTION AUTOMATIQUE du type de média
-                    detected_media_type = await detect_media_type_from_content(media_content, local_file_path)
+                    detected_media_type = await detect_media_type_from_content(media_content, upload_file_path)
                     print(f"🔍 Type de média détecté automatiquement: {detected_media_type}")
                     
                     # Determine content type from detection + file extension
