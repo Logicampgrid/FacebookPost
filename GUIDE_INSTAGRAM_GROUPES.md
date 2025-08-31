@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://insta-form-data.preview.emergentagent.com
+URL : https://instagram-upload.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

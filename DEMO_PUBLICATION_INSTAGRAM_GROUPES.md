@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://insta-form-data.preview.emergentagent.com
+🔗 https://instagram-upload.preview.emergentagent.com

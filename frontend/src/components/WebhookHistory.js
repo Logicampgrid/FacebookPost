@@ -253,7 +253,7 @@ const WebhookHistory = () => {
           <div>
             <h4 className="font-medium text-blue-900 mb-2">Endpoint Webhook :</h4>
             <code className="bg-blue-100 px-2 py-1 rounded text-sm text-blue-900">
-              POST https://insta-form-data.preview.emergentagent.com/api/webhook
+              POST https://instagram-upload.preview.emergentagent.com/api/webhook
             </code>
           </div>
           
