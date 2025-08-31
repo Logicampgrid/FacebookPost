@@ -1270,12 +1270,13 @@ async def publish_media_to_social_platforms(
                                 # ATTENTE INTELLIGENTE SELON LE TYPE DE MÉDIA
                                 if media_type == 'video':
                                     # Attente progressive pour vidéos (Instagram processing)
-                                    base_wait = 15 + (attempt * 10)  # 15s, 25s, 35s, 45s
+                                    base_wait = 20 + (attempt * 15)  # 20s, 35s, 50s, 65s - plus long pour vidéos
                                     print(f"⏰ Attente traitement vidéo Instagram ({base_wait}s)...")
                                     await asyncio.sleep(base_wait)
                                     
                                     # Vérification optionnelle du status du conteneur
                                     try:
+                                        print(f"🔍 Vérification status conteneur vidéo...")
                                         status_response = requests.get(
                                             f"{FACEBOOK_GRAPH_URL}/{container_id}",
                                             params={"access_token": access_token, "fields": "status_code,status"},
@@ -1284,18 +1285,22 @@ async def publish_media_to_social_platforms(
                                         if status_response.status_code == 200:
                                             status_data = status_response.json()
                                             status_code = status_data.get("status_code", "UNKNOWN")
-                                            print(f"📊 Status conteneur: {status_code}")
+                                            print(f"📊 Status conteneur vidéo: {status_code}")
                                             
                                             if status_code == "ERROR":
-                                                print(f"❌ Conteneur en erreur, skip publication")
-                                                results["instagram"]["error"] = "Conteneur vidéo en erreur"
+                                                print(f"❌ Conteneur vidéo en erreur, abandon tentative")
+                                                results["instagram"]["error"] = "Conteneur vidéo en erreur après traitement"
                                                 continue
+                                            elif status_code == "IN_PROGRESS":
+                                                print(f"⏳ Vidéo encore en traitement, attente supplémentaire...")
+                                                await asyncio.sleep(10)  # Attente supplémentaire
                                                 
                                     except Exception as status_error:
                                         print(f"⚠️ Impossible de vérifier status conteneur: {str(status_error)}")
                                         # Continuer quand même
                                 else:
                                     # Attente minimale pour images
+                                    print(f"⏰ Attente minimale pour image (3s)...")
                                     await asyncio.sleep(3)
                                 
                                 # ÉTAPE 2: PUBLIER LE CONTENEUR AVEC RETRY INTELLIGENT
