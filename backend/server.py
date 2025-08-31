@@ -1017,6 +1017,23 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                                 print(f"❌ ÉCHEC CONVERSION FFmpeg:")
                                 print(f"   Return code: {result.returncode}")
                                 print(f"   Stderr: {result.stderr[:300]}...")
+                                
+                                # Log détaillé de l'échec de conversion vidéo
+                                await log_media_conversion_details(
+                                    "video_conversion",
+                                    input_path,
+                                    converted_path,
+                                    "video", 
+                                    target_platform,
+                                    success=False,
+                                    error_msg=f"FFmpeg failed (code {result.returncode}): {result.stderr[:100]}",
+                                    additional_info={
+                                        "strategy_attempted": "preventive_validation",
+                                        "ffmpeg_return_code": result.returncode,
+                                        "timeout_used": "300s"
+                                    }
+                                )
+                                
                                 return False, None, None, f"Échec conversion vidéo: {result.stderr[:100]}"
                         else:
                             print(f"✅ VIDÉO DÉJÀ COMPATIBLE: Aucune conversion nécessaire")
