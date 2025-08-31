@@ -7175,7 +7175,10 @@ async def post_to_instagram(post: Post, page_access_token: str):
                         publish_result = publish_response.json()
                         if 'id' in publish_result:
                             instagram_post_id = publish_result['id']
-                            print(f"✅ Instagram post published successfully: {instagram_post_id}")
+                            print(f"✅ Instagram post published successfully!")
+                            print(f"📋 Container ID: {container_id}")
+                            print(f"🎯 Post ID: {instagram_post_id}")
+                            print(f"⚙️ Method: {'multipart' if multipart_success else 'url'}")
                             return {
                                 "id": instagram_post_id,
                                 "platform": "instagram",
