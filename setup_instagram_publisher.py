@@ -64,6 +64,10 @@ def check_environment():
     """Vérifie les variables d'environnement"""
     print("\n🔐 Vérification de l'environnement...")
     
+    # Charger les variables depuis .env
+    from dotenv import load_dotenv
+    load_dotenv('/app/backend/.env')
+    
     required_env = [
         'MONGO_URL',
         'FACEBOOK_GRAPH_URL'
@@ -71,16 +75,17 @@ def check_environment():
     
     missing_env = []
     for env_var in required_env:
-        if not os.getenv(env_var):
+        value = os.getenv(env_var)
+        if not value:
             missing_env.append(env_var)
             print(f"❌ {env_var} - MANQUANT")
         else:
-            print(f"✅ {env_var} - OK")
+            print(f"✅ {env_var} - OK ({value[:30]}...)")
     
     if missing_env:
-        print(f"\n⚠️ Variables d'environnement manquantes:")
+        print(f"\n⚠️ Variables d'environnement manquantes dans /app/backend/.env:")
         for var in missing_env:
-            print(f"  export {var}=<valeur>")
+            print(f"  {var}=<valeur>")
         return False
     
     return True
