@@ -5384,6 +5384,15 @@ def get_shop_page_mapping():
             "instagram_username": "logicamp_berger",
             "instagram_url": "https://www.instagram.com/logicamp_berger/"
         },
+        "logicampoutdoor": {
+            "name": "Logicamp Outdoor",
+            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMPOUTDOOR", "236260991673388"),
+            "woocommerce_url": "https://logicampoutdoor.com",
+            "platform": "multi",
+            "platforms": ["facebook", "instagram"],
+            "instagram_username": "logicamp_berger",
+            "instagram_url": "https://www.instagram.com/logicamp_berger/"
+        },
         "gizmobbs": {
             "name": "Le Berger Blanc Suisse", 
             "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
@@ -5398,15 +5407,6 @@ def get_shop_page_mapping():
             "requires_instagram_auth": True,
             "requires_owner_business_manager": True,
             "note": "✅ MULTI-PLATFORM: Support Instagram + Facebook via Business Manager 'Entreprise de Didier Preud'homme'"
-        },
-        "gimobbs": {
-            "name": "Le Berger Blanc Suisse", 
-            "expected_id": os.getenv("FB_PAGE_ID_LOGICAMP", "102401876209415"),  # Use environment variable
-            "woocommerce_url": "https://gizmobbs.com",
-            "platform": "multi",
-            "platforms": ["facebook", "instagram"],
-            "instagram_username": "logicamp_berger",
-            "instagram_url": "https://www.instagram.com/logicamp_berger/"
         },
         "logicantiq": {
             "name": "LogicAntiq",
