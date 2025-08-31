@@ -26,6 +26,7 @@ def test_store_mapping():
             "url": f"https://example.com/test-{store}"
         }
         
+        # Test avec form-data (multipart)
         payload = {
             "json_data": json.dumps(test_data)
         }
@@ -35,11 +36,19 @@ def test_store_mapping():
             print(f"  Store '{store}': HTTP {response.status_code}")
             
             if response.status_code == 400:
-                error_msg = response.json().get("detail", "Unknown error")
-                if "Invalid store" in error_msg:
-                    print(f"    ❌ Store non reconnu: {error_msg}")
-                else:
-                    print(f"    ⚠️ Autre erreur: {error_msg}")
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("detail", "Unknown error")
+                    if "Invalid store" in error_msg:
+                        print(f"    ❌ Store non reconnu: {error_msg}")
+                    elif "json_data field is required" in error_msg:
+                        print(f"    ❌ Format de données requis: {error_msg}")
+                    elif "image" in error_msg or "file" in error_msg:
+                        print(f"    ⚠️ Manque fichier média (normal pour ce test): {error_msg}")
+                    else:
+                        print(f"    ⚠️ Autre erreur: {error_msg}")
+                except:
+                    print(f"    ⚠️ Erreur non-JSON: {response.text}")
             elif response.status_code == 200:
                 print(f"    ✅ Store reconnu")
             else:
