@@ -403,6 +403,287 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
         print(f"💥 ERREUR TÉLÉCHARGEMENT FIABLE: {error_msg}")
         return False, None, None, error_msg
 
+async def log_media_conversion_details(
+    operation: str, 
+    input_path: str, 
+    output_path: str = None, 
+    media_type: str = None, 
+    platform: str = None,
+    success: bool = True,
+    error_msg: str = None,
+    additional_info: dict = None
+):
+    """
+    NOUVELLE FONCTION : Logging centralisé et détaillé pour les conversions de médias
+    Provides comprehensive logging for all media operations for debugging
+    
+    Args:
+        operation: Type d'opération ("validation", "conversion", "upload", etc.)
+        input_path: Chemin du fichier d'entrée
+        output_path: Chemin du fichier de sortie (si applicable)
+        media_type: Type de média ("image", "video")
+        platform: Plateforme cible ("instagram", "facebook")
+        success: Succès de l'opération
+        error_msg: Message d'erreur (si échec)
+        additional_info: Informations supplémentaires (dict)
+    """
+    try:
+        timestamp = datetime.utcnow().strftime("%H:%M:%S.%f")[:-3]
+        status_icon = "✅" if success else "❌"
+        
+        print(f"\n{status_icon} [{timestamp}] MÉDIA LOG - {operation.upper()}")
+        print("=" * 70)
+        
+        if input_path:
+            print(f"📁 Fichier source: {input_path}")
+            if os.path.exists(input_path):
+                size_mb = os.path.getsize(input_path) / (1024 * 1024)
+                print(f"📊 Taille source: {size_mb:.2f}MB")
+            else:
+                print(f"⚠️ Fichier source non trouvé")
+        
+        if output_path:
+            print(f"📁 Fichier cible: {output_path}")
+            if os.path.exists(output_path):
+                size_mb = os.path.getsize(output_path) / (1024 * 1024)
+                print(f"📊 Taille cible: {size_mb:.2f}MB")
+                
+                # Calcul compression si applicable
+                if input_path and os.path.exists(input_path):
+                    input_size = os.path.getsize(input_path)
+                    output_size = os.path.getsize(output_path)
+                    if input_size > 0:
+                        compression = ((input_size - output_size) / input_size) * 100
+                        print(f"💾 Compression: {compression:.1f}%")
+        
+        if media_type:
+            print(f"🎯 Type média: {media_type}")
+        
+        if platform:
+            print(f"🌐 Plateforme: {platform}")
+        
+        if success:
+            print(f"✅ Statut: SUCCÈS")
+        else:
+            print(f"❌ Statut: ÉCHEC")
+            if error_msg:
+                print(f"💥 Erreur: {error_msg}")
+        
+        if additional_info:
+            print(f"ℹ️ Informations supplémentaires:")
+            for key, value in additional_info.items():
+                print(f"   • {key}: {value}")
+        
+        print("=" * 70)
+        
+    except Exception as log_error:
+        print(f"⚠️ Erreur logging média: {str(log_error)}")
+
+async def detect_media_compatibility_issues(file_path: str, target_platform: str) -> dict:
+    """
+    NOUVELLE FONCTION : Détection proactive des problèmes de compatibilité média
+    Analyze media files to predict potential upload issues before attempting upload
+    
+    Args:
+        file_path: Chemin du fichier à analyser
+        target_platform: "instagram" ou "facebook"
+    
+    Returns:
+        dict: Rapport détaillé des problèmes de compatibilité détectés
+    """
+    try:
+        issues = {
+            "critical_issues": [],      # Problèmes bloquants
+            "warnings": [],             # Problèmes non-bloquants mais recommandations
+            "compatibility_score": 100, # Score sur 100 (100 = parfait)
+            "recommendations": [],      # Recommandations d'amélioration
+            "file_info": {}
+        }
+        
+        if not os.path.exists(file_path):
+            issues["critical_issues"].append("Fichier inexistant")
+            issues["compatibility_score"] = 0
+            return issues
+        
+        # Analyse de base du fichier
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        file_ext = file_path.lower().split('.')[-1]
+        
+        issues["file_info"] = {
+            "path": file_path,
+            "size_mb": round(file_size_mb, 2),
+            "extension": file_ext
+        }
+        
+        # Limites spécifiques par plateforme
+        if target_platform == "instagram":
+            max_image_size = 8.0
+            max_video_size = 100.0
+            supported_image_formats = ['jpg', 'jpeg', 'png']
+            supported_video_formats = ['mp4']
+            max_video_duration = 60
+        else:  # Facebook
+            max_image_size = 25.0
+            max_video_size = 250.0
+            supported_image_formats = ['jpg', 'jpeg', 'png', 'gif']
+            supported_video_formats = ['mp4', 'mov']
+            max_video_duration = 240
+        
+        # Détection du type de média
+        try:
+            media_type = await detect_media_type_from_content(open(file_path, 'rb').read(), file_path)
+            issues["file_info"]["detected_type"] = media_type
+        except:
+            media_type = "unknown"
+            issues["critical_issues"].append("Type de média non détectable")
+            issues["compatibility_score"] -= 30
+        
+        # Analyse spécifique par type
+        if media_type == "image":
+            try:
+                with Image.open(file_path) as img:
+                    format_name = img.format
+                    size = img.size
+                    mode = img.mode
+                    
+                    issues["file_info"].update({
+                        "format": format_name,
+                        "resolution": f"{size[0]}x{size[1]}",
+                        "color_mode": mode
+                    })
+                    
+                    # Vérification format
+                    if format_name == 'WEBP':
+                        issues["critical_issues"].append(f"Format WebP non supporté natïvement par {target_platform}")
+                        issues["recommendations"].append("Conversion WebP → JPEG requise")
+                        issues["compatibility_score"] -= 25
+                    
+                    elif file_ext not in supported_image_formats:
+                        issues["warnings"].append(f"Extension .{file_ext} non optimale pour {target_platform}")
+                        issues["recommendations"].append(f"Formats recommandés: {', '.join(supported_image_formats)}")
+                        issues["compatibility_score"] -= 10
+                    
+                    # Vérification taille
+                    if file_size_mb > max_image_size:
+                        issues["critical_issues"].append(f"Taille excessive: {file_size_mb:.1f}MB > {max_image_size}MB")
+                        issues["recommendations"].append("Compression image requise")
+                        issues["compatibility_score"] -= 20
+                    elif file_size_mb > max_image_size * 0.8:  # 80% de la limite
+                        issues["warnings"].append(f"Taille importante: {file_size_mb:.1f}MB (proche de la limite)")
+                        issues["recommendations"].append("Compression recommandée pour optimiser l'upload")
+                        issues["compatibility_score"] -= 5
+                    
+                    # Vérification résolution
+                    max_dimension = 1080 if target_platform == "instagram" else 2048
+                    if size[0] > max_dimension or size[1] > max_dimension:
+                        issues["warnings"].append(f"Résolution élevée: {size[0]}x{size[1]} > {max_dimension}px recommandés")
+                        issues["recommendations"].append(f"Redimensionnement à max {max_dimension}px recommandé")
+                        issues["compatibility_score"] -= 5
+                    
+                    # Vérification transparence
+                    if mode in ('RGBA', 'LA') and target_platform == "instagram":
+                        issues["warnings"].append("Image avec transparence (Instagram préfère sans transparence)")
+                        issues["recommendations"].append("Conversion avec fond blanc recommandée")
+                        issues["compatibility_score"] -= 5
+                        
+            except Exception as img_error:
+                issues["critical_issues"].append(f"Impossible d'analyser l'image: {str(img_error)}")
+                issues["compatibility_score"] -= 40
+        
+        elif media_type == "video":
+            try:
+                # Analyser avec ffprobe si disponible
+                result = subprocess.run([
+                    'ffprobe', '-v', 'quiet', '-print_format', 'json', 
+                    '-show_format', '-show_streams', file_path
+                ], capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    video_info = json.loads(result.stdout)
+                    format_info = video_info.get('format', {})
+                    video_streams = [s for s in video_info.get('streams', []) if s.get('codec_type') == 'video']
+                    
+                    duration = float(format_info.get('duration', 0))
+                    format_name = format_info.get('format_name', 'unknown')
+                    
+                    issues["file_info"].update({
+                        "format": format_name,
+                        "duration_seconds": round(duration, 1)
+                    })
+                    
+                    if video_streams:
+                        video_stream = video_streams[0]
+                        codec = video_stream.get('codec_name', 'unknown')
+                        width = video_stream.get('width', 0)
+                        height = video_stream.get('height', 0)
+                        
+                        issues["file_info"].update({
+                            "codec": codec,
+                            "resolution": f"{width}x{height}"
+                        })
+                        
+                        # Vérification codec
+                        if codec != 'h264':
+                            issues["critical_issues"].append(f"Codec {codec} non optimal (H.264 requis)")
+                            issues["recommendations"].append("Conversion H.264 requise")
+                            issues["compatibility_score"] -= 25
+                        
+                        # Vérification durée
+                        if duration > max_video_duration:
+                            issues["critical_issues"].append(f"Durée excessive: {duration:.1f}s > {max_video_duration}s")
+                            issues["recommendations"].append(f"Découpage à max {max_video_duration}s requis")
+                            issues["compatibility_score"] -= 20
+                        
+                        # Vérification taille
+                        if file_size_mb > max_video_size:
+                            issues["critical_issues"].append(f"Taille excessive: {file_size_mb:.1f}MB > {max_video_size}MB")
+                            issues["recommendations"].append("Compression vidéo requise")
+                            issues["compatibility_score"] -= 20
+                        
+                        # Vérification résolution
+                        max_res = 1080 if target_platform == "instagram" else 1920
+                        if width > max_res or height > max_res:
+                            issues["warnings"].append(f"Résolution élevée: {width}x{height}")
+                            issues["recommendations"].append(f"Redimensionnement à max {max_res}px recommandé")
+                            issues["compatibility_score"] -= 10
+                    
+                else:
+                    issues["warnings"].append("Impossible d'analyser la vidéo en détail")
+                    issues["compatibility_score"] -= 15
+                    
+            except FileNotFoundError:
+                issues["warnings"].append("FFprobe non disponible pour analyse vidéo détaillée")
+                issues["compatibility_score"] -= 10
+            except Exception as video_error:
+                issues["critical_issues"].append(f"Erreur analyse vidéo: {str(video_error)}")
+                issues["compatibility_score"] -= 30
+        
+        # Calcul score final
+        issues["compatibility_score"] = max(0, issues["compatibility_score"])
+        
+        # Évaluation globale
+        if issues["compatibility_score"] >= 90:
+            issues["overall_assessment"] = "EXCELLENT - Prêt pour upload"
+        elif issues["compatibility_score"] >= 75:
+            issues["overall_assessment"] = "BON - Quelques optimisations recommandées"
+        elif issues["compatibility_score"] >= 50:
+            issues["overall_assessment"] = "MOYEN - Conversions recommandées"
+        else:
+            issues["overall_assessment"] = "CRITIQUE - Conversions obligatoires"
+        
+        return issues
+        
+    except Exception as e:
+        return {
+            "critical_issues": [f"Erreur analyse compatibilité: {str(e)}"],
+            "warnings": [],
+            "compatibility_score": 0,
+            "recommendations": ["Vérifier l'intégrité du fichier"],
+            "file_info": {"error": str(e)},
+            "overall_assessment": "ERREUR - Analyse impossible"
+        }
+
 async def validate_and_convert_media_for_social(input_path: str, target_platform: str = "instagram") -> tuple:
     """
     NOUVELLE FONCTION : Validation et conversion préventive des médias pour Instagram/Facebook
