@@ -1227,17 +1227,20 @@ async def publish_media_to_social_platforms(
                             # ÉTAPE 1: CRÉER LE CONTENEUR MÉDIA AVEC PARAMÈTRES OPTIMISÉS
                             container_data = {
                                 "access_token": access_token,
-                                "caption": f"{message}\n\n🔗 {permalink}",
-                                "media_type": "VIDEO" if media_type == 'video' else "IMAGE"
+                                "caption": f"{message}\n\n🔗 {permalink}"
                             }
                             
-                            # Optimisation des noms de fichier pour Instagram
+                            # Paramètres spécifiques selon le type de média
                             if media_type == 'video':
+                                container_data["media_type"] = "VIDEO"
                                 filename = f"instagram_video_{attempt + 1}.mp4"
                                 content_type = 'video/mp4'
+                                print(f"🎬 Conteneur vidéo Instagram avec media_type=VIDEO")
                             else:
+                                container_data["media_type"] = "IMAGE"
                                 filename = f"instagram_image_{attempt + 1}.jpg"
                                 content_type = 'image/jpeg'
+                                print(f"🖼️ Conteneur image Instagram avec media_type=IMAGE")
                             
                             files = {
                                 'source': (filename, media_content, content_type)
