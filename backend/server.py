@@ -7044,10 +7044,10 @@ async def post_to_instagram(post: Post, page_access_token: str):
             dynamic_base_url = get_dynamic_base_url()
             full_media_url = f"{dynamic_base_url}{selected_media}"
         
-        # Check if we have media for Instagram posting
-        if not media_url:
-            print("❌ Instagram requires media - skipping post without images or videos")
-            return {"status": "error", "message": "No media provided for Instagram"}
+        # Check if we have selected media for Instagram posting
+        if not selected_media:
+            print("[Instagram] Erreur → Aucun média sélectionné")
+            return {"status": "error", "message": "No media selected for Instagram"}
         
         # STRATEGY 1: MULTIPART UPLOAD (Direct file upload - Recommended for Instagram)
         multipart_success = False
