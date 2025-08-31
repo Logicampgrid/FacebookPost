@@ -7049,7 +7049,7 @@ async def post_to_instagram(post: Post, page_access_token: str):
             # Classify media type based on extension
             if file_ext in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
                 video_files.append(media_url)
-                print(f"[Instagram] Vidéo détectée → {file_ext}")
+                print(f"[Instagram] Vidéo détectée → création container...")
             elif file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
                 image_files.append(media_url)
                 print(f"[Instagram] Image détectée → {file_ext}")
