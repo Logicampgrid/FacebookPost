@@ -7055,40 +7055,42 @@ async def post_to_instagram(post: Post, page_access_token: str):
         
         if local_file_path and os.path.exists(local_file_path):
             try:
-                print(f"🚀 STRATEGY 1: Using multipart upload for Instagram compatibility")
-                print(f"📁 Local file: {local_file_path}")
+                print(f"[Instagram] Upload multipart → Début")
+                print(f"[Instagram] Fichier local → {local_file_path}")
                 
-                # Optimize image specifically for Instagram
-                instagram_optimized_path = f"{local_file_path}.instagram_optimized.jpg"
-                if optimize_image_for_instagram(local_file_path, instagram_optimized_path):
-                    print(f"📱 Using Instagram-optimized image: {instagram_optimized_path}")
-                    upload_file_path = instagram_optimized_path
-                else:
-                    print(f"⚠️ Instagram optimization failed, using original: {local_file_path}")
-                    upload_file_path = local_file_path
+                # Handle video and image differently
+                upload_file_path = local_file_path
                 
-                # Read file content for multipart upload
-                with open(upload_file_path, 'rb') as f:
-                    media_content = f.read()
-                
-                print(f"📊 Media info: size={len(media_content)} bytes")
-                
-                # Determine media type
-                file_ext = upload_file_path.lower().split('.')[-1]
-                if file_ext in ['mp4', 'mov', 'avi']:
-                    media_type = "REELS"
+                if media_type == "video":
+                    # For videos: use original file, set media_type to VIDEO
+                    print(f"[Instagram] Upload vidéo → En cours")
                     content_type = 'video/mp4'
-                    container_data["media_type"] = "REELS"
+                    container_data["media_type"] = "VIDEO"  # Use VIDEO for proper video handling
+                    container_data["video_url"] = f"{get_dynamic_base_url()}{selected_media}"
                 else:
-                    media_type = "IMAGE"
+                    # For images: optimize specifically for Instagram
+                    print(f"[Instagram] Upload image → En cours")
+                    instagram_optimized_path = f"{local_file_path}.instagram_optimized.jpg"
+                    if optimize_image_for_instagram(local_file_path, instagram_optimized_path):
+                        print(f"[Instagram] Optimisation image → Success")
+                        upload_file_path = instagram_optimized_path
+                    else:
+                        print(f"[Instagram] Optimisation image → Échec, utilisation originale")
+                        upload_file_path = local_file_path
+                    
                     content_type = 'image/jpeg'
                     # Instagram requires image_url even for multipart uploads, but our domain is not accessible
                     # Solution: Use a public image service as backup URL while still using multipart
                     # This is a workaround for preview domain accessibility issues
                     backup_image_url = f"https://via.placeholder.com/800x600/CCCCCC/000000.jpg?text=Instagram+Post"
                     container_data["image_url"] = backup_image_url
-                    print(f"📸 Using backup image_url for Instagram requirement: {backup_image_url}")
-                    print(f"ℹ️ Instagram will use multipart file data instead of URL")
+                    print(f"[Instagram] URL de sauvegarde → {backup_image_url}")
+                
+                # Read file content for multipart upload
+                with open(upload_file_path, 'rb') as f:
+                    media_content = f.read()
+                
+                print(f"[Instagram] Taille média → {len(media_content)} bytes")
                 
                 print(f"📱 Creating Instagram media container with multipart upload for {post.target_name}")
                 print(f"📋 Container data: {container_data}")
