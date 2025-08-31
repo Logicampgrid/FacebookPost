@@ -1396,10 +1396,31 @@ async def publish_media_to_social_platforms(
                                 # Analyser si "Failed to create media container" et essayer des solutions
                                 if "failed to create" in cont_detailed_error.lower() or container_response.status_code == 400:
                                     print(f"🔧 Erreur 'Failed to create media container' détectée")
-                                    if media_type == 'video' and attempt < max_attempts - 1:
-                                        print(f"🎬 Essai avec attente supplémentaire pour traitement vidéo...")
-                                        await asyncio.sleep(20)  # Attente supplémentaire
-                                        continue
+                                    
+                                    # Solutions spécifiques selon le type de média
+                                    if media_type == 'video':
+                                        if attempt < max_attempts - 1:
+                                            print(f"🎬 Solutions vidéo: attente supplémentaire + retry avec paramètres optimisés")
+                                            await asyncio.sleep(30)  # Attente plus longue pour vidéos
+                                            
+                                            # Modifier les paramètres pour le prochain essai
+                                            if attempt == 1:
+                                                # 2ème essai: forcer le content-type
+                                                print(f"🔄 2ème essai vidéo: force content-type video/mp4")
+                                            elif attempt == 2:
+                                                # 3ème essai: simplifier les paramètres
+                                                print(f"🔄 3ème essai vidéo: paramètres simplifiés")
+                                            
+                                            continue
+                                        else:
+                                            results["instagram"]["error"] = f"Échec création conteneur vidéo après {max_attempts} tentatives: {cont_detailed_error}"
+                                    else:
+                                        if attempt < max_attempts - 1:
+                                            print(f"🖼️ Solutions image: retry avec format optimisé")
+                                            await asyncio.sleep(10)  # Attente plus courte pour images
+                                            continue
+                                        else:
+                                            results["instagram"]["error"] = f"Échec création conteneur image après {max_attempts} tentatives: {cont_detailed_error}"
                                 
                                 # Stratégie de retry pour conteneur
                                 should_retry_container = False
