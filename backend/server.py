@@ -697,6 +697,35 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
         tuple: (success: bool, converted_path: str, media_type: str, error_msg: str)
     """
     try:
+        await log_media_conversion_details(
+            "validation_start", 
+            input_path, 
+            platform=target_platform,
+            additional_info={"operation": "Début validation préventive"}
+        )
+        
+        # NOUVELLE FONCTIONNALITÉ: Analyse proactive de compatibilité
+        compatibility_report = await detect_media_compatibility_issues(input_path, target_platform)
+        
+        print(f"🔍 RAPPORT DE COMPATIBILITÉ:")
+        print(f"   📊 Score: {compatibility_report['compatibility_score']}/100")
+        print(f"   📋 Évaluation: {compatibility_report['overall_assessment']}")
+        
+        if compatibility_report['critical_issues']:
+            print(f"🚨 Problèmes critiques détectés:")
+            for issue in compatibility_report['critical_issues']:
+                print(f"   • {issue}")
+        
+        if compatibility_report['warnings']:
+            print(f"⚠️ Avertissements:")
+            for warning in compatibility_report['warnings']:
+                print(f"   • {warning}")
+        
+        if compatibility_report['recommendations']:
+            print(f"💡 Recommandations:")
+            for rec in compatibility_report['recommendations']:
+                print(f"   • {rec}")
+        
         print(f"🔍 VALIDATION PRÉVENTIVE MÉDIA: {input_path} pour {target_platform}")
         print("=" * 60)
         
