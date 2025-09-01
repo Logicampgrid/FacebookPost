@@ -14041,7 +14041,8 @@ async def save_binary_image(filename: str, mimetype: str, base64_data: str) -> s
         # Generate unique filename
         file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        file_path = f"uploads/{unique_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        file_path = f"/gizmobbs/uploads/{unique_filename}"
         
         # Save the file
         with open(file_path, 'wb') as f:
