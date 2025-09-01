@@ -8325,6 +8325,410 @@ def handle_api_error(response, platform: str, operation: str) -> dict:
             "operation": operation
         }
 
+async def simulate_instagram_post_dry_run(post: Post, access_token: str) -> dict:
+    """Simulation publication Instagram pour mode DRY_RUN"""
+    log_instagram("[DRY_RUN] Simulation publication Instagram")
+    log_instagram(f"[DRY_RUN] Contenu: {post.content[:100]}...")
+    log_instagram(f"[DRY_RUN] Médias: {len(post.media_urls)} fichiers")
+    
+    # Simuler les étapes
+    await asyncio.sleep(1)  # Simuler traitement
+    
+    if post.media_urls:
+        media_type = await detect_media_type_robust(post.media_urls[0])
+        log_instagram(f"[DRY_RUN] Type média principal: {media_type}")
+        
+        if media_type == "video":
+            log_instagram("[DRY_RUN] Simulation container vidéo créé")
+            await asyncio.sleep(2)  # Simuler polling
+            log_instagram("[DRY_RUN] Simulation polling container réussi")
+        else:
+            log_instagram("[DRY_RUN] Simulation container image créé")
+    
+    fake_media_id = f"dry_run_media_{uuid.uuid4().hex[:8]}"
+    log_instagram(f"[DRY_RUN] Publication simulée réussie: {fake_media_id}", "SUCCESS")
+    
+    return {
+        "status": "success",
+        "message": "Publication simulée (DRY_RUN)",
+        "media_id": fake_media_id,
+        "dry_run": True
+    }
+
+async def poll_instagram_container_with_backoff(container_id: str, access_token: str, max_attempts: int = 10) -> dict:
+    """
+    Poll statut container Instagram avec backoff exponentiel selon spécifications:
+    - Backoff: 2s → 4s → 8s (max 8s)
+    - Max 8-10 tentatives
+    - Timeout total ≈ 90-120s
+    """
+    base_delay = 2  # Commencer à 2s
+    max_delay = 8   # Plafonner à 8s
+    
+    for attempt in range(1, max_attempts + 1):
+        try:
+            # Calculer délai avec backoff (2s → 4s → 8s, max 8s)
+            if attempt > 1:
+                delay = min(base_delay * (2 ** (attempt - 2)), max_delay)
+                log_retry(f"Attente {delay}s avant vérification statut container", attempt, max_attempts)
+                await asyncio.sleep(delay)
+            
+            # Vérifier statut container
+            status_url = f"{FACEBOOK_GRAPH_URL}/{container_id}"
+            params = {
+                'fields': 'status_code,status',
+                'access_token': access_token
+            }
+            
+            if DRY_RUN:
+                log_instagram(f"[DRY_RUN] Vérification statut: {status_url}")
+                # Simuler succès après 3 tentatives pour test backoff
+                if attempt >= 3:
+                    return {"status": "FINISHED", "status_code": "PUBLISHED"}
+                else:
+                    return {"status": "IN_PROGRESS", "status_code": "PROCESSING"}
+            
+            response = requests.get(status_url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            status_data = response.json()
+            status_code = status_data.get('status_code', '')
+            status = status_data.get('status', 'UNKNOWN')
+            
+            log_instagram(f"Statut container (#{attempt}): {status} - {status_code}")
+            
+            # Vérifier si terminé avec succès
+            if status_code == 'PUBLISHED' or status == 'FINISHED':
+                log_instagram("Container prêt pour publication", "SUCCESS")
+                return {"status": "FINISHED", "status_code": status_code}
+            
+            # Vérifier erreurs définitives
+            elif status_code in ['ERROR', 'FAILED'] or status in ['ERROR', 'FAILED']:
+                error_info = status_data.get('error', {})
+                log_instagram(f"Container en erreur: {status_code} - {error_info}", "ERROR")
+                return {
+                    "status": "ERROR", 
+                    "status_code": status_code, 
+                    "error": error_info
+                }
+            
+            # En cours de traitement (continuer polling)
+            else:
+                log_instagram(f"Container en traitement: {status} ({status_code})")
+        
+        except requests.exceptions.Timeout:
+            log_retry(f"Timeout vérification statut", attempt, max_attempts)
+        except requests.exceptions.RequestException as e:
+            log_retry(f"Erreur API polling: {str(e)[:100]}", attempt, max_attempts)
+        except Exception as e:
+            log_retry(f"Erreur polling: {str(e)[:100]}", attempt, max_attempts)
+    
+    # Timeout après toutes tentatives (≈90-120s selon max_attempts)
+    total_time = sum(min(base_delay * (2 ** i), max_delay) for i in range(max_attempts - 1))
+    log_instagram(f"Timeout polling après {max_attempts} tentatives (≈{total_time}s)", "ERROR")
+    
+    return {
+        "status": "TIMEOUT", 
+        "status_code": "POLLING_TIMEOUT",
+        "message": f"Timeout après {max_attempts} tentatives ({total_time}s)"
+    }
+
+async def attempt_instagram_video_post_optimized(video_url: str, post: Post, access_token: str) -> dict:
+    """Tentative publication vidéo Instagram avec conversion optimisée et polling"""
+    try:
+        log_instagram("Traitement vidéo optimisé pour Instagram")
+        
+        # Préparer fichier vidéo local
+        local_video_path = None
+        
+        if video_url.startswith('http'):
+            # Télécharger vidéo externe avec retry étendu
+            log_instagram("Téléchargement vidéo externe...")
+            success, downloaded_path, error = await download_media_with_extended_retry(video_url, max_attempts=3, base_timeout=60)
+            if not success:
+                return {"status": "error", "message": f"Échec téléchargement vidéo: {error}"}
+            local_video_path = downloaded_path
+            log_instagram(f"Vidéo téléchargée: {local_video_path}")
+        else:
+            # Fichier local
+            local_video_path = video_url.replace('/api/uploads/', 'uploads/')
+            if not os.path.exists(local_video_path):
+                return {"status": "error", "message": "Fichier vidéo local introuvable"}
+            log_instagram(f"Vidéo locale: {local_video_path}")
+        
+        # Convertir vidéo au format Instagram optimal
+        log_instagram("Conversion vidéo format Instagram...")
+        success, converted_path, thumbnail_path, conversion_error = await convert_video_to_instagram_optimal(local_video_path)
+        
+        if not success:
+            log_instagram(f"⚠️ Conversion échouée: {conversion_error}", "WARNING")
+            # Utiliser vidéo originale comme fallback
+            final_video_path = local_video_path
+        else:
+            final_video_path = converted_path
+            log_instagram(f"Vidéo convertie: {final_video_path}")
+        
+        # Créer container Instagram pour vidéo
+        container_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media"
+        
+        # Préparer caption avec lien produit cliquable
+        caption = post.content or ""
+        if post.product_link:
+            caption += f"\n\n🛒 Produit: {post.product_link}"
+            log_instagram("Lien produit ajouté à la caption")
+        elif post.comment_link:
+            caption += f"\n\n🛒 Plus d'infos en bio!"
+            log_instagram("Lien commentaire ajouté à la caption")
+        
+        container_data = {
+            'media_type': 'VIDEO',
+            'caption': caption[:2200],  # Limite Instagram
+            'access_token': access_token
+        }
+        
+        # Ajouter URL vidéo accessible
+        if video_url.startswith('http'):
+            container_data['video_url'] = video_url
+        else:
+            # Construire URL publique
+            dynamic_base_url = get_dynamic_base_url()
+            container_data['video_url'] = f"{dynamic_base_url}{video_url}"
+        
+        log_instagram(f"URL vidéo container: {container_data['video_url']}")
+        
+        if DRY_RUN:
+            log_instagram(f"[DRY_RUN] Container vidéo: {container_data}")
+            container_id = f"dry_run_container_{uuid.uuid4().hex[:8]}"
+        else:
+            # Créer container réel
+            log_instagram("Création container vidéo Instagram...")
+            response = requests.post(container_url, data=container_data, timeout=60)
+            
+            if response.status_code != 200:
+                error_result = handle_api_error(response, "instagram", "video_container_creation")
+                return error_result
+            
+            result = response.json()
+            container_id = result.get('id')
+            
+            if not container_id:
+                return {"status": "error", "message": "Pas d'ID container retourné par Instagram"}
+        
+        log_instagram(f"Container vidéo créé: {container_id}")
+        
+        # Polling du statut avec backoff selon spécifications
+        log_instagram("Début polling statut container...")
+        poll_result = await poll_instagram_container_with_backoff(container_id, access_token, max_attempts=10)
+        
+        if poll_result.get("status") == "FINISHED":
+            # Publier le container
+            log_instagram("Publication du container vidéo...")
+            
+            if DRY_RUN:
+                log_instagram("[DRY_RUN] Publication container simulée")
+                media_id = f"dry_run_media_{uuid.uuid4().hex[:8]}"
+            else:
+                publish_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish"
+                publish_data = {
+                    'creation_id': container_id,
+                    'access_token': access_token
+                }
+                
+                publish_response = requests.post(publish_url, data=publish_data, timeout=30)
+                
+                if publish_response.status_code != 200:
+                    error_result = handle_api_error(publish_response, "instagram", "video_publish")
+                    return error_result
+                
+                publish_result = publish_response.json()
+                media_id = publish_result.get('id')
+                
+                if not media_id:
+                    return {"status": "error", "message": "Pas d'ID média retourné lors de la publication"}
+            
+            log_instagram(f"Publication vidéo réussie: {media_id}", "SUCCESS")
+            
+            return {
+                "status": "success",
+                "media_id": media_id,
+                "container_id": container_id,
+                "media_type": "video",
+                "converted_path": converted_path if success else None,
+                "thumbnail_path": thumbnail_path
+            }
+        
+        else:
+            # Container en erreur ou timeout
+            status = poll_result.get('status')
+            status_code = poll_result.get('status_code', 'N/A')
+            message = poll_result.get('message', '')
+            
+            error_msg = f"Container vidéo échoué: {status} - {status_code} {message}"
+            log_instagram(error_msg, "ERROR")
+            
+            return {
+                "status": "error", 
+                "message": error_msg,
+                "container_status": status,
+                "status_code": status_code
+            }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur API Instagram vidéo: {str(e)}"
+        log_instagram(error_msg, "ERROR")
+        return {"status": "error", "message": error_msg}
+    except Exception as e:
+        error_msg = f"Erreur vidéo Instagram: {str(e)}"
+        log_instagram(error_msg, "ERROR")
+        return {"status": "error", "message": error_msg}
+
+async def attempt_instagram_image_post_optimized(image_url: str, post: Post, access_token: str) -> dict:
+    """Tentative publication image Instagram avec conversion optimisée"""
+    try:
+        log_instagram("Traitement image optimisé pour Instagram")
+        
+        # Préparer fichier image local
+        local_image_path = None
+        
+        if image_url.startswith('http'):
+            # Télécharger image externe avec retry
+            log_instagram("Téléchargement image externe...")
+            success, downloaded_path, error = await download_media_with_extended_retry(image_url, max_attempts=3, base_timeout=30)
+            if not success:
+                return {"status": "error", "message": f"Échec téléchargement image: {error}"}
+            local_image_path = downloaded_path
+            log_instagram(f"Image téléchargée: {local_image_path}")
+        else:
+            # Fichier local
+            local_image_path = image_url.replace('/api/uploads/', 'uploads/')
+            if not os.path.exists(local_image_path):
+                return {"status": "error", "message": "Fichier image local introuvable"}
+            log_instagram(f"Image locale: {local_image_path}")
+        
+        # Convertir image au format Instagram optimal
+        log_instagram("Conversion image format Instagram...")
+        success, converted_path, conversion_error = await convert_image_to_instagram_optimal(local_image_path)
+        
+        if not success:
+            log_instagram(f"⚠️ Conversion échouée: {conversion_error}", "WARNING")
+            # Utiliser image originale comme fallback
+            final_image_path = local_image_path
+        else:
+            final_image_path = converted_path
+            log_instagram(f"Image convertie: {final_image_path}")
+        
+        # Créer container Instagram pour image
+        container_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media"
+        
+        # Préparer caption avec lien produit cliquable
+        caption = post.content or ""
+        if post.product_link:
+            caption += f"\n\n🛒 Produit: {post.product_link}"
+            log_instagram("Lien produit ajouté à la caption")
+        elif post.comment_link:
+            caption += f"\n\n🛒 Plus d'infos en bio!"
+            log_instagram("Lien commentaire ajouté à la caption")
+        
+        container_data = {
+            'caption': caption[:2200],  # Limite Instagram
+            'access_token': access_token
+        }
+        
+        # Ajouter URL image accessible
+        if image_url.startswith('http'):
+            container_data['image_url'] = image_url
+        else:
+            # Construire URL publique
+            dynamic_base_url = get_dynamic_base_url()
+            container_data['image_url'] = f"{dynamic_base_url}{image_url}"
+        
+        log_instagram(f"URL image container: {container_data['image_url']}")
+        
+        if DRY_RUN:
+            log_instagram(f"[DRY_RUN] Container image: {container_data}")
+            container_id = f"dry_run_container_{uuid.uuid4().hex[:8]}"
+        else:
+            # Créer container réel
+            log_instagram("Création container image Instagram...")
+            response = requests.post(container_url, data=container_data, timeout=30)
+            
+            if response.status_code != 200:
+                error_result = handle_api_error(response, "instagram", "image_container_creation")
+                return error_result
+            
+            result = response.json()
+            container_id = result.get('id')
+            
+            if not container_id:
+                return {"status": "error", "message": "Pas d'ID container retourné par Instagram"}
+        
+        log_instagram(f"Container image créé: {container_id}")
+        
+        # Pour les images, polling plus rapide (5 tentatives max)
+        log_instagram("Début polling statut container image...")
+        poll_result = await poll_instagram_container_with_backoff(container_id, access_token, max_attempts=5)
+        
+        if poll_result.get("status") == "FINISHED":
+            # Publier le container
+            log_instagram("Publication du container image...")
+            
+            if DRY_RUN:
+                log_instagram("[DRY_RUN] Publication container simulée")
+                media_id = f"dry_run_media_{uuid.uuid4().hex[:8]}"
+            else:
+                publish_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish"
+                publish_data = {
+                    'creation_id': container_id,
+                    'access_token': access_token
+                }
+                
+                publish_response = requests.post(publish_url, data=publish_data, timeout=30)
+                
+                if publish_response.status_code != 200:
+                    error_result = handle_api_error(publish_response, "instagram", "image_publish")
+                    return error_result
+                
+                publish_result = publish_response.json()
+                media_id = publish_result.get('id')
+                
+                if not media_id:
+                    return {"status": "error", "message": "Pas d'ID média retourné lors de la publication"}
+            
+            log_instagram(f"Publication image réussie: {media_id}", "SUCCESS")
+            
+            return {
+                "status": "success",
+                "media_id": media_id,
+                "container_id": container_id,
+                "media_type": "image",
+                "converted_path": converted_path if success else None
+            }
+        
+        else:
+            # Container en erreur ou timeout
+            status = poll_result.get('status')
+            status_code = poll_result.get('status_code', 'N/A')
+            message = poll_result.get('message', '')
+            
+            error_msg = f"Container image échoué: status={status}, code={status_code} {message}"
+            log_instagram(error_msg, "ERROR")
+            
+            return {
+                "status": "error",
+                "message": error_msg,
+                "container_status": status,
+                "status_code": status_code
+            }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur API Instagram image: {str(e)}"
+        log_instagram(error_msg, "ERROR")
+        return {"status": "error", "message": error_msg}
+    except Exception as e:
+        error_msg = f"Erreur image Instagram: {str(e)}"
+        log_instagram(error_msg, "ERROR")
+        return {"status": "error", "message": error_msg}
+
 async def post_to_instagram(post: Post, page_access_token: str):
     """Post content to Instagram Business account with enhanced video support and fallback logic"""
     try:
