@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration de base
-API_BASE = "https://finish-line-13.preview.emergentagent.com"
+API_BASE = "https://insta-uploader.preview.emergentagent.com"
 
 def test_backend_connection():
     """Test de connexion au backend"""

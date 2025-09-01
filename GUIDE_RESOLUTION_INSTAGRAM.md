@@ -15,7 +15,7 @@
 
 #### 1.1 Ouvrir l'application
 ```
-🌐 URL : https://finish-line-13.preview.emergentagent.com
+🌐 URL : https://insta-uploader.preview.emergentagent.com
 ```
 
 #### 1.2 Connexion Facebook
@@ -168,7 +168,7 @@ curl -X POST "http://localhost:8001/api/products/publish" \
 ## ✅ CHECKLIST FINALE
 
 ### Avant de démarrer :
-- [ ] Application accessible sur https://finish-line-13.preview.emergentagent.com
+- [ ] Application accessible sur https://insta-uploader.preview.emergentagent.com
 - [ ] Compte Facebook Business Manager prêt
 - [ ] Permissions Instagram Business configurées
 

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://finish-line-13.preview.emergentagent.com
+🔗 https://insta-uploader.preview.emergentagent.com
