@@ -82,13 +82,515 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 NGROK_URL = os.getenv("NGROK_URL", "")
 EXTERNAL_WEBHOOK_ENABLED = os.getenv("EXTERNAL_WEBHOOK_ENABLED", "false").lower() == "true"
 
-# Create uploads directories
-os.makedirs("uploads", exist_ok=True)
-os.makedirs("uploads/processed", exist_ok=True)
+# ============================================================================
+# UTILITAIRES DE LOGGING STRUCTURÉS - NOUVEAUX
+# ============================================================================
+
+def log_instagram(message: str, level: str = "INFO"):
+    """Log structuré pour Instagram avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "RETRY": "🔄"}
+    icon = icons.get(level.upper(), "📝")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [Instagram] {message}")
+
+def log_facebook(message: str, level: str = "INFO"):
+    """Log structuré pour Facebook avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "RETRY": "🔄"}
+    icon = icons.get(level.upper(), "📝")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [Facebook] {message}")
+
+def log_media(message: str, level: str = "INFO"):
+    """Log structuré pour gestion médias avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "CONVERSION": "🔄"}
+    icon = icons.get(level.upper(), "📁")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [Media] {message}")
+
+def log_retry(message: str, attempt: int, max_attempts: int):
+    """Log structuré pour tentatives de retry"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"🔄 [{timestamp}] [Retry] Tentative {attempt}/{max_attempts} → {message}")
 
 # ============================================================================
-# NOUVELLES FONCTIONS ROBUSTES DE GESTION MÉDIAS POUR WEBHOOK N8N
+# DETECTION ET CONVERSION AUTOMATIQUE DE MÉDIAS - OPTIMISÉ
 # ============================================================================
+
+async def detect_media_type_robust(file_path_or_url: str) -> str:
+    """Détecte le type de média de manière robuste avec fallbacks"""
+    try:
+        # Extensions connues
+        image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif', '.bmp'}
+        video_exts = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.flv'}
+        
+        # Obtenir extension
+        if file_path_or_url.startswith('http'):
+            ext = '.' + file_path_or_url.lower().split('.')[-1].split('?')[0]
+        else:
+            ext = '.' + file_path_or_url.lower().split('.')[-1]
+        
+        if ext in image_exts:
+            return "image"
+        elif ext in video_exts:
+            return "video"
+        
+        # Fallback: essayer d'ouvrir comme image si fichier local
+        if os.path.exists(file_path_or_url):
+            try:
+                with Image.open(file_path_or_url) as img:
+                    return "image"
+            except:
+                pass
+            
+            # Fallback: vérifier avec ffprobe pour vidéo
+            try:
+                result = subprocess.run([
+                    'ffprobe', '-v', 'quiet', '-select_streams', 'v:0', 
+                    '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', file_path_or_url
+                ], capture_output=True, text=True, timeout=10)
+                if result.returncode == 0 and 'video' in result.stdout:
+                    return "video"
+            except:
+                pass
+        
+        log_media(f"Type indéterminé pour: {file_path_or_url}", "WARNING")
+        return "unknown"
+    except Exception as e:
+        log_media(f"Erreur détection type: {str(e)}", "ERROR")
+        return "unknown"
+
+async def download_media_with_extended_retry(url: str, max_attempts: int = 3, base_timeout: int = 30) -> tuple:
+    """Télécharge un média avec retry, timeout étendu et fallback streaming"""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            # Timeout progressif (30s → 60s → 120s)
+            timeout = base_timeout * (2 ** (attempt - 1))
+            log_retry(f"Téléchargement {url[:100]}...", attempt, max_attempts)
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'image/*,video/*,application/octet-stream,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            # Stratégie de téléchargement avec stream pour gros fichiers
+            with requests.get(url, headers=headers, timeout=timeout, stream=True, allow_redirects=True) as response:
+                response.raise_for_status()
+                
+                # Vérifier taille avant téléchargement complet
+                content_length = response.headers.get('content-length')
+                if content_length:
+                    size_mb = int(content_length) / (1024 * 1024)
+                    log_media(f"Taille annoncée: {size_mb:.2f}MB")
+                    if size_mb > 250:  # 250MB max
+                        return False, None, f"Fichier trop volumineux: {size_mb:.1f}MB"
+                
+                # Téléchargement par chunks avec limite
+                content_chunks = []
+                total_size = 0
+                max_size = 250 * 1024 * 1024  # 250MB
+                chunk_size = 8192 if attempt == 1 else 16384  # Plus gros chunks sur retry
+                
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    if chunk:
+                        content_chunks.append(chunk)
+                        total_size += len(chunk)
+                        if total_size > max_size:
+                            return False, None, "Dépassement limite taille (250MB)"
+                
+                if total_size == 0:
+                    log_media("Contenu vide téléchargé", "WARNING")
+                    continue
+                
+                content_data = b''.join(content_chunks)
+                log_media(f"Téléchargé: {len(content_data)} bytes ({len(content_data)/(1024*1024):.2f}MB)")
+                
+                # Créer fichier local avec nom unique
+                unique_id = uuid.uuid4().hex[:8]
+                timestamp = int(datetime.utcnow().timestamp())
+                
+                # Déterminer extension intelligemment
+                content_type = response.headers.get('content-type', '').lower()
+                ext = '.bin'  # Extension par défaut
+                
+                if 'image' in content_type:
+                    if 'jpeg' in content_type or 'jpg' in content_type:
+                        ext = '.jpg'
+                    elif 'png' in content_type:
+                        ext = '.png'
+                    elif 'webp' in content_type:
+                        ext = '.webp'
+                    elif 'gif' in content_type:
+                        ext = '.gif'
+                    else:
+                        ext = '.jpg'  # Défaut image
+                elif 'video' in content_type:
+                    if 'mp4' in content_type:
+                        ext = '.mp4'
+                    elif 'quicktime' in content_type:
+                        ext = '.mov'
+                    else:
+                        ext = '.mp4'  # Défaut vidéo
+                else:
+                    # Essayer de deviner depuis l'URL
+                    url_ext = '.' + url.lower().split('.')[-1].split('?')[0]
+                    if url_ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.avi']:
+                        ext = url_ext
+                
+                local_path = f"uploads/processed/download_{timestamp}_{unique_id}{ext}"
+                
+                # Créer répertoire et sauvegarder
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                with open(local_path, 'wb') as f:
+                    f.write(content_data)
+                
+                # Vérification finale
+                if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
+                    log_media(f"Téléchargement réussi: {local_path}", "SUCCESS")
+                    return True, local_path, None
+                else:
+                    log_media("Fichier local non créé correctement", "ERROR")
+                    continue
+                
+        except requests.exceptions.Timeout:
+            log_retry(f"Timeout ({timeout}s)", attempt, max_attempts)
+        except requests.exceptions.ConnectionError as e:
+            log_retry(f"Erreur connexion: {str(e)[:100]}", attempt, max_attempts)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code in [404, 403, 410]:
+                return False, None, f"Ressource inaccessible: HTTP {e.response.status_code}"
+            log_retry(f"Erreur HTTP {e.response.status_code}", attempt, max_attempts)
+        except requests.exceptions.RequestException as e:
+            log_retry(f"Erreur requête: {str(e)[:100]}", attempt, max_attempts)
+        except Exception as e:
+            log_retry(f"Erreur: {str(e)[:100]}", attempt, max_attempts)
+        
+        # Backoff exponentiel entre tentatives
+        if attempt < max_attempts:
+            backoff_delay = 2 ** attempt
+            log_retry(f"Attente {backoff_delay}s avant nouvelle tentative", attempt, max_attempts)
+            await asyncio.sleep(backoff_delay)
+    
+    return False, None, f"Échec téléchargement après {max_attempts} tentatives"
+
+async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
+    """
+    Convertit image vers format optimal Instagram selon spécifications:
+    - WEBP/HEIC/AVIF/PNG → JPEG (qualité 85, sRGB, max 1080×1350, strip EXIF)
+    - PNG reste PNG seulement si transparence détectée
+    """
+    try:
+        log_media(f"Conversion Instagram optimale: {input_path}", "CONVERSION")
+        
+        if not os.path.exists(input_path):
+            return False, None, "Fichier d'entrée introuvable"
+        
+        with Image.open(input_path) as img:
+            original_format = img.format
+            original_size = img.size
+            original_mode = img.mode
+            original_size_mb = os.path.getsize(input_path) / (1024 * 1024)
+            
+            log_media(f"Source: {original_format} {original_size} {original_mode} ({original_size_mb:.2f}MB)")
+            
+            # Détecter transparence précisément
+            has_transparency = False
+            if original_mode in ('RGBA', 'LA'):
+                has_transparency = True
+            elif original_mode == 'P' and 'transparency' in img.info:
+                has_transparency = True
+            elif original_format == 'PNG':
+                # Vérifier s'il y a vraiment de la transparence utilisée
+                if original_mode == 'RGBA':
+                    alpha = img.getchannel('A')
+                    alpha_values = set(alpha.getdata())
+                    has_transparency = len(alpha_values) > 1 or 255 not in alpha_values
+            
+            # RÈGLE PRINCIPALE: PNG garde PNG seulement si transparence réellement utilisée
+            preserve_png = (original_format == 'PNG' and has_transparency)
+            
+            if preserve_png:
+                output_format = 'PNG'
+                output_ext = '.png'
+                log_media("PNG avec transparence → Conservation PNG", "INFO")
+            else:
+                output_format = 'JPEG' 
+                output_ext = '.jpg'
+                log_media(f"{original_format} → JPEG (Instagram optimisé)", "INFO")
+            
+            # Créer chemin de sortie
+            unique_id = uuid.uuid4().hex[:8]
+            timestamp = int(datetime.utcnow().timestamp())
+            output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}{output_ext}"
+            
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
+            # Traitement image
+            processed_img = img.copy()
+            
+            # 1. Correction orientation EXIF (strip EXIF automatiquement)
+            try:
+                processed_img = ImageOps.exif_transpose(processed_img)
+                log_media("Orientation EXIF corrigée et EXIF supprimé", "INFO")
+            except Exception:
+                log_media("Pas d'EXIF à corriger", "INFO")
+            
+            # 2. Redimensionnement Instagram strict (max 1080×1350)
+            max_width, max_height = 1080, 1350
+            current_width, current_height = processed_img.size
+            
+            if current_width > max_width or current_height > max_height:
+                # Calculer ratio en respectant les limites Instagram
+                ratio = min(max_width / current_width, max_height / current_height)
+                new_width = int(current_width * ratio)
+                new_height = int(current_height * ratio)
+                
+                # Assurer dimensions paires (requis pour certains encodeurs)
+                new_width = new_width - (new_width % 2)
+                new_height = new_height - (new_height % 2)
+                
+                processed_img = processed_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                log_media(f"Redimensionné: {current_width}×{current_height} → {new_width}×{new_height}", "INFO")
+            
+            # 3. Conversion couleur selon format final
+            if output_format == 'JPEG':
+                # Conversion sRGB avec fond blanc pour transparence
+                if processed_img.mode in ('RGBA', 'LA', 'P'):
+                    # Créer fond blanc
+                    rgb_img = Image.new('RGB', processed_img.size, (255, 255, 255))
+                    
+                    # Gérer transparence
+                    if processed_img.mode == 'P':
+                        processed_img = processed_img.convert('RGBA')
+                    
+                    # Composer avec fond blanc
+                    if processed_img.mode in ('RGBA', 'LA'):
+                        rgb_img.paste(processed_img, mask=processed_img.split()[-1])
+                    else:
+                        rgb_img.paste(processed_img)
+                    
+                    processed_img = rgb_img
+                    log_media("Transparence convertie avec fond blanc", "INFO")
+                elif processed_img.mode != 'RGB':
+                    processed_img = processed_img.convert('RGB')
+                    log_media(f"Mode couleur converti: {original_mode} → RGB", "INFO")
+                
+                # Sauvegarder JPEG optimisé Instagram (qualité 85, sRGB)
+                processed_img.save(output_path, 'JPEG', 
+                                 quality=85,          # Qualité spécifiée
+                                 optimize=True,       # Optimisation taille
+                                 progressive=True,    # Chargement progressif
+                                 subsampling=0,       # Meilleure qualité chrominance
+                                 icc_profile=None)    # Strip profil couleur pour sRGB standard
+                
+            else:  # PNG
+                # Optimiser PNG en gardant transparence
+                processed_img.save(output_path, 'PNG', 
+                                 optimize=True,       # Optimisation sans perte
+                                 compress_level=6)    # Compression équilibrée
+            
+            # Vérification finale et métriques
+            if os.path.exists(output_path):
+                final_size = os.path.getsize(output_path)
+                final_size_mb = final_size / (1024 * 1024)
+                compression_ratio = ((os.path.getsize(input_path) - final_size) / os.path.getsize(input_path)) * 100
+                
+                log_media(f"Conversion réussie: {output_path}")
+                log_media(f"Taille: {original_size_mb:.2f}MB → {final_size_mb:.2f}MB ({compression_ratio:+.1f}%)")
+                
+                # Avertissement si encore trop lourd pour Instagram
+                if final_size_mb > 8:
+                    log_media(f"⚠️ Taille finale élevée: {final_size_mb:.1f}MB (limite IG: 8MB)", "WARNING")
+                
+                return True, output_path, None
+            else:
+                return False, None, "Fichier de sortie non créé"
+                
+    except Exception as e:
+        error_msg = f"Erreur conversion image: {str(e)}"
+        log_media(error_msg, "ERROR")
+        return False, None, error_msg
+
+async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
+    """
+    Convertit vidéo vers format optimal Instagram selon spécifications:
+    - MP4 (H.264 + AAC), max 1080×1350, < 100MB, durée 3-60s, bitrate adaptatif
+    - Génère miniature JPEG
+    """
+    try:
+        log_media(f"Conversion vidéo Instagram optimale: {input_path}", "CONVERSION")
+        
+        if not os.path.exists(input_path):
+            return False, None, None, "Fichier d'entrée introuvable"
+        
+        # Analyser vidéo source avec ffprobe
+        duration = 30  # Valeur par défaut
+        width, height = 0, 0
+        
+        try:
+            probe_result = subprocess.run([
+                'ffprobe', '-v', 'quiet', '-print_format', 'json', 
+                '-show_format', '-show_streams', input_path
+            ], capture_output=True, text=True, timeout=30)
+            
+            if probe_result.returncode == 0:
+                video_info = json.loads(probe_result.stdout)
+                format_info = video_info.get('format', {})
+                video_streams = [s for s in video_info.get('streams', []) if s.get('codec_type') == 'video']
+                
+                duration = float(format_info.get('duration', 30))
+                
+                if video_streams:
+                    video_stream = video_streams[0]
+                    width = video_stream.get('width', 0)
+                    height = video_stream.get('height', 0)
+                    codec = video_stream.get('codec_name', 'unknown')
+                    
+                    log_media(f"Source: {width}×{height}, {duration:.1f}s, codec: {codec}")
+                
+        except Exception as e:
+            log_media(f"⚠️ Analyse ffprobe échouée: {str(e)}, utilisation valeurs par défaut", "WARNING")
+        
+        # Créer chemins de sortie
+        unique_id = uuid.uuid4().hex[:8]
+        timestamp = int(datetime.utcnow().timestamp())
+        output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}.mp4"
+        thumbnail_path = f"uploads/optimized/thumb_{timestamp}_{unique_id}.jpg"
+        
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Ajuster durée selon spécifications (3-60s pour Instagram)
+        target_duration = max(3, min(duration, 60))
+        if duration > 60:
+            log_media(f"Durée ajustée: {duration:.1f}s → {target_duration}s (limite Instagram)", "INFO")
+        elif duration < 3:
+            log_media(f"Durée ajustée: {duration:.1f}s → {target_duration}s (minimum Instagram)", "INFO")
+        
+        # Calculer bitrate adaptatif selon résolution et durée
+        # Objectif: <100MB pour Instagram
+        target_size_mb = 95  # Marge de sécurité
+        target_bitrate_kbps = int((target_size_mb * 8 * 1024) / target_duration)  # kbps
+        
+        # Limites bitrate raisonnables
+        max_video_bitrate = min(target_bitrate_kbps, 8000)  # Max 8Mbps
+        min_video_bitrate = max(target_bitrate_kbps // 2, 1000)  # Min 1Mbps
+        video_bitrate = min(max_video_bitrate, max(min_video_bitrate, 2500))  # Défaut 2.5Mbps
+        
+        log_media(f"Bitrate calculé: {video_bitrate}kbps (objectif: <{target_size_mb}MB)")
+        
+        # Paramètres FFmpeg optimisés Instagram avec bitrate adaptatif
+        ffmpeg_cmd = [
+            'ffmpeg', '-y', '-i', input_path,
+            
+            # Codecs optimaux Instagram (H.264 + AAC)
+            '-c:v', 'libx264', 
+            '-profile:v', 'main',       # Profil compatible mobiles
+            '-level', '3.1',            # Level compatible tous devices
+            '-preset', 'medium',        # Équilibre vitesse/qualité
+            
+            # Contrôle bitrate adaptatif
+            '-b:v', f'{video_bitrate}k',
+            '-maxrate', f'{int(video_bitrate * 1.5)}k',
+            '-bufsize', f'{int(video_bitrate * 2)}k',
+            
+            # Audio optimisé
+            '-c:a', 'aac', 
+            '-ar', '44100',             # Sample rate standard
+            '-b:a', '128k',             # Bitrate audio
+            '-ac', '2',                 # Stéréo
+            
+            # Optimisations Instagram
+            '-movflags', '+faststart+frag_keyframe+separate_moof',
+            
+            # Redimensionnement Instagram (max 1080×1350, aspect ratio préservé)
+            '-vf', 'scale=1080:1350:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1080:1350:(ow-iw)/2:(oh-ih)/2:color=black',
+            
+            # Frame rate et GOP
+            '-r', '30',                 # 30fps pour Instagram
+            '-g', '30',                 # GOP de 30 (1 seconde)
+            
+            # Durée limitée
+            '-t', str(target_duration),
+            
+            # Options de performance
+            '-threads', '0',            # Utiliser tous les cores
+            '-max_muxing_queue_size', '1024',
+            
+            output_path
+        ]
+        
+        log_media("Lancement conversion FFmpeg Instagram...", "CONVERSION")
+        log_media(f"Commande: {' '.join(ffmpeg_cmd[:10])}... (tronquée)")
+        
+        # Exécution avec timeout étendu
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=300)
+        
+        if result.returncode == 0 and os.path.exists(output_path):
+            # Vérifier taille finale
+            final_size = os.path.getsize(output_path)
+            final_size_mb = final_size / (1024 * 1024)
+            
+            log_media(f"Conversion vidéo réussie: {output_path}")
+            log_media(f"Taille finale: {final_size_mb:.2f}MB")
+            
+            # Avertissement si dépassement limite Instagram
+            if final_size_mb > 100:
+                log_media(f"⚠️ Taille élevée: {final_size_mb:.1f}MB (limite IG: 100MB)", "WARNING")
+            
+            # Générer miniature JPEG optimisée
+            thumbnail_cmd = [
+                'ffmpeg', '-y', '-i', output_path,
+                '-vf', 'select=eq(n\\,0),scale=1080:1350:force_original_aspect_ratio=decrease',
+                '-q:v', '3',              # Haute qualité
+                '-frames:v', '1',         # Une seule frame
+                thumbnail_path
+            ]
+            
+            try:
+                thumb_result = subprocess.run(thumbnail_cmd, capture_output=True, text=True, timeout=30)
+                if thumb_result.returncode == 0 and os.path.exists(thumbnail_path):
+                    log_media(f"Miniature créée: {thumbnail_path}", "SUCCESS")
+                else:
+                    log_media("⚠️ Miniature non créée", "WARNING")
+                    thumbnail_path = None
+            except Exception as thumb_error:
+                log_media(f"⚠️ Erreur miniature: {thumb_error}", "WARNING")
+                thumbnail_path = None
+            
+            return True, output_path, thumbnail_path, None
+            
+        else:
+            # Analyser erreur FFmpeg
+            stderr = result.stderr[:300] if result.stderr else "Pas d'erreur stderr"
+            error_msg = f"FFmpeg échec (code {result.returncode}): {stderr}"
+            log_media(error_msg, "ERROR")
+            
+            # Vérifier erreurs communes
+            if "codec not found" in stderr.lower():
+                error_msg = "Codec H.264 ou AAC non disponible dans FFmpeg"
+            elif "invalid data found" in stderr.lower():
+                error_msg = "Fichier vidéo source corrompu ou format non supporté"
+            elif "no such file" in stderr.lower():
+                error_msg = "Fichier source introuvable"
+            
+            return False, None, None, error_msg
+            
+    except subprocess.TimeoutExpired:
+        error_msg = "Timeout conversion vidéo (300s dépassées)"
+        log_media(error_msg, "ERROR")
+        return False, None, None, error_msg
+    except FileNotFoundError:
+        error_msg = "FFmpeg non disponible sur le système"
+        log_media(error_msg, "ERROR")
+        return False, None, None, error_msg
+    except Exception as e:
+        error_msg = f"Erreur conversion vidéo: {str(e)}"
+        log_media(error_msg, "ERROR")
+        return False, None, None, error_msg
 
 async def download_media_reliably(media_url: str, fallback_binary: bytes = None, filename_hint: str = None) -> tuple:
     """
