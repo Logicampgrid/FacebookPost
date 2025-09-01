@@ -6495,7 +6495,8 @@ async def save_fallback_binary_image(binary_content: bytes) -> tuple:
         print("📁 Utilisation du fallback binaire N8N...")
         
         unique_filename = f"fallback_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.jpg"
-        file_path = f"uploads/{unique_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        file_path = f"/gizmobbs/uploads/{unique_filename}"
         
         with open(file_path, "wb") as f:
             f.write(binary_content)
