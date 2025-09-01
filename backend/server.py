@@ -9490,7 +9490,7 @@ async def attempt_instagram_image_post_optimized(image_url: str, post: Post, acc
         else:
             # Fichier local
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_image_path = image_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
+            local_image_path = image_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/') + '/')
             if not os.path.exists(local_image_path):
                 return {"status": "error", "message": "Fichier image local introuvable"}
             log_instagram(f"Image locale: {local_image_path}")
