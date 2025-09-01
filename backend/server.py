@@ -9934,7 +9934,8 @@ async def download_product_image(image_url: str) -> str:
         
         # Generate unique filename
         unique_filename = f"{uuid.uuid4()}.{ext}"
-        file_path = f"uploads/{unique_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        file_path = f"/gizmobbs/uploads/{unique_filename}"
         
         # Save original image
         with open(file_path, 'wb') as f:
