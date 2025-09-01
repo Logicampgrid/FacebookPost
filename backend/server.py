@@ -16535,6 +16535,59 @@ async def get_poster_media_status():
             "timestamp": datetime.now().isoformat()
         }
 
+@app.post("/api/test-validate-image")
+async def test_validate_image(data: dict):
+    """
+    Endpoint de test pour la fonction validate_and_prepare_image
+    """
+    try:
+        file_url = data.get("file_url")
+        if not file_url:
+            return {"success": False, "error": "file_url requis"}
+        
+        log_poster(f"TEST validate_and_prepare_image avec: {file_url}", "INFO")
+        
+        # Tester la fonction
+        prepared_path = validate_and_prepare_image(file_url)
+        
+        # Informations sur le fichier préparé
+        file_info = {}
+        if os.path.exists(prepared_path):
+            file_size = os.path.getsize(prepared_path)
+            file_info = {
+                "path": prepared_path,
+                "size_bytes": file_size,
+                "size_mb": round(file_size / (1024 * 1024), 2),
+                "extension": Path(prepared_path).suffix,
+                "exists": True
+            }
+            
+            # Test PIL
+            try:
+                with Image.open(prepared_path) as img:
+                    file_info.update({
+                        "pil_format": img.format,
+                        "resolution": f"{img.size[0]}x{img.size[1]}",
+                        "mode": img.mode
+                    })
+            except Exception as pil_error:
+                file_info["pil_error"] = str(pil_error)
+        
+        return {
+            "success": True,
+            "prepared_path": prepared_path,
+            "file_info": file_info,
+            "message": "Image validée et préparée avec succès"
+        }
+        
+    except Exception as e:
+        error_msg = str(e)
+        log_poster(f"ERREUR TEST validate_and_prepare_image: {error_msg}", "ERROR")
+        return {
+            "success": False,
+            "error": error_msg
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
