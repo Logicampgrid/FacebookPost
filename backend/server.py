@@ -12880,7 +12880,8 @@ async def enhanced_facebook_upload(media_content: bytes, filename: str, message:
         # 4. Sauvegarder le fichier temporairement
         file_extension = "mp4" if media_type == "video" else "jpg"
         temp_filename = f"enhanced_upload_{uuid.uuid4().hex[:8]}.{file_extension}"
-        temp_path = f"uploads/{temp_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        temp_path = f"/gizmobbs/uploads/{temp_filename}"
         
         with open(temp_path, "wb") as f:
             f.write(media_content)
