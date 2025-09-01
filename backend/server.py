@@ -315,7 +315,8 @@ async def download_media_with_extended_retry(url: str, max_attempts: int = 5, ba
                                 log_media(f"[TÉLÉCHARGEMENT] Heuristique taille ({final_size_mb:.1f}MB) → image .jpg", "INFO")
                 
                 # Créer répertoire et chemin final
-                local_path = f"uploads/downloaded/media_{timestamp}_{unique_id}{ext}"
+                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                local_path = f"/gizmobbs/uploads/downloaded/media_{timestamp}_{unique_id}{ext}"
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 
                 # Sauvegarde sécurisée avec vérification
