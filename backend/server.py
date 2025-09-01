@@ -1620,8 +1620,8 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                 
                 unique_id = uuid.uuid4().hex[:8]
                 timestamp = int(datetime.utcnow().timestamp())
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                converted_path = f"/gizmobbs/uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                converted_path = os.path.join(PROCESSED_DIR, f"validated_{target_platform}_{timestamp}_{unique_id}.mp4")
                 
                 # Paramètres de conversion optimisés par plateforme avec budgets adaptatifs
                 target_duration = min(video_info["duration"], max_video_duration)
@@ -1852,8 +1852,8 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                         # Générer nom de fichier optimisé
                         unique_id = uuid.uuid4().hex[:8]
                         timestamp = int(datetime.utcnow().timestamp())
-                        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                        converted_path = f"/gizmobbs/uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.jpg"
+                        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                        converted_path = os.path.join(PROCESSED_DIR, f"validated_{target_platform}_{timestamp}_{unique_id}.jpg")
                         
                         # Conversion avec paramètres optimisés pour la plateforme
                         conversion_img = img.copy()
@@ -2008,8 +2008,8 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                             
                             unique_id = uuid.uuid4().hex[:8]
                             timestamp = int(datetime.utcnow().timestamp())
-                            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                            converted_path = f"/gizmobbs/uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                            converted_path = os.path.join(PROCESSED_DIR, f"validated_{target_platform}_{timestamp}_{unique_id}.mp4")
                             
                             # Paramètres de conversion optimisés par plateforme
                             if target_platform == "instagram":
@@ -2100,8 +2100,8 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                     print(f"🔄 CONVERSION CONSERVATRICE appliquée...")
                     unique_id = uuid.uuid4().hex[:8]
                     timestamp = int(datetime.utcnow().timestamp())
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    converted_path = f"/gizmobbs/uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    converted_path = os.path.join(PROCESSED_DIR, f"validated_{target_platform}_{timestamp}_{unique_id}.mp4")
                     
                     # Conversion basique mais robuste
                     ffmpeg_params = [
@@ -2430,8 +2430,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 try:
                     print(f"🔄 Tentative stratégie: {strategy['name']}")
                     
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    temp_output_path = f"/gizmobbs/uploads/processed/converted_image_{unique_id}_{strategy['name']}{strategy['extension']}"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    temp_output_path = os.path.join(PROCESSED_DIR, f"converted_image_{unique_id}_{strategy['name']}{strategy['extension']}")
                     
                     with Image.open(input_path) as img:
                         # Gestion de la transparence et modes couleur
@@ -2564,8 +2564,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 print(f"⚠️ Toutes les stratégies de conversion ont échoué, tentative de fallback")
                 # Fallback: copier le fichier original avec extension appropriée
                 try:
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    fallback_path = f"/gizmobbs/uploads/processed/fallback_image_{unique_id}.jpg"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    fallback_path = os.path.join(PROCESSED_DIR, f"fallback_image_{unique_id}.jpg")
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK IMAGE: Fichier copié sans conversion: {fallback_path}")
@@ -2580,8 +2580,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
         elif media_type == 'video':
             print(f"🎬 CONVERSION VIDÉO: Optimisation MP4 pour Instagram/Facebook")
             
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            output_path = f"/gizmobbs/uploads/processed/converted_video_{unique_id}.mp4"
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            output_path = os.path.join(PROCESSED_DIR, f"converted_video_{unique_id}.mp4")
             
             # Stratégies de conversion vidéo ULTRA-ROBUSTES pour Instagram/Facebook
             conversion_strategies = [
@@ -2726,8 +2726,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 print(f"⚠️ Toutes les stratégies vidéo ont échoué, tentative de fallback")
                 # Fallback: copier le fichier original
                 try:
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    fallback_path = f"/gizmobbs/uploads/processed/fallback_video_{unique_id}.mp4"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    fallback_path = os.path.join(PROCESSED_DIR, f"fallback_video_{unique_id}.mp4")
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
@@ -4642,8 +4642,8 @@ async def test_image_orientation_fix(image: UploadFile = File(...)):
         
         # Save uploaded image
         unique_filename = f"test_orientation_{uuid.uuid4().hex[:8]}.jpg"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         content = await image.read()
         with open(file_path, "wb") as f:
@@ -4826,8 +4826,8 @@ async def test_auto_routing_media():
                 if response.status_code == 200:
                     # Sauvegarder temporairement
                     temp_filename = f"test_auto_routing_{uuid.uuid4().hex[:8]}.tmp"
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    temp_path = f"/gizmobbs/uploads/{temp_filename}"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    temp_path = os.path.join(UPLOAD_DIR, f"{temp_filename}")
                     
                     with open(temp_path, "wb") as f:
                         f.write(response.content)
@@ -6476,8 +6476,8 @@ async def download_image_with_fallback(image_url: str, fallback_binary_content: 
                     file_extension = "webp"
                 
                 unique_filename = f"download_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                file_path = f"/gizmobbs/uploads/{unique_filename}"
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
                 
                 with open(file_path, "wb") as f:
                     f.write(response.content)
@@ -6517,8 +6517,8 @@ async def save_fallback_binary_image(binary_content: bytes) -> tuple:
         print("📁 Utilisation du fallback binaire N8N...")
         
         unique_filename = f"fallback_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.jpg"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         with open(file_path, "wb") as f:
             f.write(binary_content)
@@ -6699,8 +6699,8 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
         else:
             # C'est déjà un chemin local
             success = True
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            local_path = image_source.replace('/api/uploads/', '/gizmobbs/uploads/')
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            local_path = image_source.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             error = "local_file"
         
         if not success:
@@ -8828,8 +8828,8 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 dynamic_base_url = get_dynamic_base_url()
                 full_media_url = f"{dynamic_base_url}{media_url}"
                 # Extract local file path for direct upload
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                local_file_path = media_url.replace('/api/uploads/', '/gizmobbs/uploads/')
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             
             print(f"📸 AMÉLIORÉ: Traitement média avec détection automatique: {full_media_url}")
             print(f"📁 Chemin fichier local: {local_file_path}")
@@ -9339,8 +9339,8 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             log_instagram(f"Vidéo téléchargée: {local_video_path}")
         else:
             # Fichier local
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            local_video_path = video_url.replace('/api/uploads/', '/gizmobbs/uploads/')
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            local_video_path = video_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             if not os.path.exists(local_video_path):
                 return {"status": "error", "message": "Fichier vidéo local introuvable"}
             log_instagram(f"Vidéo locale: {local_video_path}")
@@ -9489,8 +9489,8 @@ async def attempt_instagram_image_post_optimized(image_url: str, post: Post, acc
             log_instagram(f"Image téléchargée: {local_image_path}")
         else:
             # Fichier local
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            local_image_path = image_url.replace('/api/uploads/', '/gizmobbs/uploads/')
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            local_image_path = image_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             if not os.path.exists(local_image_path):
                 return {"status": "error", "message": "Fichier image local introuvable"}
             log_instagram(f"Image locale: {local_image_path}")
@@ -9957,8 +9957,8 @@ async def download_product_image(image_url: str) -> str:
         
         # Generate unique filename
         unique_filename = f"{uuid.uuid4()}.{ext}"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         # Save original image
         with open(file_path, 'wb') as f:
@@ -9969,8 +9969,8 @@ async def download_product_image(image_url: str) -> str:
         # Optimize image for Facebook
         if ext in ['jpg', 'jpeg', 'png', 'webp']:
             optimized_filename = f"{uuid.uuid4()}.jpg"
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            optimized_path = f"/gizmobbs/uploads/{optimized_filename}"
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            optimized_path = os.path.join(UPLOAD_DIR, f"{optimized_filename}")
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
                 # Remove original and use optimized version
@@ -10668,8 +10668,8 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimisation image pour Instagram...")
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            optimize_image(media_url.replace('/api/uploads/', '/gizmobbs/uploads/'), instagram_mode=True)
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
             
             # Create Instagram post content
             instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -10814,8 +10814,8 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                 
                 # Optimize image specifically for Instagram
                 print(f"📸 Optimizing image for Instagram...")
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                optimize_image(media_url.replace('/api/uploads/', '/gizmobbs/uploads/'), instagram_mode=True)
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
                 
                 # Create Instagram post content
                 instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -10930,8 +10930,8 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing image for Instagram...")
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            optimize_image(media_url.replace('/api/uploads/', '/gizmobbs/uploads/'), instagram_mode=True)
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
             
             # Create Instagram post content
             instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -11508,8 +11508,8 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimisation image pour Instagram...")
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            local_file_path = media_url.replace('/api/uploads/', '/gizmobbs/uploads/')
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             optimize_image(local_file_path, instagram_mode=True)
             
             # Create Instagram post content
@@ -11599,8 +11599,8 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing local image for Instagram...")
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            local_file_path = media_url.replace('/api/uploads/', '/gizmobbs/uploads/')
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
             optimize_image(local_file_path, instagram_mode=True)
             
             # Create Instagram post content (déjà généré plus haut)
@@ -12903,8 +12903,8 @@ async def enhanced_facebook_upload(media_content: bytes, filename: str, message:
         # 4. Sauvegarder le fichier temporairement
         file_extension = "mp4" if media_type == "video" else "jpg"
         temp_filename = f"enhanced_upload_{uuid.uuid4().hex[:8]}.{file_extension}"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        temp_path = f"/gizmobbs/uploads/{temp_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        temp_path = os.path.join(UPLOAD_DIR, f"{temp_filename}")
         
         with open(temp_path, "wb") as f:
             f.write(media_content)
@@ -13558,8 +13558,8 @@ async def webhook_endpoint(request: Request):
                                 file_extension = "gif"
                     
                     unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                    local_media_path = f"/gizmobbs/uploads/{unique_filename}"
+                    # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                    local_media_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
                     
                     # Sauvegarder le fichier
                     with open(local_media_path, "wb") as f:
@@ -13599,8 +13599,8 @@ async def webhook_endpoint(request: Request):
                                     file_extension = "jpg"
                             
                             unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                            local_media_path = f"/gizmobbs/uploads/{unique_filename}"
+                            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                            local_media_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
                             
                             with open(local_media_path, "wb") as f:
                                 f.write(media_content)
@@ -13692,8 +13692,8 @@ async def webhook_endpoint(request: Request):
                 # Save the uploaded file
                 file_extension = media_file.filename.split('.')[-1].lower() if '.' in media_file.filename else ('jpg' if media_type == 'image' else 'mp4')
                 unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                file_path = f"/gizmobbs/uploads/{unique_filename}"
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
                 
                 # Read and save file content
                 content = await media_file.read()
@@ -14064,8 +14064,8 @@ async def save_binary_image(filename: str, mimetype: str, base64_data: str) -> s
         # Generate unique filename
         file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         # Save the file
         with open(file_path, 'wb') as f:
@@ -14416,8 +14416,8 @@ async def enhanced_webhook_endpoint(request: Request):
         # Save the binary image file
         file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         # Write the binary data to file
         with open(file_path, 'wb') as f:
@@ -14994,8 +14994,8 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
         # Generate unique filename
         file_extension = file.filename.split(".")[-1].lower()
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
-        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-        file_path = f"/gizmobbs/uploads/{unique_filename}"
+        # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+        file_path = os.path.join(UPLOAD_DIR, f"{unique_filename}")
         
         # Save file
         async with aiofiles.open(file_path, 'wb') as f:
@@ -15006,8 +15006,8 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
         if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
             print(f"🔧 Optimizing uploaded image: {file_path}")
             optimized_filename = f"{uuid.uuid4()}.jpg"
-            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-            optimized_path = f"/gizmobbs/uploads/{optimized_filename}"
+            # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+            optimized_path = os.path.join(UPLOAD_DIR, f"{optimized_filename}")
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
                 # Remove original and use optimized version
@@ -15824,8 +15824,8 @@ async def test_enhanced_product_posting(request: ProductPublishRequest):
                 print(f"⚠️ Skipping external image download for test - simulating success")
                 # Find an existing local image for testing
                 import glob
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                local_images = glob.glob("/gizmobbs/uploads/*.jpg")
+                # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
+                local_images = glob.glob(os.path.join(UPLOAD_DIR, "*.jpg"))
                 if local_images:
                     media_url = f"/api/uploads/{local_images[0].split('/')[-1]}"
                     print(f"✅ Using existing image for test: {media_url}")
