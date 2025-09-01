@@ -8805,7 +8805,8 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 dynamic_base_url = get_dynamic_base_url()
                 full_media_url = f"{dynamic_base_url}{media_url}"
                 # Extract local file path for direct upload
-                local_file_path = media_url.replace('/api/uploads/', 'uploads/')
+                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                local_file_path = media_url.replace('/api/uploads/', '/gizmobbs/uploads/')
             
             print(f"📸 AMÉLIORÉ: Traitement média avec détection automatique: {full_media_url}")
             print(f"📁 Chemin fichier local: {local_file_path}")
