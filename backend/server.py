@@ -4620,7 +4620,8 @@ async def test_image_orientation_fix(image: UploadFile = File(...)):
         
         # Save uploaded image
         unique_filename = f"test_orientation_{uuid.uuid4().hex[:8]}.jpg"
-        file_path = f"uploads/{unique_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        file_path = f"/gizmobbs/uploads/{unique_filename}"
         
         content = await image.read()
         with open(file_path, "wb") as f:
