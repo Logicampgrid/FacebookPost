@@ -15986,24 +15986,220 @@ def upload_ftp(file_path):
         log_poster(f"Erreur FTP pour {file_path}: {str(e)}", "ERROR")
         return False
 
-def convert_webp_to_jpeg(file_path):
-    """Conversion WebP vers JPEG pour compatibilité Instagram"""
-    if file_path.lower().endswith(".webp"):
-        try:
-            log_poster(f"Conversion WebP détectée: {file_path}", "INFO")
-            
-            img = Image.open(file_path).convert("RGB")
-            new_path = file_path.rsplit(".", 1)[0] + ".jpg"
-            img.save(new_path, "JPEG", quality=85, optimize=True)
-            
-            log_poster(f"Conversion WebP -> JPEG réussie: {new_path}", "SUCCESS")
-            return new_path
-            
-        except Exception as e:
-            log_poster(f"Erreur conversion WebP {file_path}: {str(e)}", "ERROR")
-            return file_path
+def validate_and_prepare_image(file_url: str) -> str:
+    """
+    Valide et prépare une image pour upload FTP et publication Instagram.
     
-    return file_path
+    Étapes intégrées :
+    1. Télécharge le fichier depuis l'URL avec timeout 60s et vérification contenu
+    2. Vérifie que le fichier est une vraie image et non une page HTML ou fichier corrompu  
+    3. Convertit automatiquement les fichiers WebP en JPEG si nécessaire
+    4. Valide l'image avec PIL après conversion
+    5. Logs clairs pour chaque étape et erreurs éventuelles
+    
+    Args:
+        file_url: URL ou chemin local du fichier à valider et préparer
+    
+    Returns:
+        str: Chemin local de l'image prête à l'upload si succès
+        
+    Raises:
+        Exception: Si la validation ou préparation échoue
+    """
+    try:
+        log_poster("=== DÉBUT VALIDATION ET PRÉPARATION IMAGE ===", "INFO")
+        log_poster(f"URL/Chemin source: {file_url}", "INFO")
+        
+        # Déterminer si c'est une URL ou un chemin local
+        is_url = file_url.startswith(('http://', 'https://'))
+        local_file_path = None
+        
+        if is_url:
+            # ÉTAPE 1: Téléchargement avec timeout étendu et validation contenu
+            log_poster("ÉTAPE 1: Téléchargement depuis URL avec timeout 60s", "INFO")
+            
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'image/*,video/*,application/octet-stream,*/*;q=0.8',
+                    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Cache-Control': 'no-cache'
+                }
+                
+                log_poster(f"Téléchargement depuis: {file_url}", "INFO")
+                response = requests.get(file_url, headers=headers, timeout=60, stream=True)
+                response.raise_for_status()
+                
+                # Vérifier Content-Type
+                content_type = response.headers.get('content-type', '').lower()
+                log_poster(f"Content-Type reçu: {content_type}", "INFO")
+                
+                if 'text/html' in content_type:
+                    raise Exception(f"Contenu HTML détecté au lieu d'une image (Content-Type: {content_type})")
+                
+                # Télécharger par chunks avec validation taille
+                content_chunks = []
+                total_size = 0
+                max_size = 50 * 1024 * 1024  # 50MB max
+                
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        content_chunks.append(chunk)
+                        total_size += len(chunk)
+                        if total_size > max_size:
+                            raise Exception(f"Fichier trop volumineux: {total_size / (1024*1024):.1f}MB > 50MB")
+                
+                content_data = b''.join(content_chunks)
+                log_poster(f"Téléchargement réussi: {len(content_data)} bytes ({len(content_data)/(1024*1024):.2f}MB)", "SUCCESS")
+                
+                # ÉTAPE 2: Validation du contenu téléchargé
+                log_poster("ÉTAPE 2: Validation du contenu téléchargé", "INFO")
+                
+                if len(content_data) < 100:
+                    raise Exception(f"Contenu trop petit: {len(content_data)} bytes (minimum 100 bytes)")
+                
+                # Vérifier que ce n'est pas du HTML
+                content_start = content_data[:200].decode('utf-8', errors='ignore').lower()
+                if any(html_tag in content_start for html_tag in ['<html', '<head', '<body', '<!doctype']):
+                    raise Exception("Contenu HTML détecté au lieu d'une image")
+                
+                # Vérifier les magic bytes d'image
+                image_magic_bytes = [
+                    b'\xFF\xD8\xFF',  # JPEG
+                    b'\x89PNG\r\n\x1a\n',  # PNG
+                    b'GIF8',  # GIF
+                    b'RIFF',  # WebP (contient aussi WEBP plus loin)
+                ]
+                
+                is_valid_image = any(content_data.startswith(magic) for magic in image_magic_bytes)
+                if not is_valid_image and b'WEBP' not in content_data[:16]:
+                    raise Exception("Format d'image non reconnu (magic bytes invalides)")
+                
+                log_poster("Contenu validé comme image valide", "SUCCESS")
+                
+                # Créer fichier local temporaire
+                unique_id = uuid.uuid4().hex[:8]
+                timestamp = int(datetime.utcnow().timestamp())
+                
+                # Déterminer extension
+                if content_data.startswith(b'\xFF\xD8\xFF'):
+                    ext = '.jpg'
+                elif content_data.startswith(b'\x89PNG'):
+                    ext = '.png'
+                elif content_data.startswith(b'GIF8'):
+                    ext = '.gif'
+                elif b'WEBP' in content_data[:16]:
+                    ext = '.webp'
+                else:
+                    ext = '.jpg'  # Par défaut
+                
+                local_file_path = os.path.join(PROCESSED_DIR, f"downloaded_{timestamp}_{unique_id}{ext}")
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+                
+                with open(local_file_path, 'wb') as f:
+                    f.write(content_data)
+                
+                log_poster(f"Fichier sauvé localement: {local_file_path}", "SUCCESS")
+                
+            except requests.exceptions.RequestException as req_err:
+                raise Exception(f"Erreur de téléchargement: {str(req_err)}")
+            except Exception as download_err:
+                raise Exception(f"Erreur pendant le téléchargement: {str(download_err)}")
+        else:
+            # Fichier local - vérifier qu'il existe
+            if not os.path.exists(file_url):
+                raise Exception(f"Fichier local introuvable: {file_url}")
+            local_file_path = file_url
+            log_poster(f"Fichier local détecté: {local_file_path}", "INFO")
+        
+        # ÉTAPE 3: Validation PIL et conversion si nécessaire
+        log_poster("ÉTAPE 3: Validation PIL et conversion si nécessaire", "INFO")
+        
+        try:
+            with Image.open(local_file_path) as img:
+                # Obtenir infos image
+                format_name = img.format
+                size = img.size
+                mode = img.mode
+                
+                log_poster(f"Image PIL validée: {format_name} {size[0]}x{size[1]} {mode}", "SUCCESS")
+                
+                # ÉTAPE 4: Conversion WebP → JPEG si nécessaire
+                if format_name == 'WEBP':
+                    log_poster("ÉTAPE 4: Conversion WebP → JPEG détectée", "INFO")
+                    
+                    # Créer le chemin de sortie JPEG
+                    jpeg_path = local_file_path.rsplit('.', 1)[0] + '_converted.jpg'
+                    
+                    # Conversion avec gestion transparence
+                    if mode in ('RGBA', 'LA'):
+                        log_poster("Gestion transparence WebP pour conversion JPEG", "INFO")
+                        # Créer fond blanc pour transparence
+                        rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                        if mode == 'LA':
+                            img = img.convert('RGBA')
+                        rgb_img.paste(img, mask=img.split()[-1] if 'A' in mode else None)
+                        converted_img = rgb_img
+                    elif mode != 'RGB':
+                        converted_img = img.convert('RGB')
+                    else:
+                        converted_img = img
+                    
+                    # Sauvegarder JPEG optimisé
+                    converted_img.save(jpeg_path, 'JPEG', quality=85, optimize=True)
+                    
+                    # Supprimer le WebP original si c'était un téléchargement
+                    if is_url and os.path.exists(local_file_path):
+                        os.unlink(local_file_path)
+                    
+                    local_file_path = jpeg_path
+                    log_poster(f"Conversion WebP → JPEG réussie: {jpeg_path}", "SUCCESS")
+                else:
+                    log_poster(f"Aucune conversion nécessaire, format {format_name} accepté", "INFO")
+        
+        except Exception as pil_err:
+            raise Exception(f"Erreur validation PIL: {str(pil_err)}")
+        
+        # ÉTAPE 5: Validation finale du fichier préparé
+        log_poster("ÉTAPE 5: Validation finale du fichier préparé", "INFO")
+        
+        if not os.path.exists(local_file_path):
+            raise Exception("Fichier final introuvable après traitement")
+        
+        final_size = os.path.getsize(local_file_path)
+        if final_size == 0:
+            raise Exception("Fichier final vide")
+        
+        # Test PIL final
+        try:
+            with Image.open(local_file_path) as final_img:
+                final_format = final_img.format
+                final_size_mb = final_size / (1024 * 1024)
+                log_poster(f"Validation finale réussie: {final_format} ({final_size_mb:.2f}MB)", "SUCCESS")
+        except Exception:
+            raise Exception("Fichier final non lisible par PIL")
+        
+        log_poster("=== IMAGE VALIDÉE ET PRÊTE POUR UPLOAD ===", "SUCCESS")
+        log_poster(f"Chemin final: {local_file_path}", "SUCCESS")
+        
+        return local_file_path
+        
+    except Exception as e:
+        error_msg = f"Erreur validation/préparation image: {str(e)}"
+        log_poster(error_msg, "ERROR")
+        
+        # Nettoyer fichiers temporaires en cas d'erreur
+        if local_file_path and os.path.exists(local_file_path) and is_url:
+            try:
+                os.unlink(local_file_path)
+                log_poster(f"Fichier temporaire supprimé: {local_file_path}", "INFO")
+            except:
+                pass
+        
+        raise Exception(error_msg)
 
 def publish_instagram(file_path):
     """Publication d'un fichier sur Instagram via l'API Graph"""
