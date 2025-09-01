@@ -6700,7 +6700,7 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
             # C'est déjà un chemin local
             success = True
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_path = image_source.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
+            local_path = image_source.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
             error = "local_file"
         
         if not success:
