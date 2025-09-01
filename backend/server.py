@@ -10815,7 +10815,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                 # Optimize image specifically for Instagram
                 print(f"📸 Optimizing image for Instagram...")
                 # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-                optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/')), instagram_mode=True)
+                optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/') + '/'), instagram_mode=True)
                 
                 # Create Instagram post content
                 instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
