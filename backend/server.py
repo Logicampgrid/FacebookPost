@@ -5258,6 +5258,253 @@ async def detect_media_type_from_content(content: bytes, filename: str = None) -
         print(f"🔄 FALLBACK SÉCURISÉ: Traitement comme VIDÉO (préférence sécurisée)")
         return 'video'  # Changement: préférer vidéo en cas d'erreur
 
+async def safe_image_processing_with_fallbacks(file_path: str, operation: str = "analyze") -> tuple:
+    """
+    NOUVELLE FONCTION: Traitement d'image ultra-robuste avec fallbacks multiples
+    Gère spécifiquement l'erreur "cannot identify image file" avec récupération automatique
+    
+    Args:
+        file_path: Chemin du fichier image à traiter
+        operation: "analyze" (analyse seule) ou "convert" (analyse + conversion)
+    
+    Returns:
+        tuple: (success: bool, result: dict/str, error_msg: str)
+    """
+    try:
+        log_media(f"[SAFE IMAGE] Début traitement robuste: {file_path} (op: {operation})", "INFO")
+        
+        if not os.path.exists(file_path):
+            return False, None, f"Fichier introuvable: {file_path}"
+        
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        
+        log_media(f"[SAFE IMAGE] Taille fichier: {file_size_mb:.2f}MB", "INFO")
+        
+        # ÉTAPE 1: Validation basique du fichier
+        if file_size == 0:
+            return False, None, "Fichier vide (0 bytes)"
+        
+        if file_size < 100:  # Trop petit pour être une vraie image
+            return False, None, f"Fichier trop petit ({file_size} bytes) - probablement corrompu"
+        
+        # ÉTAPE 2: Détection préalable du format avec magic bytes
+        try:
+            with open(file_path, 'rb') as f:
+                header = f.read(32)
+            
+            format_detected = None
+            if header.startswith(b'\xFF\xD8\xFF'):
+                format_detected = 'JPEG'
+            elif header.startswith(b'\x89PNG\r\n\x1a\n'):
+                format_detected = 'PNG'  
+            elif header.startswith(b'GIF87a') or header.startswith(b'GIF89a'):
+                format_detected = 'GIF'
+            elif b'WEBP' in header[:16]:
+                format_detected = 'WEBP'
+            elif header.startswith(b'BM'):
+                format_detected = 'BMP'
+            
+            log_media(f"[SAFE IMAGE] Format détecté par magic bytes: {format_detected or 'UNKNOWN'}", "INFO")
+            
+        except Exception as header_error:
+            log_media(f"[SAFE IMAGE] Erreur lecture header: {header_error}", "WARNING")
+            format_detected = None
+        
+        # ÉTAPE 3: Tentatives multiples d'ouverture PIL avec stratégies différentes
+        image_obj = None
+        pil_strategy_used = None
+        
+        # Stratégie 1: Ouverture PIL standard
+        try:
+            log_media("[SAFE IMAGE] Tentative 1: Ouverture PIL standard", "INFO")
+            with Image.open(file_path) as img:
+                # Vérification basique
+                img.verify()  # Vérification intégrité
+                
+            # Rouvrir pour usage (verify() ferme l'image)
+            image_obj = Image.open(file_path)
+            pil_strategy_used = "standard_open"
+            log_media("[SAFE IMAGE] ✅ Stratégie 1 réussie: PIL standard", "SUCCESS")
+            
+        except Exception as pil_error:
+            log_media(f"[SAFE IMAGE] ❌ Stratégie 1 échouée: {str(pil_error)}", "WARNING")
+            
+            # Stratégie 2: Ouverture avec mode de décodage permissif
+            try:
+                log_media("[SAFE IMAGE] Tentative 2: PIL avec décodage permissif", "INFO")
+                from PIL import ImageFile
+                ImageFile.LOAD_TRUNCATED_IMAGES = True  # Accepter images tronquées
+                
+                image_obj = Image.open(file_path)
+                image_obj.load()  # Forcer le chargement
+                pil_strategy_used = "permissive_load"
+                log_media("[SAFE IMAGE] ✅ Stratégie 2 réussie: PIL permissif", "SUCCESS")
+                
+            except Exception as pil_error2:
+                log_media(f"[SAFE IMAGE] ❌ Stratégie 2 échouée: {str(pil_error2)}", "WARNING")
+                
+                # Stratégie 3: Copie temporaire et nettoyage
+                try:
+                    log_media("[SAFE IMAGE] Tentative 3: Copie temporaire + nettoyage", "INFO")
+                    import shutil
+                    
+                    temp_path = file_path + "_temp_clean"
+                    shutil.copy2(file_path, temp_path)
+                    
+                    # Essayer d'ouvrir la copie
+                    image_obj = Image.open(temp_path)
+                    image_obj.load()
+                    pil_strategy_used = "temp_copy_cleanup"
+                    
+                    # Nettoyer fichier temporaire
+                    os.unlink(temp_path)
+                    log_media("[SAFE IMAGE] ✅ Stratégie 3 réussie: Copie temporaire", "SUCCESS")
+                    
+                except Exception as pil_error3:
+                    log_media(f"[SAFE IMAGE] ❌ Stratégie 3 échouée: {str(pil_error3)}", "WARNING")
+                    
+                    # Stratégie 4: Conversion forcée en bytes puis réouverture
+                    try:
+                        log_media("[SAFE IMAGE] Tentative 4: Conversion bytes + réouverture", "INFO")
+                        with open(file_path, 'rb') as f:
+                            file_bytes = f.read()
+                        
+                        from io import BytesIO
+                        bytes_io = BytesIO(file_bytes)
+                        image_obj = Image.open(bytes_io)
+                        image_obj.load()
+                        pil_strategy_used = "bytes_conversion"
+                        log_media("[SAFE IMAGE] ✅ Stratégie 4 réussie: Conversion bytes", "SUCCESS")
+                        
+                    except Exception as pil_error4:
+                        log_media(f"[SAFE IMAGE] ❌ Stratégie 4 échouée: {str(pil_error4)}", "ERROR")
+                        
+                        # FALLBACK FINAL: Renvoyer erreur détaillée
+                        error_msg = f"PIL échec total - Toutes stratégies échouées: {pil_error}, {pil_error2}, {pil_error3}, {pil_error4}"
+                        log_media(f"[SAFE IMAGE] 💥 ÉCHEC COMPLET PIL: {error_msg}", "ERROR")
+                        
+                        # Tentative de récupération par re-encodage avec ffmpeg
+                        if format_detected in ['JPEG', 'PNG', 'WEBP']:
+                            log_media("[SAFE IMAGE] Tentative récupération FFmpeg...", "INFO")
+                            try:
+                                recovery_path = file_path + "_recovered.jpg"
+                                ffmpeg_cmd = [
+                                    'ffmpeg', '-y', '-i', file_path,
+                                    '-vf', 'scale=iw:ih',  # Pas de redimensionnement 
+                                    '-q:v', '2',  # Qualité élevée
+                                    recovery_path
+                                ]
+                                
+                                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=30)
+                                if result.returncode == 0 and os.path.exists(recovery_path):
+                                    # Essayer d'ouvrir le fichier récupéré
+                                    image_obj = Image.open(recovery_path)
+                                    image_obj.load()
+                                    pil_strategy_used = "ffmpeg_recovery"
+                                    
+                                    # Remplacer le fichier original par le récupéré
+                                    shutil.move(recovery_path, file_path)
+                                    log_media("[SAFE IMAGE] ✅ RÉCUPÉRATION FFmpeg réussie!", "SUCCESS")
+                                else:
+                                    log_media(f"[SAFE IMAGE] ❌ Récupération FFmpeg échouée: {result.stderr[:100]}", "ERROR")
+                                    
+                            except Exception as recovery_error:
+                                log_media(f"[SAFE IMAGE] ❌ Erreur récupération FFmpeg: {recovery_error}", "ERROR")
+                        
+                        if not image_obj:
+                            return False, None, error_msg
+        
+        # ÉTAPE 4: Analyse des propriétés image si ouverture réussie
+        if image_obj:
+            try:
+                image_info = {
+                    "format": image_obj.format,
+                    "mode": image_obj.mode,
+                    "size": image_obj.size,
+                    "has_transparency": image_obj.mode in ('RGBA', 'LA') or 'transparency' in image_obj.info,
+                    "file_size_mb": file_size_mb,
+                    "pil_strategy": pil_strategy_used
+                }
+                
+                log_media(f"[SAFE IMAGE] Propriétés analysées: {image_info['format']} {image_info['size']} {image_info['mode']}", "SUCCESS")
+                
+                # ÉTAPE 5: Conversion si demandée
+                if operation == "convert":
+                    # Vérifier si conversion nécessaire (WebP, PNG avec transparence, taille excessive)
+                    needs_conversion = False
+                    conversion_reasons = []
+                    
+                    if image_info["format"] == "WEBP":
+                        needs_conversion = True
+                        conversion_reasons.append("WebP → JPEG (compatibilité)")
+                    
+                    if image_info["has_transparency"] and image_info["format"] == "PNG":
+                        needs_conversion = True  
+                        conversion_reasons.append("PNG transparent → JPEG (Instagram optimisé)")
+                    
+                    if file_size_mb > 8:  # Instagram limite
+                        needs_conversion = True
+                        conversion_reasons.append(f"Taille {file_size_mb:.1f}MB > 8MB")
+                    
+                    if needs_conversion:
+                        log_media(f"[SAFE IMAGE] Conversion requise: {', '.join(conversion_reasons)}", "INFO")
+                        
+                        # Effectuer conversion
+                        converted_path = file_path.rsplit('.', 1)[0] + "_converted.jpg"
+                        
+                        # Conversion sécurisée
+                        convert_img = image_obj.copy()
+                        
+                        # Gestion transparence
+                        if convert_img.mode in ('RGBA', 'LA', 'P'):
+                            rgb_img = Image.new('RGB', convert_img.size, (255, 255, 255))
+                            if convert_img.mode == 'P':
+                                convert_img = convert_img.convert('RGBA')
+                            if convert_img.mode in ('RGBA', 'LA'):
+                                rgb_img.paste(convert_img, mask=convert_img.split()[-1])
+                            else:
+                                rgb_img.paste(convert_img)
+                            convert_img = rgb_img
+                        elif convert_img.mode != 'RGB':
+                            convert_img = convert_img.convert('RGB')
+                        
+                        # Redimensionnement si nécessaire
+                        if convert_img.width > 1080 or convert_img.height > 1080:
+                            convert_img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
+                            log_media(f"[SAFE IMAGE] Redimensionné à: {convert_img.size}", "INFO")
+                        
+                        # Sauvegarde JPEG optimisé
+                        convert_img.save(converted_path, 'JPEG', quality=85, optimize=True)
+                        
+                        # Fermer image originale et retourner chemin converti
+                        image_obj.close() 
+                        
+                        converted_size = os.path.getsize(converted_path)
+                        converted_size_mb = converted_size / (1024 * 1024)
+                        
+                        log_media(f"[SAFE IMAGE] Conversion réussie: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB", "SUCCESS")
+                        
+                        return True, converted_path, None
+                    else:
+                        log_media("[SAFE IMAGE] Aucune conversion nécessaire", "INFO")
+                        image_obj.close()
+                        return True, file_path, None
+                else:
+                    # Mode analyse seule
+                    image_obj.close()
+                    return True, image_info, None
+                    
+            except Exception as analysis_error:
+                if image_obj:
+                    image_obj.close()
+                return False, None, f"Erreur analyse image: {str(analysis_error)}"
+        else:
+            return False, None, "Impossible d'ouvrir l'image avec toutes les stratégies"
+        
+    except Exception as e:
+        return False, None, f"Erreur générale traitement image: {str(e)}"
+
 async def auto_route_media_to_facebook_instagram(
     local_media_path: str, 
     message: str,
