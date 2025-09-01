@@ -1335,6 +1335,381 @@ async def detect_media_compatibility_issues(file_path: str, target_platform: str
 
 async def validate_and_convert_media_for_social(input_path: str, target_platform: str = "instagram") -> tuple:
     """
+    AMÉLIORÉE: Validation et conversion préventive des médias pour Instagram/Facebook
+    Effectue toutes les vérifications et conversions AVANT l'upload pour éviter les erreurs
+    NOUVEAUTÉ: Utilise safe_image_processing_with_fallbacks pour robustesse
+    
+    Args:
+        input_path: Chemin du fichier média à valider/convertir
+        target_platform: "instagram" ou "facebook" pour optimisations spécifiques
+    
+    Returns:
+        tuple: (success: bool, converted_path: str, media_type: str, error_msg: str)
+    """
+    try:
+        await log_media_conversion_details(
+            "validation_start", 
+            input_path, 
+            platform=target_platform,
+            additional_info={"operation": "Début validation préventive renforcée"}
+        )
+        
+        log_media(f"[VALIDATION] 🔍 VALIDATION PRÉVENTIVE RENFORCÉE: {input_path} pour {target_platform}", "INFO")
+        log_media("[VALIDATION] =" * 70, "INFO")
+        
+        if not os.path.exists(input_path):
+            return False, None, None, f"Fichier introuvable: {input_path}"
+        
+        # Analyse initiale du fichier avec vérifications renforcées
+        file_size = os.path.getsize(input_path)
+        file_size_mb = file_size / (1024 * 1024)
+        
+        log_media(f"[VALIDATION] 📊 Taille originale: {file_size_mb:.2f}MB", "INFO")
+        
+        # NOUVEAU: Vérifications préalables de taille critique
+        if file_size == 0:
+            return False, None, None, "Fichier vide (0 bytes)"
+        
+        if file_size_mb > 500:  # Limite absolue pour éviter les crashes
+            return False, None, None, f"Fichier trop volumineux: {file_size_mb:.1f}MB (limite absolue: 500MB)"
+        
+        # Détection du type de média avec notre fonction robuste
+        try:
+            with open(input_path, 'rb') as f:
+                content_sample = f.read(2048)  # Lire 2KB pour analyse
+            media_type = await detect_media_type_from_content(content_sample, input_path)
+            log_media(f"[VALIDATION] 🎯 Type détecté: {media_type}", "SUCCESS")
+        except Exception as detection_error:
+            log_media(f"[VALIDATION] ❌ Erreur détection type: {detection_error}", "ERROR")
+            return False, None, None, f"Impossible de déterminer le type de média: {str(detection_error)}"
+        
+        # Limites spécifiques par plateforme avec marges de sécurité
+        if target_platform == "instagram":
+            max_image_size_mb = 7.5   # Instagram limite à 8MB, on prend 7.5MB de marge
+            max_video_size_mb = 95.0  # Instagram limite à 100MB, on prend 95MB de marge
+            max_video_duration = 58   # Instagram jusqu'à 60s, on prend 58s de marge
+        else:  # Facebook
+            max_image_size_mb = 24.0  # Facebook limite à 25MB, on prend 24MB de marge
+            max_video_size_mb = 245.0 # Facebook limite à 250MB, on prend 245MB de marge
+            max_video_duration = 238  # Facebook jusqu'à 240s, on prend 238s de marge
+        
+        converted_path = input_path  # Par défaut, même fichier
+        conversion_needed = False
+        
+        # ================================
+        # VALIDATION ET CONVERSION IMAGES - RENFORCÉE
+        # ================================
+        if media_type == 'image':
+            log_media(f"[VALIDATION] 🖼️ ANALYSE IMAGE RENFORCÉE:", "INFO")
+            
+            # NOUVEAU: Utiliser notre fonction robuste pour l'analyse
+            success, image_info, error_msg = await safe_image_processing_with_fallbacks(input_path, "analyze")
+            
+            if not success:
+                log_media(f"[VALIDATION] ❌ Échec analyse robuste: {error_msg}", "ERROR")
+                return False, None, None, f"Impossible d'analyser l'image: {error_msg}"
+            
+            format_original = image_info["format"]
+            size_original = image_info["size"]
+            mode_original = image_info["mode"]
+            has_transparency = image_info["has_transparency"]
+            pil_strategy = image_info["pil_strategy"]
+            
+            log_media(f"[VALIDATION]   Format: {format_original} (stratégie PIL: {pil_strategy})", "INFO")
+            log_media(f"[VALIDATION]   Résolution: {size_original[0]}x{size_original[1]}", "INFO")
+            log_media(f"[VALIDATION]   Mode couleur: {mode_original}", "INFO")
+            log_media(f"[VALIDATION]   Transparence: {'Oui' if has_transparency else 'Non'}", "INFO")
+            log_media(f"[VALIDATION]   Taille: {file_size_mb:.2f}MB", "INFO")
+            
+            # RÈGLES DE CONVERSION RENFORCÉES
+            conversion_reasons = []
+            
+            # RÈGLE 1: WebP TOUJOURS converti (Instagram/Facebook problématique)
+            if format_original == 'WEBP':
+                conversion_reasons.append("WebP → JPEG (compatibilité maximale)")
+                conversion_needed = True
+                
+            # RÈGLE 2: PNG avec transparence peut rester PNG pour Facebook, mais JPEG pour Instagram
+            elif format_original == 'PNG' and has_transparency:
+                if target_platform == "instagram":
+                    conversion_reasons.append("PNG transparent → JPEG (Instagram optimisé)")
+                    conversion_needed = True
+                else:
+                    log_media("[VALIDATION]   PNG transparent conservé pour Facebook", "INFO")
+                    
+            # RÈGLE 3: Formats exotiques → JPEG
+            elif format_original in ['BMP', 'TIFF', 'GIF']:
+                conversion_reasons.append(f"{format_original} → JPEG (format standard)")
+                conversion_needed = True
+                
+            # RÈGLE 4: Images trop lourdes → compression obligatoire
+            if file_size_mb > max_image_size_mb:
+                conversion_reasons.append(f"Taille {file_size_mb:.1f}MB > {max_image_size_mb}MB")
+                conversion_needed = True
+                
+            # RÈGLE 5: Résolution excessive → redimensionnement obligatoire
+            max_dimension = 1080 if target_platform == "instagram" else 2048
+            if size_original[0] > max_dimension or size_original[1] > max_dimension:
+                conversion_reasons.append(f"Résolution {size_original[0]}x{size_original[1]} > {max_dimension}px")
+                conversion_needed = True
+            
+            # Effectuer la conversion si nécessaire
+            if conversion_needed:
+                log_media(f"[VALIDATION] 🔄 CONVERSION REQUISE:", "WARNING")
+                for reason in conversion_reasons:
+                    log_media(f"[VALIDATION]   • {reason}", "WARNING")
+                
+                log_media(f"[VALIDATION] ⚙️ DÉBUT CONVERSION avec fallbacks...", "INFO")
+                
+                # NOUVEAU: Utiliser notre fonction robuste pour la conversion
+                success_convert, converted_result, convert_error = await safe_image_processing_with_fallbacks(input_path, "convert")
+                
+                if success_convert:
+                    converted_path = converted_result
+                    converted_size = os.path.getsize(converted_path)
+                    converted_size_mb = converted_size / (1024 * 1024)
+                    
+                    log_media(f"[VALIDATION] ✅ CONVERSION RÉUSSIE:", "SUCCESS")
+                    log_media(f"[VALIDATION]   📁 Fichier: {converted_path}", "SUCCESS")
+                    log_media(f"[VALIDATION]   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB", "SUCCESS")
+                    
+                    # Vérification post-conversion
+                    if converted_size_mb > max_image_size_mb:
+                        log_media(f"[VALIDATION] ⚠️ ATTENTION: Taille encore élevée ({converted_size_mb:.1f}MB)", "WARNING")
+                        # Essayer une compression plus agressive
+                        log_media("[VALIDATION] Tentative compression agressive...", "INFO")
+                        
+                        try:
+                            with Image.open(converted_path) as img_compress:
+                                aggressive_path = converted_path.replace('.jpg', '_aggressive.jpg')
+                                img_compress.save(aggressive_path, 'JPEG', quality=70, optimize=True)
+                                
+                                aggressive_size = os.path.getsize(aggressive_path)
+                                aggressive_size_mb = aggressive_size / (1024 * 1024)
+                                
+                                if aggressive_size_mb <= max_image_size_mb:
+                                    os.replace(aggressive_path, converted_path)
+                                    log_media(f"[VALIDATION] ✅ Compression agressive réussie: {aggressive_size_mb:.2f}MB", "SUCCESS")
+                                else:
+                                    os.unlink(aggressive_path)
+                                    log_media(f"[VALIDATION] ⚠️ Même avec compression agressive: {aggressive_size_mb:.2f}MB", "WARNING")
+                        except Exception:
+                            pass
+                    
+                    # Log détaillé de la conversion
+                    await log_media_conversion_details(
+                        "image_conversion_robust",
+                        input_path,
+                        converted_path,
+                        "image",
+                        target_platform,
+                        success=True,
+                        additional_info={
+                            "original_size_mb": round(file_size_mb, 2),
+                            "converted_size_mb": round(converted_size_mb, 2),
+                            "compression_ratio": round(((file_size - converted_size) / file_size * 100), 1),
+                            "conversion_reasons": conversion_reasons,
+                            "strategy_used": "robust_with_fallbacks",
+                            "pil_strategy": pil_strategy
+                        }
+                    )
+                else:
+                    log_media(f"[VALIDATION] ❌ CONVERSION ÉCHOUÉE: {convert_error}", "ERROR")
+                    return False, None, None, f"Échec conversion image: {convert_error}"
+            else:
+                log_media(f"[VALIDATION] ✅ IMAGE DÉJÀ COMPATIBLE: Aucune conversion nécessaire", "SUCCESS")
+        
+        # ================================
+        # VALIDATION ET CONVERSION VIDÉOS - RENFORCÉE
+        # ================================
+        elif media_type == 'video':
+            log_media(f"[VALIDATION] 🎬 ANALYSE VIDÉO RENFORCÉE:", "INFO")
+            
+            # Vérification taille critique avant analyse
+            if file_size_mb > max_video_size_mb:
+                log_media(f"[VALIDATION] ❌ VIDÉO TROP VOLUMINEUSE: {file_size_mb:.1f}MB > {max_video_size_mb}MB", "ERROR")
+                return False, None, None, f"Vidéo trop volumineuse: {file_size_mb:.1f}MB (limite {target_platform}: {max_video_size_mb}MB)"
+            
+            # Analyser propriétés vidéo avec ffprobe si disponible
+            video_info = {"duration": 30, "width": 0, "height": 0, "codec": "unknown", "format": "unknown"}
+            
+            try:
+                result = subprocess.run([
+                    'ffprobe', '-v', 'quiet', '-print_format', 'json', 
+                    '-show_format', '-show_streams', input_path
+                ], capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    video_analysis = json.loads(result.stdout)
+                    format_info = video_analysis.get('format', {})
+                    video_streams = [s for s in video_analysis.get('streams', []) if s.get('codec_type') == 'video']
+                    
+                    video_info["duration"] = float(format_info.get('duration', 30))
+                    video_info["format"] = format_info.get('format_name', 'unknown')
+                    
+                    if video_streams:
+                        video_stream = video_streams[0]
+                        video_info["codec"] = video_stream.get('codec_name', 'unknown')
+                        video_info["width"] = video_stream.get('width', 0)
+                        video_info["height"] = video_stream.get('height', 0)
+                        
+                    log_media(f"[VALIDATION]   Format: {video_info['format']}", "INFO")
+                    log_media(f"[VALIDATION]   Durée: {video_info['duration']:.1f}s", "INFO")
+                    log_media(f"[VALIDATION]   Codec: {video_info['codec']}", "INFO")
+                    log_media(f"[VALIDATION]   Résolution: {video_info['width']}x{video_info['height']}", "INFO")
+                    log_media(f"[VALIDATION]   Taille: {file_size_mb:.2f}MB", "INFO")
+                else:
+                    log_media(f"[VALIDATION] ⚠️ Analyse ffprobe échouée, utilisation valeurs par défaut", "WARNING")
+                    
+            except Exception as e:
+                log_media(f"[VALIDATION] ⚠️ Erreur analyse ffprobe: {str(e)}, utilisation valeurs par défaut", "WARNING")
+            
+            # RÈGLES DE CONVERSION VIDÉO RENFORCÉES
+            conversion_reasons = []
+            
+            # RÈGLE 1: Codec non compatible
+            if video_info["codec"] != 'h264':
+                conversion_reasons.append(f"Codec {video_info['codec']} → H.264 requis")
+            
+            # RÈGLE 2: Durée excessive
+            if video_info["duration"] > max_video_duration:
+                conversion_reasons.append(f"Durée {video_info['duration']:.1f}s → max {max_video_duration}s")
+            
+            # RÈGLE 3: Taille excessive (on devrait pas arriver ici vu la vérif au début)
+            if file_size_mb > max_video_size_mb * 0.9:  # 90% de la limite
+                conversion_reasons.append(f"Taille {file_size_mb:.1f}MB proche limite {max_video_size_mb}MB")
+            
+            # RÈGLE 4: Résolution excessive pour Instagram
+            if target_platform == "instagram" and (video_info["width"] > 1080 or video_info["height"] > 1080):
+                conversion_reasons.append(f"Résolution {video_info['width']}x{video_info['height']} → max 1080px")
+            
+            # Effectuer conversion si nécessaire
+            if conversion_reasons:
+                log_media(f"[VALIDATION] 🔄 CONVERSION VIDÉO REQUISE:", "WARNING")
+                for reason in conversion_reasons:
+                    log_media(f"[VALIDATION]   • {reason}", "WARNING")
+                
+                unique_id = uuid.uuid4().hex[:8]
+                timestamp = int(datetime.utcnow().timestamp())
+                converted_path = f"uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                
+                # Paramètres de conversion optimisés par plateforme avec budgets adaptatifs
+                target_duration = min(video_info["duration"], max_video_duration)
+                target_size_mb = max_video_size_mb * 0.85  # 85% de la limite pour marge
+                
+                # Calcul bitrate adaptatif intelligent
+                target_bitrate_kbps = int((target_size_mb * 8 * 1024) / target_duration)
+                video_bitrate = min(target_bitrate_kbps, 6000)  # Max 6Mbps
+                video_bitrate = max(video_bitrate, 1500)        # Min 1.5Mbps
+                
+                log_media(f"[VALIDATION] Paramètres calculés: durée {target_duration}s, bitrate {video_bitrate}kbps", "INFO")
+                
+                if target_platform == "instagram":
+                    ffmpeg_params = [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-profile:v', 'main', '-level', '3.1',
+                        '-preset', 'medium', '-b:v', f'{video_bitrate}k',
+                        '-maxrate', f'{int(video_bitrate * 1.2)}k', '-bufsize', f'{int(video_bitrate * 2)}k',
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                        '-movflags', '+faststart+frag_keyframe+separate_moof',
+                        '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black',
+                        '-r', '30', '-g', '30',
+                        '-t', str(target_duration),
+                        '-max_muxing_queue_size', '1024',
+                        converted_path
+                    ]
+                else:  # Facebook
+                    ffmpeg_params = [
+                        'ffmpeg', '-y', '-i', input_path,
+                        '-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0',
+                        '-preset', 'medium', '-b:v', f'{video_bitrate}k',
+                        '-maxrate', f'{int(video_bitrate * 1.2)}k', '-bufsize', f'{int(video_bitrate * 2)}k',
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+                        '-movflags', '+faststart',
+                        '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2',
+                        '-r', '30', '-g', '60',
+                        '-t', str(target_duration),
+                        converted_path
+                    ]
+                
+                log_media(f"[VALIDATION] ⚙️ DÉBUT CONVERSION FFmpeg (timeout: 600s)...", "INFO")
+                os.makedirs(os.path.dirname(converted_path), exist_ok=True)
+                
+                try:
+                    result = subprocess.run(ffmpeg_params, capture_output=True, text=True, timeout=600)
+                    
+                    if result.returncode == 0 and os.path.exists(converted_path):
+                        converted_size = os.path.getsize(converted_path)
+                        converted_size_mb = converted_size / (1024 * 1024)
+                        
+                        log_media(f"[VALIDATION] ✅ CONVERSION VIDÉO RÉUSSIE:", "SUCCESS")
+                        log_media(f"[VALIDATION]   📁 Fichier: {converted_path}", "SUCCESS")
+                        log_media(f"[VALIDATION]   📊 Taille: {file_size_mb:.2f}MB → {converted_size_mb:.2f}MB", "SUCCESS")
+                        
+                        # Vérification post-conversion
+                        if converted_size_mb > max_video_size_mb:
+                            log_media(f"[VALIDATION] ❌ Conversion insuffisante: {converted_size_mb:.1f}MB > {max_video_size_mb}MB", "ERROR")
+                            return False, None, None, f"Impossible de réduire la vidéo sous {max_video_size_mb}MB"
+                        
+                        # Log détaillé de la conversion vidéo
+                        await log_media_conversion_details(
+                            "video_conversion_robust",
+                            input_path,
+                            converted_path,
+                            "video",
+                            target_platform,
+                            success=True,
+                            additional_info={
+                                "original_size_mb": round(file_size_mb, 2),
+                                "converted_size_mb": round(converted_size_mb, 2),
+                                "compression_ratio": round(((file_size - converted_size) / file_size * 100), 1),
+                                "conversion_reasons": conversion_reasons,
+                                "target_duration": target_duration,
+                                "calculated_bitrate": video_bitrate,
+                                "strategy_used": "robust_validation"
+                            }
+                        )
+                    else:
+                        # Analyser erreur FFmpeg
+                        stderr = result.stderr[:500] if result.stderr else "Pas d'erreur stderr"
+                        log_media(f"[VALIDATION] ❌ ÉCHEC CONVERSION FFmpeg (code {result.returncode}):", "ERROR")
+                        log_media(f"[VALIDATION] Stderr: {stderr}", "ERROR")
+                        
+                        return False, None, None, f"Échec conversion vidéo: {stderr[:100]}"
+                        
+                except subprocess.TimeoutExpired:
+                    log_media(f"[VALIDATION] ❌ TIMEOUT conversion vidéo (600s dépassées)", "ERROR")
+                    return False, None, None, "Timeout conversion vidéo (10 minutes dépassées)"
+                except Exception as conv_error:
+                    log_media(f"[VALIDATION] ❌ Erreur conversion: {str(conv_error)}", "ERROR")
+                    return False, None, None, f"Erreur conversion vidéo: {str(conv_error)}"
+            else:
+                log_media(f"[VALIDATION] ✅ VIDÉO DÉJÀ COMPATIBLE: Aucune conversion nécessaire", "SUCCESS")
+        
+        else:
+            return False, None, None, f"Type de média non supporté: {media_type}"
+        
+        # Validation finale avec métriques détaillées
+        if converted_path and os.path.exists(converted_path):
+            final_size = os.path.getsize(converted_path)
+            final_size_mb = final_size / (1024 * 1024)
+            
+            log_media(f"[VALIDATION] 🎉 VALIDATION RÉUSSIE:", "SUCCESS")
+            log_media(f"[VALIDATION]   ✅ Fichier prêt pour {target_platform}", "SUCCESS")
+            log_media(f"[VALIDATION]   📁 Chemin: {converted_path}", "SUCCESS")
+            log_media(f"[VALIDATION]   📊 Taille finale: {final_size_mb:.2f}MB", "SUCCESS")
+            log_media(f"[VALIDATION]   🎯 Type: {media_type}", "SUCCESS")
+            log_media("[VALIDATION] " + "=" * 70, "SUCCESS")
+            
+            return True, converted_path, media_type, None
+        else:
+            return False, None, None, "Fichier final non créé"
+            
+    except Exception as e:
+        error_msg = f"Erreur validation préventive renforcée: {str(e)}"
+        log_media(f"[VALIDATION] ❌ {error_msg}", "ERROR")
+        return False, None, None, error_msg
+    """
     NOUVELLE FONCTION : Validation et conversion préventive des médias pour Instagram/Facebook
     Effectue toutes les vérifications et conversions AVANT l'upload pour éviter les erreurs
     
