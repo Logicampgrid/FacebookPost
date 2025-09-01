@@ -15,7 +15,7 @@
 
 #### 1.1 Ouvrir l'application
 ```
-🌐 URL : https://insta-auto-fix.preview.emergentagent.com
+🌐 URL : https://media-path-update.preview.emergentagent.com
 ```
 
 #### 1.2 Connexion Facebook
@@ -168,7 +168,7 @@ curl -X POST "http://localhost:8001/api/products/publish" \
 ## ✅ CHECKLIST FINALE
 
 ### Avant de démarrer :
-- [ ] Application accessible sur https://insta-auto-fix.preview.emergentagent.com
+- [ ] Application accessible sur https://media-path-update.preview.emergentagent.com
 - [ ] Compte Facebook Business Manager prêt
 - [ ] Permissions Instagram Business configurées
 

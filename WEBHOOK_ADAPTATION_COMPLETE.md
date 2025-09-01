@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://insta-auto-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://media-path-update.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://insta-auto-fix.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://insta-auto-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://insta-auto-fix.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://media-path-update.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://media-path-update.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://media-path-update.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
