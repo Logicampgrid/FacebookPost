@@ -2116,7 +2116,7 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
 async def convert_webp_to_jpeg(input_path: str) -> tuple:
     """
     Convertit automatiquement un fichier WebP en JPEG avec qualité maximale
-    (CONSERVÉ pour compatibilité, mais recommend d'utiliser validate_and_convert_media_for_social)
+    AMÉLIORÉE: Utilise safe_image_processing_with_fallbacks pour robustesse
     
     Args:
         input_path: Chemin du fichier WebP à convertir
@@ -2125,45 +2125,125 @@ async def convert_webp_to_jpeg(input_path: str) -> tuple:
         tuple: (success: bool, jpeg_path: str, error_msg: str)
     """
     try:
+        log_media(f"[CONVERSION WebP] Début conversion: {input_path}", "CONVERSION")
+        
         # Vérifier que le fichier existe
         if not os.path.exists(input_path):
             return False, None, f"Fichier WebP introuvable: {input_path}"
         
+        # NOUVEAU: Utiliser notre fonction robuste pour l'analyse préalable
+        success, image_info, error_msg = await safe_image_processing_with_fallbacks(input_path, "analyze")
+        
+        if not success:
+            log_media(f"[CONVERSION WebP] Échec analyse robuste: {error_msg}", "ERROR")
+            return False, None, f"Impossible d'analyser le fichier WebP: {error_msg}"
+        
         # Vérifier que c'est bien un fichier WebP
-        try:
-            with Image.open(input_path) as img:
-                if img.format != 'WEBP':
-                    return False, None, f"Le fichier n'est pas au format WebP: {img.format}"
+        if image_info["format"] != 'WEBP':
+            return False, None, f"Le fichier n'est pas au format WebP: {image_info['format']}"
+        
+        log_media(f"[CONVERSION WebP] Fichier WebP confirmé → {input_path}", "INFO")
+        log_media(f"[CONVERSION WebP] Résolution originale → {image_info['size'][0]}x{image_info['size'][1]}", "INFO")
+        log_media(f"[CONVERSION WebP] Mode couleur → {image_info['mode']}", "INFO")
+        log_media(f"[CONVERSION WebP] Transparence → {'Oui' if image_info['has_transparency'] else 'Non'}", "INFO")
+        
+        # NOUVEAU: Utiliser notre fonction robuste pour la conversion
+        success_convert, converted_result, convert_error = await safe_image_processing_with_fallbacks(input_path, "convert")
+        
+        if success_convert:
+            # Le fichier converti devrait être en JPEG
+            output_path = converted_result
+            
+            # Vérifier que la conversion a bien produit un JPEG
+            if not output_path.lower().endswith(('.jpg', '.jpeg')):
+                # Renommer si nécessaire
+                jpeg_path = input_path.rsplit('.', 1)[0] + '_converted.jpeg'
+                if os.path.exists(output_path) and output_path != jpeg_path:
+                    os.rename(output_path, jpeg_path)
+                    output_path = jpeg_path
+            
+            if os.path.exists(output_path):
+                converted_size = os.path.getsize(output_path)
+                converted_size_mb = converted_size / (1024 * 1024)
+                original_size_mb = image_info["file_size_mb"]
                 
-                print(f"[CONVERSION WebP] Fichier détecté → {input_path}")
-                print(f"[CONVERSION WebP] Résolution originale → {img.size[0]}x{img.size[1]}")
-                print(f"[CONVERSION WebP] Mode couleur → {img.mode}")
+                log_media(f"[CONVERSION WebP] ✅ Conversion réussie → {output_path}", "SUCCESS")
+                log_media(f"[CONVERSION WebP] Taille: {original_size_mb:.2f}MB → {converted_size_mb:.2f}MB", "SUCCESS")
+                log_media(f"[CONVERSION WebP] Qualité JPEG → 85% (optimisée Instagram)", "SUCCESS")
+                
+                return True, output_path, None
+            else:
+                return False, None, "Fichier JPEG converti non trouvé"
+        else:
+            log_media(f"[CONVERSION WebP] ❌ Conversion robuste échouée: {convert_error}", "ERROR")
+            
+            # FALLBACK: Essayer la méthode classique avec gestion d'erreur renforcée
+            try:
+                log_media("[CONVERSION WebP] Tentative fallback méthode classique...", "WARNING")
                 
                 # Créer le chemin de sortie JPEG
                 output_path = input_path.rsplit('.', 1)[0] + '_converted.jpeg'
                 
-                # Convertir en RGB si nécessaire (JPEG ne supporte pas RGBA)
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    print(f"[CONVERSION WebP] Conversion mode {img.mode} → RGB")
-                    # Créer un fond blanc pour les images avec transparence
-                    rgb_img = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                    img = rgb_img
-                elif img.mode != 'RGB':
-                    img = img.convert('RGB')
+                # Ouverture avec notre stratégie de fallback
+                try:
+                    with Image.open(input_path) as img:
+                        log_media(f"[CONVERSION WebP] Ouverture réussie: {img.format} {img.size} {img.mode}", "INFO")
+                        
+                        # Convertir en RGB si nécessaire (JPEG ne supporte pas RGBA)
+                        if img.mode in ('RGBA', 'LA', 'P'):
+                            log_media(f"[CONVERSION WebP] Conversion mode {img.mode} → RGB", "INFO")
+                            # Créer un fond blanc pour les images avec transparence
+                            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                            if img.mode == 'P':
+                                img = img.convert('RGBA')
+                            rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                            img = rgb_img
+                        elif img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        
+                        # Sauvegarder en JPEG avec qualité optimisée
+                        img.save(output_path, 'JPEG', quality=85, optimize=True)
+                        log_media(f"[CONVERSION WebP] Sauvegarde JPEG réussie", "SUCCESS")
+                        
+                        return True, output_path, None
                 
-                # Sauvegarder en JPEG avec qualité maximale
-                img.save(output_path, 'JPEG', quality=95, optimize=True)
-                print(f"[CONVERSION WebP] Conversion réussie → {output_path}")
-                print(f"[CONVERSION WebP] Qualité JPEG → 95% (maximale)")
-                
-                return True, output_path, None
-                
-        except Exception as conversion_error:
-            return False, None, f"Erreur conversion WebP: {str(conversion_error)}"
+                except Exception as pil_error:
+                    log_media(f"[CONVERSION WebP] Erreur PIL classique: {str(pil_error)}", "ERROR")
+                    
+                    # FALLBACK ULTIME: Conversion avec FFmpeg
+                    try:
+                        log_media("[CONVERSION WebP] Tentative récupération FFmpeg...", "WARNING")
+                        
+                        ffmpeg_output = input_path.rsplit('.', 1)[0] + '_ffmpeg_converted.jpg'
+                        
+                        ffmpeg_cmd = [
+                            'ffmpeg', '-y', '-i', input_path,
+                            '-vf', 'scale=iw:ih',  # Pas de redimensionnement
+                            '-q:v', '3',  # Qualité élevée (équivalent ~85%)
+                            '-frames:v', '1',  # Une seule frame
+                            ffmpeg_output
+                        ]
+                        
+                        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=60)
+                        
+                        if result.returncode == 0 and os.path.exists(ffmpeg_output):
+                            log_media(f"[CONVERSION WebP] ✅ Récupération FFmpeg réussie: {ffmpeg_output}", "SUCCESS")
+                            return True, ffmpeg_output, None
+                        else:
+                            log_media(f"[CONVERSION WebP] Récupération FFmpeg échouée: {result.stderr[:100]}", "ERROR")
+                            
+                    except Exception as ffmpeg_error:
+                        log_media(f"[CONVERSION WebP] Erreur récupération FFmpeg: {str(ffmpeg_error)}", "ERROR")
+                    
+                    return False, None, f"Toutes les méthodes de conversion ont échoué: {str(pil_error)}"
+                        
+            except Exception as fallback_error:
+                return False, None, f"Erreur conversion WebP (toutes méthodes): {str(fallback_error)}"
         
+    except Exception as e:
+        error_msg = f"Erreur générale conversion WebP: {str(e)}"
+        log_media(f"[CONVERSION WebP] {error_msg}", "ERROR")
+        return False, None, error_msg
     except Exception as e:
         return False, None, f"Erreur générale conversion WebP: {str(e)}"
 
