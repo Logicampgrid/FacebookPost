@@ -12,7 +12,7 @@ import tempfile
 import os
 
 # Configuration
-API_BASE = "https://media-path-update.preview.emergentagent.com"
+API_BASE = "https://finish-line-13.preview.emergentagent.com"
 WEBHOOK_URL = f"{API_BASE}/api/webhook"
 
 def create_test_image():

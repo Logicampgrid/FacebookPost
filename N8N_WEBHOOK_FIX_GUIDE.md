@@ -23,7 +23,7 @@ Your workflow needs to have binary data available from a previous node. Common s
 {
   "node": "HTTP Request",
   "method": "POST",
-  "url": "https://media-path-update.preview.emergentagent.com/api/webhook",
+  "url": "https://finish-line-13.preview.emergentagent.com/api/webhook",
   "sendHeaders": true,
   "headerParameters": {
     "parameters": []
@@ -84,7 +84,7 @@ Your workflow needs to have binary data available from a previous node. Common s
       "type": "n8n-nodes-base.httpRequest",
       "parameters": {
         "method": "POST",
-        "url": "https://media-path-update.preview.emergentagent.com/api/webhook",
+        "url": "https://finish-line-13.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",
@@ -179,7 +179,7 @@ Then send as form data:
 
 ### Test cURL Command:
 ```bash
-curl -X POST "https://media-path-update.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://finish-line-13.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/your/image.jpg" \
   -F 'json_data={"title":"Test Product","description":"Test description","url":"https://example.com/product","store":"gizmobbs"}'
 ```

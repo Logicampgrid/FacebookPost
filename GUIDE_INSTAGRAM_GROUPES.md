@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://media-path-update.preview.emergentagent.com
+URL : https://finish-line-13.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

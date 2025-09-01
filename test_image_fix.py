@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-PUBLIC_BASE_URL = "https://media-path-update.preview.emergentagent.com"
+PUBLIC_BASE_URL = "https://finish-line-13.preview.emergentagent.com"
 
 def test_image_display_fix():
     """Test the image display fix"""
