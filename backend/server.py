@@ -2408,7 +2408,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 try:
                     print(f"🔄 Tentative stratégie: {strategy['name']}")
                     
-                    temp_output_path = f"uploads/processed/converted_image_{unique_id}_{strategy['name']}{strategy['extension']}"
+                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                    temp_output_path = f"/gizmobbs/uploads/processed/converted_image_{unique_id}_{strategy['name']}{strategy['extension']}"
                     
                     with Image.open(input_path) as img:
                         # Gestion de la transparence et modes couleur
