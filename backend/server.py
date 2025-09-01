@@ -6065,7 +6065,7 @@ async def safe_image_processing_with_fallbacks(file_path: str, operation: str = 
                         elif convert_img.mode != 'RGB':
                             convert_img = convert_img.convert('RGB')
                         
-                        # Redimensionnement si nécessaire
+                        # Redimensionnement si nécessaire (CORRECTION: Toujours vérifier)
                         if convert_img.width > 1080 or convert_img.height > 1080:
                             convert_img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
                             log_media(f"[SAFE IMAGE] Redimensionné à: {convert_img.size}", "INFO")
