@@ -13669,7 +13669,8 @@ async def webhook_endpoint(request: Request):
                 # Save the uploaded file
                 file_extension = media_file.filename.split('.')[-1].lower() if '.' in media_file.filename else ('jpg' if media_type == 'image' else 'mp4')
                 unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                file_path = f"uploads/{unique_filename}"
+                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                file_path = f"/gizmobbs/uploads/{unique_filename}"
                 
                 # Read and save file content
                 content = await media_file.read()
