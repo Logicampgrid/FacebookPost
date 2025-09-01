@@ -4804,7 +4804,8 @@ async def test_auto_routing_media():
                 if response.status_code == 200:
                     # Sauvegarder temporairement
                     temp_filename = f"test_auto_routing_{uuid.uuid4().hex[:8]}.tmp"
-                    temp_path = f"uploads/{temp_filename}"
+                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                    temp_path = f"/gizmobbs/uploads/{temp_filename}"
                     
                     with open(temp_path, "wb") as f:
                         f.write(response.content)
