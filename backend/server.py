@@ -7770,8 +7770,8 @@ class OptimizedStaticFiles(StaticFiles):
         response = await super().__call__(scope, receive, send)
         return response
 
-# MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-app.mount("/api/uploads", OptimizedStaticFiles(directory="/gizmobbs/uploads"), name="uploads")
+# MODIFICATION POUR WINDOWS - utilisation de la variable globale UPLOAD_DIR
+app.mount("/api/uploads", OptimizedStaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Image optimization functions
 def optimize_image_for_instagram(file_path: str, target_path: str = None):
