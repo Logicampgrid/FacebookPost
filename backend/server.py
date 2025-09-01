@@ -11576,7 +11576,8 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing local image for Instagram...")
-            local_file_path = media_url.replace('/api/uploads/', 'uploads/')
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            local_file_path = media_url.replace('/api/uploads/', '/gizmobbs/uploads/')
             optimize_image(local_file_path, instagram_mode=True)
             
             # Create Instagram post content (déjà généré plus haut)
