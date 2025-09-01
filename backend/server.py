@@ -1026,8 +1026,8 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
                 # Créer le fichier local
                 unique_id = uuid.uuid4().hex[:8]
                 timestamp = int(datetime.utcnow().timestamp())
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                local_path = f"/gizmobbs/uploads/processed/fallback_{timestamp}_{unique_id}{extension}"
+                # MODIFICATION POUR WINDOWS - utilisation de la variable globale PROCESSED_DIR
+                local_path = os.path.join(PROCESSED_DIR, f"fallback_{timestamp}_{unique_id}{extension}")
                 
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 with open(local_path, 'wb') as f:
