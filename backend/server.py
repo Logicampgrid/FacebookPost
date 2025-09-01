@@ -373,137 +373,187 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
     Convertit image vers format optimal Instagram selon spécifications:
     - WEBP/HEIC/AVIF/PNG → JPEG (qualité 85, sRGB, max 1080×1350, strip EXIF)
     - PNG reste PNG seulement si transparence détectée
+    - NOUVELLE: Utilise safe_image_processing_with_fallbacks pour robustesse
     """
     try:
-        log_media(f"Conversion Instagram optimale: {input_path}", "CONVERSION")
+        log_media(f"[CONVERSION INSTAGRAM] Début conversion optimale: {input_path}", "CONVERSION")
         
         if not os.path.exists(input_path):
             return False, None, "Fichier d'entrée introuvable"
         
-        with Image.open(input_path) as img:
-            original_format = img.format
-            original_size = img.size
-            original_mode = img.mode
-            original_size_mb = os.path.getsize(input_path) / (1024 * 1024)
+        # NOUVEAU: Utiliser le traitement d'image robuste avec fallbacks
+        success, analysis_result, error_msg = await safe_image_processing_with_fallbacks(input_path, "analyze")
+        
+        if not success:
+            log_media(f"[CONVERSION INSTAGRAM] Échec analyse sécurisée: {error_msg}", "ERROR")
+            return False, None, f"Impossible d'analyser l'image: {error_msg}"
+        
+        # Extraire les informations de l'analyse
+        original_format = analysis_result["format"]
+        original_size = analysis_result["size"]
+        original_mode = analysis_result["mode"]
+        has_transparency = analysis_result["has_transparency"]
+        original_size_mb = analysis_result["file_size_mb"]
+        pil_strategy = analysis_result["pil_strategy"]
+        
+        log_media(f"[CONVERSION INSTAGRAM] Analyse réussie (stratégie: {pil_strategy})", "SUCCESS")
+        log_media(f"[CONVERSION INSTAGRAM] Source: {original_format} {original_size} {original_mode} ({original_size_mb:.2f}MB)", "INFO")
+        log_media(f"[CONVERSION INSTAGRAM] Transparence détectée: {has_transparency}", "INFO")
+        
+        # RÈGLE PRINCIPALE: PNG garde PNG seulement si transparence réellement utilisée
+        preserve_png = (original_format == 'PNG' and has_transparency)
+        
+        if preserve_png:
+            output_format = 'PNG'
+            output_ext = '.png'
+            log_media("[CONVERSION INSTAGRAM] PNG avec transparence → Conservation PNG", "INFO")
+        else:
+            output_format = 'JPEG' 
+            output_ext = '.jpg'
+            log_media(f"[CONVERSION INSTAGRAM] {original_format} → JPEG (Instagram optimisé)", "INFO")
+        
+        # Créer chemin de sortie
+        unique_id = uuid.uuid4().hex[:8]
+        timestamp = int(datetime.utcnow().timestamp())
+        output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}{output_ext}"
+        
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # NOUVEAU: Traitement image avec ouverture robuste
+        try:
+            log_media("[CONVERSION INSTAGRAM] Ouverture image pour traitement...", "INFO")
             
-            log_media(f"Source: {original_format} {original_size} {original_mode} ({original_size_mb:.2f}MB)")
+            # Utiliser notre fonction robuste pour ouvrir l'image
+            success_open, converted_result, open_error = await safe_image_processing_with_fallbacks(input_path, "analyze")
             
-            # Détecter transparence précisément
-            has_transparency = False
-            if original_mode in ('RGBA', 'LA'):
-                has_transparency = True
-            elif original_mode == 'P' and 'transparency' in img.info:
-                has_transparency = True
-            elif original_format == 'PNG':
-                # Vérifier s'il y a vraiment de la transparence utilisée
-                if original_mode == 'RGBA':
-                    alpha = img.getchannel('A')
-                    alpha_values = set(alpha.getdata())
-                    has_transparency = len(alpha_values) > 1 or 255 not in alpha_values
+            if not success_open:
+                return False, None, f"Impossible d'ouvrir pour traitement: {open_error}"
             
-            # RÈGLE PRINCIPALE: PNG garde PNG seulement si transparence réellement utilisée
-            preserve_png = (original_format == 'PNG' and has_transparency)
+            # Ouvrir l'image avec la stratégie qui a fonctionné
+            with Image.open(input_path) as img:
+                # 1. Correction orientation EXIF (strip EXIF automatiquement)
+                try:
+                    processed_img = ImageOps.exif_transpose(img)
+                    log_media("[CONVERSION INSTAGRAM] Orientation EXIF corrigée et EXIF supprimé", "INFO")
+                except Exception:
+                    processed_img = img.copy()
+                    log_media("[CONVERSION INSTAGRAM] Pas d'EXIF à corriger", "INFO")
+                
+                # 2. Redimensionnement Instagram strict (max 1080×1350)
+                max_width, max_height = 1080, 1350
+                current_width, current_height = processed_img.size
+                
+                if current_width > max_width or current_height > max_height:
+                    # Calculer ratio en respectant les limites Instagram
+                    ratio = min(max_width / current_width, max_height / current_height)
+                    new_width = int(current_width * ratio)
+                    new_height = int(current_height * ratio)
+                    
+                    # Assurer dimensions paires (requis pour certains encodeurs)
+                    new_width = new_width - (new_width % 2)
+                    new_height = new_height - (new_height % 2)
+                    
+                    processed_img = processed_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    log_media(f"[CONVERSION INSTAGRAM] Redimensionné: {current_width}×{current_height} → {new_width}×{new_height}", "INFO")
+                
+                # 3. Conversion couleur selon format final
+                if output_format == 'JPEG':
+                    # Conversion sRGB avec fond blanc pour transparence
+                    if processed_img.mode in ('RGBA', 'LA', 'P'):
+                        log_media("[CONVERSION INSTAGRAM] Gestion transparence pour JPEG...", "INFO")
+                        # Créer fond blanc
+                        rgb_img = Image.new('RGB', processed_img.size, (255, 255, 255))
+                        
+                        # Gérer transparence
+                        if processed_img.mode == 'P':
+                            processed_img = processed_img.convert('RGBA')
+                        
+                        # Composer avec fond blanc
+                        if processed_img.mode in ('RGBA', 'LA'):
+                            rgb_img.paste(processed_img, mask=processed_img.split()[-1])
+                        else:
+                            rgb_img.paste(processed_img)
+                        
+                        processed_img = rgb_img
+                        log_media("[CONVERSION INSTAGRAM] Transparence convertie avec fond blanc", "INFO")
+                    elif processed_img.mode != 'RGB':
+                        processed_img = processed_img.convert('RGB')
+                        log_media(f"[CONVERSION INSTAGRAM] Mode couleur converti: {original_mode} → RGB", "INFO")
+                    
+                    # Sauvegarder JPEG optimisé Instagram (qualité 85, sRGB)
+                    log_media("[CONVERSION INSTAGRAM] Sauvegarde JPEG optimisé...", "INFO")
+                    processed_img.save(output_path, 'JPEG', 
+                                     quality=85,          # Qualité spécifiée
+                                     optimize=True,       # Optimisation taille
+                                     progressive=True,    # Chargement progressif
+                                     subsampling=0,       # Meilleure qualité chrominance
+                                     icc_profile=None)    # Strip profil couleur pour sRGB standard
+                    
+                else:  # PNG
+                    # Optimiser PNG en gardant transparence
+                    log_media("[CONVERSION INSTAGRAM] Sauvegarde PNG optimisé...", "INFO")
+                    processed_img.save(output_path, 'PNG', 
+                                     optimize=True,       # Optimisation sans perte
+                                     compress_level=6)    # Compression équilibrée
+                
+                # Vérification finale et métriques
+                if os.path.exists(output_path):
+                    final_size = os.path.getsize(output_path)
+                    final_size_mb = final_size / (1024 * 1024)
+                    original_file_size = os.path.getsize(input_path)
+                    compression_ratio = ((original_file_size - final_size) / original_file_size) * 100
+                    
+                    log_media(f"[CONVERSION INSTAGRAM] ✅ Conversion réussie: {output_path}", "SUCCESS")
+                    log_media(f"[CONVERSION INSTAGRAM] Taille: {original_size_mb:.2f}MB → {final_size_mb:.2f}MB ({compression_ratio:+.1f}%)", "SUCCESS")
+                    
+                    # Avertissement si encore trop lourd pour Instagram
+                    if final_size_mb > 8:
+                        log_media(f"[CONVERSION INSTAGRAM] ⚠️ Taille finale élevée: {final_size_mb:.1f}MB (limite IG: 8MB)", "WARNING")
+                    
+                    return True, output_path, None
+                else:
+                    return False, None, "Fichier de sortie non créé"
+        
+        except Exception as processing_error:
+            log_media(f"[CONVERSION INSTAGRAM] Erreur traitement PIL: {str(processing_error)}", "ERROR")
             
-            if preserve_png:
-                output_format = 'PNG'
-                output_ext = '.png'
-                log_media("PNG avec transparence → Conservation PNG", "INFO")
-            else:
-                output_format = 'JPEG' 
-                output_ext = '.jpg'
-                log_media(f"{original_format} → JPEG (Instagram optimisé)", "INFO")
-            
-            # Créer chemin de sortie
-            unique_id = uuid.uuid4().hex[:8]
-            timestamp = int(datetime.utcnow().timestamp())
-            output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}{output_ext}"
-            
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            
-            # Traitement image
-            processed_img = img.copy()
-            
-            # 1. Correction orientation EXIF (strip EXIF automatiquement)
+            # FALLBACK: Essayer conversion avec ffmpeg si PIL échoue
             try:
-                processed_img = ImageOps.exif_transpose(processed_img)
-                log_media("Orientation EXIF corrigée et EXIF supprimé", "INFO")
-            except Exception:
-                log_media("Pas d'EXIF à corriger", "INFO")
-            
-            # 2. Redimensionnement Instagram strict (max 1080×1350)
-            max_width, max_height = 1080, 1350
-            current_width, current_height = processed_img.size
-            
-            if current_width > max_width or current_height > max_height:
-                # Calculer ratio en respectant les limites Instagram
-                ratio = min(max_width / current_width, max_height / current_height)
-                new_width = int(current_width * ratio)
-                new_height = int(current_height * ratio)
+                log_media("[CONVERSION INSTAGRAM] Tentative de récupération avec FFmpeg...", "WARNING")
                 
-                # Assurer dimensions paires (requis pour certains encodeurs)
-                new_width = new_width - (new_width % 2)
-                new_height = new_height - (new_height % 2)
+                fallback_path = f"uploads/optimized/ig_fallback_{timestamp}_{unique_id}.jpg"
                 
-                processed_img = processed_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                log_media(f"Redimensionné: {current_width}×{current_height} → {new_width}×{new_height}", "INFO")
-            
-            # 3. Conversion couleur selon format final
-            if output_format == 'JPEG':
-                # Conversion sRGB avec fond blanc pour transparence
-                if processed_img.mode in ('RGBA', 'LA', 'P'):
-                    # Créer fond blanc
-                    rgb_img = Image.new('RGB', processed_img.size, (255, 255, 255))
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-i', input_path,
+                    '-vf', 'scale=1080:1350:force_original_aspect_ratio=decrease:force_divisible_by=2',
+                    '-q:v', '3',  # Qualité élevée (équivalent ~85%)
+                    '-frames:v', '1',  # Une seule frame (pour les images)
+                    fallback_path
+                ]
+                
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=60)
+                
+                if result.returncode == 0 and os.path.exists(fallback_path):
+                    fallback_size = os.path.getsize(fallback_path)
+                    fallback_size_mb = fallback_size / (1024 * 1024)
                     
-                    # Gérer transparence
-                    if processed_img.mode == 'P':
-                        processed_img = processed_img.convert('RGBA')
+                    log_media(f"[CONVERSION INSTAGRAM] ✅ Récupération FFmpeg réussie: {fallback_path}", "SUCCESS")
+                    log_media(f"[CONVERSION INSTAGRAM] Taille récupérée: {fallback_size_mb:.2f}MB", "SUCCESS")
                     
-                    # Composer avec fond blanc
-                    if processed_img.mode in ('RGBA', 'LA'):
-                        rgb_img.paste(processed_img, mask=processed_img.split()[-1])
-                    else:
-                        rgb_img.paste(processed_img)
+                    return True, fallback_path, None
+                else:
+                    log_media(f"[CONVERSION INSTAGRAM] Récupération FFmpeg échouée: {result.stderr[:200]}", "ERROR")
                     
-                    processed_img = rgb_img
-                    log_media("Transparence convertie avec fond blanc", "INFO")
-                elif processed_img.mode != 'RGB':
-                    processed_img = processed_img.convert('RGB')
-                    log_media(f"Mode couleur converti: {original_mode} → RGB", "INFO")
-                
-                # Sauvegarder JPEG optimisé Instagram (qualité 85, sRGB)
-                processed_img.save(output_path, 'JPEG', 
-                                 quality=85,          # Qualité spécifiée
-                                 optimize=True,       # Optimisation taille
-                                 progressive=True,    # Chargement progressif
-                                 subsampling=0,       # Meilleure qualité chrominance
-                                 icc_profile=None)    # Strip profil couleur pour sRGB standard
-                
-            else:  # PNG
-                # Optimiser PNG en gardant transparence
-                processed_img.save(output_path, 'PNG', 
-                                 optimize=True,       # Optimisation sans perte
-                                 compress_level=6)    # Compression équilibrée
+            except Exception as ffmpeg_error:
+                log_media(f"[CONVERSION INSTAGRAM] Erreur récupération FFmpeg: {str(ffmpeg_error)}", "ERROR")
             
-            # Vérification finale et métriques
-            if os.path.exists(output_path):
-                final_size = os.path.getsize(output_path)
-                final_size_mb = final_size / (1024 * 1024)
-                compression_ratio = ((os.path.getsize(input_path) - final_size) / os.path.getsize(input_path)) * 100
-                
-                log_media(f"Conversion réussie: {output_path}")
-                log_media(f"Taille: {original_size_mb:.2f}MB → {final_size_mb:.2f}MB ({compression_ratio:+.1f}%)")
-                
-                # Avertissement si encore trop lourd pour Instagram
-                if final_size_mb > 8:
-                    log_media(f"⚠️ Taille finale élevée: {final_size_mb:.1f}MB (limite IG: 8MB)", "WARNING")
-                
-                return True, output_path, None
-            else:
-                return False, None, "Fichier de sortie non créé"
-                
+            # Si tout échoue, retourner l'erreur originale
+            error_msg = f"Erreur conversion image (PIL + FFmpeg): {str(processing_error)}"
+            return False, None, error_msg
+        
     except Exception as e:
-        error_msg = f"Erreur conversion image: {str(e)}"
-        log_media(error_msg, "ERROR")
+        error_msg = f"Erreur générale conversion Instagram: {str(e)}"
+        log_media(f"[CONVERSION INSTAGRAM] {error_msg}", "ERROR")
         return False, None, error_msg
 
 async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
