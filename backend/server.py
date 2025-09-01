@@ -14393,7 +14393,8 @@ async def enhanced_webhook_endpoint(request: Request):
         # Save the binary image file
         file_extension = filename.split('.')[-1].lower() if '.' in filename else 'jpg'
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        file_path = f"uploads/{unique_filename}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        file_path = f"/gizmobbs/uploads/{unique_filename}"
         
         # Write the binary data to file
         with open(file_path, 'wb') as f:
