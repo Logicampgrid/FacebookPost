@@ -159,123 +159,214 @@ async def detect_media_type_robust(file_path_or_url: str) -> str:
         log_media(f"Erreur détection type: {str(e)}", "ERROR")
         return "unknown"
 
-async def download_media_with_extended_retry(url: str, max_attempts: int = 3, base_timeout: int = 30) -> tuple:
-    """Télécharge un média avec retry, timeout étendu et fallback streaming"""
+async def download_media_with_extended_retry(url: str, max_attempts: int = 5, base_timeout: int = 45) -> tuple:
+    """Télécharge un média avec retry renforcé, timeout étendu et fallback streaming"""
     for attempt in range(1, max_attempts + 1):
         try:
-            # Timeout progressif (30s → 60s → 120s)
+            # Timeout progressif et plus généreux (45s → 90s → 180s → 300s → 450s)
             timeout = base_timeout * (2 ** (attempt - 1))
-            log_retry(f"Téléchargement {url[:100]}...", attempt, max_attempts)
+            timeout = min(timeout, 450)  # Maximum 7.5 minutes pour dernière tentative
+            log_retry(f"Téléchargement {url[:100]}... (timeout: {timeout}s)", attempt, max_attempts)
             
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'image/*,video/*,application/octet-stream,*/*;q=0.8',
                 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Encoding': 'gzip, deflate, br',
                 'DNT': '1',
                 'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
             
             # Stratégie de téléchargement avec stream pour gros fichiers
-            with requests.get(url, headers=headers, timeout=timeout, stream=True, allow_redirects=True) as response:
+            log_media(f"[TÉLÉCHARGEMENT] Tentative {attempt}: {url[:100]}...", "INFO")
+            log_media(f"[TÉLÉCHARGEMENT] Timeout configuré: {timeout}s", "INFO")
+            
+            with requests.get(url, headers=headers, timeout=timeout, stream=True, allow_redirects=True, verify=True) as response:
                 response.raise_for_status()
                 
                 # Vérifier taille avant téléchargement complet
                 content_length = response.headers.get('content-length')
+                content_type = response.headers.get('content-type', '').lower()
+                
+                log_media(f"[TÉLÉCHARGEMENT] Content-Type: {content_type}", "INFO")
+                
                 if content_length:
                     size_mb = int(content_length) / (1024 * 1024)
-                    log_media(f"Taille annoncée: {size_mb:.2f}MB")
-                    if size_mb > 250:  # 250MB max
-                        return False, None, f"Fichier trop volumineux: {size_mb:.1f}MB"
+                    log_media(f"[TÉLÉCHARGEMENT] Taille annoncée: {size_mb:.2f}MB", "INFO")
+                    if size_mb > 300:  # 300MB max (augmenté pour vidéos lourdes)
+                        return False, None, f"Fichier trop volumineux: {size_mb:.1f}MB (limite: 300MB)"
                 
-                # Téléchargement par chunks avec limite
+                # Téléchargement par chunks avec limite et monitoring
                 content_chunks = []
                 total_size = 0
-                max_size = 250 * 1024 * 1024  # 250MB
-                chunk_size = 8192 if attempt == 1 else 16384  # Plus gros chunks sur retry
+                max_size = 300 * 1024 * 1024  # 300MB
+                chunk_size = 16384 if attempt <= 2 else 32768  # Chunks plus gros sur retry
+                chunks_processed = 0
+                
+                log_media(f"[TÉLÉCHARGEMENT] Début téléchargement par chunks ({chunk_size} bytes/chunk)", "INFO")
                 
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:
                         content_chunks.append(chunk)
                         total_size += len(chunk)
+                        chunks_processed += 1
+                        
+                        # Log progrès tous les 100 chunks
+                        if chunks_processed % 100 == 0:
+                            progress_mb = total_size / (1024 * 1024)
+                            log_media(f"[TÉLÉCHARGEMENT] Progrès: {progress_mb:.1f}MB téléchargés ({chunks_processed} chunks)", "INFO")
+                        
                         if total_size > max_size:
-                            return False, None, "Dépassement limite taille (250MB)"
+                            log_media(f"[TÉLÉCHARGEMENT] Arrêt: dépassement limite ({total_size / (1024 * 1024):.1f}MB)", "WARNING")
+                            return False, None, "Dépassement limite taille (300MB)"
                 
                 if total_size == 0:
-                    log_media("Contenu vide téléchargé", "WARNING")
+                    log_media("[TÉLÉCHARGEMENT] Contenu vide reçu", "WARNING")
                     continue
                 
                 content_data = b''.join(content_chunks)
-                log_media(f"Téléchargé: {len(content_data)} bytes ({len(content_data)/(1024*1024):.2f}MB)")
+                final_size_mb = len(content_data) / (1024 * 1024)
+                log_media(f"[TÉLÉCHARGEMENT] Téléchargé: {len(content_data)} bytes ({final_size_mb:.2f}MB)", "SUCCESS")
                 
-                # Créer fichier local avec nom unique
+                # Validation du contenu téléchargé
+                if len(content_data) < 1000:  # Minimum 1KB pour un vrai média
+                    log_media(f"[TÉLÉCHARGEMENT] Contenu suspect: seulement {len(content_data)} bytes", "WARNING")
+                    log_media(f"[TÉLÉCHARGEMENT] Aperçu: {content_data[:100]}...", "WARNING")
+                    # Continuer quand même, mais avec vigilance
+                
+                # Créer fichier local avec nom unique et timestamp
                 unique_id = uuid.uuid4().hex[:8]
                 timestamp = int(datetime.utcnow().timestamp())
                 
-                # Déterminer extension intelligemment
-                content_type = response.headers.get('content-type', '').lower()
-                ext = '.bin'  # Extension par défaut
+                # Déterminer extension intelligemment avec logs détaillés
+                ext = '.bin'  # Extension par défaut sécurisée
                 
+                # Priorité 1: Content-Type HTTP
                 if 'image' in content_type:
                     if 'jpeg' in content_type or 'jpg' in content_type:
                         ext = '.jpg'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .jpg", "INFO")
                     elif 'png' in content_type:
                         ext = '.png'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .png", "INFO")
                     elif 'webp' in content_type:
                         ext = '.webp'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .webp", "INFO")
                     elif 'gif' in content_type:
                         ext = '.gif'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .gif", "INFO")
                     else:
-                        ext = '.jpg'  # Défaut image
+                        ext = '.jpg'  # Défaut image sécurisé
+                        log_media("[TÉLÉCHARGEMENT] Extension par défaut image: .jpg", "INFO")
+                        
                 elif 'video' in content_type:
                     if 'mp4' in content_type:
                         ext = '.mp4'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .mp4", "INFO")
                     elif 'quicktime' in content_type:
                         ext = '.mov'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .mov", "INFO")
+                    elif 'webm' in content_type:
+                        ext = '.webm'
+                        log_media("[TÉLÉCHARGEMENT] Extension via Content-Type: .webm", "INFO")
                     else:
-                        ext = '.mp4'  # Défaut vidéo
+                        ext = '.mp4'  # Défaut vidéo sécurisé
+                        log_media("[TÉLÉCHARGEMENT] Extension par défaut vidéo: .mp4", "INFO")
                 else:
-                    # Essayer de deviner depuis l'URL
-                    url_ext = '.' + url.lower().split('.')[-1].split('?')[0]
-                    if url_ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.avi']:
-                        ext = url_ext
+                    # Priorité 2: Extension depuis URL si Content-Type non informatif
+                    log_media(f"[TÉLÉCHARGEMENT] Content-Type non spécifique: '{content_type}'", "WARNING")
+                    url_clean = url.lower().split('?')[0]
+                    if '.' in url_clean:
+                        url_ext = '.' + url_clean.split('.')[-1]
+                        if url_ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.avi', '.webm']:
+                            ext = url_ext
+                            log_media(f"[TÉLÉCHARGEMENT] Extension via URL: {ext}", "INFO")
+                        else:
+                            log_media(f"[TÉLÉCHARGEMENT] Extension URL non reconnue: {url_ext}", "WARNING")
+                    
+                    # Priorité 3: Magic bytes si toujours pas d'extension
+                    if ext == '.bin':
+                        log_media("[TÉLÉCHARGEMENT] Détection par magic bytes...", "INFO")
+                        if content_data.startswith(b'\xFF\xD8\xFF'):
+                            ext = '.jpg'
+                            log_media("[TÉLÉCHARGEMENT] Magic bytes → JPEG", "INFO")
+                        elif content_data.startswith(b'\x89PNG\r\n\x1a\n'):
+                            ext = '.png'
+                            log_media("[TÉLÉCHARGEMENT] Magic bytes → PNG", "INFO")
+                        elif b'WEBP' in content_data[:16]:
+                            ext = '.webp'
+                            log_media("[TÉLÉCHARGEMENT] Magic bytes → WebP", "INFO")
+                        elif b'ftyp' in content_data[:32]:
+                            ext = '.mp4'
+                            log_media("[TÉLÉCHARGEMENT] Magic bytes → MP4", "INFO")
+                        else:
+                            # Heuristique finale: gros fichier = vidéo, petit = image
+                            if final_size_mb > 5:
+                                ext = '.mp4'
+                                log_media(f"[TÉLÉCHARGEMENT] Heuristique taille ({final_size_mb:.1f}MB) → vidéo .mp4", "INFO")
+                            else:
+                                ext = '.jpg'
+                                log_media(f"[TÉLÉCHARGEMENT] Heuristique taille ({final_size_mb:.1f}MB) → image .jpg", "INFO")
                 
-                local_path = f"uploads/processed/download_{timestamp}_{unique_id}{ext}"
-                
-                # Créer répertoire et sauvegarder
+                # Créer répertoire et chemin final
+                local_path = f"uploads/downloaded/media_{timestamp}_{unique_id}{ext}"
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                
+                # Sauvegarde sécurisée avec vérification
+                log_media(f"[TÉLÉCHARGEMENT] Sauvegarde: {local_path}", "INFO")
                 with open(local_path, 'wb') as f:
                     f.write(content_data)
                 
-                # Vérification finale
-                if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
-                    log_media(f"Téléchargement réussi: {local_path}", "SUCCESS")
+                # Vérification finale et validation
+                if os.path.exists(local_path) and os.path.getsize(local_path) == len(content_data):
+                    saved_size = os.path.getsize(local_path)
+                    log_media(f"[TÉLÉCHARGEMENT] ✅ SUCCÈS: {local_path}", "SUCCESS")
+                    log_media(f"[TÉLÉCHARGEMENT] Vérification: {saved_size} bytes sauvés = {len(content_data)} bytes téléchargés", "SUCCESS")
+                    log_media(f"[TÉLÉCHARGEMENT] Tentative réussie: {attempt}/{max_attempts}", "SUCCESS")
+                    
                     return True, local_path, None
                 else:
-                    log_media("Fichier local non créé correctement", "ERROR")
+                    log_media("[TÉLÉCHARGEMENT] Erreur sauvegarde: tailles incohérentes", "ERROR")
                     continue
                 
         except requests.exceptions.Timeout:
-            log_retry(f"Timeout ({timeout}s)", attempt, max_attempts)
+            log_retry(f"TIMEOUT après {timeout}s", attempt, max_attempts)
+            # Attendre plus longtemps avant retry sur timeout
+            if attempt < max_attempts:
+                timeout_backoff = min(30, 5 * attempt)
+                log_retry(f"Attente timeout backoff: {timeout_backoff}s", attempt, max_attempts)
+                await asyncio.sleep(timeout_backoff)
         except requests.exceptions.ConnectionError as e:
-            log_retry(f"Erreur connexion: {str(e)[:100]}", attempt, max_attempts)
+            log_retry(f"ERREUR CONNEXION: {str(e)[:100]}", attempt, max_attempts)
+            # Backoff plus court pour erreurs de connexion
+            if attempt < max_attempts:
+                connection_backoff = min(10, 2 * attempt)
+                await asyncio.sleep(connection_backoff)
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [404, 403, 410]:
-                return False, None, f"Ressource inaccessible: HTTP {e.response.status_code}"
-            log_retry(f"Erreur HTTP {e.response.status_code}", attempt, max_attempts)
+            status_code = e.response.status_code if hasattr(e, 'response') else 0
+            if status_code in [404, 403, 410, 451]:  # Erreurs définitives
+                log_media(f"[TÉLÉCHARGEMENT] Erreur définitive HTTP {status_code}: abandon", "ERROR")
+                return False, None, f"Ressource inaccessible: HTTP {status_code}"
+            log_retry(f"ERREUR HTTP {status_code}: {str(e)[:100]}", attempt, max_attempts)
         except requests.exceptions.RequestException as e:
-            log_retry(f"Erreur requête: {str(e)[:100]}", attempt, max_attempts)
+            log_retry(f"ERREUR REQUÊTE: {str(e)[:100]}", attempt, max_attempts)
         except Exception as e:
-            log_retry(f"Erreur: {str(e)[:100]}", attempt, max_attempts)
+            log_retry(f"ERREUR INATTENDUE: {str(e)[:100]}", attempt, max_attempts)
         
-        # Backoff exponentiel entre tentatives
+        # Backoff exponentiel entre tentatives (plus conservateur)
         if attempt < max_attempts:
-            backoff_delay = 2 ** attempt
-            log_retry(f"Attente {backoff_delay}s avant nouvelle tentative", attempt, max_attempts)
+            backoff_delay = min(60, 3 ** attempt)  # 3s → 9s → 27s → 60s (max)
+            log_retry(f"Backoff avant retry: {backoff_delay}s", attempt, max_attempts)
             await asyncio.sleep(backoff_delay)
     
-    return False, None, f"Échec téléchargement après {max_attempts} tentatives"
+    log_media(f"[TÉLÉCHARGEMENT] ❌ ÉCHEC FINAL après {max_attempts} tentatives", "ERROR")
+    return False, None, f"Échec téléchargement après {max_attempts} tentatives (timeouts/erreurs réseau)"
 
 async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
     """
