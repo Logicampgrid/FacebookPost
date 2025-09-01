@@ -9340,7 +9340,7 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
         else:
             # Fichier local
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_video_path = video_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
+            local_video_path = video_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
             if not os.path.exists(local_video_path):
                 return {"status": "error", "message": "Fichier vidéo local introuvable"}
             log_instagram(f"Vidéo locale: {local_video_path}")
