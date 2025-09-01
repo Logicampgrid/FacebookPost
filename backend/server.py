@@ -2542,7 +2542,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 print(f"⚠️ Toutes les stratégies de conversion ont échoué, tentative de fallback")
                 # Fallback: copier le fichier original avec extension appropriée
                 try:
-                    fallback_path = f"uploads/processed/fallback_image_{unique_id}.jpg"
+                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                    fallback_path = f"/gizmobbs/uploads/processed/fallback_image_{unique_id}.jpg"
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK IMAGE: Fichier copié sans conversion: {fallback_path}")
