@@ -9490,7 +9490,7 @@ async def attempt_instagram_image_post_optimized(image_url: str, post: Post, acc
         else:
             # Fichier local
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_image_path = image_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
+            local_image_path = image_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
             if not os.path.exists(local_image_path):
                 return {"status": "error", "message": "Fichier image local introuvable"}
             log_instagram(f"Image locale: {local_image_path}")
@@ -10669,7 +10669,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
             # Optimize image specifically for Instagram
             print(f"📸 Optimisation image pour Instagram...")
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
+            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/')), instagram_mode=True)
             
             # Create Instagram post content
             instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -10815,7 +10815,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
                 # Optimize image specifically for Instagram
                 print(f"📸 Optimizing image for Instagram...")
                 # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-                optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
+                optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/')), instagram_mode=True)
                 
                 # Create Instagram post content
                 instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -10931,7 +10931,7 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing image for Instagram...")
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/')), instagram_mode=True)
+            optimize_image(media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/')), instagram_mode=True)
             
             # Create Instagram post content
             instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
@@ -11600,7 +11600,7 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing local image for Instagram...")
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\', '/'))
+            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
             optimize_image(local_file_path, instagram_mode=True)
             
             # Create Instagram post content (déjà généré plus haut)
