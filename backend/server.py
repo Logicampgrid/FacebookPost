@@ -15932,6 +15932,413 @@ async def test_enhanced_product_posting(request: ProductPublishRequest):
         print(f"💥 Enhanced test endpoint error: {e}")
         raise HTTPException(status_code=500, detail=f"Enhanced test failed: {str(e)}")
 
+# ============================================================================
+# FONCTIONNALITÉ POSTER_MEDIA - PUBLICATION AUTOMATIQUE INSTAGRAM
+# ============================================================================
+
+import os
+from ftplib import FTP
+from pathlib import Path
+from mimetypes import guess_type
+import requests
+import shutil
+
+# Configuration depuis les variables d'environnement
+AUTO_DOWNLOAD_DIR = os.getenv("AUTO_DOWNLOAD_DIR", r"C:\gizmobbs\download")
+FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")  
+FTP_PORT = int(os.getenv("FTP_PORT", "21"))
+FTP_USER = os.getenv("FTP_USER", "logi")
+FTP_PASS = os.getenv("FTP_PASS", "logi")
+FTP_UPLOAD_DIR = os.getenv("FTP_UPLOAD_DIR", "/wordpress/upload/")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "VOTRE_ACCESS_TOKEN_ICI")
+IG_USER_ID = os.getenv("IG_USER_ID", "VOTRE_IG_USER_ID_ICI")
+
+def log_poster(message: str, level: str = "INFO"):
+    """Log structuré pour poster_media avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "FTP": "📤", "INSTAGRAM": "📱"}
+    icon = icons.get(level.upper(), "📝")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [POSTER_MEDIA] {message}")
+
+def upload_ftp(file_path):
+    """Upload d'un fichier vers le serveur FTP avec gestion d'erreurs robuste"""
+    try:
+        log_poster(f"Début upload FTP: {file_path}", "FTP")
+        
+        with FTP() as ftp:
+            ftp.connect(FTP_HOST, FTP_PORT)
+            log_poster(f"Connexion FTP établie: {FTP_HOST}:{FTP_PORT}", "INFO")
+            
+            ftp.login(FTP_USER, FTP_PASS)
+            log_poster(f"Authentification FTP réussie: {FTP_USER}", "INFO")
+            
+            ftp.cwd(FTP_UPLOAD_DIR)
+            log_poster(f"Dossier FTP changé: {FTP_UPLOAD_DIR}", "INFO")
+            
+            filename = Path(file_path).name
+            with open(file_path, "rb") as f:
+                ftp.storbinary(f"STOR {filename}", f)
+            
+            log_poster(f"Upload FTP réussi: {filename}", "SUCCESS")
+            return True
+            
+    except Exception as e:
+        log_poster(f"Erreur FTP pour {file_path}: {str(e)}", "ERROR")
+        return False
+
+def convert_webp_to_jpeg(file_path):
+    """Conversion WebP vers JPEG pour compatibilité Instagram"""
+    if file_path.lower().endswith(".webp"):
+        try:
+            log_poster(f"Conversion WebP détectée: {file_path}", "INFO")
+            
+            img = Image.open(file_path).convert("RGB")
+            new_path = file_path.rsplit(".", 1)[0] + ".jpg"
+            img.save(new_path, "JPEG", quality=85, optimize=True)
+            
+            log_poster(f"Conversion WebP -> JPEG réussie: {new_path}", "SUCCESS")
+            return new_path
+            
+        except Exception as e:
+            log_poster(f"Erreur conversion WebP {file_path}: {str(e)}", "ERROR")
+            return file_path
+    
+    return file_path
+
+def publish_instagram(file_path):
+    """Publication d'un fichier sur Instagram via l'API Graph"""
+    try:
+        log_poster(f"Début publication Instagram: {file_path}", "INSTAGRAM")
+        
+        # Validation des tokens
+        if ACCESS_TOKEN == "VOTRE_ACCESS_TOKEN_ICI" or IG_USER_ID == "VOTRE_IG_USER_ID_ICI":
+            log_poster("ERREUR: ACCESS_TOKEN ou IG_USER_ID non configurés dans .env", "ERROR")
+            return False
+        
+        # Détection du type de média
+        mime_type, _ = guess_type(file_path)
+        is_video = mime_type and mime_type.startswith("video")
+        media_type = "VIDEO" if is_video else "IMAGE"
+        
+        log_poster(f"Type de média détecté: {media_type}", "INFO")
+        
+        # Construction de l'URL du média sur le serveur FTP
+        filename = Path(file_path).name
+        media_url = f"https://{FTP_HOST}{FTP_UPLOAD_DIR}{filename}"
+        
+        log_poster(f"URL média pour Instagram: {media_url}", "INFO")
+        
+        # Paramètres pour l'API Graph Instagram
+        endpoint = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
+        
+        # Caption avec nom du fichier et horodatage
+        caption = f"Publication automatique: {filename}\n\n📅 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n#auto #gizmobbs #publication"
+        
+        params = {
+            "access_token": ACCESS_TOKEN,
+            "caption": caption
+        }
+        
+        # Paramètres spécifiques selon le type de média
+        if is_video:
+            params["video_url"] = media_url
+            params["media_type"] = "REELS"  # Utiliser REELS pour les vidéos
+            log_poster(f"Configuration vidéo Instagram REELS", "INFO")
+        else:
+            params["image_url"] = media_url
+            log_poster(f"Configuration image Instagram", "INFO")
+        
+        # Étape 1: Créer le conteneur média
+        log_poster(f"Création du conteneur média Instagram...", "INSTAGRAM")
+        
+        response = requests.post(endpoint, data=params, timeout=60)
+        response.raise_for_status()
+        
+        creation_data = response.json()
+        creation_id = creation_data.get("id")
+        
+        if not creation_id:
+            log_poster(f"ID de création manquant dans la réponse: {creation_data}", "ERROR")
+            return False
+        
+        log_poster(f"Conteneur média créé avec succès: {creation_id}", "SUCCESS")
+        
+        # Attente pour le traitement (plus long pour les vidéos)
+        wait_time = 30 if is_video else 5
+        log_poster(f"Attente traitement {media_type} ({wait_time}s)...", "INFO")
+        time.sleep(wait_time)
+        
+        # Étape 2: Publier le conteneur
+        publish_endpoint = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish"
+        publish_params = {
+            "creation_id": creation_id,
+            "access_token": ACCESS_TOKEN
+        }
+        
+        log_poster(f"Publication du conteneur Instagram...", "INSTAGRAM")
+        
+        publish_response = requests.post(publish_endpoint, data=publish_params, timeout=30)
+        publish_response.raise_for_status()
+        
+        publish_data = publish_response.json()
+        post_id = publish_data.get("id")
+        
+        if post_id:
+            log_poster(f"Publication Instagram réussie: {post_id}", "SUCCESS")
+            log_poster(f"URL Instagram: https://www.instagram.com/p/{post_id}", "SUCCESS")
+            return True
+        else:
+            log_poster(f"Publication échouée: {publish_data}", "ERROR")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        log_poster(f"Erreur API Instagram pour {file_path}: {str(e)}", "ERROR")
+        return False
+    except Exception as e:
+        log_poster(f"Erreur publication Instagram {file_path}: {str(e)}", "ERROR")
+        return False
+
+def poster_media():
+    """Fonction principale de publication automatique des médias"""
+    try:
+        log_poster("=== DÉBUT PUBLICATION AUTOMATIQUE DES MÉDIAS ===", "INFO")
+        
+        # Vérification du dossier source
+        if not os.path.exists(AUTO_DOWNLOAD_DIR):
+            log_poster(f"Dossier source non trouvé: {AUTO_DOWNLOAD_DIR}", "ERROR")
+            return {"success": False, "error": f"Dossier {AUTO_DOWNLOAD_DIR} non trouvé"}
+        
+        # Création du dossier processed s'il n'existe pas
+        processed_dir = os.path.join(AUTO_DOWNLOAD_DIR, "processed")
+        os.makedirs(processed_dir, exist_ok=True)
+        log_poster(f"Dossier processed prêt: {processed_dir}", "INFO")
+        
+        # Extensions de fichiers supportées
+        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"}
+        
+        # Statistiques
+        stats = {
+            "files_found": 0,
+            "files_processed": 0,
+            "files_uploaded": 0,
+            "files_published": 0,
+            "files_ignored": 0,
+            "files_failed": 0,
+            "errors": []
+        }
+        
+        # Parcourir les fichiers du dossier
+        log_poster(f"Parcours du dossier: {AUTO_DOWNLOAD_DIR}", "INFO")
+        
+        for filename in os.listdir(AUTO_DOWNLOAD_DIR):
+            file_path = os.path.join(AUTO_DOWNLOAD_DIR, filename)
+            
+            # Ignorer les dossiers
+            if not os.path.isfile(file_path):
+                continue
+                
+            stats["files_found"] += 1
+            
+            # Vérifier l'extension
+            file_ext = Path(filename).suffix.lower()
+            if file_ext not in valid_extensions:
+                log_poster(f"Fichier ignoré (extension non supportée): {filename}", "WARNING")
+                stats["files_ignored"] += 1
+                continue
+            
+            log_poster(f"Traitement du fichier: {filename}", "INFO")
+            stats["files_processed"] += 1
+            
+            try:
+                # Conversion WebP si nécessaire
+                processed_file_path = convert_webp_to_jpeg(file_path)
+                
+                # Upload FTP
+                if upload_ftp(processed_file_path):
+                    stats["files_uploaded"] += 1
+                    
+                    # Publication Instagram
+                    if publish_instagram(processed_file_path):
+                        stats["files_published"] += 1
+                        
+                        # Déplacer vers le dossier processed
+                        try:
+                            processed_filename = Path(processed_file_path).name
+                            final_destination = os.path.join(processed_dir, processed_filename)
+                            
+                            # Gérer les doublons
+                            counter = 1
+                            base_name, ext = os.path.splitext(processed_filename)
+                            while os.path.exists(final_destination):
+                                processed_filename = f"{base_name}_{counter}{ext}"
+                                final_destination = os.path.join(processed_dir, processed_filename)
+                                counter += 1
+                            
+                            shutil.move(processed_file_path, final_destination)
+                            log_poster(f"Fichier déplacé vers processed: {processed_filename}", "SUCCESS")
+                            
+                            # Supprimer le fichier WebP original si conversion a eu lieu
+                            if processed_file_path != file_path and os.path.exists(file_path):
+                                os.remove(file_path)
+                                log_poster(f"Fichier WebP original supprimé: {filename}", "INFO")
+                                
+                        except Exception as move_error:
+                            log_poster(f"Erreur déplacement {filename}: {str(move_error)}", "WARNING")
+                    else:
+                        stats["files_failed"] += 1
+                        stats["errors"].append(f"Publication Instagram échouée: {filename}")
+                else:
+                    stats["files_failed"] += 1  
+                    stats["errors"].append(f"Upload FTP échoué: {filename}")
+                    
+            except Exception as process_error:
+                log_poster(f"Erreur traitement {filename}: {str(process_error)}", "ERROR")
+                stats["files_failed"] += 1
+                stats["errors"].append(f"Erreur traitement {filename}: {str(process_error)}")
+                continue
+        
+        # Résumé final
+        log_poster("=== RÉSUMÉ DE LA PUBLICATION AUTOMATIQUE ===", "INFO")
+        log_poster(f"Fichiers trouvés: {stats['files_found']}", "INFO")
+        log_poster(f"Fichiers traités: {stats['files_processed']}", "INFO")
+        log_poster(f"Fichiers uploadés: {stats['files_uploaded']}", "SUCCESS")
+        log_poster(f"Fichiers publiés: {stats['files_published']}", "SUCCESS")
+        log_poster(f"Fichiers ignorés: {stats['files_ignored']}", "WARNING")
+        log_poster(f"Fichiers en échec: {stats['files_failed']}", "ERROR")
+        
+        if stats["errors"]:
+            log_poster("Erreurs détaillées:", "ERROR")
+            for error in stats["errors"]:
+                log_poster(f"  - {error}", "ERROR")
+        
+        return {
+            "success": True,
+            "stats": stats,
+            "message": f"Publication terminée: {stats['files_published']}/{stats['files_processed']} fichiers publiés"
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur générale poster_media(): {str(e)}"
+        log_poster(error_msg, "ERROR")
+        return {"success": False, "error": error_msg}
+
+# ============================================================================
+# ENDPOINT API POUR DÉCLENCHER LA PUBLICATION MANUELLE
+# ============================================================================
+
+@app.post("/api/poster-media")
+async def trigger_poster_media():
+    """
+    Endpoint API pour déclencher manuellement la publication automatique des médias
+    depuis le dossier C:/gizmobbs/download vers Instagram
+    """
+    try:
+        log_poster("Déclenchement manuel de la publication via API", "INFO")
+        
+        # Exécuter la fonction poster_media
+        result = poster_media()
+        
+        # Retourner le résultat avec informations détaillées
+        return {
+            "success": result["success"],
+            "timestamp": datetime.now().isoformat(),
+            "source_directory": AUTO_DOWNLOAD_DIR,
+            "ftp_server": f"{FTP_HOST}:{FTP_PORT}",
+            "instagram_account": IG_USER_ID,
+            "result": result,
+            "endpoint_info": {
+                "description": "Publication automatique des médias depuis C:/gizmobbs/download",
+                "supported_formats": [".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"],
+                "process": [
+                    "1. Parcours du dossier C:/gizmobbs/download",
+                    "2. Conversion WebP → JPEG si nécessaire", 
+                    "3. Upload FTP vers logicamp.org/wordpress/upload/",
+                    "4. Publication sur Instagram via API Graph",
+                    "5. Déplacement vers dossier 'processed'"
+                ]
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur endpoint poster-media: {str(e)}"
+        log_poster(error_msg, "ERROR")
+        
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.now().isoformat(),
+            "endpoint_info": {
+                "description": "Erreur lors de l'exécution de la publication automatique",
+                "troubleshooting": [
+                    "Vérifiez que le dossier C:/gizmobbs/download existe",
+                    "Vérifiez les paramètres FTP dans le fichier .env",
+                    "Vérifiez les tokens Instagram ACCESS_TOKEN et IG_USER_ID",
+                    "Consultez les logs pour plus de détails"
+                ]
+            }
+        }
+
+@app.get("/api/poster-media/status")
+async def get_poster_media_status():
+    """
+    Endpoint pour vérifier le statut et la configuration de poster_media
+    """
+    try:
+        # Vérifier l'existence du dossier source
+        source_exists = os.path.exists(AUTO_DOWNLOAD_DIR)
+        
+        # Compter les fichiers dans le dossier source
+        files_count = 0
+        valid_files = []
+        if source_exists:
+            valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"}
+            for filename in os.listdir(AUTO_DOWNLOAD_DIR):
+                file_path = os.path.join(AUTO_DOWNLOAD_DIR, filename)
+                if os.path.isfile(file_path):
+                    file_ext = Path(filename).suffix.lower()
+                    if file_ext in valid_extensions:
+                        files_count += 1
+                        valid_files.append({
+                            "filename": filename,
+                            "extension": file_ext,
+                            "size_mb": round(os.path.getsize(file_path) / (1024*1024), 2)
+                        })
+        
+        # Vérifier la configuration
+        config_valid = (
+            ACCESS_TOKEN != "VOTRE_ACCESS_TOKEN_ICI" and 
+            IG_USER_ID != "VOTRE_IG_USER_ID_ICI"
+        )
+        
+        return {
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+            "configuration": {
+                "source_directory": AUTO_DOWNLOAD_DIR,
+                "source_exists": source_exists,
+                "ftp_server": f"{FTP_HOST}:{FTP_PORT}",
+                "ftp_user": FTP_USER,
+                "ftp_upload_dir": FTP_UPLOAD_DIR,
+                "access_token_configured": ACCESS_TOKEN != "VOTRE_ACCESS_TOKEN_ICI",
+                "ig_user_id_configured": IG_USER_ID != "VOTRE_IG_USER_ID_ICI",
+                "config_valid": config_valid
+            },
+            "source_analysis": {
+                "files_count": files_count,
+                "files_ready": valid_files[:10],  # Limiter à 10 pour l'aperçu
+                "total_size_mb": round(sum(f["size_mb"] for f in valid_files), 2)
+            },
+            "supported_formats": [".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"],
+            "ready_to_process": source_exists and config_valid and files_count > 0
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Erreur vérification status: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
