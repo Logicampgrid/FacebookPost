@@ -14983,7 +14983,8 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
         if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
             print(f"🔧 Optimizing uploaded image: {file_path}")
             optimized_filename = f"{uuid.uuid4()}.jpg"
-            optimized_path = f"uploads/{optimized_filename}"
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            optimized_path = f"/gizmobbs/uploads/{optimized_filename}"
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
                 # Remove original and use optimized version
