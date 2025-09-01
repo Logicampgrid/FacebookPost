@@ -9946,7 +9946,8 @@ async def download_product_image(image_url: str) -> str:
         # Optimize image for Facebook
         if ext in ['jpg', 'jpeg', 'png', 'webp']:
             optimized_filename = f"{uuid.uuid4()}.jpg"
-            optimized_path = f"uploads/{optimized_filename}"
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            optimized_path = f"/gizmobbs/uploads/{optimized_filename}"
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
                 # Remove original and use optimized version
