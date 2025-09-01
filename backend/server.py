@@ -416,7 +416,8 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
         # Créer chemin de sortie
         unique_id = uuid.uuid4().hex[:8]
         timestamp = int(datetime.utcnow().timestamp())
-        output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}{output_ext}"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        output_path = f"/gizmobbs/uploads/optimized/ig_{timestamp}_{unique_id}{output_ext}"
         
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
