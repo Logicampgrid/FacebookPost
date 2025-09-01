@@ -2558,7 +2558,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
         elif media_type == 'video':
             print(f"🎬 CONVERSION VIDÉO: Optimisation MP4 pour Instagram/Facebook")
             
-            output_path = f"uploads/processed/converted_video_{unique_id}.mp4"
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            output_path = f"/gizmobbs/uploads/processed/converted_video_{unique_id}.mp4"
             
             # Stratégies de conversion vidéo ULTRA-ROBUSTES pour Instagram/Facebook
             conversion_strategies = [
