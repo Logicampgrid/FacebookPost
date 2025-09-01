@@ -1598,7 +1598,8 @@ async def validate_and_convert_media_for_social(input_path: str, target_platform
                 
                 unique_id = uuid.uuid4().hex[:8]
                 timestamp = int(datetime.utcnow().timestamp())
-                converted_path = f"uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
+                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                converted_path = f"/gizmobbs/uploads/processed/validated_{target_platform}_{timestamp}_{unique_id}.mp4"
                 
                 # Paramètres de conversion optimisés par plateforme avec budgets adaptatifs
                 target_duration = min(video_info["duration"], max_video_duration)
