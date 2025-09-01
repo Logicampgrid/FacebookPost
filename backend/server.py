@@ -10645,7 +10645,8 @@ async def create_product_post(request: ProductPublishRequest, force_strategy_1c:
             
             # Optimize image specifically for Instagram
             print(f"📸 Optimisation image pour Instagram...")
-            optimize_image(media_url.replace('/api/uploads/', 'uploads/'), instagram_mode=True)
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            optimize_image(media_url.replace('/api/uploads/', '/gizmobbs/uploads/'), instagram_mode=True)
             
             # Create Instagram post content
             instagram_content = generate_enhanced_product_description(request.title, request.description, request.shop_type, platform="instagram")
