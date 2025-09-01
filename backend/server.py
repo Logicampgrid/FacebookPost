@@ -7157,6 +7157,7 @@ class Post(BaseModel):
     link_metadata: Optional[List[dict]] = []  # Store detected link metadata
     comment_link: Optional[str] = None  # Link to add as comment after post (backward compatibility)
     comment_text: Optional[str] = None  # Any text to add as comment after post
+    product_link: Optional[str] = None  # Product link for Instagram captions and comments (FIX AJOUTÉ)
     target_type: str  # "page", "group", "instagram", "cross-post"
     target_id: str
     target_name: str
