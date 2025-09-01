@@ -9316,7 +9316,8 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             log_instagram(f"Vidéo téléchargée: {local_video_path}")
         else:
             # Fichier local
-            local_video_path = video_url.replace('/api/uploads/', 'uploads/')
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            local_video_path = video_url.replace('/api/uploads/', '/gizmobbs/uploads/')
             if not os.path.exists(local_video_path):
                 return {"status": "error", "message": "Fichier vidéo local introuvable"}
             log_instagram(f"Vidéo locale: {local_video_path}")
