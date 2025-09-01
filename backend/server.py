@@ -27,6 +27,28 @@ import sys
 
 load_dotenv()
 
+# MODIFICATION POUR WINDOWS - Variables globales pour les répertoires
+# Utilisation de chemins Windows compatibles avec création automatique des dossiers
+UPLOAD_DIR = r"C:\gizmobbs\uploads"
+DOWNLOAD_DIR = os.path.join(UPLOAD_DIR, "downloaded")
+OPTIMIZED_DIR = os.path.join(UPLOAD_DIR, "optimized")
+PROCESSED_DIR = os.path.join(UPLOAD_DIR, "processed")
+
+# Création automatique des dossiers nécessaires au démarrage
+def ensure_upload_directories():
+    """Créer automatiquement tous les dossiers nécessaires pour Windows"""
+    directories = [UPLOAD_DIR, DOWNLOAD_DIR, OPTIMIZED_DIR, PROCESSED_DIR]
+    for directory in directories:
+        try:
+            os.makedirs(directory, exist_ok=True)
+            print(f"✅ Dossier créé/vérifié: {directory}")
+        except Exception as e:
+            print(f"❌ Erreur création dossier {directory}: {e}")
+            raise
+
+# Créer les dossiers au démarrage
+ensure_upload_directories()
+
 app = FastAPI(title="Meta Publishing Platform - Instagram Optimized")
 
 # Configuration flags - NOUVELLES CONFIGURATIONS
