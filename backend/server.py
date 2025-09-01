@@ -15802,7 +15802,8 @@ async def test_enhanced_product_posting(request: ProductPublishRequest):
                 print(f"⚠️ Skipping external image download for test - simulating success")
                 # Find an existing local image for testing
                 import glob
-                local_images = glob.glob("/app/backend/uploads/*.jpg")
+                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                local_images = glob.glob("/gizmobbs/uploads/*.jpg")
                 if local_images:
                     media_url = f"/api/uploads/{local_images[0].split('/')[-1]}"
                     print(f"✅ Using existing image for test: {media_url}")
