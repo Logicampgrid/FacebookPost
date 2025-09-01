@@ -545,8 +545,8 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
             try:
                 log_media("[CONVERSION INSTAGRAM] Tentative de récupération avec FFmpeg...", "WARNING")
                 
-                # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
-                fallback_path = f"/gizmobbs/uploads/optimized/ig_fallback_{timestamp}_{unique_id}.jpg"
+                # MODIFICATION POUR WINDOWS - utilisation de la variable globale OPTIMIZED_DIR
+                fallback_path = os.path.join(OPTIMIZED_DIR, f"ig_fallback_{timestamp}_{unique_id}.jpg")
                 
                 ffmpeg_cmd = [
                     'ffmpeg', '-y', '-i', input_path,
