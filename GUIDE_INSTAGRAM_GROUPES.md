@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://insta-post-fixer.preview.emergentagent.com
+URL : https://insta-auto-fix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

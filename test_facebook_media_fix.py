@@ -83,7 +83,7 @@ def test_complete_media_workflow():
         print("-" * 30)
         
         # Construire l'URL complète comme le fait le backend
-        full_public_url = f"https://insta-post-fixer.preview.emergentagent.com{media_url}"
+        full_public_url = f"https://insta-auto-fix.preview.emergentagent.com{media_url}"
         print(f"🌐 URL publique complète: {full_public_url}")
         
         # Tester l'accessibilité pour Facebook
@@ -150,7 +150,7 @@ def test_url_construction_logic():
     print("-" * 50)
     
     # Simuler les variables d'environnement
-    base_url = "https://insta-post-fixer.preview.emergentagent.com"
+    base_url = "https://insta-auto-fix.preview.emergentagent.com"
     media_url = "/api/uploads/test-image.jpg"
     
     # Construction comme dans le backend
