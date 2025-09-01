@@ -199,7 +199,7 @@ return items.map(item => {
 });""")
     
     print("\n2. Configurez le nœud HTTP Request :")
-    print("   • URL: https://media-uploader-6.preview.emergentagent.com/api/webhook/enhanced")
+    print("   • URL: https://insta-post-fixer.preview.emergentagent.com/api/webhook/enhanced")
     print("   • Method: POST")
     print("   • Body Type: Multipart-Form Data")
     print("   • Fields:")

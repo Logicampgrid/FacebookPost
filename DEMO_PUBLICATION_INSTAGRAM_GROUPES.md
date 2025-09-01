@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://media-uploader-6.preview.emergentagent.com
+🔗 https://insta-post-fixer.preview.emergentagent.com

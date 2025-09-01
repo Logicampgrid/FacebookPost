@@ -13,7 +13,7 @@ import tempfile
 import os
 
 class AutoRoutingTester:
-    def __init__(self, base_url="https://media-uploader-6.preview.emergentagent.com"):
+    def __init__(self, base_url="https://insta-post-fixer.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
