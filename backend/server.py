@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, validator, validator
+from pydantic import BaseModel, validator
 from typing import List, Optional
 import os
 import motor.motor_asyncio
@@ -16,16 +16,22 @@ import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from bson import ObjectId
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 import tempfile
 import subprocess
 import mimetypes
 from pathlib import Path
+import time
+import sys
 
 load_dotenv()
 
-app = FastAPI(title="Meta Publishing Platform - Pages, Groups & Instagram")
+app = FastAPI(title="Meta Publishing Platform - Instagram Optimized")
+
+# Configuration flags - NOUVELLES CONFIGURATIONS
+DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+SELFTEST_MODE = "--selftest" in sys.argv
 
 # CORS configuration
 app.add_middleware(
