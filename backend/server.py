@@ -13535,7 +13535,8 @@ async def webhook_endpoint(request: Request):
                                 file_extension = "gif"
                     
                     unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(datetime.utcnow().timestamp())}.{file_extension}"
-                    local_media_path = f"uploads/{unique_filename}"
+                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                    local_media_path = f"/gizmobbs/uploads/{unique_filename}"
                     
                     # Sauvegarder le fichier
                     with open(local_media_path, "wb") as f:
