@@ -602,8 +602,9 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
         # Créer chemins de sortie
         unique_id = uuid.uuid4().hex[:8]
         timestamp = int(datetime.utcnow().timestamp())
-        output_path = f"uploads/optimized/ig_{timestamp}_{unique_id}.mp4"
-        thumbnail_path = f"uploads/optimized/thumb_{timestamp}_{unique_id}.jpg"
+        # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+        output_path = f"/gizmobbs/uploads/optimized/ig_{timestamp}_{unique_id}.mp4"
+        thumbnail_path = f"/gizmobbs/uploads/optimized/thumb_{timestamp}_{unique_id}.jpg"
         
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
