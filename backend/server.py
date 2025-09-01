@@ -9466,7 +9466,8 @@ async def attempt_instagram_image_post_optimized(image_url: str, post: Post, acc
             log_instagram(f"Image téléchargée: {local_image_path}")
         else:
             # Fichier local
-            local_image_path = image_url.replace('/api/uploads/', 'uploads/')
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            local_image_path = image_url.replace('/api/uploads/', '/gizmobbs/uploads/')
             if not os.path.exists(local_image_path):
                 return {"status": "error", "message": "Fichier image local introuvable"}
             log_instagram(f"Image locale: {local_image_path}")
