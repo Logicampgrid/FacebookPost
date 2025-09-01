@@ -11600,7 +11600,7 @@ async def create_product_post_from_local_image(request: ProductPublishRequest, l
             # Optimize image specifically for Instagram
             print(f"📸 Optimizing local image for Instagram...")
             # MODIFICATION POUR WINDOWS - utilisation des variables globales de répertoires
-            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/'))
+            local_file_path = media_url.replace('/api/uploads/', UPLOAD_DIR.replace('\\', '/') + '/')
             optimize_image(local_file_path, instagram_mode=True)
             
             # Create Instagram post content (déjà généré plus haut)
