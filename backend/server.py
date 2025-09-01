@@ -16346,8 +16346,8 @@ def poster_media():
             stats["files_processed"] += 1
             
             try:
-                # Conversion WebP si nécessaire
-                processed_file_path = convert_webp_to_jpeg(file_path)
+                # Validation et préparation de l'image avec la nouvelle logique robuste
+                processed_file_path = validate_and_prepare_image(file_path)
                 
                 # Upload FTP
                 if upload_ftp(processed_file_path):
