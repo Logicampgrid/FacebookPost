@@ -12,7 +12,7 @@ from datetime import datetime
 # Configuration
 API_BASE = "http://localhost:8001"
 FRONTEND_URL = "http://localhost:3000"
-WEBHOOK_URL = "https://insta-uploader.preview.emergentagent.com/api/webhook"
+WEBHOOK_URL = "https://upload-guard.preview.emergentagent.com/api/webhook"
 
 def check_all_services():
     """Vérifie que tous les services sont opérationnels"""

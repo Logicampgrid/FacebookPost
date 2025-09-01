@@ -26,7 +26,7 @@ The webhook endpoint is **fully functional**. The issue is in your n8n workflow 
 ```json
 {
   "method": "POST",
-  "url": "https://insta-uploader.preview.emergentagent.com/api/webhook",
+  "url": "https://upload-guard.preview.emergentagent.com/api/webhook",
   "sendBody": true,
   "contentType": "multipart-form-data",
   "bodyParameters": {
@@ -135,7 +135,7 @@ Your previous node (image download/upload) should have:
   "type": "n8n-nodes-base.httpRequest",
   "parameters": {
     "method": "POST",
-    "url": "https://insta-uploader.preview.emergentagent.com/api/webhook",
+    "url": "https://upload-guard.preview.emergentagent.com/api/webhook",
     "sendBody": true,
     "contentType": "multipart-form-data",
     "bodyParameters": {
@@ -204,7 +204,7 @@ Available stores for the `store` parameter:
 
 ### Test with cURL:
 ```bash
-curl -X POST "https://insta-uploader.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://upload-guard.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/image.jpg" \
   -F 'json_data={"title":"Test Product","description":"Test description","url":"https://example.com","store":"gizmobbs"}'
 ```
