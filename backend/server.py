@@ -2704,7 +2704,8 @@ async def convert_media_for_social_platforms(input_path: str, media_type: str) -
                 print(f"⚠️ Toutes les stratégies vidéo ont échoué, tentative de fallback")
                 # Fallback: copier le fichier original
                 try:
-                    fallback_path = f"uploads/processed/fallback_video_{unique_id}.mp4"
+                    # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+                    fallback_path = f"/gizmobbs/uploads/processed/fallback_video_{unique_id}.mp4"
                     import shutil
                     shutil.copy2(input_path, fallback_path)
                     print(f"🔄 FALLBACK VIDÉO: Fichier copié sans conversion: {fallback_path}")
