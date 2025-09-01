@@ -6677,7 +6677,8 @@ async def execute_photo_with_link_strategy(message: str, product_link: str, imag
         else:
             # C'est déjà un chemin local
             success = True
-            local_path = image_source.replace('/api/uploads/', 'uploads/')
+            # MODIFICATION POUR UPLOAD LOCAL - utilisation du répertoire persistant /gizmobbs/uploads
+            local_path = image_source.replace('/api/uploads/', '/gizmobbs/uploads/')
             error = "local_file"
         
         if not success:
