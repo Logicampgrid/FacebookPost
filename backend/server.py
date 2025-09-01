@@ -8297,6 +8297,34 @@ async def simulate_instagram_post_for_test(post: Post, page_access_token: str):
         print(f"❌ Erreur simulation Instagram: {e}")
         return {"status": "error", "message": f"Simulation failed: {str(e)}"}
 
+def handle_api_error(response, platform: str, operation: str) -> dict:
+    """Gestion centralisée des erreurs API avec diagnostic détaillé"""
+    try:
+        error_data = response.json()
+        error_code = error_data.get('error', {}).get('code', 'Unknown')
+        error_message = error_data.get('error', {}).get('message', 'Unknown error')
+        error_type = error_data.get('error', {}).get('type', 'Unknown')
+        
+        log_instagram(f"Erreur API {platform}: {operation}", "ERROR")
+        log_instagram(f"Code: {error_code}, Type: {error_type}", "ERROR")
+        log_instagram(f"Message: {error_message}", "ERROR")
+        
+        return {
+            "status": "error",
+            "message": f"{platform} API error: {error_message}",
+            "error_code": error_code,
+            "error_type": error_type,
+            "operation": operation
+        }
+    except:
+        log_instagram(f"Erreur API {platform} non-JSON: {response.text[:200]}", "ERROR")
+        return {
+            "status": "error", 
+            "message": f"{platform} API error: HTTP {response.status_code}",
+            "error_code": response.status_code,
+            "operation": operation
+        }
+
 async def post_to_instagram(post: Post, page_access_token: str):
     """Post content to Instagram Business account with enhanced video support and fallback logic"""
     try:
