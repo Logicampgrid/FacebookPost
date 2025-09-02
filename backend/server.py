@@ -1331,7 +1331,7 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
                         
                         # Upload SYSTÉMATIQUE vers FTP après téléchargement réussi
                         print(f"📤 Upload automatique vers FTP: {local_path}")
-                        ftp_success, https_url, ftp_error = await upload_to_ftp(local_path, f"reliable_{unique_id}{extension}")
+                        ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(local_path, f"reliable_{unique_id}{extension}")
                         
                         if ftp_success:
                             print(f"✅ FTP Upload réussi: {https_url}")
