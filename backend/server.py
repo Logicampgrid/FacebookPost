@@ -16522,8 +16522,8 @@ def poster_media():
         os.makedirs(processed_dir, exist_ok=True)
         log_poster(f"Dossier processed prêt: {processed_dir}", "INFO")
         
-        # Extensions de fichiers supportées
-        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"}
+        # Extensions de fichiers supportées - MISE À JOUR avec HEIC/HEIF
+        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".mp4", ".mov"}
         
         # Statistiques
         stats = {
