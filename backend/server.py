@@ -1252,9 +1252,10 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
                 else:
                     video_https_url = output_path  # Fallback local autorisé
             
-            # Générer miniature JPEG optimisée
+            # Générer miniature JPEG optimisée - CORRECTION: utiliser le fichier source si l'output a été supprimé
+            source_for_thumbnail = output_path if os.path.exists(output_path) else input_path
             thumbnail_cmd = [
-                'ffmpeg', '-y', '-i', output_path,
+                'ffmpeg', '-y', '-i', source_for_thumbnail,
                 '-vf', 'select=eq(n\\,0),scale=1080:1350:force_original_aspect_ratio=decrease',
                 '-q:v', '3',              # Haute qualité
                 '-frames:v', '1',         # Une seule frame
