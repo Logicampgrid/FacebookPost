@@ -123,12 +123,29 @@ async def upload_to_ftp(local_file_path: str, original_filename: str = None) -> 
     """
     Upload un fichier vers le serveur FTP avec structure YYYY/MM/DD/
     Retourne l'URL HTTPS stable pour Facebook/Instagram
+    FORCE_FTP: Force l'upload même en cas d'échec, pas de fallback local
     """
     try:
         log_media(f"[FTP UPLOAD] Début upload: {local_file_path}", "INFO")
+        log_media(f"[FTP UPLOAD] FORCE_FTP activé: {FORCE_FTP}", "INFO")
         
+        # Validation renforcée du fichier source
         if not os.path.exists(local_file_path):
-            return False, None, "Fichier local introuvable"
+            error_msg = "Fichier local introuvable pour upload FTP"
+            log_media(f"[FTP UPLOAD] ❌ {error_msg}: {local_file_path}", "ERROR")
+            return False, None, error_msg
+        
+        # Vérifier que le fichier n'est pas vide ou corrompu
+        file_size = os.path.getsize(local_file_path)
+        if file_size == 0:
+            error_msg = "Fichier local vide, upload FTP impossible"
+            log_media(f"[FTP UPLOAD] ❌ {error_msg}: {local_file_path}", "ERROR")
+            return False, None, error_msg
+        
+        if file_size < 100:  # Fichier suspicieusement petit
+            log_media(f"[FTP UPLOAD] ⚠️ Fichier très petit: {file_size} bytes", "WARNING")
+        
+        log_media(f"[FTP UPLOAD] Validation fichier OK: {file_size} bytes", "SUCCESS")
         
         # Créer structure de dossiers par date (YYYY/MM/DD)
         now = datetime.now()
