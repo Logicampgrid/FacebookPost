@@ -9690,10 +9690,65 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                     
                 else:
                     print(f"⬇️ Fichier local non trouvé, téléchargement depuis URL: {full_media_url}")
-                    # Fallback: téléchargement et validation
-                    media_content, content_type = await download_and_optimize_for_facebook(full_media_url)
-                    detected_media_type = await detect_media_type_from_content(media_content, full_media_url)
-                    print(f"🔍 Type de média téléchargé: {detected_media_type}")
+                    
+                    # NOUVELLE STRATÉGIE: Téléchargement avec conversion WordPress automatique
+                    download_success, download_result, download_error = await download_media_with_extended_retry(full_media_url)
+                    
+                    if download_success:
+                        if download_result.startswith('/wordpress/uploads'):
+                            # Fichier déjà converti et sauvé dans WordPress par download_media_with_extended_retry
+                            upload_file_path = download_result
+                            print(f"✅ TÉLÉCHARGEMENT + CONVERSION WORDPRESS RÉUSSIS: {upload_file_path}")
+                            
+                            # Lire le contenu du fichier WordPress
+                            with open(upload_file_path, 'rb') as f:
+                                media_content = f.read()
+                            
+                            detected_media_type = await detect_media_type_robust(upload_file_path)
+                            content_type = 'image/jpeg' if detected_media_type == 'image' else 'video/mp4'
+                            
+                        else:
+                            # Fichier téléchargé mais pas encore converti (probablement vidéo)
+                            print(f"📁 TÉLÉCHARGEMENT RÉUSSI: {download_result}")
+                            detected_media_type = await detect_media_type_robust(download_result)
+                            
+                            if detected_media_type == 'image':
+                                # Conversion WordPress pour les images téléchargées
+                                print(f"📸 IMAGE TÉLÉCHARGÉE → Conversion WordPress obligatoire")
+                                conversion_success, wordpress_path, conversion_error = await ensure_webp_to_jpeg_with_wordpress_save(
+                                    download_result, 
+                                    filename_hint=f"downloaded_{uuid.uuid4().hex[:8]}.jpeg"
+                                )
+                                
+                                if conversion_success:
+                                    upload_file_path = wordpress_path
+                                    print(f"✅ CONVERSION WORDPRESS TÉLÉCHARGEMENT RÉUSSIE: {upload_file_path}")
+                                    
+                                    # Supprimer fichier téléchargé temporaire
+                                    try:
+                                        os.unlink(download_result)
+                                        print(f"🗑️ Fichier téléchargé temporaire supprimé")
+                                    except:
+                                        pass
+                                else:
+                                    print(f"❌ CONVERSION WORDPRESS TÉLÉCHARGEMENT ÉCHOUÉE: {conversion_error}")
+                                    upload_file_path = download_result
+                            else:
+                                # Vidéo téléchargée
+                                upload_file_path = download_result
+                                print(f"🎥 VIDÉO TÉLÉCHARGÉE: {upload_file_path}")
+                            
+                            # Lire le contenu final
+                            with open(upload_file_path, 'rb') as f:
+                                media_content = f.read()
+                            
+                            content_type = 'image/jpeg' if detected_media_type == 'image' else 'video/mp4'
+                            
+                    else:
+                        print(f"❌ TÉLÉCHARGEMENT ÉCHOUÉ: {download_error}")
+                        raise Exception(f"Impossible de télécharger le média: {download_error}")
+                    
+                    print(f"🔍 Type de média final: {detected_media_type}")
                 
                 print(f"📊 Info média finale: taille={len(media_content)} bytes, type={content_type}")
                 
