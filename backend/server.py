@@ -10318,6 +10318,46 @@ async def simulate_instagram_post_for_test(post: Post, page_access_token: str):
         # Simulate successful Instagram post
         result = {
             "status": "success",
+async def verify_wordpress_url_accessibility(url: str) -> tuple:
+    """Vérifie qu'une URL WordPress est accessible publiquement pour Instagram"""
+    try:
+        log_media(f"🔍 Vérification accessibilité URL WordPress: {url}", "INFO")
+        
+        # Test avec des headers simulant Instagram
+        headers = {
+            'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+        
+        if response.status_code == 200:
+            content_length = len(response.content)
+            content_type = response.headers.get('content-type', '')
+            
+            log_media(f"✅ URL accessible: {response.status_code}, {content_length} bytes, type: {content_type}", "SUCCESS")
+            
+            # Vérifications spécifiques pour vidéos
+            if 'video' in content_type:
+                return True, f"URL vidéo accessible: {content_length} bytes, type: {content_type}"
+            elif content_length > 1000:  # Au moins 1KB pour un vrai fichier
+                return True, f"URL accessible: {content_length} bytes"
+            else:
+                return False, f"Fichier trop petit: {content_length} bytes"
+        else:
+            return False, f"HTTP {response.status_code}: {response.reason}"
+            
+    except requests.exceptions.Timeout:
+        return False, "Timeout lors de la vérification (15s)"
+    except requests.exceptions.ConnectionError:
+        return False, "Erreur de connexion - URL probablement inaccessible"
+    except Exception as e:
+        return False, f"Erreur vérification: {str(e)}"
             "id": test_post_id, 
             "message": "Test mode: Instagram post simulated successfully",
             "test_mode": True,
