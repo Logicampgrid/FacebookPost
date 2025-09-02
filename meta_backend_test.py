@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 
 class MetaPublishingTester:
-    def __init__(self, base_url="https://demobackend.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:8001"):
         # Get the correct backend URL from frontend .env
         self.base_url = base_url
         self.tests_run = 0
