@@ -16200,7 +16200,11 @@ def upload_to_ftp(file_path):
                             except Exception as mkdir_error:
                                 error_msg = f"Impossible de créer le dossier {current_path}: {str(mkdir_error)}"
                                 log_poster(error_msg, "ERROR")
-                                return False, None, error_msg
+                                return {
+                                    "success": False,
+                                    "ftp_url": None,
+                                    "error": error_msg
+                                }
                 
                 log_poster(f"✅ Dossier FTP final: {current_path}", "SUCCESS")
                 
