@@ -312,6 +312,10 @@ async def create_post(post: PostCreate):
         
         log_media(f"Post created successfully: {post_id}", "SUCCESS")
         
+        # Convert for response
+        post_doc["id"] = post_doc["_id"]
+        del post_doc["_id"]
+        
         return PostResponse(**post_doc)
         
     except Exception as e:
