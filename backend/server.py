@@ -612,27 +612,57 @@ async def download_media_with_extended_retry(url: str, max_attempts: int = 5, ba
                     log_media(f"[TÉLÉCHARGEMENT] Vérification: {saved_size} bytes sauvés = {len(content_data)} bytes téléchargés", "SUCCESS")
                     log_media(f"[TÉLÉCHARGEMENT] Tentative réussie: {attempt}/{max_attempts}", "SUCCESS")
                     
-                    # Upload SYSTÉMATIQUE vers FTP après téléchargement réussi
-                    log_media("[TÉLÉCHARGEMENT] Upload automatique vers FTP...", "INFO")
-                    ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(local_path, f"downloaded_{unique_id}{ext}")
-                    
-                    if ftp_success:
-                        log_media(f"[TÉLÉCHARGEMENT] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
-                        # Supprimer fichier local après upload réussi
-                        try:
-                            os.unlink(local_path)
-                            log_media("[TÉLÉCHARGEMENT] Fichier local supprimé après upload FTP", "INFO")
-                        except:
-                            log_media("[TÉLÉCHARGEMENT] ⚠️ Impossible de supprimer fichier local", "WARNING")
-                        return True, https_url, None  # Retourner URL HTTPS au lieu du chemin local
-                    else:
-                        log_media(f"[TÉLÉCHARGEMENT] ❌ FTP Upload échoué: {ftp_error}", "ERROR")
-                        if FORCE_FTP:
-                            log_media("[TÉLÉCHARGEMENT] FORCE_FTP=true: échec définitif", "ERROR")
-                            return False, None, f"Upload FTP téléchargement obligatoire échoué: {ftp_error}"
+                    # NOUVELLE STRATÉGIE: Conversion obligatoire et sauvegarde WordPress pour images
+                    media_type = await detect_media_type_robust(local_path)
+                    if media_type == 'image':
+                        log_media("[TÉLÉCHARGEMENT] 🔄 Image détectée → Conversion obligatoire WebP→JPEG + sauvegarde WordPress", "INFO")
+                        
+                        # Conversion obligatoire vers WordPress (même si déjà JPEG)
+                        conversion_success, wordpress_path, conversion_error = await ensure_webp_to_jpeg_with_wordpress_save(
+                            local_path, 
+                            filename_hint=f"downloaded_{unique_id}{ext}"
+                        )
+                        
+                        if conversion_success:
+                            log_media(f"[TÉLÉCHARGEMENT] ✅ Image convertie et sauvée WordPress: {wordpress_path}", "SUCCESS")
+                            
+                            # Supprimer fichier temporaire téléchargé
+                            try:
+                                os.unlink(local_path)
+                                log_media("[TÉLÉCHARGEMENT] Fichier temporaire supprimé", "INFO")
+                            except:
+                                pass
+                            
+                            return True, wordpress_path, None  # Retourner chemin WordPress local
                         else:
-                            log_media("[TÉLÉCHARGEMENT] Fallback fichier local autorisé", "WARNING")
+                            log_media(f"[TÉLÉCHARGEMENT] ❌ Conversion WordPress échouée: {conversion_error}", "ERROR")
+                            log_media("[TÉLÉCHARGEMENT] Fallback: utilisation fichier téléchargé original", "WARNING")
                             return True, local_path, None
+                    else:
+                        # Pour les vidéos, garder l'ancienne logique FTP
+                        log_media("[TÉLÉCHARGEMENT] 🎥 Vidéo détectée → Logique FTP maintenue", "INFO")
+                        
+                        # Upload SYSTÉMATIQUE vers FTP après téléchargement réussi
+                        log_media("[TÉLÉCHARGEMENT] Upload automatique vers FTP...", "INFO")
+                        ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(local_path, f"downloaded_{unique_id}{ext}")
+                        
+                        if ftp_success:
+                            log_media(f"[TÉLÉCHARGEMENT] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                            # Supprimer fichier local après upload réussi
+                            try:
+                                os.unlink(local_path)
+                                log_media("[TÉLÉCHARGEMENT] Fichier local supprimé après upload FTP", "INFO")
+                            except:
+                                log_media("[TÉLÉCHARGEMENT] ⚠️ Impossible de supprimer fichier local", "WARNING")
+                            return True, https_url, None  # Retourner URL HTTPS au lieu du chemin local
+                        else:
+                            log_media(f"[TÉLÉCHARGEMENT] ❌ FTP Upload échoué: {ftp_error}", "ERROR")
+                            if FORCE_FTP:
+                                log_media("[TÉLÉCHARGEMENT] FORCE_FTP=true: échec définitif", "ERROR")
+                                return False, None, f"Upload FTP téléchargement obligatoire échoué: {ftp_error}"
+                            else:
+                                log_media("[TÉLÉCHARGEMENT] Fallback fichier local autorisé", "WARNING")
+                                return True, local_path, None
                 else:
                     log_media("[TÉLÉCHARGEMENT] Erreur sauvegarde: tailles incohérentes", "ERROR")
                     continue
