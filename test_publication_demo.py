@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration de base
-API_BASE = "https://social-publisher-6.preview.emergentagent.com"
+API_BASE = "https://social-media-bridge.preview.emergentagent.com"
 
 def test_backend_connection():
     """Test de connexion au backend"""

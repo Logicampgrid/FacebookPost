@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://social-publisher-6.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-media-bridge.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://social-publisher-6.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://social-publisher-6.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://social-publisher-6.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-media-bridge.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-media-bridge.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-media-bridge.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
