@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://social-media-bridge.preview.emergentagent.com"
+    base_url = "https://code-compiler-check.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     
