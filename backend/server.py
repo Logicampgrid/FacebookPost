@@ -9878,13 +9878,21 @@ async def attempt_instagram_image_post_optimized(image_url: str, post: Post, acc
             'access_token': access_token
         }
         
-        # Ajouter URL image accessible
+        # Ajouter URL image - UTILISER URL HTTPS FTP AU LIEU DE NGROK
         if image_url.startswith('http'):
-            container_data['image_url'] = image_url
+            container_data['image_url'] = image_url  # URL HTTPS FTP déjà prête
         else:
-            # Construire URL publique
-            dynamic_base_url = get_dynamic_base_url()
-            container_data['image_url'] = f"{dynamic_base_url}{image_url}"
+            # Si c'est encore un chemin local, essayer de l'uploader vers FTP
+            log_instagram("⚠️ Chemin local détecté, upload vers FTP...", "WARNING")
+            ftp_success, https_url, ftp_error = await upload_to_ftp(image_url.replace('/api/uploads/', 'uploads/'))
+            if ftp_success:
+                container_data['image_url'] = https_url
+                log_instagram(f"✅ URL FTP générée: {https_url}", "SUCCESS")
+            else:
+                # Fallback sur URL locale (moins fiable)
+                dynamic_base_url = get_dynamic_base_url()
+                container_data['image_url'] = f"{dynamic_base_url}{image_url}"
+                log_instagram(f"⚠️ Fallback URL locale: {container_data['image_url']}", "WARNING")
         
         log_instagram(f"URL image container: {container_data['image_url']}")
         
