@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 
 class MetaPublishingTester:
-    def __init__(self, base_url="https://logicamp.org/wordpress/uploads"):
+    def __init__(self, base_url="https://demobackend.emergentagent.com"):
         # Get the correct backend URL from frontend .env
         self.base_url = base_url
         self.tests_run = 0
