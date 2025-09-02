@@ -9721,13 +9721,21 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             'access_token': access_token
         }
         
-        # Ajouter URL vidéo accessible
+        # Ajouter URL vidéo - UTILISER URL HTTPS FTP AU LIEU DE NGROK
         if video_url.startswith('http'):
-            container_data['video_url'] = video_url
+            container_data['video_url'] = video_url  # URL HTTPS FTP déjà prête
         else:
-            # Construire URL publique
-            dynamic_base_url = get_dynamic_base_url()
-            container_data['video_url'] = f"{dynamic_base_url}{video_url}"
+            # Si c'est encore un chemin local, essayer de l'uploader vers FTP
+            log_instagram("⚠️ Chemin local détecté, upload vers FTP...", "WARNING")
+            ftp_success, https_url, ftp_error = await upload_to_ftp(video_url.replace('/api/uploads/', 'uploads/'))
+            if ftp_success:
+                container_data['video_url'] = https_url
+                log_instagram(f"✅ URL FTP générée: {https_url}", "SUCCESS")
+            else:
+                # Fallback sur URL locale (moins fiable)
+                dynamic_base_url = get_dynamic_base_url()
+                container_data['video_url'] = f"{dynamic_base_url}{video_url}"
+                log_instagram(f"⚠️ Fallback URL locale: {container_data['video_url']}", "WARNING")
         
         log_instagram(f"URL vidéo container: {container_data['video_url']}")
         
