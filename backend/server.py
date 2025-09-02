@@ -7340,22 +7340,111 @@ async def auto_route_media_to_facebook_instagram(
                                 }
                                 break
                 else:
-                    # CORRECTION: Gestion d'erreurs améliorée pour container Instagram
+                    # CORRECTION: Gestion d'erreurs améliorée pour container Instagram avec fallback thumbnail
                     try:
                         error_response = container_response.json()
                         error_msg = error_response.get('error', {}).get('message', 'Unknown container error')
                         error_code = error_response.get('error', {}).get('code', 'Unknown')
                         detailed_error = f"Container creation failed - Code: {error_code}, Message: {error_msg}"
+                        
+                        # Détection spécifique de l'erreur video_url
+                        if "video_url" in error_msg.lower() or error_code == "100":
+                            log_instagram("❌ Erreur video_url détectée - URL WordPress probablement inaccessible", "ERROR")
+                            detailed_error += " | Cause probable: URL vidéo WordPress non accessible par Instagram"
                     except:
                         detailed_error = f"HTTP {container_response.status_code}: {container_response.text[:200]}"
                     
-                    results["instagram"] = {
-                        "success": False,
-                        "error": f"Échec création container Instagram: {detailed_error}",
-                        "media_type": "video" if is_video else "image",
-                        "suggestion": "Vérifiez que le fichier vidéo est compatible Instagram (MP4, H.264)" if is_video else "Vérifiez l'URL de l'image"
-                    }
-                    print(f"❌ Échec container Instagram: {detailed_error}")
+                    # Pour les vidéos, tenter un fallback avec thumbnail si disponible
+                    if is_video:
+                        log_instagram("🔄 Tentative fallback: publication thumbnail à la place de la vidéo", "WARNING")
+                        
+                        # Générer thumbnail de secours si pas déjà fait
+                        try:
+                            unique_id = uuid.uuid4().hex[:8]
+                            temp_thumbnail = os.path.join(OPTIMIZED_DIR, f"fallback_thumb_{unique_id}.jpg")
+                            
+                            thumbnail_cmd = [
+                                'ffmpeg', '-y', '-i', local_media_path,
+                                '-vf', 'select=eq(n\\,0),scale=1080:1080:force_original_aspect_ratio=decrease',
+                                '-q:v', '3', '-frames:v', '1', temp_thumbnail
+                            ]
+                            
+                            thumb_result = subprocess.run(thumbnail_cmd, capture_output=True, text=True, timeout=30)
+                            
+                            if thumb_result.returncode == 0 and os.path.exists(temp_thumbnail):
+                                # Upload thumbnail vers WordPress
+                                thumb_ftp_success, thumb_public_url, thumb_ftp_error = await upload_to_ftp_fixed(
+                                    temp_thumbnail, f"instagram_thumb_fallback_{unique_id}.jpg"
+                                )
+                                
+                                if thumb_ftp_success:
+                                    # Essayer de publier la thumbnail
+                                    thumb_container_data = {
+                                        'image_url': thumb_public_url,
+                                        'caption': f"🎬 {message}\n\n🔗 Vidéo complète: {product_link}",
+                                        'access_token': page_access_token
+                                    }
+                                    
+                                    thumb_response = requests.post(
+                                        f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
+                                        data=thumb_container_data,
+                                        timeout=60
+                                    )
+                                    
+                                    if thumb_response.status_code == 200:
+                                        thumb_container = thumb_response.json()
+                                        # Publier la thumbnail immédiatement
+                                        thumb_publish_response = requests.post(
+                                            f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media_publish",
+                                            data={
+                                                'creation_id': thumb_container["id"],
+                                                'access_token': page_access_token
+                                            }
+                                        )
+                                        
+                                        if thumb_publish_response.status_code == 200:
+                                            thumb_result_data = thumb_publish_response.json()
+                                            results["instagram"] = {
+                                                "success": True,
+                                                "post_id": thumb_result_data.get("id"),
+                                                "media_type": "image_thumbnail_fallback",
+                                                "fallback_reason": f"Vidéo échouée: {detailed_error}",
+                                                "thumbnail_url": thumb_public_url
+                                            }
+                                            results["credits_used"] += 1
+                                            log_instagram("✅ Fallback thumbnail Instagram réussi", "SUCCESS")
+                                        else:
+                                            raise Exception("Échec publication thumbnail")
+                                    else:
+                                        raise Exception("Échec création container thumbnail")
+                                else:
+                                    raise Exception(f"Upload thumbnail échoué: {thumb_ftp_error}")
+                                
+                                # Nettoyer le fichier temporaire
+                                try:
+                                    os.unlink(temp_thumbnail)
+                                except:
+                                    pass
+                            else:
+                                raise Exception("Génération thumbnail échouée")
+                                
+                        except Exception as fallback_error:
+                            log_instagram(f"❌ Fallback thumbnail échoué: {str(fallback_error)}", "ERROR")
+                            results["instagram"] = {
+                                "success": False,
+                                "error": f"Vidéo échouée: {detailed_error} | Fallback thumbnail échoué: {str(fallback_error)}",
+                                "media_type": "video",
+                                "suggestion": "Vérifiez que l'URL WordPress est accessible publiquement par Instagram"
+                            }
+                    else:
+                        results["instagram"] = {
+                            "success": False,
+                            "error": f"Échec création container Instagram: {detailed_error}",
+                            "media_type": "image",
+                            "suggestion": "Vérifiez l'URL de l'image"
+                        }
+                    
+                    log_instagram(f"❌ Échec container Instagram: {detailed_error}", "ERROR")
                     
             except Exception as e:
                 results["instagram"] = {
