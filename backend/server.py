@@ -10500,12 +10500,17 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
         success, converted_path, thumbnail_path, conversion_error = await convert_video_to_instagram_optimal(local_video_path)
         
         if not success:
-            log_instagram(f"⚠️ Conversion échouée: {conversion_error}", "WARNING")
-            # Utiliser vidéo originale comme fallback
-            final_video_path = local_video_path
-        else:
-            final_video_path = converted_path
-            log_instagram(f"Vidéo convertie: {final_video_path}")
+            log_instagram(f"❌ Conversion échouée: {conversion_error}", "ERROR")
+            return {"status": "error", "message": f"Échec conversion vidéo: {conversion_error}"}
+        
+        # CORRECTION: converted_path est maintenant une URL HTTPS après conversion
+        final_video_url = converted_path  # C'est maintenant une URL publique
+        log_instagram(f"Vidéo convertie et uploadée: {final_video_url}")
+        
+        # Vérifier que nous avons bien une URL publique
+        if not final_video_url or not final_video_url.startswith('http'):
+            log_instagram("❌ URL vidéo publique non disponible après conversion", "ERROR")
+            return {"status": "error", "message": "URL vidéo publique requise pour Instagram non disponible"}
         
         # Créer container Instagram pour vidéo
         container_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media"
@@ -10519,29 +10524,15 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             caption += f"\n\n🛒 Plus d'infos en bio!"
             log_instagram("Lien commentaire ajouté à la caption")
         
+        # CORRECTION: Utiliser video_url obligatoire pour Instagram
         container_data = {
             'media_type': 'VIDEO',
+            'video_url': final_video_url,  # OBLIGATOIRE: URL publique de la vidéo
             'caption': caption[:2200],  # Limite Instagram
             'access_token': access_token
         }
         
-        # Ajouter URL vidéo - UTILISER URL HTTPS FTP AU LIEU DE NGROK
-        if video_url.startswith('http'):
-            container_data['video_url'] = video_url  # URL HTTPS FTP déjà prête
-        else:
-            # Si c'est encore un chemin local, essayer de l'uploader vers FTP
-            log_instagram("⚠️ Chemin local détecté, upload vers FTP...", "WARNING")
-            ftp_success, https_url, ftp_error = await upload_to_ftp(video_url.replace('/api/uploads/', 'uploads/'))
-            if ftp_success:
-                container_data['video_url'] = https_url
-                log_instagram(f"✅ URL FTP générée: {https_url}", "SUCCESS")
-            else:
-                # Fallback sur URL locale (moins fiable)
-                dynamic_base_url = get_dynamic_base_url()
-                container_data['video_url'] = f"{dynamic_base_url}{video_url}"
-                log_instagram(f"⚠️ Fallback URL locale: {container_data['video_url']}", "WARNING")
-        
-        log_instagram(f"URL vidéo container: {container_data['video_url']}")
+        log_instagram(f"Container data préparé avec video_url: {final_video_url}")
         
         if DRY_RUN:
             log_instagram(f"[DRY_RUN] Container vidéo: {container_data}")
