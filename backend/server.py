@@ -548,7 +548,27 @@ async def download_media_with_extended_retry(url: str, max_attempts: int = 5, ba
                     log_media(f"[TÉLÉCHARGEMENT] Vérification: {saved_size} bytes sauvés = {len(content_data)} bytes téléchargés", "SUCCESS")
                     log_media(f"[TÉLÉCHARGEMENT] Tentative réussie: {attempt}/{max_attempts}", "SUCCESS")
                     
-                    return True, local_path, None
+                    # Upload SYSTÉMATIQUE vers FTP après téléchargement réussi
+                    log_media("[TÉLÉCHARGEMENT] Upload automatique vers FTP...", "INFO")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp(local_path, f"downloaded_{unique_id}{ext}")
+                    
+                    if ftp_success:
+                        log_media(f"[TÉLÉCHARGEMENT] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                        # Supprimer fichier local après upload réussi
+                        try:
+                            os.unlink(local_path)
+                            log_media("[TÉLÉCHARGEMENT] Fichier local supprimé après upload FTP", "INFO")
+                        except:
+                            log_media("[TÉLÉCHARGEMENT] ⚠️ Impossible de supprimer fichier local", "WARNING")
+                        return True, https_url, None  # Retourner URL HTTPS au lieu du chemin local
+                    else:
+                        log_media(f"[TÉLÉCHARGEMENT] ❌ FTP Upload échoué: {ftp_error}", "ERROR")
+                        if FORCE_FTP:
+                            log_media("[TÉLÉCHARGEMENT] FORCE_FTP=true: échec définitif", "ERROR")
+                            return False, None, f"Upload FTP téléchargement obligatoire échoué: {ftp_error}"
+                        else:
+                            log_media("[TÉLÉCHARGEMENT] Fallback fichier local autorisé", "WARNING")
+                            return True, local_path, None
                 else:
                     log_media("[TÉLÉCHARGEMENT] Erreur sauvegarde: tailles incohérentes", "ERROR")
                     continue
