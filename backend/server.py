@@ -9615,36 +9615,78 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 if local_file_path and os.path.exists(local_file_path):
                     print(f"📁 FICHIER LOCAL DÉTECTÉ: {local_file_path}")
                     
-                    # VALIDATION ET CONVERSION PRÉVENTIVE POUR FACEBOOK
-                    print(f"🔍 VALIDATION PRÉVENTIVE pour Facebook...")
-                    validation_success, validated_path, detected_media_type, validation_error = await validate_and_convert_media_for_social(
-                        local_file_path, 
-                        target_platform="facebook"
-                    )
+                    # NOUVELLE STRATÉGIE: CONVERSION OBLIGATOIRE WORDPRESS POUR IMAGES
+                    # Détecter d'abord le type de média
+                    detected_media_type = await detect_media_type_robust(local_file_path)
+                    print(f"🔍 Type de média détecté: {detected_media_type}")
                     
-                    if validation_success:
-                        upload_file_path = validated_path
-                        print(f"✅ MÉDIA VALIDÉ ET PRÊT: {upload_file_path}")
-                        print(f"🎯 Type détecté: {detected_media_type}")
+                    if detected_media_type == 'image':
+                        print(f"📸 IMAGE DÉTECTÉE → Conversion obligatoire WebP→JPEG + sauvegarde WordPress")
+                        
+                        # Conversion obligatoire vers WordPress (résout les problèmes WebP et 404)
+                        conversion_success, wordpress_path, conversion_error = await ensure_webp_to_jpeg_with_wordpress_save(
+                            local_file_path, 
+                            filename_hint=os.path.basename(local_file_path)
+                        )
+                        
+                        if conversion_success:
+                            upload_file_path = wordpress_path
+                            print(f"✅ CONVERSION WORDPRESS RÉUSSIE: {upload_file_path}")
+                            print(f"🎯 Fichier disponible localement pour stratégies 1A, 1B, 1C")
+                        else:
+                            print(f"❌ CONVERSION WORDPRESS ÉCHOUÉE: {conversion_error}")
+                            print(f"🔄 FALLBACK: Validation préventive classique")
+                            
+                            # FALLBACK: Validation classique si conversion WordPress échoue
+                            validation_success, validated_path, detected_media_type, validation_error = await validate_and_convert_media_for_social(
+                                local_file_path, 
+                                target_platform="facebook"
+                            )
+                            
+                            if validation_success:
+                                upload_file_path = validated_path
+                                print(f"✅ VALIDATION CLASSIQUE RÉUSSIE: {upload_file_path}")
+                            else:
+                                print(f"❌ VALIDATION CLASSIQUE ÉCHOUÉE: {validation_error}")
+                                upload_file_path = local_file_path
+                                print(f"🔄 UTILISATION FICHIER ORIGINAL: {upload_file_path}")
                     else:
-                        print(f"❌ VALIDATION ÉCHOUÉE: {validation_error}")
-                        print(f"🔄 FALLBACK: Utilisation fichier original")
-                        upload_file_path = local_file_path
-                        detected_media_type = await detect_media_type_from_content(open(local_file_path, 'rb').read(), local_file_path)
+                        # Pour les vidéos, utiliser la validation classique
+                        print(f"🎥 VIDÉO DÉTECTÉE → Validation préventive classique")
+                        validation_success, validated_path, detected_media_type, validation_error = await validate_and_convert_media_for_social(
+                            local_file_path, 
+                            target_platform="facebook"
+                        )
+                        
+                        if validation_success:
+                            upload_file_path = validated_path
+                            print(f"✅ VIDÉO VALIDÉE: {upload_file_path}")
+                        else:
+                            print(f"❌ VALIDATION VIDÉO ÉCHOUÉE: {validation_error}")
+                            upload_file_path = local_file_path
+                            detected_media_type = await detect_media_type_from_content(open(local_file_path, 'rb').read(), local_file_path)
                     
-                    # Lire le contenu du fichier validé/original
+                    # Vérification finale de l'existence du fichier
+                    if not os.path.exists(upload_file_path):
+                        print(f"❌ ERREUR CRITIQUE: Fichier final introuvable: {upload_file_path}")
+                        raise Exception(f"Fichier de publication introuvable: {upload_file_path}")
+                    
+                    # Lire le contenu du fichier final
                     with open(upload_file_path, 'rb') as f:
                         media_content = f.read()
+                    
+                    print(f"✅ FICHIER FINAL PRÊT: {upload_file_path}")
+                    print(f"📊 Taille: {len(media_content)} bytes")
                     
                     # Déterminer le content-type basé sur le type détecté
                     if detected_media_type == 'video':
                         content_type = 'video/mp4'
-                        print(f"🎥 MÉDIA VALIDÉ: VIDÉO → routage vers /videos")
+                        print(f"🎥 MÉDIA FINAL: VIDÉO → routage vers /videos")
                     else:  # image
-                        content_type = 'image/jpeg'  # Après validation, toujours JPEG pour images
-                        print(f"📸 MÉDIA VALIDÉ: IMAGE → routage vers /photos")
+                        content_type = 'image/jpeg'  # Après traitement WordPress, toujours JPEG
+                        print(f"📸 MÉDIA FINAL: IMAGE JPEG → routage vers /photos")
                         
-                    print(f"📊 Info média validé: taille={len(media_content)} bytes, type={content_type}")
+                    print(f"📊 Info média final: taille={len(media_content)} bytes, type={content_type}")
                     
                 else:
                     print(f"⬇️ Fichier local non trouvé, téléchargement depuis URL: {full_media_url}")
