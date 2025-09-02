@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://code-compiler-check.preview.emergentagent.com
+🔗 https://ecu-corrector.preview.emergentagent.com

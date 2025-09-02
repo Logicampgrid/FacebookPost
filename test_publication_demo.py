@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration de base
-API_BASE = "https://code-compiler-check.preview.emergentagent.com"
+API_BASE = "https://ecu-corrector.preview.emergentagent.com"
 
 def test_backend_connection():
     """Test de connexion au backend"""

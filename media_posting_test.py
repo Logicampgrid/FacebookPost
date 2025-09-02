@@ -11,7 +11,7 @@ import io
 from datetime import datetime
 
 class MediaPostingTester:
-    def __init__(self, base_url="https://code-compiler-check.preview.emergentagent.com"):
+    def __init__(self, base_url="https://ecu-corrector.preview.emergentagent.com"):
         self.base_url = base_url
         self.test_user_id = str(uuid.uuid4())
         self.test_post_id = None
@@ -24,7 +24,7 @@ class MediaPostingTester:
         self.log("🔍 Testing media URL access...")
         
         # Test the specific URL mentioned by user
-        problematic_url = "https://code-compiler-check.preview.emergentagent.com/uploads/d2928827-e813-46fd-bb1c-246278aab168.jpg"
+        problematic_url = "https://ecu-corrector.preview.emergentagent.com/uploads/d2928827-e813-46fd-bb1c-246278aab168.jpg"
         
         try:
             response = requests.head(problematic_url)
@@ -37,7 +37,7 @@ class MediaPostingTester:
             self.log(f"   ❌ Error accessing URL: {e}")
             
         # Test uploads directory
-        uploads_dir_url = "https://code-compiler-check.preview.emergentagent.com/uploads/"
+        uploads_dir_url = "https://ecu-corrector.preview.emergentagent.com/uploads/"
         try:
             response = requests.head(uploads_dir_url)
             self.log(f"   Uploads directory status: {response.status_code}")

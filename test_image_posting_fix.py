@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://code-compiler-check.preview.emergentagent.com"
+BASE_URL = "https://ecu-corrector.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
