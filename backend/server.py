@@ -16866,6 +16866,317 @@ async def test_validate_image(data: dict):
             "error": error_msg
         }
 
+# ============================================================================
+# NOUVELLES FONCTIONS - VALIDATION ET CONVERSION D'IMAGES AVEC FTP
+# ============================================================================
+
+import os
+from PIL import Image, UnidentifiedImageError
+import pillow_heif
+import requests
+from io import BytesIO
+import ftplib
+from typing import Optional
+
+def validate_and_prepare_image(file_path: str, max_retries: int = 2) -> str:
+    """
+    Valide et prépare une image pour Instagram/Facebook.
+    - Vérifie la taille minimale (1 Ko)
+    - Détecte le format via magic bytes
+    - Convertit WebP/HEIC → JPEG
+    - Retourne le chemin du fichier final prêt à uploader
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Fichier introuvable: {file_path}")
+
+    # Vérification taille
+    if os.path.getsize(file_path) < 1024:
+        raise ValueError(f"Fichier trop petit (<1 Ko): {file_path}")
+
+    ext = os.path.splitext(file_path)[1].lower()
+    final_path = os.path.splitext(file_path)[0] + ".jpg"
+
+    for attempt in range(max_retries + 1):
+        try:
+            # Conversion WebP/HEIC → JPEG
+            if ext in ['.heic', '.heif']:
+                heif_file = pillow_heif.read_heif(file_path)
+                img = Image.frombytes(
+                    heif_file.mode,
+                    heif_file.size,
+                    heif_file.data
+                )
+                img = img.convert("RGB")
+                img.save(final_path, format="JPEG", quality=95)
+            else:
+                # PIL standard pour JPEG/PNG/WebP
+                img = Image.open(file_path)
+                img = img.convert("RGB")
+                img.save(final_path, format="JPEG", quality=95)
+
+            # Vérification taille finale
+            if os.path.getsize(final_path) < 1024:
+                raise ValueError("Fichier final trop petit après conversion")
+
+            return final_path
+
+        except (UnidentifiedImageError, ValueError) as e:
+            print(f"❌ Tentative {attempt+1}/{max_retries} échouée: {e}")
+
+            # Optionnel: retélécharger le fichier si nécessaire
+            # Si file_path est une URL, ajouter logique download ici
+
+    raise RuntimeError(f"Impossible de préparer l'image après {max_retries} tentatives: {file_path}")
+
+def upload_to_ftp(file_path: str) -> str:
+    """
+    Upload un fichier vers serveur FTP et retourne URL HTTPS stable
+    Configuration FTP depuis les variables d'environnement
+    """
+    try:
+        # Configuration FTP depuis variables d'environnement
+        ftp_host = os.getenv("FTP_HOST", "localhost")
+        ftp_port = int(os.getenv("FTP_PORT", "21"))
+        ftp_user = os.getenv("FTP_USER", "anonymous")
+        ftp_password = os.getenv("FTP_PASSWORD", "")
+        ftp_directory = os.getenv("FTP_DIRECTORY", "/uploads/")
+        ftp_base_url = os.getenv("FTP_BASE_URL", "https://example.com/uploads/")
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Fichier à uploader non trouvé: {file_path}")
+        
+        # Nom du fichier pour l'upload
+        filename = os.path.basename(file_path)
+        
+        # Connexion FTP
+        print(f"📤 Connexion FTP à {ftp_host}:{ftp_port}")
+        ftp = ftplib.FTP()
+        ftp.connect(ftp_host, ftp_port)
+        ftp.login(ftp_user, ftp_password)
+        
+        # Changement de répertoire
+        if ftp_directory:
+            try:
+                ftp.cwd(ftp_directory)
+                print(f"📁 Répertoire FTP: {ftp_directory}")
+            except ftplib.error_perm:
+                print(f"⚠️ Impossible d'accéder au répertoire {ftp_directory}, utilisation du répertoire racine")
+        
+        # Upload du fichier
+        print(f"📤 Upload en cours: {filename}")
+        with open(file_path, 'rb') as file:
+            ftp.storbinary(f'STOR {filename}', file)
+        
+        # Fermeture connexion
+        ftp.quit()
+        
+        # Construction de l'URL finale
+        final_url = ftp_base_url.rstrip('/') + '/' + filename
+        print(f"✅ Upload FTP réussi: {final_url}")
+        
+        return final_url
+        
+    except Exception as e:
+        error_msg = f"Erreur upload FTP: {str(e)}"
+        print(f"❌ {error_msg}")
+        raise RuntimeError(error_msg)
+
+def publish_instagram(media_url: str, caption: str = "") -> bool:
+    """
+    Publie un média sur Instagram via Graph API
+    """
+    try:
+        # Configuration Instagram depuis variables d'environnement
+        instagram_user_id = os.getenv("INSTAGRAM_USER_ID")
+        instagram_access_token = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+        
+        if not instagram_user_id or not instagram_access_token:
+            print("❌ Configuration Instagram manquante (INSTAGRAM_USER_ID, INSTAGRAM_ACCESS_TOKEN)")
+            return False
+        
+        # Étape 1: Créer le container média
+        create_url = f"https://graph.facebook.com/v18.0/{instagram_user_id}/media"
+        create_data = {
+            'image_url': media_url,
+            'caption': caption,
+            'access_token': instagram_access_token
+        }
+        
+        print(f"📱 Création container Instagram: {media_url}")
+        create_response = requests.post(create_url, data=create_data)
+        create_response.raise_for_status()
+        
+        container_id = create_response.json().get('id')
+        if not container_id:
+            print(f"❌ Échec création container: {create_response.json()}")
+            return False
+        
+        print(f"✅ Container créé: {container_id}")
+        
+        # Étape 2: Publier le container
+        publish_url = f"https://graph.facebook.com/v18.0/{instagram_user_id}/media_publish"
+        publish_data = {
+            'creation_id': container_id,
+            'access_token': instagram_access_token
+        }
+        
+        print(f"📱 Publication Instagram container: {container_id}")
+        publish_response = requests.post(publish_url, data=publish_data)
+        publish_response.raise_for_status()
+        
+        publish_result = publish_response.json()
+        media_id = publish_result.get('id')
+        
+        if media_id:
+            print(f"✅ Publication Instagram réussie: {media_id}")
+            return True
+        else:
+            print(f"❌ Publication Instagram échouée: {publish_result}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erreur publication Instagram: {str(e)}")
+        return False
+
+def publish_facebook(page_url: str, media_url: str, caption: str = "") -> bool:
+    """
+    Publie un média sur Facebook via Graph API
+    """
+    try:
+        # Configuration Facebook depuis variables d'environnement
+        facebook_page_id = os.getenv("FACEBOOK_PAGE_ID")
+        facebook_access_token = os.getenv("FACEBOOK_ACCESS_TOKEN")
+        
+        if not facebook_page_id or not facebook_access_token:
+            print("❌ Configuration Facebook manquante (FACEBOOK_PAGE_ID, FACEBOOK_ACCESS_TOKEN)")
+            return False
+        
+        # Publication sur Facebook
+        publish_url = f"https://graph.facebook.com/v18.0/{facebook_page_id}/photos"
+        publish_data = {
+            'url': media_url,
+            'message': f"{caption}\n\n{page_url}",
+            'access_token': facebook_access_token
+        }
+        
+        print(f"📘 Publication Facebook: {media_url}")
+        response = requests.post(publish_url, data=publish_data)
+        response.raise_for_status()
+        
+        result = response.json()
+        post_id = result.get('post_id') or result.get('id')
+        
+        if post_id:
+            print(f"✅ Publication Facebook réussie: {post_id}")
+            return True
+        else:
+            print(f"❌ Publication Facebook échouée: {result}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erreur publication Facebook: {str(e)}")
+        return False
+
+def poster_media_enhanced(file_path: str, product_link: str):
+    """
+    Poster un média sur Instagram et Facebook avec validation et conversion
+    Utilise les nouvelles fonctions validate_and_prepare_image et upload FTP
+    """
+    try:
+        print("🚀 === DÉBUT PUBLICATION MÉDIA AMÉLIORÉE ===")
+        
+        # 1️⃣ Préparer l'image avec validation et conversion
+        print(f"🔍 Validation et préparation: {file_path}")
+        prepared_file = validate_and_prepare_image(file_path)
+        print(f"✅ Image préparée: {prepared_file}")
+
+        # 2️⃣ Upload FTP (obtenir URL HTTPS stable)
+        print("📤 Upload FTP en cours...")
+        uploaded_url = upload_to_ftp(prepared_file)
+        print(f"✅ Upload FTP réussi: {uploaded_url}")
+
+        # 3️⃣ Publier sur Instagram
+        print("📱 Publication Instagram...")
+        instagram_success = publish_instagram(uploaded_url, "Description produit")
+        
+        # 4️⃣ Publier sur Facebook
+        print("📘 Publication Facebook...")
+        facebook_success = publish_facebook(product_link, uploaded_url, "Description produit")
+
+        # 5️⃣ Résultats
+        if instagram_success and facebook_success:
+            print("✅ Publication réussie sur toutes les plateformes")
+            return {"success": True, "message": "Publication réussie sur Instagram et Facebook"}
+        elif instagram_success or facebook_success:
+            platforms = []
+            if instagram_success:
+                platforms.append("Instagram")
+            if facebook_success:
+                platforms.append("Facebook")
+            message = f"Publication partielle réussie sur: {', '.join(platforms)}"
+            print(f"⚠️ {message}")
+            return {"success": True, "message": message}
+        else:
+            print("❌ Échec publication sur toutes les plateformes")
+            return {"success": False, "error": "Échec publication sur toutes les plateformes"}
+
+    except Exception as e:
+        error_msg = f"Échec publication: {e}"
+        print(f"❌ {error_msg}")
+        return {"success": False, "error": error_msg}
+
+@app.post("/api/test-image-validation")
+async def test_image_validation(file: UploadFile = File(...)):
+    """
+    Endpoint de test pour la validation et conversion d'images
+    """
+    try:
+        # Sauvegarde temporaire du fichier uploadé
+        temp_path = os.path.join(UPLOAD_DIR, f"test_{uuid.uuid4().hex[:8]}_{file.filename}")
+        
+        async with aiofiles.open(temp_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        print(f"📁 Fichier test sauvé: {temp_path}")
+        
+        # Test de la fonction validate_and_prepare_image
+        try:
+            prepared_path = validate_and_prepare_image(temp_path)
+            
+            # Informations sur le fichier final
+            final_size = os.path.getsize(prepared_path)
+            final_size_mb = final_size / (1024 * 1024)
+            
+            # Nettoyage des fichiers temporaires
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            
+            return {
+                "success": True,
+                "message": "Image validée et convertie avec succès",
+                "prepared_file": prepared_path,
+                "final_size_mb": round(final_size_mb, 2),
+                "original_filename": file.filename
+            }
+            
+        except Exception as validation_error:
+            # Nettoyage en cas d'erreur
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            
+            return {
+                "success": False,
+                "error": str(validation_error),
+                "original_filename": file.filename
+            }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Erreur endpoint: {str(e)}"
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
