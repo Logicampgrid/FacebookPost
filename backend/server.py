@@ -613,7 +613,7 @@ async def download_media_with_extended_retry(url: str, max_attempts: int = 5, ba
                     
                     # Upload SYSTÉMATIQUE vers FTP après téléchargement réussi
                     log_media("[TÉLÉCHARGEMENT] Upload automatique vers FTP...", "INFO")
-                    ftp_success, https_url, ftp_error = await upload_to_ftp(local_path, f"downloaded_{unique_id}{ext}")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(local_path, f"downloaded_{unique_id}{ext}")
                     
                     if ftp_success:
                         log_media(f"[TÉLÉCHARGEMENT] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
