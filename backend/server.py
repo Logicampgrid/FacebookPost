@@ -15968,59 +15968,134 @@ def log_poster(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [POSTER_MEDIA] {message}")
 
-def upload_ftp(file_path):
-    """Upload d'un fichier vers le serveur FTP avec gestion d'erreurs robuste"""
-    try:
-        log_poster(f"Début upload FTP: {file_path}", "FTP")
-        
-        with FTP() as ftp:
-            ftp.connect(FTP_HOST, FTP_PORT)
-            log_poster(f"Connexion FTP établie: {FTP_HOST}:{FTP_PORT}", "INFO")
-            
-            ftp.login(FTP_USER, FTP_PASS)
-            log_poster(f"Authentification FTP réussie: {FTP_USER}", "INFO")
-            
-            ftp.cwd(FTP_UPLOAD_DIR)
-            log_poster(f"Dossier FTP changé: {FTP_UPLOAD_DIR}", "INFO")
-            
-            filename = Path(file_path).name
-            with open(file_path, "rb") as f:
-                ftp.storbinary(f"STOR {filename}", f)
-            
-            log_poster(f"Upload FTP réussi: {filename}", "SUCCESS")
-            return True
-            
-    except Exception as e:
-        log_poster(f"Erreur FTP pour {file_path}: {str(e)}", "ERROR")
-        return False
-
 def upload_to_ftp(file_path):
-    """Upload d'un fichier vers le serveur FTP avec URL de retour et gestion d'erreurs robuste"""
-    try:
-        log_poster(f"Début upload FTP: {file_path}", "FTP")
+    """
+    Upload d'un fichier vers le serveur FTP avec gestion d'erreurs robuste
+    et retour de l'URL complète du fichier uploadé.
+    
+    Args:
+        file_path (str): Chemin local du fichier à uploader
         
+    Returns:
+        tuple: (success: bool, public_url: str, error_msg: str)
+               success: True si upload réussi
+               public_url: URL complète du fichier sur le serveur (si succès)
+               error_msg: Message d'erreur (si échec)
+    """
+    try:
+        log_poster(f"=== DÉBUT UPLOAD FTP ===", "FTP")
+        log_poster(f"Fichier local: {file_path}", "FTP")
+        
+        # Vérifications préalables
+        if not os.path.exists(file_path):
+            error_msg = f"Fichier source introuvable: {file_path}"
+            log_poster(error_msg, "ERROR")
+            return False, None, error_msg
+            
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        filename = Path(file_path).name
+        
+        log_poster(f"Taille fichier: {file_size_mb:.2f}MB", "FTP")
+        log_poster(f"Nom fichier: {filename}", "FTP")
+        
+        # Configuration FTP depuis .env
+        log_poster(f"Configuration FTP - Host: {FTP_HOST}:{FTP_PORT}", "FTP")
+        log_poster(f"Configuration FTP - User: {FTP_USER}", "FTP")
+        log_poster(f"Configuration FTP - Dir: {FTP_UPLOAD_DIR}", "FTP")
+        
+        # Connexion FTP avec gestion d'erreurs détaillée
         with FTP() as ftp:
-            ftp.connect(FTP_HOST, FTP_PORT)
-            log_poster(f"Connexion FTP établie: {FTP_HOST}:{FTP_PORT}", "INFO")
+            # Étape 1: Connexion
+            try:
+                ftp.connect(FTP_HOST, FTP_PORT)
+                log_poster(f"✅ Connexion FTP établie: {FTP_HOST}:{FTP_PORT}", "SUCCESS")
+            except Exception as conn_error:
+                error_msg = f"Erreur connexion FTP: {str(conn_error)}"
+                log_poster(error_msg, "ERROR")
+                return False, None, error_msg
             
-            ftp.login(FTP_USER, FTP_PASS)
-            log_poster(f"Authentification FTP réussie: {FTP_USER}", "INFO")
+            # Étape 2: Authentification
+            try:
+                ftp.login(FTP_USER, FTP_PASS)
+                log_poster(f"✅ Authentification FTP réussie: {FTP_USER}", "SUCCESS")
+            except Exception as auth_error:
+                error_msg = f"Erreur authentification FTP: {str(auth_error)}"
+                log_poster(error_msg, "ERROR")
+                return False, None, error_msg
             
-            ftp.cwd(FTP_UPLOAD_DIR)
-            log_poster(f"Dossier FTP changé: {FTP_UPLOAD_DIR}", "INFO")
+            # Étape 3: Navigation vers le dossier cible
+            try:
+                # Créer le dossier s'il n'existe pas
+                ftp.cwd('/')  # Retour à la racine
+                folders = FTP_UPLOAD_DIR.strip('/').split('/')
+                current_path = '/'
+                
+                for folder in folders:
+                    if folder:  # Ignorer les entrées vides
+                        current_path = current_path.rstrip('/') + '/' + folder
+                        try:
+                            ftp.cwd(current_path)
+                            log_poster(f"📁 Dossier existant: {current_path}", "INFO")
+                        except Exception:
+                            # Dossier n'existe pas, le créer
+                            try:
+                                ftp.mkd(current_path)
+                                ftp.cwd(current_path)
+                                log_poster(f"📁 Dossier créé: {current_path}", "SUCCESS")
+                            except Exception as mkdir_error:
+                                error_msg = f"Impossible de créer le dossier {current_path}: {str(mkdir_error)}"
+                                log_poster(error_msg, "ERROR")
+                                return False, None, error_msg
+                
+                log_poster(f"✅ Dossier FTP final: {current_path}", "SUCCESS")
+                
+            except Exception as dir_error:
+                error_msg = f"Erreur navigation dossier FTP: {str(dir_error)}"
+                log_poster(error_msg, "ERROR")
+                return False, None, error_msg
             
-            filename = Path(file_path).name
-            with open(file_path, "rb") as f:
-                ftp.storbinary(f"STOR {filename}", f)
-            
-            # Construction de l'URL publique
-            public_url = f"https://{FTP_HOST}{FTP_UPLOAD_DIR}{filename}"
-            
-            log_poster(f"Upload FTP réussi: {filename}", "SUCCESS")
-            return True, public_url, None
-            
+            # Étape 4: Upload du fichier
+            try:
+                log_poster(f"📤 Début upload: {filename}", "FTP")
+                
+                # Ouvrir et uploader le fichier
+                with open(file_path, "rb") as f:
+                    # Utiliser STOR pour l'upload binaire
+                    result = ftp.storbinary(f"STOR {filename}", f)
+                    log_poster(f"📤 Commande STOR result: {result}", "FTP")
+                
+                # Vérifier que l'upload a réussi
+                try:
+                    uploaded_size = ftp.size(filename)
+                    if uploaded_size == file_size:
+                        log_poster(f"✅ Vérification upload: {uploaded_size} bytes = {file_size} bytes", "SUCCESS")
+                    else:
+                        log_poster(f"⚠️ Taille différente: uploaded={uploaded_size}, local={file_size}", "WARNING")
+                except Exception:
+                    log_poster("⚠️ Impossible de vérifier la taille uploadée (certains serveurs FTP ne supportent pas SIZE)", "WARNING")
+                
+                log_poster(f"✅ Upload FTP réussi: {filename}", "SUCCESS")
+                
+            except Exception as upload_error:
+                error_msg = f"Erreur upload fichier: {str(upload_error)}"
+                log_poster(error_msg, "ERROR")
+                return False, None, error_msg
+        
+        # Étape 5: Génération de l'URL publique
+        # Format: https://logicamp.org/wordpress/upload/nom_du_fichier.jpg
+        base_url = f"https://{FTP_HOST}"
+        # Nettoyer le chemin FTP pour construire l'URL
+        clean_path = FTP_UPLOAD_DIR.strip('/')
+        public_url = f"{base_url}/{clean_path}/{filename}"
+        
+        log_poster(f"🌐 URL publique générée: {public_url}", "SUCCESS")
+        log_poster(f"=== FTP UPLOAD TERMINÉ ===", "SUCCESS")
+        
+        return True, public_url, None
+        
     except Exception as e:
-        error_msg = f"Erreur FTP pour {file_path}: {str(e)}"
+        error_msg = f"Erreur générale FTP pour {file_path}: {str(e)}"
         log_poster(error_msg, "ERROR")
         return False, None, error_msg
 
