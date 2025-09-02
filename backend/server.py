@@ -1237,6 +1237,17 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
             
             if ftp_success:
                 log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                
+                # NOUVEAU: Vérifier que l'URL est accessible publiquement
+                log_media("[CONVERSION VIDÉO] Vérification accessibilité publique...", "INFO")
+                accessible, access_message = await verify_wordpress_url_accessibility(https_url)
+                
+                if accessible:
+                    log_media(f"[CONVERSION VIDÉO] ✅ URL publiquement accessible: {access_message}", "SUCCESS")
+                else:
+                    log_media(f"[CONVERSION VIDÉO] ⚠️ URL peut ne pas être accessible: {access_message}", "WARNING")
+                    log_media(f"[CONVERSION VIDÉO] ⚠️ Cela peut causer des erreurs 'video_url is required' sur Instagram", "WARNING")
+                
                 # Supprimer fichier vidéo local après upload réussi
                 try:
                     os.unlink(output_path)
