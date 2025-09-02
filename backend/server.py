@@ -10363,6 +10363,89 @@ def handle_api_error(response, platform: str, operation: str) -> dict:
             "operation": operation
         }
 
+async def attempt_instagram_thumbnail_fallback(thumbnail_url: str, post: Post, access_token: str, original_error: str) -> dict:
+    """Fallback pour publier une thumbnail sur Instagram quand la vidéo échoue"""
+    try:
+        log_instagram("🔄 Tentative fallback thumbnail Instagram", "WARNING")
+        
+        if not thumbnail_url or not thumbnail_url.startswith('http'):
+            return {
+                "status": "error", 
+                "message": f"Thumbnail URL invalide pour fallback: {thumbnail_url}"
+            }
+        
+        # Créer container Instagram pour thumbnail
+        container_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media"
+        
+        # Caption modifiée pour indiquer que c'est un aperçu
+        caption = f"🎬 Aperçu vidéo\n\n{post.content or ''}"
+        if post.product_link:
+            caption += f"\n\n🔗 Voir la vidéo complète: {post.product_link}"
+        elif post.comment_link:
+            caption += f"\n\n🔗 Plus d'infos en bio!"
+        
+        container_data = {
+            'image_url': thumbnail_url,
+            'caption': caption[:2200],
+            'access_token': access_token
+        }
+        
+        log_instagram(f"Création container thumbnail: {thumbnail_url}")
+        
+        if DRY_RUN:
+            container_id = f"dry_run_thumbnail_{uuid.uuid4().hex[:8]}"
+        else:
+            response = requests.post(container_url, data=container_data, timeout=60)
+            
+            if response.status_code != 200:
+                error_result = handle_api_error(response, "instagram", "thumbnail_container_creation")
+                return error_result
+            
+            result = response.json()
+            container_id = result.get('id')
+            
+            if not container_id:
+                return {"status": "error", "message": "Pas d'ID container thumbnail retourné"}
+        
+        # Publier immédiatement la thumbnail
+        if DRY_RUN:
+            media_id = f"dry_run_thumbnail_media_{uuid.uuid4().hex[:8]}"
+        else:
+            publish_url = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/media_publish"
+            publish_data = {
+                'creation_id': container_id,
+                'access_token': access_token
+            }
+            
+            publish_response = requests.post(publish_url, data=publish_data, timeout=60)
+            
+            if publish_response.status_code != 200:
+                error_result = handle_api_error(publish_response, "instagram", "thumbnail_publish")
+                return error_result
+            
+            publish_result = publish_response.json()
+            media_id = publish_result.get('id')
+            
+            if not media_id:
+                return {"status": "error", "message": "Pas d'ID média thumbnail retourné"}
+        
+        log_instagram(f"✅ Fallback thumbnail publié: {media_id}", "SUCCESS")
+        
+        return {
+            "status": "success",
+            "media_id": media_id,
+            "container_id": container_id,
+            "media_type": "thumbnail_fallback",
+            "thumbnail_url": thumbnail_url,
+            "fallback_reason": original_error,
+            "message": "Vidéo échouée, thumbnail publiée avec succès"
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur fallback thumbnail Instagram: {str(e)}"
+        log_instagram(error_msg, "ERROR")
+        return {"status": "error", "message": error_msg}
+
 async def simulate_instagram_post_dry_run(post: Post, access_token: str) -> dict:
     """Simulation publication Instagram pour mode DRY_RUN"""
     log_instagram("[DRY_RUN] Simulation publication Instagram")
