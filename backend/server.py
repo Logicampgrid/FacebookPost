@@ -6335,12 +6335,12 @@ async def test_instagram_video_workflow():
                 "workflow_stage": "video_download"
             }
         
-
     except Exception as e:
+        print(f"❌ Test workflow vidéo Instagram échoué: {e}")
         return {
-            "success": False,
-            "error": f"Test configuration vidéo échoué: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "test_success": False,
+            "error": f"Test échoué: {str(e)}",
+            "workflow_stage": "general_error"
         }
 
 # ============================================================================
