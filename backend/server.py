@@ -16267,7 +16267,11 @@ def upload_to_ftp(file_path):
     except Exception as e:
         error_msg = f"Erreur générale FTP pour {file_path}: {str(e)}"
         log_poster(error_msg, "ERROR")
-        return False, None, error_msg
+        return {
+            "success": False,
+            "ftp_url": None,
+            "error": error_msg
+        }
 
 def validate_and_prepare_image(file_path: str, source_url: str = None) -> str:
     """
