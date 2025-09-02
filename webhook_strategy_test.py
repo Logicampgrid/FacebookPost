@@ -9,7 +9,7 @@ from PIL import Image
 import io
 
 class WebhookStrategy1CTester:
-    def __init__(self, base_url="https://upload-guard.preview.emergentagent.com"):
+    def __init__(self, base_url="https://image-ftp-insta.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

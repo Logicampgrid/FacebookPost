@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://upload-guard.preview.emergentagent.com
+URL : https://image-ftp-insta.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

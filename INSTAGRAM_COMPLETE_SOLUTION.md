@@ -137,7 +137,7 @@ curl -X POST "http://localhost:8001/api/debug/instagram-deep-analysis"
 
 ### **Test 2 : Publication Instagram avec image locale**
 ```bash
-curl -X POST "https://upload-guard.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://image-ftp-insta.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/image.jpg" \
   -F 'json_data={"title":"Test Instagram Fix","description":"Test après correction des permissions","url":"https://example.com/test","store":"gizmobbs"}'
 ```
@@ -178,7 +178,7 @@ SHOP_PAGE_MAPPING = {
 
 ### Test avec Facebook uniquement :
 ```bash
-curl -X POST "https://upload-guard.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://image-ftp-insta.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/image.jpg" \
   -F 'json_data={"title":"Test Facebook Only","description":"Facebook fonctionne parfaitement","url":"https://example.com/test","store":"gizmobbs"}'
 ```
