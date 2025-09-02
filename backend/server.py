@@ -10679,7 +10679,7 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             }
         
         else:
-            # Container en erreur ou timeout
+            # Container en erreur ou timeout - tenter fallback thumbnail
             status = poll_result.get('status')
             status_code = poll_result.get('status_code', 'N/A')
             message = poll_result.get('message', '')
@@ -10687,11 +10687,26 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             error_msg = f"Container vidéo échoué: {status} - {status_code} {message}"
             log_instagram(error_msg, "ERROR")
             
+            # Tenter fallback avec thumbnail si disponible
+            if thumbnail_path and thumbnail_path.startswith('http'):
+                log_instagram("🔄 Tentative fallback thumbnail après échec vidéo...", "WARNING")
+                fallback_result = await attempt_instagram_thumbnail_fallback(
+                    thumbnail_path, post, access_token, error_msg
+                )
+                
+                if fallback_result.get("status") == "success":
+                    log_instagram("✅ Fallback thumbnail réussi après échec vidéo", "SUCCESS")
+                    return fallback_result
+                else:
+                    log_instagram(f"❌ Fallback thumbnail échoué: {fallback_result.get('message')}", "ERROR")
+            
             return {
                 "status": "error", 
                 "message": error_msg,
                 "container_status": status,
-                "status_code": status_code
+                "status_code": status_code,
+                "thumbnail_fallback_attempted": thumbnail_path is not None,
+                "thumbnail_fallback_success": False
             }
         
     except requests.exceptions.RequestException as e:
