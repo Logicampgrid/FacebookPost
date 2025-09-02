@@ -16172,7 +16172,11 @@ def upload_to_ftp(file_path):
             except Exception as auth_error:
                 error_msg = f"Erreur authentification FTP: {str(auth_error)}"
                 log_poster(error_msg, "ERROR")
-                return False, None, error_msg
+                return {
+                    "success": False,
+                    "ftp_url": None,
+                    "error": error_msg
+                }
             
             # Étape 3: Navigation vers le dossier cible
             try:
