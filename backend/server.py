@@ -6794,7 +6794,7 @@ async def safe_image_processing_with_fallbacks(file_path: str, operation: str = 
                         log_media(f"[SAFE IMAGE] Conversion requise: {', '.join(conversion_reasons)}", "INFO")
                         
                         # Effectuer conversion
-                        converted_path = file_path.rsplit('.', 1)[0] + "_converted.jpg"
+                        converted_path = file_path.rsplit('.', 1)[0] + "_converted.jpeg"  # CORRECTION: .jpeg au lieu de .jpg
                         
                         # Conversion sécurisée
                         convert_img = image_obj.copy()
