@@ -17789,7 +17789,12 @@ async def test_validate_image(data: dict):
 
 import os
 from PIL import Image, UnidentifiedImageError
-import pillow_heif
+try:
+    import pillow_heif
+    HEIF_AVAILABLE = True
+except ImportError:
+    HEIF_AVAILABLE = False
+    print("⚠️ pillow_heif non disponible - conversion HEIC désactivée")
 import requests
 from io import BytesIO
 import ftplib
