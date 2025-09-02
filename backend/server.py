@@ -6342,23 +6342,6 @@ async def test_instagram_video_workflow():
             "error": f"Test échoué: {str(e)}",
             "workflow_stage": "general_error"
         }
-                "video_formats": [".mp4", ".mov", ".avi", ".mkv", ".webm"],
-                "video_benefits": [
-                    "✅ Upload local évite les erreurs 404",
-                    "✅ Vidéos cliquables vers le produit", 
-                    "✅ Compatible multipart N8N",
-                    "✅ Fallback vers stratégies existantes"
-                ]
-            },
-            "test_note": "Pour tester avec une vraie vidéo, envoyez un fichier .mp4 via le webhook multipart",
-            "next_steps": [
-                "1. Testez avec un fichier vidéo réel via N8N multipart",
-                "2. Vérifiez que la vidéo s'uploade vers Facebook /videos",
-                "3. Confirmez que le post devient cliquable vers le produit",
-                "4. Testez le fallback si l'upload vidéo échoue"
-            ],
-            "timestamp": datetime.utcnow().isoformat()
-        }
         
     except Exception as e:
         return {
