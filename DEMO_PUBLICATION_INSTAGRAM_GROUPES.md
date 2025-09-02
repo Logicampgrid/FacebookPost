@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://media-prep-1.preview.emergentagent.com
+🔗 https://format-guard.preview.emergentagent.com
