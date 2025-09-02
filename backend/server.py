@@ -6817,8 +6817,8 @@ async def safe_image_processing_with_fallbacks(file_path: str, operation: str = 
                             convert_img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
                             log_media(f"[SAFE IMAGE] Redimensionné à: {convert_img.size}", "INFO")
                         
-                        # Sauvegarde JPEG optimisé
-                        convert_img.save(converted_path, 'JPEG', quality=85, optimize=True)
+                        # Sauvegarde JPEG optimisé (CORRECTION: qualité 85 pour Facebook/Instagram)
+                        convert_img.save(converted_path, 'JPEG', quality=85, optimize=True, progressive=True)
                         
                         # Fermer image originale et retourner chemin converti
                         image_obj.close() 
