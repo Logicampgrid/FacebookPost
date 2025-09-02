@@ -45,7 +45,7 @@ async def test_ftp_functionality():
     
     # Tester avec fichier inexistant
     print("🔍 Test avec fichier inexistant...")
-    success, result, error = await upload_to_ftp("/inexistant/file.txt", original_filename="test_inexistant.txt")
+    success, result, error = await upload_to_ftp("/inexistant/file.txt", "test_inexistant.txt")
     print(f"Résultat: success={success}, error='{error}'")
     assert not success, "Devrait échouer avec fichier inexistant"
     
