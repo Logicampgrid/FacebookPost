@@ -331,6 +331,62 @@ def log_ftp(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [FTP] {message}")
 
+async def ensure_file_on_ftp(local_file_path: str, description: str = "fichier") -> tuple:
+    """
+    FONCTION UTILITAIRE CENTRALISÉE : S'assure qu'un fichier local passe systématiquement par FTP
+    Retourne TOUJOURS une URL HTTPS utilisable ou une erreur
+    
+    Args:
+        local_file_path: Chemin du fichier local à uploader
+        description: Description du fichier pour les logs
+    
+    Returns:
+        tuple: (success: bool, https_url_or_local_path: str, error_msg: str)
+    """
+    try:
+        log_ftp(f"Garantie FTP pour {description}: {local_file_path}", "UPLOAD")
+        
+        if not os.path.exists(local_file_path):
+            error_msg = f"Fichier introuvable pour upload FTP: {local_file_path}"
+            log_ftp(error_msg, "ERROR")
+            return False, None, error_msg
+        
+        # Extraire nom de fichier pour FTP
+        filename_base = os.path.basename(local_file_path)
+        
+        # Upload systématique vers FTP
+        ftp_success, https_url, ftp_error = await upload_to_ftp(local_file_path, filename_base)
+        
+        if ftp_success:
+            log_ftp(f"✅ Upload réussi: {https_url}", "SUCCESS")
+            
+            # Supprimer fichier local après upload réussi pour économiser l'espace
+            try:
+                os.unlink(local_file_path)
+                log_ftp(f"🗑️ Fichier local supprimé: {description}", "INFO")
+            except Exception as cleanup_error:
+                log_ftp(f"⚠️ Impossible de supprimer {description}: {cleanup_error}", "WARNING")
+            
+            return True, https_url, None
+        else:
+            log_ftp(f"❌ Upload échoué: {ftp_error}", "ERROR")
+            
+            if FORCE_FTP:
+                log_ftp("🚫 FORCE_FTP=true: échec définitif, pas de fallback local", "ERROR")
+                return False, None, f"Upload FTP obligatoire échoué: {ftp_error}"
+            else:
+                log_ftp("⚠️ Fallback fichier local autorisé", "WARNING")
+                return True, local_file_path, None
+    
+    except Exception as e:
+        error_msg = f"Erreur générale ensure_file_on_ftp: {str(e)}"
+        log_ftp(error_msg, "ERROR")
+        
+        if FORCE_FTP:
+            return False, None, error_msg
+        else:
+            return True, local_file_path, None
+
 def log_retry(message: str, attempt: int, max_attempts: int):
     """Log structuré pour tentatives de retry"""
     timestamp = datetime.now().strftime("%H:%M:%S")
