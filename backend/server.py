@@ -16211,7 +16211,11 @@ def upload_to_ftp(file_path):
             except Exception as dir_error:
                 error_msg = f"Erreur navigation dossier FTP: {str(dir_error)}"
                 log_poster(error_msg, "ERROR")
-                return False, None, error_msg
+                return {
+                    "success": False,
+                    "ftp_url": None,
+                    "error": error_msg
+                }
             
             # Étape 4: Upload du fichier
             try:
