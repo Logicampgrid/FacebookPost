@@ -16132,7 +16132,11 @@ def upload_to_ftp(file_path):
         if not os.path.exists(file_path):
             error_msg = f"Fichier source introuvable: {file_path}"
             log_poster(error_msg, "ERROR")
-            return False, None, error_msg
+            return {
+                "success": False,
+                "ftp_url": None,
+                "error": error_msg
+            }
             
         file_size = os.path.getsize(file_path)
         file_size_mb = file_size / (1024 * 1024)
