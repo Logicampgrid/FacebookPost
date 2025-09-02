@@ -1063,7 +1063,7 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
                     
                     # Upload OBLIGATOIRE miniature vers FTP
                     log_media("[CONVERSION VIDÉO] Upload OBLIGATOIRE miniature vers FTP...", "INFO")
-                    thumb_ftp_success, thumb_https_url, thumb_ftp_error = await upload_to_ftp(thumbnail_path, f"thumb_{unique_id}.jpg")
+                    thumb_ftp_success, thumb_https_url, thumb_ftp_error = await upload_to_ftp_fixed(thumbnail_path, f"thumb_{unique_id}.jpg")
                     
                     if thumb_ftp_success:
                         log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload miniature réussi: {thumb_https_url}", "SUCCESS")
