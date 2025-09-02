@@ -15,7 +15,7 @@ from PIL import Image
 import io
 
 class InstagramCorrectionsTester:
-    def __init__(self, base_url="https://social-media-sync.preview.emergentagent.com"):
+    def __init__(self, base_url="https://social-media-fixer.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
