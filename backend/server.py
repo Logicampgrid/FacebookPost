@@ -866,7 +866,7 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
                     
                     # Upload OBLIGATOIRE du fichier de récupération FFmpeg
                     log_media("[CONVERSION INSTAGRAM] Upload OBLIGATOIRE fallback FFmpeg vers FTP...", "INFO")
-                    ftp_success, https_url, ftp_error = await upload_to_ftp(fallback_path, f"instagram_ffmpeg_fallback_{unique_id}.jpg")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(fallback_path, f"instagram_ffmpeg_fallback_{unique_id}.jpg")
                     
                     if ftp_success:
                         log_media(f"[CONVERSION INSTAGRAM] ✅ FTP Upload fallback réussi: {https_url}", "SUCCESS")
