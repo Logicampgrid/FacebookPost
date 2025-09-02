@@ -16283,9 +16283,11 @@ def poster_media():
                 # Validation et préparation de l'image avec la nouvelle logique robuste
                 processed_file_path = validate_and_prepare_image(file_path)
                 
-                # Upload FTP
-                if upload_ftp(processed_file_path):
+                # Upload FTP avec URL de retour
+                ftp_success, public_url, ftp_error = upload_to_ftp(processed_file_path)
+                if ftp_success:
                     stats["files_uploaded"] += 1
+                    log_poster(f"URL publique générée: {public_url}", "SUCCESS")
                     
                     # Publication Instagram
                     if publish_instagram(processed_file_path):
