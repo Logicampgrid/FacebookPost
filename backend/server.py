@@ -978,16 +978,26 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
                 if thumb_result.returncode == 0 and os.path.exists(thumbnail_path):
                     log_media(f"Miniature créée: {thumbnail_path}", "SUCCESS")
                     
-                    # Upload miniature vers FTP aussi
-                    log_media("[CONVERSION VIDÉO] Upload miniature vers FTP...", "INFO")
+                    # Upload OBLIGATOIRE miniature vers FTP
+                    log_media("[CONVERSION VIDÉO] Upload OBLIGATOIRE miniature vers FTP...", "INFO")
                     thumb_ftp_success, thumb_https_url, thumb_ftp_error = await upload_to_ftp(thumbnail_path, f"thumb_{unique_id}.jpg")
                     
                     if thumb_ftp_success:
                         log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload miniature réussi: {thumb_https_url}", "SUCCESS")
+                        # Supprimer miniature locale après upload réussi
+                        try:
+                            os.unlink(thumbnail_path)
+                            log_media("[CONVERSION VIDÉO] Miniature locale supprimée après upload FTP", "INFO")
+                        except:
+                            pass
                         final_thumbnail_path = thumb_https_url
                     else:
-                        log_media(f"[CONVERSION VIDÉO] ⚠️ FTP Upload miniature échoué: {thumb_ftp_error}", "WARNING")
-                        final_thumbnail_path = thumbnail_path  # Fallback local
+                        log_media(f"[CONVERSION VIDÉO] ❌ FTP Upload miniature échoué: {thumb_ftp_error}", "ERROR")
+                        if FORCE_FTP:
+                            log_media("[CONVERSION VIDÉO] FORCE_FTP=true: miniature FTP obligatoire", "WARNING")
+                            final_thumbnail_path = None  # Pas de fallback si FORCE_FTP
+                        else:
+                            final_thumbnail_path = thumbnail_path  # Fallback local autorisé seulement si pas FORCE_FTP
                 else:
                     log_media("⚠️ Miniature non créée", "WARNING")
                     final_thumbnail_path = None
