@@ -324,6 +324,13 @@ def log_media(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [Media] {message}")
 
+def log_ftp(message: str, level: str = "INFO"):
+    """Log structuré spécialement pour FTP avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "UPLOAD": "📤"}
+    icon = icons.get(level.upper(), "🌐")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [FTP] {message}")
+
 def log_retry(message: str, attempt: int, max_attempts: int):
     """Log structuré pour tentatives de retry"""
     timestamp = datetime.now().strftime("%H:%M:%S")
