@@ -16258,7 +16258,11 @@ def upload_to_ftp(file_path):
         log_poster(f"🌐 URL publique générée: {public_url}", "SUCCESS")
         log_poster(f"=== FTP UPLOAD TERMINÉ ===", "SUCCESS")
         
-        return True, public_url, None
+        return {
+            "success": True,
+            "ftp_url": public_url,
+            "error": None
+        }
         
     except Exception as e:
         error_msg = f"Erreur générale FTP pour {file_path}: {str(e)}"
