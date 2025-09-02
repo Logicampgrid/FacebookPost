@@ -119,7 +119,7 @@ FTP_BASE_URL = os.getenv("FTP_BASE_URL", "https://logicamp.org/wordpress/uploads
 # UPLOAD FTP AVEC STRUCTURE DE DOSSIERS PAR DATE - REMPLACE NGROK
 # ============================================================================
 
-async def upload_to_ftp(local_file_path: str, original_filename: str = None) -> tuple:
+async def upload_to_ftp_fixed(local_file_path: str, original_filename: str = None) -> tuple:
     """
     Upload un fichier vers le serveur FTP avec structure YYYY/MM/DD/
     Retourne l'URL HTTPS stable pour Facebook/Instagram
