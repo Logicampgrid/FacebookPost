@@ -9645,7 +9645,22 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
             # FORCED STRATEGY 1C: When store parameter is present, use Strategy 1C immediately
             if use_strategy_1c_forced:
                 print(f"🎯 FORCED STRATEGY 1C: Store parameter detected - using Strategy 1C as requested")
-                return await use_strategy_1c(post, page_access_token, media_url, product_link)
+                
+                # Passer le chemin WordPress si disponible
+                wordpress_path = None
+                if local_file_path and os.path.exists(local_file_path):
+                    # Essayer la conversion WordPress pour obtenir l'URL correcte
+                    detected_media_type = await detect_media_type_robust(local_file_path)
+                    if detected_media_type == 'image':
+                        conversion_success, wordpress_path, conversion_error = await ensure_webp_to_jpeg_with_wordpress_save(
+                            local_file_path, 
+                            filename_hint=os.path.basename(local_file_path)
+                        )
+                        if not conversion_success:
+                            print(f"⚠️ STRATEGY 1C: Conversion WordPress échouée, utilisation URL originale")
+                            wordpress_path = None
+                
+                return await use_strategy_1c(post, page_access_token, media_url, product_link, wordpress_path)
             
             # STRATÉGIE 1A AMÉLIORÉE: Multipart upload local prioritaire avec détection automatique
             try:
