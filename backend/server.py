@@ -17821,7 +17821,7 @@ def validate_and_prepare_image(file_path: str, max_retries: int = 2) -> str:
     for attempt in range(max_retries + 1):
         try:
             # Conversion WebP/HEIC → JPEG
-            if ext in ['.heic', '.heif']:
+            if ext in ['.heic', '.heif'] and HEIF_AVAILABLE:
                 heif_file = pillow_heif.read_heif(file_path)
                 img = Image.frombytes(
                     heif_file.mode,
@@ -17830,6 +17830,8 @@ def validate_and_prepare_image(file_path: str, max_retries: int = 2) -> str:
                 )
                 img = img.convert("RGB")
                 img.save(final_path, format="JPEG", quality=95)
+            elif ext in ['.heic', '.heif'] and not HEIF_AVAILABLE:
+                raise ValueError(f"Format HEIC/HEIF non supporté (pillow_heif non disponible): {ext}")
             else:
                 # PIL standard pour JPEG/PNG/WebP
                 img = Image.open(file_path)
