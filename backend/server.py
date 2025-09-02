@@ -16242,7 +16242,11 @@ def upload_to_ftp(file_path):
             except Exception as upload_error:
                 error_msg = f"Erreur upload fichier: {str(upload_error)}"
                 log_poster(error_msg, "ERROR")
-                return False, None, error_msg
+                return {
+                    "success": False,
+                    "ftp_url": None,
+                    "error": error_msg
+                }
         
         # Étape 5: Génération de l'URL publique
         # Format: https://logicamp.org/wordpress/upload/nom_du_fichier.jpg
