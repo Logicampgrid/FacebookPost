@@ -15938,6 +15938,14 @@ async def test_enhanced_product_posting(request: ProductPublishRequest):
 
 import os
 from ftplib import FTP
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()  # Permet à PIL d'ouvrir les fichiers HEIF/HEIC
+    HEIF_SUPPORT = True
+    log_media("Support HEIF/HEIC activé avec pillow-heif", "SUCCESS")
+except ImportError:
+    HEIF_SUPPORT = False
+    log_media("pillow-heif non disponible - conversion HEIC désactivée", "WARNING")
 from pathlib import Path
 from mimetypes import guess_type
 import requests
