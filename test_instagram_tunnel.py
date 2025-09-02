@@ -152,7 +152,7 @@ def main():
         print("\n✅ TUNNEL INSTAGRAM OPÉRATIONNEL!")
         print("🎉 Vous pouvez maintenant publier sur Instagram via:")
         print("   - Interface web: http://localhost:3000")
-        print("   - Webhook API: https://secure-media-proxy.preview.emergentagent.com/api/webhook")
+        print("   - Webhook API: https://ftp-uploader.preview.emergentagent.com/api/webhook")
         
         # Test webhook
         test_webhook_instagram_publication()

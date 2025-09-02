@@ -34,7 +34,7 @@ def test_webhook_with_binary_data():
     print(f"📸 Using test image: {test_image}")
     
     # Prepare the data exactly as n8n should send it
-    webhook_url = "https://secure-media-proxy.preview.emergentagent.com/api/webhook"
+    webhook_url = "https://ftp-uploader.preview.emergentagent.com/api/webhook"
     
     # JSON data as string (this is how n8n sends it)
     json_data = {
@@ -110,7 +110,7 @@ def show_n8n_configuration():
     CORRECT CONFIGURATION FOR N8N HTTP REQUEST NODE:
     
     1. Method: POST
-    2. URL: https://secure-media-proxy.preview.emergentagent.com/api/webhook
+    2. URL: https://ftp-uploader.preview.emergentagent.com/api/webhook
     3. Content Type: multipart-form-data
     4. Body Parameters:
        
