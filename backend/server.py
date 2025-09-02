@@ -16600,7 +16600,9 @@ def poster_media():
                         stats["errors"].append(f"Publication Instagram échouée: {filename}")
                 else:
                     stats["files_failed"] += 1  
-                    stats["errors"].append(f"Upload FTP échoué: {filename}")
+                    error_detail = ftp_error if ftp_error else "Erreur FTP inconnue"
+                    stats["errors"].append(f"Upload FTP échoué pour {filename}: {error_detail}")
+                    log_poster(f"❌ Échec upload FTP: {error_detail}", "ERROR")
                     
             except Exception as process_error:
                 log_poster(f"Erreur traitement {filename}: {str(process_error)}", "ERROR")
