@@ -9947,19 +9947,19 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                             data["message"] = f"📸 Découvrez ce produit: {product_link}"
                     
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                    print(f"📸 STRATEGY 1B CORRIGÉE: URL-based photo post avec URL WordPress: {endpoint}")
-                    print(f"🔗 Image URL WordPress: {strategy_1b_url}")
+                    log_strategy("1B", f"📤 REQUÊTE vers {endpoint}", "INFO")
+                    log_strategy("1B", f"🔗 URL image: {strategy_1b_url}", "INFO")
                     
                     response = requests.post(endpoint, data=data, timeout=30)
                     result = response.json()
                     
-                    print(f"Facebook URL photo response: {response.status_code} - {result}")
+                    log_strategy("1B", f"📥 RÉPONSE Facebook: {response.status_code} - {result}", "INFO")
                     
                     if response.status_code == 200 and 'id' in result:
-                        print("✅ SUCCESS: URL-based photo post successful - IMAGE WILL DISPLAY AS IMAGE!")
+                        log_strategy("1B", "✅ SUCCÈS: Publication photo par URL réussie!", "SUCCESS")
                         return result
                     else:
-                        print(f"❌ URL-based photo post failed: {result}")
+                        log_strategy("1B", f"❌ ÉCHEC: {result}", "ERROR")
                         raise Exception("URL photo post failed")
                         
                 except Exception as url_photo_error:
