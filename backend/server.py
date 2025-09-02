@@ -355,7 +355,7 @@ async def ensure_file_on_ftp(local_file_path: str, description: str = "fichier")
         filename_base = os.path.basename(local_file_path)
         
         # Upload systématique vers FTP
-        ftp_success, https_url, ftp_error = await upload_to_ftp(local_file_path, filename_base)
+        ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(local_file_path, filename_base)
         
         if ftp_success:
             log_ftp(f"✅ Upload réussi: {https_url}", "SUCCESS")
