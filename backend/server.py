@@ -1028,7 +1028,7 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
             
             # Upload OBLIGATOIRE vers FTP après conversion vidéo réussie
             log_media("[CONVERSION VIDÉO] Upload OBLIGATOIRE vers FTP...", "INFO")
-            ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_video_{unique_id}.mp4")
+            ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(output_path, f"instagram_video_{unique_id}.mp4")
             
             if ftp_success:
                 log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
