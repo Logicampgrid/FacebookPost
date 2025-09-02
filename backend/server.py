@@ -943,16 +943,26 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
             if final_size_mb > 100:
                 log_media(f"⚠️ Taille élevée: {final_size_mb:.1f}MB (limite IG: 100MB)", "WARNING")
             
-            # NOUVEAU: Upload automatique vers FTP après conversion vidéo réussie
-            log_media("[CONVERSION VIDÉO] Upload automatique vers FTP...", "INFO")
+            # Upload OBLIGATOIRE vers FTP après conversion vidéo réussie
+            log_media("[CONVERSION VIDÉO] Upload OBLIGATOIRE vers FTP...", "INFO")
             ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_video_{unique_id}.mp4")
             
             if ftp_success:
                 log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                # Supprimer fichier vidéo local après upload réussi
+                try:
+                    os.unlink(output_path)
+                    log_media("[CONVERSION VIDÉO] Fichier vidéo local supprimé après upload FTP", "INFO")
+                except:
+                    log_media("[CONVERSION VIDÉO] ⚠️ Impossible de supprimer fichier vidéo local", "WARNING")
                 video_https_url = https_url
             else:
-                log_media(f"[CONVERSION VIDÉO] ⚠️ FTP Upload échoué: {ftp_error}", "WARNING")
-                video_https_url = output_path  # Fallback local
+                log_media(f"[CONVERSION VIDÉO] ❌ FTP Upload échoué: {ftp_error}", "ERROR")
+                if FORCE_FTP:
+                    log_media("[CONVERSION VIDÉO] FORCE_FTP=true: échec définitif, pas de fallback", "ERROR")
+                    return False, None, None, f"Upload FTP vidéo obligatoire échoué: {ftp_error}"
+                else:
+                    video_https_url = output_path  # Fallback local autorisé
             
             # Générer miniature JPEG optimisée
             thumbnail_cmd = [
