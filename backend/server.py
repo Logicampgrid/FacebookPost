@@ -6198,6 +6198,19 @@ async def test_video_with_link_strategy():
             "info": {
                 "video_support": "La nouvelle stratégie supporte maintenant les vidéos",
                 "video_endpoint": "/videos au lieu de /photos",
+                "test_note": "Pour tester avec une vraie vidéo, envoyez un fichier .mp4 via le webhook multipart",
+                "recommended_format": "MP4 H.264, max 100MB, 3-60 secondes"
+            }
+        }
+    
+    except Exception as e:
+        print(f"❌ Test vidéo configuration failed: {e}")
+        return {
+            "success": False,
+            "error": f"Test configuration vidéo échoué: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 # ============================================================================
 # ENDPOINT DE TEST VIDÉO INSTAGRAM - NOUVEAU
 # ============================================================================
