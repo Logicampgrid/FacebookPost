@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://social-media-fixer.preview.emergentagent.com
+🔗 https://social-publisher-6.preview.emergentagent.com

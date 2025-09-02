@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-media-fixer.preview.emergentagent.com
+URL : https://social-publisher-6.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

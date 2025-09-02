@@ -10,19 +10,19 @@ Votre application FacebookPost peut maintenant recevoir des produits depuis **n8
 
 ### **1. Production** 
 ```
-POST https://social-media-fixer.preview.emergentagent.com/api/publishProduct
+POST https://social-publisher-6.preview.emergentagent.com/api/publishProduct
 ```
 → **Publie réellement sur Facebook**
 
 ### **2. Test**
 ```
-POST https://social-media-fixer.preview.emergentagent.com/api/publishProduct/test  
+POST https://social-publisher-6.preview.emergentagent.com/api/publishProduct/test  
 ```
 → **Simule la publication (pas de post Facebook créé)**
 
 ### **3. Configuration**
 ```
-GET https://social-media-fixer.preview.emergentagent.com/api/publishProduct/config
+GET https://social-publisher-6.preview.emergentagent.com/api/publishProduct/config
 ```
 → **Liste les utilisateurs et pages disponibles**
 
@@ -48,7 +48,7 @@ GET https://social-media-fixer.preview.emergentagent.com/api/publishProduct/conf
 ```json
 {
   "method": "POST",
-  "url": "https://social-media-fixer.preview.emergentagent.com/api/publishProduct",
+  "url": "https://social-publisher-6.preview.emergentagent.com/api/publishProduct",
   "authentication": "none",
   "requestFormat": "json"
 }
@@ -145,7 +145,7 @@ return [
 ```json
 {
   "method": "POST",
-  "url": "https://social-media-fixer.preview.emergentagent.com/api/publishProduct",
+  "url": "https://social-publisher-6.preview.emergentagent.com/api/publishProduct",
   "body": {
     "title": "{{$json.product_title}}",
     "description": "{{$json.product_description}}",
@@ -283,7 +283,7 @@ return [{
   "error": "Error validating access token: Session has expired"
 }
 ```
-**Solution :** Reconnectez-vous sur https://social-media-fixer.preview.emergentagent.com
+**Solution :** Reconnectez-vous sur https://social-publisher-6.preview.emergentagent.com
 
 **2. Image Inaccessible**
 ```json
@@ -305,7 +305,7 @@ return [{
 
 **Test Rapide dans N8N :**
 ```bash
-curl -X POST "https://social-media-fixer.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://social-publisher-6.preview.emergentagent.com/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Test N8N",
