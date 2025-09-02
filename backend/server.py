@@ -9889,10 +9889,20 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                 
                 # STRATEGY 1B: URL-based photo post (Still shows as image, not text link)
                 try:
+                    # CORRECTION CRITIQUE: Utiliser URL WordPress au lieu de l'URL originale potentiellement en 404
+                    strategy_1b_url = full_media_url  # URL par défaut
+                    
+                    # Si on a un fichier WordPress local, générer son URL publique
+                    if 'upload_file_path' in locals() and upload_file_path and upload_file_path.startswith('/wordpress/uploads'):
+                        strategy_1b_url = get_wordpress_url_from_local_path(upload_file_path)
+                        print(f"🔧 STRATEGY 1B CORRIGÉE: Utilisation URL WordPress: {strategy_1b_url}")
+                    else:
+                        print(f"⚠️ STRATEGY 1B: Utilisation URL originale (risque 404): {strategy_1b_url}")
+                    
                     # Use photo URL parameter to force image display
                     data = {
                         "access_token": page_access_token,
-                        "url": full_media_url,  # Force Facebook to display this as image
+                        "url": strategy_1b_url,  # URL WordPress corrigée au lieu de full_media_url
                     }
                     
                     # Add message/caption if provided
@@ -9907,8 +9917,8 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                             data["message"] = f"📸 Découvrez ce produit: {product_link}"
                     
                     endpoint = f"{FACEBOOK_GRAPH_URL}/{post.target_id}/photos"
-                    print(f"📸 STRATEGY 1B: URL-based photo post to guarantee image display: {endpoint}")
-                    print(f"🔗 Image URL: {full_media_url}")
+                    print(f"📸 STRATEGY 1B CORRIGÉE: URL-based photo post avec URL WordPress: {endpoint}")
+                    print(f"🔗 Image URL WordPress: {strategy_1b_url}")
                     
                     response = requests.post(endpoint, data=data, timeout=30)
                     result = response.json()
