@@ -116,6 +116,38 @@ FTP_PASSWORD = os.getenv("FTP_PASSWORD", "logi")
 FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
 FTP_BASE_URL = os.getenv("FTP_BASE_URL", "https://logicamp.org/wordpress/uploads/")
 
+# NOUVELLE CONFIGURATION: URL de base pour accès WordPress local
+WORDPRESS_BASE_URL = os.getenv("WORDPRESS_BASE_URL", "https://logicamp.org/wordpress/uploads/")
+
+def get_wordpress_url_from_local_path(local_wordpress_path: str) -> str:
+    """
+    Convertit un chemin local WordPress en URL accessible publiquement
+    
+    Args:
+        local_wordpress_path: Chemin local comme /wordpress/uploads/2025/01/02/image.jpeg
+    
+    Returns:
+        str: URL publique comme https://logicamp.org/wordpress/uploads/2025/01/02/image.jpeg
+    """
+    try:
+        if not local_wordpress_path.startswith('/wordpress/uploads'):
+            # Si le chemin n'est pas WordPress, retourner tel quel
+            return local_wordpress_path
+        
+        # Extraire la partie relative du chemin WordPress
+        relative_path = local_wordpress_path.replace('/wordpress/uploads/', '')
+        
+        # Construire l'URL publique
+        public_url = f"{WORDPRESS_BASE_URL.rstrip('/')}/{relative_path}"
+        
+        log_media(f"[URL WORDPRESS] Chemin local: {local_wordpress_path}", "INFO")
+        log_media(f"[URL WORDPRESS] URL publique: {public_url}", "INFO")
+        
+        return public_url
+    except Exception as e:
+        log_media(f"[URL WORDPRESS] Erreur conversion URL: {e}", "ERROR")
+        return local_wordpress_path  # Fallback: retourner le chemin original
+
 # ============================================================================
 # UPLOAD FTP AVEC STRUCTURE DE DOSSIERS PAR DATE - REMPLACE NGROK
 # ============================================================================
