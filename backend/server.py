@@ -15994,6 +15994,36 @@ def upload_ftp(file_path):
         log_poster(f"Erreur FTP pour {file_path}: {str(e)}", "ERROR")
         return False
 
+def upload_to_ftp(file_path):
+    """Upload d'un fichier vers le serveur FTP avec URL de retour et gestion d'erreurs robuste"""
+    try:
+        log_poster(f"Début upload FTP: {file_path}", "FTP")
+        
+        with FTP() as ftp:
+            ftp.connect(FTP_HOST, FTP_PORT)
+            log_poster(f"Connexion FTP établie: {FTP_HOST}:{FTP_PORT}", "INFO")
+            
+            ftp.login(FTP_USER, FTP_PASS)
+            log_poster(f"Authentification FTP réussie: {FTP_USER}", "INFO")
+            
+            ftp.cwd(FTP_UPLOAD_DIR)
+            log_poster(f"Dossier FTP changé: {FTP_UPLOAD_DIR}", "INFO")
+            
+            filename = Path(file_path).name
+            with open(file_path, "rb") as f:
+                ftp.storbinary(f"STOR {filename}", f)
+            
+            # Construction de l'URL publique
+            public_url = f"https://{FTP_HOST}{FTP_UPLOAD_DIR}{filename}"
+            
+            log_poster(f"Upload FTP réussi: {filename}", "SUCCESS")
+            return True, public_url, None
+            
+    except Exception as e:
+        error_msg = f"Erreur FTP pour {file_path}: {str(e)}"
+        log_poster(error_msg, "ERROR")
+        return False, None, error_msg
+
 def validate_and_prepare_image(file_url: str) -> str:
     """
     Valide et prépare une image pour upload FTP et publication Instagram.
