@@ -176,9 +176,11 @@ async def upload_to_ftp(local_file_path: str, original_filename: str = None) -> 
         log_media(f"[FTP UPLOAD] Destination: {remote_path}", "INFO")
         log_media(f"[FTP UPLOAD] URL HTTPS: {https_url}", "INFO")
         
-        if DRY_RUN:
-            log_media("[FTP UPLOAD] Mode DRY_RUN: upload simulé", "INFO")
+        if DRY_RUN and not FORCE_FTP:
+            log_media("[FTP UPLOAD] Mode DRY_RUN: upload simulé (utilisez FORCE_FTP=true pour forcer)", "INFO")
             return True, https_url, None
+        elif DRY_RUN and FORCE_FTP:
+            log_media("[FTP UPLOAD] Mode DRY_RUN mais FORCE_FTP=true: upload réel forcé", "WARNING")
         
         # Connexion FTP avec retry
         max_attempts = 3
