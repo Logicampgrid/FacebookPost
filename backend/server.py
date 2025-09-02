@@ -10336,7 +10336,7 @@ async def simulate_instagram_post_for_test(post: Post, page_access_token: str):
         return {"status": "error", "message": f"Simulation failed: {str(e)}"}
 
 def handle_api_error(response, platform: str, operation: str) -> dict:
-    """Gestion centralisée des erreurs API avec diagnostic détaillé"""
+    """Gestion centralisée des erreurs API avec diagnostic détaillé et détection video_url"""
     try:
         error_data = response.json()
         error_code = error_data.get('error', {}).get('code', 'Unknown')
@@ -10347,20 +10347,42 @@ def handle_api_error(response, platform: str, operation: str) -> dict:
         log_instagram(f"Code: {error_code}, Type: {error_type}", "ERROR")
         log_instagram(f"Message: {error_message}", "ERROR")
         
+        # Détection spécifique des erreurs video_url pour Instagram
+        video_url_issue = False
+        enhanced_message = error_message
+        
+        if platform.lower() == "instagram" and "video" in operation.lower():
+            if "video_url" in error_message.lower() or error_code == 100:
+                video_url_issue = True
+                enhanced_message = f"{error_message} | CAUSE PROBABLE: L'URL de la vidéo WordPress n'est pas accessible publiquement par Instagram. Vérifiez que {WORDPRESS_BASE_URL} est accessible depuis l'extérieur."
+                log_instagram("🔍 DIAGNOSTIC: Erreur video_url détectée - URL WordPress probablement inaccessible", "ERROR")
+            elif "media_type" in error_message.lower():
+                enhanced_message = f"{error_message} | SUGGESTION: Vérifiez que le format vidéo est supporté (MP4, H.264)"
+        
         return {
             "status": "error",
-            "message": f"{platform} API error: {error_message}",
+            "message": f"{platform} API error: {enhanced_message}",
             "error_code": error_code,
             "error_type": error_type,
-            "operation": operation
+            "operation": operation,
+            "video_url_issue": video_url_issue,
+            "diagnostic_info": {
+                "platform": platform,
+                "operation": operation,
+                "wordpress_base_url": WORDPRESS_BASE_URL if video_url_issue else None
+            }
         }
-    except:
-        log_instagram(f"Erreur API {platform} non-JSON: {response.text[:200]}", "ERROR")
+    except json.JSONDecodeError:
+        log_instagram(f"Erreur API {platform} (pas de JSON): {operation}", "ERROR")
+        log_instagram(f"Status: {response.status_code}, Réponse: {response.text[:200]}", "ERROR")
+        
         return {
-            "status": "error", 
+            "status": "error",
             "message": f"{platform} API error: HTTP {response.status_code}",
             "error_code": response.status_code,
-            "operation": operation
+            "raw_response": response.text[:200],
+            "operation": operation,
+            "video_url_issue": False
         }
 
 async def attempt_instagram_thumbnail_fallback(thumbnail_url: str, post: Post, access_token: str, original_error: str) -> dict:
