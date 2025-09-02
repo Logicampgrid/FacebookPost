@@ -26,8 +26,121 @@ import time
 import sys
 import ftplib
 from datetime import datetime
+import shutil
+from urllib.parse import urljoin
 
 load_dotenv()
+
+# --- WORDPRESS / INSTAGRAM VIDEO UPLOAD CONFIGURATION ---
+WORDPRESS_UPLOADS_DIR = "/app/backend/wordpress/uploads/"
+WORDPRESS_UPLOADS_URL = "https://logicamp.org/wordpress/uploads/"
+ALLOWED_IMAGE_EXT = [".jpg", ".jpeg"]
+ALLOWED_VIDEO_EXT = [".mp4"]
+
+os.makedirs(WORDPRESS_UPLOADS_DIR, exist_ok=True)
+
+
+# --- UTILITAIRES ---
+def convert_webp_to_jpeg(local_path: str) -> str:
+    """Convertit une image WebP en JPEG et retourne le nouveau chemin."""
+    ext = os.path.splitext(local_path)[1].lower()
+    if ext != ".webp":
+        return local_path  # pas de conversion nécessaire
+
+    img = Image.open(local_path).convert("RGB")
+    new_path = os.path.splitext(local_path)[0] + ".jpeg"
+    img.save(new_path, "JPEG", quality=95)
+    return new_path
+
+
+def ensure_public_media_url(local_path: str) -> str:
+    """
+    Copie le média local dans /wordpress/uploads/ pour le rendre accessible publiquement.
+    Retourne l'URL publique.
+    """
+    filename = os.path.basename(local_path)
+    public_path = os.path.join(WORDPRESS_UPLOADS_DIR, filename)
+
+    if not os.path.exists(public_path):
+        shutil.copy2(local_path, public_path)
+
+    return urljoin(WORDPRESS_UPLOADS_URL, filename)
+
+
+# --- FACEBOOK / INSTAGRAM ---
+def create_instagram_media(instagram_account_id, local_path, caption=""):
+    """
+    Crée un container Instagram pour une image ou une vidéo.
+    """
+    ext = os.path.splitext(local_path)[1].lower()
+
+    # Conversion WebP -> JPEG pour images
+    if ext == ".webp":
+        local_path = convert_webp_to_jpeg(local_path)
+        ext = ".jpeg"
+
+    media_type = "IMAGE" if ext in ALLOWED_IMAGE_EXT else "VIDEO" if ext in ALLOWED_VIDEO_EXT else None
+    if not media_type:
+        raise Exception(f"Type de média non supporté: {ext}")
+
+    # S'assurer que le média est accessible publiquement
+    public_url = ensure_public_media_url(local_path)
+
+    payload = {
+        "caption": caption
+    }
+    if media_type == "IMAGE":
+        payload["image_url"] = public_url
+    else:
+        payload["media_type"] = "VIDEO"
+        payload["video_url"] = public_url
+
+    endpoint = f"https://graph.facebook.com/v18.0/{instagram_account_id}/media"
+    response = requests.post(endpoint, data=payload)
+    result = response.json()
+
+    if "id" not in result:
+        raise Exception(f"Instagram container creation failed: {result}")
+
+    return result["id"]
+
+
+def publish_instagram_container(instagram_account_id, container_id):
+    """
+    Publie un container Instagram sur le compte.
+    """
+    endpoint = f"https://graph.facebook.com/v18.0/{instagram_account_id}/media_publish"
+    payload = {"creation_id": container_id}
+    response = requests.post(endpoint, data=payload)
+    result = response.json()
+    if "id" not in result:
+        raise Exception(f"Instagram publish failed: {result}")
+    return result["id"]
+
+
+def upload_facebook_media(page_id, local_path, caption=""):
+    """
+    Upload d'image ou vidéo sur Facebook avec fallback automatique.
+    """
+    ext = os.path.splitext(local_path)[1].lower()
+    media_type = "photo" if ext in ALLOWED_IMAGE_EXT else "video" if ext in ALLOWED_VIDEO_EXT else None
+    if not media_type:
+        raise Exception(f"Type de média non supporté pour FB: {ext}")
+
+    public_url = ensure_public_media_url(local_path)
+
+    if media_type == "photo":
+        endpoint = f"https://graph.facebook.com/v18.0/{page_id}/photos"
+        payload = {"url": public_url, "caption": caption}
+    else:
+        endpoint = f"https://graph.facebook.com/v18.0/{page_id}/videos"
+        payload = {"file_url": public_url, "description": caption}
+
+    response = requests.post(endpoint, data=payload)
+    result = response.json()
+    if "id" not in result:
+        raise Exception(f"Facebook upload failed: {result}")
+    return result["id"]
 
 # CORRECTION POUR PUBLICATIONS FACEBOOK/INSTAGRAM - Variables globales pour les répertoires
 # Utilisation de dossiers locaux avec structure WordPress pour compatibilité maximale
