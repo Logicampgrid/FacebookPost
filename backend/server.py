@@ -16240,179 +16240,205 @@ def upload_to_ftp(file_path):
         log_poster(error_msg, "ERROR")
         return False, None, error_msg
 
-def validate_and_prepare_image(file_url: str) -> str:
+def validate_and_prepare_image(file_path: str, source_url: str = None) -> str:
     """
-    Valide et prépare une image pour upload FTP et publication Instagram.
-    
-    Étapes intégrées :
-    1. Télécharge le fichier depuis l'URL avec timeout 60s et vérification contenu
-    2. Vérifie que le fichier est une vraie image et non une page HTML ou fichier corrompu  
-    3. Convertit automatiquement les fichiers WebP et HEIC/HEIF en JPEG si nécessaire
-    4. Valide l'image avec PIL après conversion
-    5. Logs clairs pour chaque étape et erreurs éventuelles
+    Valide et prépare une image selon les spécifications :
+    - Vérifie la taille réelle du fichier (min 1 Ko)
+    - Vérifie le format via magic bytes
+    - Si c'est du WebP ou HEIC, convertit en JPEG via Pillow + pillow-heif
+    - Si le fichier est corrompu, tente 2 retéléchargements avant de l'ignorer
+    - Retourne un fichier JPEG prêt à uploader
     
     Args:
-        file_url: URL ou chemin local du fichier à valider et préparer
+        file_path: Chemin du fichier local à valider
+        source_url: URL source pour retéléchargement en cas de corruption (optionnel)
     
     Returns:
-        str: Chemin local de l'image prête à l'upload si succès
+        str: Chemin local de l'image JPEG prête à l'upload
         
     Raises:
-        Exception: Si la validation ou préparation échoue
+        Exception: Si la validation ou préparation échoue définitivement
     """
-    try:
-        log_poster("=== DÉBUT VALIDATION ET PRÉPARATION IMAGE ===", "INFO")
-        log_poster(f"Source: {file_url}", "INFO")
-        
-        # Déterminer si c'est une URL ou un chemin local
-        is_url = file_url.startswith(('http://', 'https://'))
-        
-        if is_url:
-            # 1. Télécharger le fichier avec timeout + vérification
-            log_poster("Téléchargement avec timeout 60s...", "INFO")
-            response = requests.get(file_url, timeout=60)
-            if response.status_code != 200:
-                raise ValueError(f"Impossible de télécharger l'image: {file_url}")
-
-            content_type = response.headers.get("Content-Type", "")
-            log_poster(f"Content-Type: {content_type}", "INFO")
-            if not content_type.startswith("image/"):
-                raise ValueError(f"URL ne retourne pas une image valide: {content_type}")
-
-            # 2. Charger l'image en mémoire et valider avec PIL
-            log_poster("Validation PIL depuis contenu téléchargé...", "INFO")
-            try:
-                img = Image.open(io.BytesIO(response.content))
-                log_poster(f"Image PIL validée: {img.format} {img.size[0]}x{img.size[1]} {img.mode}", "SUCCESS")
-            except Exception:
-                raise ValueError("Impossible d'ouvrir l'image via PIL")
-
-            # 3. Convertir en JPEG et sauvegarder
-            output_dir = PROCESSED_DIR
-            os.makedirs(output_dir, exist_ok=True)
+    max_download_attempts = 3  # 1 tentative initiale + 2 retéléchargements
+    attempt = 1
+    
+    current_file_path = file_path
+    
+    while attempt <= max_download_attempts:
+        try:
+            log_poster(f"=== VALIDATION ET PRÉPARATION IMAGE (Tentative {attempt}/{max_download_attempts}) ===", "INFO")
+            log_poster(f"Fichier: {current_file_path}", "INFO")
             
-            filename = os.path.basename(file_url).split("?")[0]
-            base_name = os.path.splitext(filename)[0] if filename else f"image_{int(time.time())}"
-            output_path = os.path.join(output_dir, f"{base_name}_converted.jpg")
+            # ÉTAPE 1: Vérification de l'existence du fichier
+            if not os.path.exists(current_file_path):
+                raise ValueError(f"Fichier non trouvé: {current_file_path}")
             
-            img = img.convert("RGB")
-            img.save(output_path, format="JPEG", quality=95)
+            # ÉTAPE 2: Vérification de la taille réelle (min 1 Ko)
+            file_size = os.path.getsize(current_file_path)
+            log_poster(f"Taille du fichier: {file_size} bytes ({file_size / 1024:.2f} Ko)", "INFO")
             
-            log_poster(f"Image URL convertie: {output_path}", "SUCCESS")
-        else:
-            # Fichier local - vérifier l'extension pour conversions automatiques
-            file_ext = Path(file_url).suffix.lower()
-            log_poster(f"Extension détectée: {file_ext}", "INFO")
+            if file_size < 1024:  # Moins de 1 Ko
+                raise ValueError(f"Fichier trop petit: {file_size} bytes (minimum 1 Ko requis)")
             
-            # Validation du fichier local
-            if not os.path.exists(file_url):
-                raise ValueError(f"Fichier local non trouvé: {file_url}")
+            # ÉTAPE 3: Vérification du format via magic bytes
+            log_poster("Vérification du format via magic bytes...", "INFO")
             
-            log_poster("Validation PIL depuis fichier local...", "INFO")
-            try:
-                with Image.open(file_url) as img:
-                    log_poster(f"Image PIL validée: {img.format} {img.size[0]}x{img.size[1]} {img.mode}", "SUCCESS")
-                    original_format = img.format
-            except Exception as pil_error:
-                raise ValueError(f"Impossible d'ouvrir l'image locale via PIL: {str(pil_error)}")
+            with open(current_file_path, 'rb') as f:
+                magic_bytes = f.read(32)  # Lire les premiers 32 bytes pour analyse
             
-            # CONVERSIONS AUTOMATIQUES selon l'extension
-            converted_path = None
+            detected_format = None
             
-            # Conversion HEIC/HEIF → JPEG
-            if file_ext in ['.heic', '.heif'] and HEIF_SUPPORT:
-                log_poster(f"🔄 Conversion HEIC/HEIF détectée pour: {file_url}", "INFO")
-                try:
-                    import asyncio
-                    # Créer une boucle d'événements si elle n'existe pas
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    
-                    success, converted_path, error_msg = loop.run_until_complete(convert_heic_to_jpeg(file_url))
-                    if success:
-                        log_poster(f"✅ Conversion HEIC/HEIF réussie: {converted_path}", "SUCCESS")
-                        output_path = converted_path
-                    else:
-                        log_poster(f"❌ Conversion HEIC/HEIF échouée: {error_msg}", "ERROR")
-                        raise ValueError(f"Conversion HEIC/HEIF échouée: {error_msg}")
-                except Exception as heic_error:
-                    log_poster(f"❌ Erreur conversion HEIC/HEIF: {str(heic_error)}", "ERROR")
-                    raise ValueError(f"Erreur conversion HEIC/HEIF: {str(heic_error)}")
-            
-            # Conversion WebP → JPEG
-            elif file_ext == '.webp':
-                log_poster(f"🔄 Conversion WebP détectée pour: {file_url}", "INFO")
-                try:
-                    import asyncio
-                    # Créer une boucle d'événements si elle n'existe pas
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    
-                    success, converted_path, error_msg = loop.run_until_complete(convert_webp_to_jpeg(file_url))
-                    if success:
-                        log_poster(f"✅ Conversion WebP réussie: {converted_path}", "SUCCESS")
-                        output_path = converted_path
-                    else:
-                        log_poster(f"❌ Conversion WebP échouée: {error_msg}", "ERROR")
-                        raise ValueError(f"Conversion WebP échouée: {error_msg}")
-                except Exception as webp_error:
-                    log_poster(f"❌ Erreur conversion WebP: {str(webp_error)}", "ERROR")
-                    raise ValueError(f"Erreur conversion WebP: {str(webp_error)}")
-            
-            # Conversion PNG → JPEG (si pas de transparence)
-            elif file_ext == '.png':
-                log_poster(f"🔍 Vérification PNG pour conversion éventuelle: {file_url}", "INFO")
-                try:
-                    with Image.open(file_url) as img:
-                        # Vérifier s'il y a de la transparence
-                        has_transparency = img.mode in ('RGBA', 'LA') or 'transparency' in img.info
-                        
-                        if not has_transparency:
-                            log_poster("🔄 PNG sans transparence → Conversion JPEG", "INFO")
-                            output_dir = PROCESSED_DIR
-                            os.makedirs(output_dir, exist_ok=True)
-                            
-                            base_name = Path(file_url).stem
-                            output_path = os.path.join(output_dir, f"{base_name}_converted_from_png.jpg")
-                            
-                            rgb_img = img.convert("RGB")
-                            rgb_img.save(output_path, format="JPEG", quality=90, optimize=True)
-                            
-                            log_poster(f"✅ Conversion PNG→JPEG réussie: {output_path}", "SUCCESS")
-                        else:
-                            log_poster("ℹ️ PNG avec transparence → Conservation du PNG", "INFO")
-                            output_path = file_url  # Garder le fichier original
-                except Exception as png_error:
-                    log_poster(f"⚠️ Erreur analyse PNG: {str(png_error)} → Conservation du fichier original", "WARNING")
-                    output_path = file_url
+            # Détection via magic bytes
+            if magic_bytes.startswith(b'\xFF\xD8\xFF'):
+                detected_format = 'JPEG'
+                log_poster("Format détecté via magic bytes: JPEG", "SUCCESS")
+            elif magic_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+                detected_format = 'PNG'
+                log_poster("Format détecté via magic bytes: PNG", "SUCCESS")
+            elif b'WEBP' in magic_bytes[:16]:
+                detected_format = 'WEBP'
+                log_poster("Format détecté via magic bytes: WebP", "SUCCESS")
+            elif b'ftyp' in magic_bytes[:32] and (b'heic' in magic_bytes[:32] or b'mif1' in magic_bytes[:32]):
+                detected_format = 'HEIC'
+                log_poster("Format détecté via magic bytes: HEIC", "SUCCESS")
             else:
-                # Pas de conversion nécessaire pour JPEG et autres formats
-                log_poster(f"ℹ️ Format {original_format} → Aucune conversion nécessaire", "INFO")
-                output_path = file_url
-
-        # 4. Validation finale
-        log_poster("Validation finale du fichier préparé...", "INFO")
-        final_path = output_path if 'output_path' in locals() else file_url
-        
-        if not os.path.exists(final_path):
-            raise ValueError("Fichier final introuvable après traitement")
-        
-        final_size = os.path.getsize(final_path) / (1024 * 1024)
-        log_poster(f"✅ Image validée et prête: {final_path} ({final_size:.2f}MB)", "SUCCESS")
-        log_poster("=== FIN VALIDATION ET PRÉPARATION IMAGE ===", "SUCCESS")
-        
-        return final_path
-        
-    except Exception as e:
-        error_msg = f"Erreur validation/préparation image: {str(e)}"
-        log_poster(error_msg, "ERROR")
-        raise Exception(error_msg)
+                # Tenter une détection avec PIL comme fallback
+                try:
+                    with Image.open(current_file_path) as img:
+                        detected_format = img.format
+                        log_poster(f"Format détecté via PIL (fallback): {detected_format}", "SUCCESS")
+                except Exception:
+                    raise ValueError("Format de fichier non reconnu ou fichier corrompu")
+            
+            # ÉTAPE 4: Validation PIL pour s'assurer que le fichier n'est pas corrompu
+            log_poster("Validation de l'intégrité du fichier avec PIL...", "INFO")
+            try:
+                with Image.open(current_file_path) as img:
+                    img.verify()  # Vérification de l'intégrité
+                    # Rouvrir pour avoir accès aux propriétés après verify()
+                    with Image.open(current_file_path) as img2:
+                        width, height = img2.size
+                        mode = img2.mode
+                        log_poster(f"Image valide: {detected_format} {width}x{height} {mode}", "SUCCESS")
+            except Exception as pil_error:
+                raise ValueError(f"Fichier corrompu détecté par PIL: {str(pil_error)}")
+            
+            # ÉTAPE 5: Conversion automatique si nécessaire
+            output_path = current_file_path
+            
+            if detected_format in ['WEBP', 'HEIC', 'HEIF']:
+                log_poster(f"🔄 Conversion {detected_format} → JPEG requise", "INFO")
+                
+                # Créer le répertoire de sortie
+                output_dir = PROCESSED_DIR
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Générer le nom du fichier de sortie
+                base_name = Path(current_file_path).stem
+                timestamp = int(time.time())
+                output_path = os.path.join(output_dir, f"{base_name}_{timestamp}_converted.jpg")
+                
+                if detected_format == 'WEBP':
+                    # Conversion WebP → JPEG
+                    try:
+                        with Image.open(current_file_path) as img:
+                            # Gérer la transparence si présente
+                            if img.mode in ('RGBA', 'LA'):
+                                # Créer un fond blanc pour remplacer la transparence
+                                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                                if img.mode == 'RGBA':
+                                    rgb_img.paste(img, mask=img.split()[-1])  # Utiliser le canal alpha comme masque
+                                else:
+                                    rgb_img.paste(img)
+                                img = rgb_img
+                            elif img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            
+                            # Sauvegarder en JPEG
+                            img.save(output_path, 'JPEG', quality=95, optimize=True)
+                            log_poster(f"✅ Conversion WebP→JPEG réussie: {output_path}", "SUCCESS")
+                    except Exception as webp_error:
+                        raise ValueError(f"Erreur conversion WebP: {str(webp_error)}")
+                
+                elif detected_format in ['HEIC', 'HEIF']:
+                    # Conversion HEIC/HEIF → JPEG avec pillow-heif
+                    try:
+                        from pillow_heif import register_heif_opener
+                        register_heif_opener()
+                        
+                        with Image.open(current_file_path) as img:
+                            # Convertir en RGB si nécessaire
+                            if img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            
+                            # Sauvegarder en JPEG
+                            img.save(output_path, 'JPEG', quality=95, optimize=True)
+                            log_poster(f"✅ Conversion HEIC→JPEG réussie: {output_path}", "SUCCESS")
+                    except ImportError:
+                        raise ValueError("pillow-heif non installé, impossible de convertir HEIC/HEIF")
+                    except Exception as heic_error:
+                        raise ValueError(f"Erreur conversion HEIC: {str(heic_error)}")
+            
+            else:
+                log_poster(f"ℹ️ Format {detected_format} acceptable, aucune conversion nécessaire", "INFO")
+                # Pour PNG et JPEG, on peut les garder tels quels ou les convertir selon les besoins
+                
+            # ÉTAPE 6: Validation finale du fichier de sortie
+            log_poster("Validation finale du fichier préparé...", "INFO")
+            if not os.path.exists(output_path):
+                raise ValueError("Fichier de sortie non créé")
+            
+            final_size = os.path.getsize(output_path)
+            if final_size < 1024:
+                raise ValueError(f"Fichier final trop petit: {final_size} bytes")
+            
+            # Vérification PIL finale
+            try:
+                with Image.open(output_path) as final_img:
+                    final_img.verify()
+                    log_poster(f"✅ Fichier final validé: {output_path} ({final_size / 1024:.2f} Ko)", "SUCCESS")
+            except Exception:
+                raise ValueError("Fichier final corrompu")
+            
+            log_poster("=== VALIDATION ET PRÉPARATION TERMINÉE AVEC SUCCÈS ===", "SUCCESS")
+            return output_path
+            
+        except Exception as validation_error:
+            log_poster(f"❌ Tentative {attempt} échouée: {str(validation_error)}", "ERROR")
+            
+            # Si on a une URL source et qu'il reste des tentatives, retélécharger
+            if source_url and attempt < max_download_attempts:
+                log_poster(f"🔄 Retéléchargement depuis URL source (tentative {attempt + 1})...", "INFO")
+                attempt += 1
+                
+                try:
+                    # Retélécharger le fichier
+                    response = requests.get(source_url, timeout=60)
+                    response.raise_for_status()
+                    
+                    # Créer un nouveau fichier temporaire
+                    temp_dir = os.path.dirname(current_file_path)
+                    base_name = Path(current_file_path).stem
+                    ext = Path(current_file_path).suffix
+                    current_file_path = os.path.join(temp_dir, f"{base_name}_retry_{attempt}{ext}")
+                    
+                    with open(current_file_path, 'wb') as f:
+                        f.write(response.content)
+                    
+                    log_poster(f"✅ Retéléchargement réussi: {current_file_path}", "SUCCESS")
+                    continue  # Recommencer la validation avec le nouveau fichier
+                    
+                except Exception as download_error:
+                    log_poster(f"❌ Retéléchargement échoué: {str(download_error)}", "ERROR")
+                    if attempt == max_download_attempts:
+                        break  # Dernière tentative échouée
+                    continue
+            else:
+                # Pas d'URL source ou dernière tentative
+                break
+    
+    # Si on arrive ici, toutes les tentatives ont échoué
+    raise Exception(f"Validation échouée après {max_download_attempts} tentatives. Dernier fichier testé: {current_file_path}")
 
 def publish_instagram(file_path):
     """Publication d'un fichier sur Instagram via l'API Graph"""
