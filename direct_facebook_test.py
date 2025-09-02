@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://image-ftp-insta.preview.emergentagent.com"
+    base_url = "https://media-prep-1.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     
