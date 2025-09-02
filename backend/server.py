@@ -29,17 +29,18 @@ from datetime import datetime
 
 load_dotenv()
 
-# MODIFICATION POUR WINDOWS - Variables globales pour les répertoires
-# Utilisation de chemins Windows compatibles avec création automatique des dossiers
-UPLOAD_DIR = r"C:\gizmobbs\uploads"
+# CORRECTION POUR PUBLICATIONS FACEBOOK/INSTAGRAM - Variables globales pour les répertoires
+# Utilisation de dossiers locaux avec structure WordPress pour compatibilité maximale
+UPLOAD_DIR = "/app/backend/uploads"
 DOWNLOAD_DIR = os.path.join(UPLOAD_DIR, "downloaded")
 OPTIMIZED_DIR = os.path.join(UPLOAD_DIR, "optimized")
 PROCESSED_DIR = os.path.join(UPLOAD_DIR, "processed")
+WORDPRESS_UPLOADS_DIR = "/wordpress/uploads"  # NOUVEAU: Dossier WordPress local pour .jpeg
 
 # Création automatique des dossiers nécessaires au démarrage
 def ensure_upload_directories():
-    """Créer automatiquement tous les dossiers nécessaires pour Windows"""
-    directories = [UPLOAD_DIR, DOWNLOAD_DIR, OPTIMIZED_DIR, PROCESSED_DIR]
+    """Créer automatiquement tous les dossiers nécessaires + WordPress uploads"""
+    directories = [UPLOAD_DIR, DOWNLOAD_DIR, OPTIMIZED_DIR, PROCESSED_DIR, WORDPRESS_UPLOADS_DIR]
     for directory in directories:
         try:
             os.makedirs(directory, exist_ok=True)
