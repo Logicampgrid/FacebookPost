@@ -7228,28 +7228,46 @@ async def auto_route_media_to_facebook_instagram(
             try:
                 print(f"📱 Publication sur Instagram: {instagram_account_id}")
                 
-                # CORRECTION INSTAGRAM: Traitement spécifique pour les vidéos
+                # CORRECTION INSTAGRAM: Traitement spécifique pour les vidéos avec URL publique
                 if is_video:
-                    print(f"🎬 CORRECTION INSTAGRAM VIDÉO: Upload direct multipart")
+                    print(f"🎬 CORRECTION INSTAGRAM VIDÉO: Upload vers WordPress puis création via video_url")
                     
-                    # Pour les vidéos Instagram, utilisation d'upload multipart direct
-                    with open(local_media_path, 'rb') as video_file:
-                        files = {
-                            'source': (os.path.basename(local_media_path), video_file, 'video/mp4')
+                    # Étape 1: S'assurer que la vidéo est accessible publiquement via FTP/WordPress
+                    log_instagram("Upload vidéo vers WordPress pour URL publique...", "INFO")
+                    ftp_success, public_video_url, ftp_error = await upload_to_ftp_fixed(
+                        local_media_path, 
+                        f"instagram_{uuid.uuid4().hex[:8]}.mp4"
+                    )
+                    
+                    if not ftp_success:
+                        log_instagram(f"❌ Upload FTP vidéo échoué: {ftp_error}", "ERROR")
+                        # Fallback: essayer avec l'image thumbnail pour Instagram
+                        results["instagram"] = {
+                            "success": False,
+                            "error": f"Upload vidéo WordPress échoué: {ftp_error}",
+                            "fallback_suggested": "thumbnail",
+                            "media_type": "video"
                         }
-                        ig_container_data = {
-                            'media_type': 'REELS',
-                            'caption': f"{message}\n\n🔗 {product_link}",
-                            'access_token': page_access_token
-                        }
-                        
-                        # Créer container avec upload direct
-                        container_response = requests.post(
-                            f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
-                            data=ig_container_data,
-                            files=files,
-                            timeout=300  # 5 minutes pour vidéos
-                        )
+                        return results
+                    
+                    log_instagram(f"✅ Vidéo accessible publiquement: {public_video_url}", "SUCCESS")
+                    
+                    # Étape 2: Créer container Instagram avec video_url (requis par l'API)
+                    ig_container_data = {
+                        'media_type': 'VIDEO',  # Utiliser VIDEO au lieu de REELS pour plus de compatibilité
+                        'video_url': public_video_url,  # CLEF: utiliser video_url au lieu de multipart
+                        'caption': f"{message}\n\n🔗 {product_link}",
+                        'access_token': page_access_token
+                    }
+                    
+                    log_instagram(f"Création container Instagram avec video_url: {public_video_url}", "INFO")
+                    
+                    # Créer container avec video_url
+                    container_response = requests.post(
+                        f"{FACEBOOK_GRAPH_URL}/{instagram_account_id}/media",
+                        data=ig_container_data,
+                        timeout=300  # 5 minutes pour vidéos
+                    )
                 else:
                     # Pour les images Instagram, méthode URL standard
                     ig_container_data = {
