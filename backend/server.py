@@ -9925,9 +9925,9 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                     # Si on a un fichier WordPress local, générer son URL publique
                     if 'upload_file_path' in locals() and upload_file_path and upload_file_path.startswith('/wordpress/uploads'):
                         strategy_1b_url = get_wordpress_url_from_local_path(upload_file_path)
-                        print(f"🔧 STRATEGY 1B CORRIGÉE: Utilisation URL WordPress: {strategy_1b_url}")
+                        log_strategy("1B", f"✅ URL WordPress détectée: {strategy_1b_url}", "SUCCESS")
                     else:
-                        print(f"⚠️ STRATEGY 1B: Utilisation URL originale (risque 404): {strategy_1b_url}")
+                        log_strategy("1B", f"⚠️ URL originale utilisée (risque 404): {strategy_1b_url}", "WARNING")
                     
                     # Use photo URL parameter to force image display
                     data = {
