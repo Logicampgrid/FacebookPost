@@ -10627,6 +10627,20 @@ async def attempt_instagram_video_post_optimized(video_url: str, post: Post, acc
             
             if response.status_code != 200:
                 error_result = handle_api_error(response, "instagram", "video_container_creation")
+                
+                # Si la création de container échoue, tenter fallback thumbnail
+                if thumbnail_path and thumbnail_path.startswith('http'):
+                    log_instagram("🔄 Container vidéo échoué, tentative fallback thumbnail...", "WARNING")
+                    fallback_result = await attempt_instagram_thumbnail_fallback(
+                        thumbnail_path, post, access_token, error_result.get("message", "Container creation failed")
+                    )
+                    
+                    if fallback_result.get("status") == "success":
+                        log_instagram("✅ Fallback thumbnail réussi après échec container", "SUCCESS")
+                        return fallback_result
+                    else:
+                        log_instagram(f"❌ Fallback thumbnail échoué: {fallback_result.get('message')}", "ERROR")
+                
                 return error_result
             
             result = response.json()
