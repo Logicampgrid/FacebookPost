@@ -106,6 +106,14 @@ FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com
 NGROK_URL = os.getenv("NGROK_URL", "")
 EXTERNAL_WEBHOOK_ENABLED = os.getenv("EXTERNAL_WEBHOOK_ENABLED", "false").lower() == "true"
 
+# Configuration FTP - REMPLACEMENT NGROK
+FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
+FTP_PORT = int(os.getenv("FTP_PORT", "21"))
+FTP_USER = os.getenv("FTP_USER", "logi")
+FTP_PASSWORD = os.getenv("FTP_PASSWORD", "logi")
+FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
+FTP_BASE_URL = os.getenv("FTP_BASE_URL", "https://logicamp.org/wordpress/uploads/")
+
 # ============================================================================
 # UTILITAIRES DE LOGGING STRUCTURÉS - NOUVEAUX
 # ============================================================================
