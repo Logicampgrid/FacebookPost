@@ -781,16 +781,26 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
                     log_media(f"[CONVERSION INSTAGRAM] ✅ Récupération FFmpeg réussie: {fallback_path}", "SUCCESS")
                     log_media(f"[CONVERSION INSTAGRAM] Taille récupérée: {fallback_size_mb:.2f}MB", "SUCCESS")
                     
-                    # Upload FTP du fichier de récupération
-                    log_media("[CONVERSION INSTAGRAM] Upload fallback FFmpeg vers FTP...", "INFO")
+                    # Upload OBLIGATOIRE du fichier de récupération FFmpeg
+                    log_media("[CONVERSION INSTAGRAM] Upload OBLIGATOIRE fallback FFmpeg vers FTP...", "INFO")
                     ftp_success, https_url, ftp_error = await upload_to_ftp(fallback_path, f"instagram_ffmpeg_fallback_{unique_id}.jpg")
                     
                     if ftp_success:
                         log_media(f"[CONVERSION INSTAGRAM] ✅ FTP Upload fallback réussi: {https_url}", "SUCCESS")
+                        # Supprimer fichier local après upload réussi
+                        try:
+                            os.unlink(fallback_path)
+                            log_media("[CONVERSION INSTAGRAM] Fallback FFmpeg local supprimé après upload FTP", "INFO")
+                        except:
+                            pass
                         return True, https_url, None
                     else:
-                        log_media(f"[CONVERSION INSTAGRAM] ⚠️ FTP Upload fallback échoué: {ftp_error}", "WARNING")
-                        return True, fallback_path, None  # Fallback local
+                        log_media(f"[CONVERSION INSTAGRAM] ❌ FTP Upload fallback échoué: {ftp_error}", "ERROR")
+                        if FORCE_FTP:
+                            log_media("[CONVERSION INSTAGRAM] FORCE_FTP=true: échec définitif fallback FFmpeg", "ERROR")
+                            return False, None, f"Upload FTP fallback FFmpeg échoué: {ftp_error}"
+                        else:
+                            return True, fallback_path, None
                 else:
                     log_media(f"[CONVERSION INSTAGRAM] Récupération FFmpeg échouée: {result.stderr[:200]}", "ERROR")
                     
