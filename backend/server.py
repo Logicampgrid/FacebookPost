@@ -9914,8 +9914,8 @@ async def post_to_facebook(post: Post, page_access_token: str, use_strategy_1c_f
                     raise Exception("Direct upload failed")
                         
             except Exception as upload_error:
-                print(f"Strategy 1A upload error: {upload_error}")
-                print("🔄 Trying Strategy 1B: URL-based photo post...")
+                log_strategy("1A", f"❌ ÉCHEC: {upload_error}", "ERROR")
+                log_strategy("1B", "🔄 TENTATIVE: URL-based photo post (fallback)", "ATTEMPT")
                 
                 # STRATEGY 1B: URL-based photo post (Still shows as image, not text link)
                 try:
