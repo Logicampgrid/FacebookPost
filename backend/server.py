@@ -1370,7 +1370,27 @@ async def download_media_reliably(media_url: str, fallback_binary: bytes = None,
                             print(f"[WebP ERREUR] Conversion échouée: {error_msg}")
                             # Continuer avec le WebP original si conversion échoue
                     
-                    return True, local_path, media_type, None
+                    # Upload SYSTÉMATIQUE vers FTP après fallback binaire réussi
+                    print(f"📤 Upload automatique vers FTP (fallback): {local_path}")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp(local_path, f"fallback_{unique_id}{extension}")
+                    
+                    if ftp_success:
+                        print(f"✅ FTP Upload fallback réussi: {https_url}")
+                        # Supprimer fichier local après upload réussi
+                        try:
+                            os.unlink(local_path)
+                            print(f"🗑️ Fichier fallback local supprimé après upload FTP")
+                        except:
+                            print(f"⚠️ Impossible de supprimer fichier fallback local")
+                        return True, https_url, media_type, None  # Retourner URL HTTPS
+                    else:
+                        print(f"❌ FTP Upload fallback échoué: {ftp_error}")
+                        if FORCE_FTP:
+                            print(f"🚫 FORCE_FTP=true: échec définitif fallback")
+                            return False, None, None, f"Upload FTP fallback obligatoire échoué: {ftp_error}"
+                        else:
+                            print(f"⚠️ Fallback fichier local autorisé")
+                            return True, local_path, media_type, None
                 else:
                     print(f"❌ Erreur création fichier fallback")
                     if local_path and os.path.exists(local_path):
