@@ -9337,21 +9337,29 @@ async def simulate_facebook_post_for_test(post: Post, page_access_token: str, sh
         print(f"❌ Erreur simulation Facebook: {e}")
         return None
 
-async def use_strategy_1c(post: Post, page_access_token: str, media_url: str, product_link: str = None):
+async def use_strategy_1c(post: Post, page_access_token: str, media_url: str, product_link: str = None, wordpress_media_path: str = None):
     """
     Strategy 1C: Enhanced link post SANS paramètre picture (Aperçu auto-généré par Facebook)
     Used when 'store' parameter is present in webhook request
+    
+    Args:
+        wordpress_media_path: Chemin WordPress local pour générer URL correcte (NOUVEAU)
     """
     try:
         print(f"🎯 STRATEGY 1C: Enhanced link post with forced image preview")
         print(f"📋 Trigger: Store parameter detected - using strategy 1C as requested")
         
-        # Get full media URL
-        if media_url.startswith('http'):
+        # CORRECTION: Priorité à l'URL WordPress si disponible
+        if wordpress_media_path and wordpress_media_path.startswith('/wordpress/uploads'):
+            full_media_url = get_wordpress_url_from_local_path(wordpress_media_path)
+            print(f"🔧 STRATEGY 1C: Utilisation URL WordPress: {full_media_url}")
+        elif media_url.startswith('http'):
             full_media_url = media_url
+            print(f"⚠️ STRATEGY 1C: Utilisation URL originale: {full_media_url}")
         else:
             dynamic_base_url = get_dynamic_base_url()
             full_media_url = f"{dynamic_base_url}{media_url}"
+            print(f"⚠️ STRATEGY 1C: URL construite: {full_media_url}")
         
         data = {
             "access_token": page_access_token,
