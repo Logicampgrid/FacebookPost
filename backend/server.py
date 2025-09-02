@@ -16619,12 +16619,14 @@ def poster_media():
             
             try:
                 # Validation et préparation de l'image avec la nouvelle logique robuste
-                processed_file_path = validate_and_prepare_image(file_path)
+                # Passer le file_path et éventuellement une URL source si disponible
+                processed_file_path = validate_and_prepare_image(file_path, source_url=None)
                 
-                # Upload FTP avec URL de retour
-                ftp_success, public_url, ftp_error = upload_to_ftp(processed_file_path)
-                if ftp_success:
+                # Upload FTP avec nouveau format de retour structuré
+                ftp_result = upload_to_ftp(processed_file_path)
+                if ftp_result["success"]:
                     stats["files_uploaded"] += 1
+                    public_url = ftp_result["ftp_url"]
                     log_poster(f"URL publique générée: {public_url}", "SUCCESS")
                     
                     # Publication Instagram
@@ -16659,7 +16661,7 @@ def poster_media():
                         stats["errors"].append(f"Publication Instagram échouée: {filename}")
                 else:
                     stats["files_failed"] += 1  
-                    error_detail = ftp_error if ftp_error else "Erreur FTP inconnue"
+                    error_detail = ftp_result.get("error", "Erreur FTP inconnue")
                     stats["errors"].append(f"Upload FTP échoué pour {filename}: {error_detail}")
                     log_poster(f"❌ Échec upload FTP: {error_detail}", "ERROR")
                     
