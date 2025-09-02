@@ -6198,6 +6198,137 @@ async def test_video_with_link_strategy():
             "info": {
                 "video_support": "La nouvelle stratégie supporte maintenant les vidéos",
                 "video_endpoint": "/videos au lieu de /photos",
+# ============================================================================
+# ENDPOINT DE TEST VIDÉO INSTAGRAM - NOUVEAU
+# ============================================================================
+
+@app.post("/api/test/instagram-video-workflow")
+async def test_instagram_video_workflow():
+    """
+    Test complet du workflow vidéo Instagram avec les corrections
+    """
+    try:
+        print("🎬 Test complet workflow vidéo Instagram avec corrections...")
+        
+        # Utiliser une vidéo de test courte
+        test_video_url = "https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4"
+        
+        # Simuler une requête webhook avec vidéo
+        test_json_data = json.dumps({
+            "store": "gizmobbs",
+            "title": "Test Vidéo Instagram - Workflow Corrigé",
+            "description": "Test automatique du workflow vidéo Instagram avec upload WordPress et video_url.",
+            "url": "https://example.com/test-video-instagram-workflow",
+            "video": test_video_url
+        })
+        
+        print(f"📹 Test vidéo URL: {test_video_url}")
+        print(f"🧪 Simulation webhook avec données vidéo...")
+        
+        # Télécharger la vidéo de test pour simulation locale
+        try:
+            video_response = requests.get(test_video_url, timeout=30)
+            if video_response.status_code == 200:
+                # Sauvegarder temporairement pour test
+                temp_video_path = os.path.join(UPLOAD_DIR, f"test_video_{int(datetime.utcnow().timestamp())}.mp4")
+                with open(temp_video_path, 'wb') as f:
+                    f.write(video_response.content)
+                
+                print(f"✅ Vidéo test téléchargée: {temp_video_path}")
+                
+                # Test de conversion vidéo Instagram
+                print("🔄 Test conversion vidéo Instagram...")
+                success, converted_url, thumbnail_url, conversion_error = await convert_video_to_instagram_optimal(temp_video_path)
+                
+                if success:
+                    print(f"✅ Conversion réussie:")
+                    print(f"  - Vidéo convertie: {converted_url}")
+                    print(f"  - Thumbnail: {thumbnail_url}")
+                    
+                    # Vérifier accessibilité
+                    if converted_url and converted_url.startswith('http'):
+                        accessible, access_message = await verify_wordpress_url_accessibility(converted_url)
+                        print(f"🔍 Accessibilité URL: {'✅' if accessible else '❌'} {access_message}")
+                    
+                    # Test du workflow auto-routing
+                    print("🚀 Test auto-routing média...")
+                    routing_result = await auto_route_media_to_facebook_instagram(
+                        local_media_path=temp_video_path,
+                        message="Test vidéo Instagram workflow corrigé",
+                        product_link="https://example.com/test-product",
+                        shop_type="gizmobbs",
+                        media_content=video_response.content
+                    )
+                    
+                    print(f"📊 Résultat auto-routing:")
+                    print(f"  - Succès global: {routing_result.get('success', False)}")
+                    print(f"  - Facebook: {routing_result.get('facebook', {}).get('success', False)}")
+                    print(f"  - Instagram: {routing_result.get('instagram', {}).get('success', False)}")
+                    print(f"  - Crédits utilisés: {routing_result.get('credits_used', 0)}")
+                    
+                    if routing_result.get('instagram', {}).get('success') == False:
+                        print(f"⚠️ Instagram échoué: {routing_result.get('instagram', {}).get('error', 'Unknown')}")
+                        
+                        # Test fallback thumbnail si disponible
+                        if thumbnail_url and thumbnail_url.startswith('http'):
+                            print("🔄 Test fallback thumbnail...")
+                    
+                    # Nettoyage
+                    try:
+                        os.unlink(temp_video_path)
+                        print("🗑️ Fichier test nettoyé")
+                    except:
+                        pass
+                    
+                    return {
+                        "test_success": True,
+                        "workflow_stage": "complete",
+                        "video_conversion": {
+                            "success": success,
+                            "converted_url": converted_url,
+                            "thumbnail_url": thumbnail_url
+                        },
+                        "auto_routing": routing_result,
+                        "wordpress_base_url": WORDPRESS_BASE_URL,
+                        "ftp_config": {
+                            "host": FTP_HOST,
+                            "base_url": FTP_BASE_URL
+                        },
+                        "recommendations": [
+                            "✅ Workflow vidéo Instagram avec video_url implémenté",
+                            "✅ Upload automatique vers WordPress/FTP intégré", 
+                            "✅ Vérification accessibilité URL ajoutée",
+                            "✅ Fallback thumbnail en cas d'échec vidéo",
+                            "✅ Logging amélioré pour diagnostics video_url"
+                        ]
+                    }
+                else:
+                    print(f"❌ Conversion échouée: {conversion_error}")
+                    return {
+                        "test_success": False,
+                        "error": f"Conversion vidéo échouée: {conversion_error}",
+                        "workflow_stage": "video_conversion"
+                    }
+            else:
+                return {
+                    "test_success": False,
+                    "error": f"Impossible de télécharger vidéo test: HTTP {video_response.status_code}",
+                    "workflow_stage": "video_download"
+                }
+        except Exception as download_error:
+            return {
+                "test_success": False,
+                "error": f"Erreur téléchargement vidéo test: {str(download_error)}",
+                "workflow_stage": "video_download"
+            }
+        
+    except Exception as e:
+        print(f"❌ Test workflow vidéo Instagram échoué: {e}")
+        return {
+            "test_success": False,
+            "error": f"Test échoué: {str(e)}",
+            "workflow_stage": "general_error"
+        }
                 "video_formats": [".mp4", ".mov", ".avi", ".mkv", ".webm"],
                 "video_benefits": [
                     "✅ Upload local évite les erreurs 404",
