@@ -51,7 +51,7 @@ async def test_ftp_functionality():
     
     # Test 4: Test upload du fichier valide
     print(f"\n📋 Test 4: Upload fichier valide")
-    success, https_url, error = await upload_to_ftp(test_file_path, original_filename="test_fix_ftp.txt")
+    success, https_url, error = await upload_to_ftp(test_file_path, "test_fix_ftp.txt")
     
     print(f"✅ Upload result: success={success}")
     if success:
