@@ -16159,7 +16159,11 @@ def upload_to_ftp(file_path):
             except Exception as conn_error:
                 error_msg = f"Erreur connexion FTP: {str(conn_error)}"
                 log_poster(error_msg, "ERROR")
-                return False, None, error_msg
+                return {
+                    "success": False,
+                    "ftp_url": None,
+                    "error": error_msg
+                }
             
             # Étape 2: Authentification
             try:
