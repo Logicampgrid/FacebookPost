@@ -2280,6 +2280,147 @@ async def convert_webp_to_jpeg(input_path: str) -> tuple:
     except Exception as e:
         return False, None, f"Erreur générale conversion WebP: {str(e)}"
 
+async def convert_heic_to_jpeg(input_path: str) -> tuple:
+    """
+    Convertit automatiquement un fichier HEIC/HEIF en JPEG avec qualité optimale
+    Utilise pillow-heif pour le support des formats Apple
+    
+    Args:
+        input_path: Chemin du fichier HEIC/HEIF à convertir
+    
+    Returns:
+        tuple: (success: bool, jpeg_path: str, error_msg: str)
+    """
+    try:
+        log_media(f"[CONVERSION HEIC] Début conversion: {input_path}", "CONVERSION")
+        
+        # Vérifier que le fichier existe
+        if not os.path.exists(input_path):
+            return False, None, f"Fichier HEIC introuvable: {input_path}"
+        
+        # Vérifier le support HEIF
+        if not HEIF_SUPPORT:
+            error_msg = "Support HEIC/HEIF non disponible (pillow-heif manquant)"
+            log_media(f"[CONVERSION HEIC] {error_msg}", "ERROR")
+            return False, None, error_msg
+        
+        file_size = os.path.getsize(input_path)
+        file_size_mb = file_size / (1024 * 1024)
+        
+        log_media(f"[CONVERSION HEIC] Taille fichier source: {file_size_mb:.2f}MB", "INFO")
+        
+        # Créer le chemin de sortie
+        base_name = os.path.splitext(input_path)[0]
+        output_path = f"{base_name}_converted_from_heic.jpg"
+        
+        # Si le fichier de sortie existe déjà, créer un nom unique
+        counter = 1
+        while os.path.exists(output_path):
+            output_path = f"{base_name}_converted_from_heic_{counter}.jpg"
+            counter += 1
+        
+        log_media(f"[CONVERSION HEIC] Fichier de sortie: {output_path}", "INFO")
+        
+        try:
+            # Ouvrir le fichier HEIC/HEIF avec PIL (pillow-heif activé)
+            with Image.open(input_path) as img:
+                log_media(f"[CONVERSION HEIC] Image HEIC ouverte avec succès", "SUCCESS")
+                log_media(f"[CONVERSION HEIC] Format: {img.format}", "INFO")
+                log_media(f"[CONVERSION HEIC] Résolution: {img.size[0]}x{img.size[1]}", "INFO")
+                log_media(f"[CONVERSION HEIC] Mode couleur: {img.mode}", "INFO")
+                
+                # Vérifier que c'est bien un format HEIF/HEIC
+                if img.format not in ['HEIF', 'HEIC']:
+                    return False, None, f"Le fichier n'est pas au format HEIC/HEIF: {img.format}"
+                
+                # Correction automatique de l'orientation EXIF
+                try:
+                    corrected_img = ImageOps.exif_transpose(img)
+                    log_media("[CONVERSION HEIC] Orientation EXIF corrigée", "INFO")
+                except Exception:
+                    corrected_img = img.copy()
+                    log_media("[CONVERSION HEIC] Pas de correction EXIF nécessaire", "INFO")
+                
+                # Conversion du mode couleur si nécessaire
+                if corrected_img.mode in ('RGBA', 'LA'):
+                    # Créer fond blanc pour transparence
+                    rgb_img = Image.new('RGB', corrected_img.size, (255, 255, 255))
+                    if corrected_img.mode == 'RGBA':
+                        rgb_img.paste(corrected_img, mask=corrected_img.split()[-1])
+                    else:  # LA
+                        rgb_img.paste(corrected_img, mask=corrected_img.split()[-1])
+                    corrected_img = rgb_img
+                    log_media("[CONVERSION HEIC] Transparence convertie avec fond blanc", "INFO")
+                elif corrected_img.mode != 'RGB':
+                    corrected_img = corrected_img.convert('RGB')
+                    log_media(f"[CONVERSION HEIC] Mode couleur converti vers RGB", "INFO")
+                
+                # Sauvegarder en JPEG avec qualité optimale
+                log_media("[CONVERSION HEIC] Sauvegarde JPEG...", "INFO")
+                corrected_img.save(
+                    output_path, 
+                    'JPEG',
+                    quality=90,          # Qualité élevée pour les photos HEIC
+                    optimize=True,       # Optimisation taille
+                    progressive=True,    # Chargement progressif
+                    subsampling=0,       # Meilleure qualité chrominance
+                    icc_profile=None     # Strip profil couleur pour compatibilité
+                )
+                
+                # Vérification du fichier de sortie
+                if os.path.exists(output_path):
+                    output_size = os.path.getsize(output_path)
+                    output_size_mb = output_size / (1024 * 1024)
+                    compression_ratio = ((file_size - output_size) / file_size) * 100
+                    
+                    log_media(f"[CONVERSION HEIC] ✅ Conversion réussie: {output_path}", "SUCCESS")
+                    log_media(f"[CONVERSION HEIC] Taille: {file_size_mb:.2f}MB → {output_size_mb:.2f}MB ({compression_ratio:+.1f}%)", "SUCCESS")
+                    
+                    return True, output_path, None
+                else:
+                    return False, None, "Fichier JPEG de sortie non créé"
+                    
+        except Exception as conversion_error:
+            log_media(f"[CONVERSION HEIC] Erreur PIL: {str(conversion_error)}", "ERROR")
+            
+            # Fallback: Essayer avec ffmpeg si disponible
+            try:
+                log_media("[CONVERSION HEIC] Tentative de récupération avec FFmpeg...", "WARNING")
+                
+                ffmpeg_output = f"{base_name}_ffmpeg_converted.jpg"
+                
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-i', input_path,
+                    '-vf', 'scale=iw:ih',  # Conserver la résolution originale
+                    '-q:v', '3',           # Qualité élevée
+                    '-frames:v', '1',      # Une seule frame
+                    ffmpeg_output
+                ]
+                
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=60)
+                
+                if result.returncode == 0 and os.path.exists(ffmpeg_output):
+                    fallback_size = os.path.getsize(ffmpeg_output)
+                    fallback_size_mb = fallback_size / (1024 * 1024)
+                    
+                    log_media(f"[CONVERSION HEIC] ✅ Récupération FFmpeg réussie: {ffmpeg_output}", "SUCCESS")
+                    log_media(f"[CONVERSION HEIC] Taille récupérée: {fallback_size_mb:.2f}MB", "SUCCESS")
+                    
+                    return True, ffmpeg_output, None
+                else:
+                    log_media(f"[CONVERSION HEIC] Récupération FFmpeg échouée: {result.stderr[:200]}", "ERROR")
+                    
+            except Exception as ffmpeg_error:
+                log_media(f"[CONVERSION HEIC] Erreur récupération FFmpeg: {str(ffmpeg_error)}", "ERROR")
+            
+            # Si tout échoue, retourner l'erreur originale
+            return False, None, f"Conversion HEIC échouée (PIL + FFmpeg): {str(conversion_error)}"
+        
+    except Exception as e:
+        error_msg = f"Erreur générale conversion HEIC: {str(e)}"
+        log_media(f"[CONVERSION HEIC] {error_msg}", "ERROR")
+        return False, None, error_msg
+
 async def convert_media_for_social_platforms(input_path: str, media_type: str) -> tuple:
     """
     Conversion optimisée de médias pour Instagram/Facebook avec logs détaillés
