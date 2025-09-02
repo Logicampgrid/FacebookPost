@@ -891,6 +891,17 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
             if final_size_mb > 100:
                 log_media(f"⚠️ Taille élevée: {final_size_mb:.1f}MB (limite IG: 100MB)", "WARNING")
             
+            # NOUVEAU: Upload automatique vers FTP après conversion vidéo réussie
+            log_media("[CONVERSION VIDÉO] Upload automatique vers FTP...", "INFO")
+            ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_video_{unique_id}.mp4")
+            
+            if ftp_success:
+                log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                video_https_url = https_url
+            else:
+                log_media(f"[CONVERSION VIDÉO] ⚠️ FTP Upload échoué: {ftp_error}", "WARNING")
+                video_https_url = output_path  # Fallback local
+            
             # Générer miniature JPEG optimisée
             thumbnail_cmd = [
                 'ffmpeg', '-y', '-i', output_path,
@@ -904,14 +915,25 @@ async def convert_video_to_instagram_optimal(input_path: str) -> tuple:
                 thumb_result = subprocess.run(thumbnail_cmd, capture_output=True, text=True, timeout=30)
                 if thumb_result.returncode == 0 and os.path.exists(thumbnail_path):
                     log_media(f"Miniature créée: {thumbnail_path}", "SUCCESS")
+                    
+                    # Upload miniature vers FTP aussi
+                    log_media("[CONVERSION VIDÉO] Upload miniature vers FTP...", "INFO")
+                    thumb_ftp_success, thumb_https_url, thumb_ftp_error = await upload_to_ftp(thumbnail_path, f"thumb_{unique_id}.jpg")
+                    
+                    if thumb_ftp_success:
+                        log_media(f"[CONVERSION VIDÉO] ✅ FTP Upload miniature réussi: {thumb_https_url}", "SUCCESS")
+                        final_thumbnail_path = thumb_https_url
+                    else:
+                        log_media(f"[CONVERSION VIDÉO] ⚠️ FTP Upload miniature échoué: {thumb_ftp_error}", "WARNING")
+                        final_thumbnail_path = thumbnail_path  # Fallback local
                 else:
                     log_media("⚠️ Miniature non créée", "WARNING")
-                    thumbnail_path = None
+                    final_thumbnail_path = None
             except Exception as thumb_error:
                 log_media(f"⚠️ Erreur miniature: {thumb_error}", "WARNING")
-                thumbnail_path = None
+                final_thumbnail_path = None
             
-            return True, output_path, thumbnail_path, None
+            return True, video_https_url, final_thumbnail_path, None
             
         else:
             # Analyser erreur FFmpeg
