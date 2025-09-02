@@ -16112,16 +16112,17 @@ def log_poster(message: str, level: str = "INFO"):
 def upload_to_ftp(file_path):
     """
     Upload d'un fichier vers le serveur FTP avec gestion d'erreurs robuste
-    et retour de l'URL complète du fichier uploadé.
+    et retour structuré contenant l'URL HTTPS finale.
     
     Args:
         file_path (str): Chemin local du fichier à uploader
         
     Returns:
-        tuple: (success: bool, public_url: str, error_msg: str)
-               success: True si upload réussi
-               public_url: URL complète du fichier sur le serveur (si succès)
-               error_msg: Message d'erreur (si échec)
+        dict: {
+            "success": bool,
+            "ftp_url": str,  # URL HTTPS finale (si succès)
+            "error": str     # Message d'erreur (si échec)
+        }
     """
     try:
         log_poster(f"=== DÉBUT UPLOAD FTP ===", "FTP")
