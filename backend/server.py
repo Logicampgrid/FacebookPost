@@ -291,6 +291,12 @@ async def upload_to_ftp(local_file_path: str, original_filename: str = None) -> 
     except Exception as e:
         error_msg = f"Erreur générale upload FTP: {str(e)}"
         log_media(f"[FTP UPLOAD] ❌ {error_msg}", "ERROR")
+        
+        # Si FORCE_FTP est activé, on ne fait PAS de fallback local
+        if FORCE_FTP:
+            log_media("[FTP UPLOAD] FORCE_FTP=true: pas de fallback local, échec définitif", "ERROR")
+            return False, None, error_msg
+            
         return False, None, error_msg
 
 # ============================================================================
