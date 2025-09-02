@@ -2681,6 +2681,172 @@ async def convert_webp_to_jpeg(input_path: str) -> tuple:
     except Exception as e:
         return False, None, f"Erreur générale conversion WebP: {str(e)}"
 
+async def ensure_webp_to_jpeg_with_wordpress_save(input_path: str, filename_hint: str = None) -> tuple:
+    """
+    NOUVELLE FONCTION PRINCIPALE: Conversion obligatoire WebP → JPEG avec sauvegarde WordPress
+    
+    Cette fonction :
+    1. Détecte si le fichier est WebP (ou tout format non-JPEG)
+    2. Le convertit OBLIGATOIREMENT en JPEG haute qualité
+    3. Le sauvegarde dans /wordpress/uploads/ avec extension .jpeg
+    4. Retourne le chemin local WordPress pour utilisation dans les stratégies 1A, 1B, 1C
+    
+    Args:
+        input_path: Chemin du fichier à convertir
+        filename_hint: Nom de fichier suggéré (optionnel)
+    
+    Returns:
+        tuple: (success: bool, wordpress_jpeg_path: str, error_msg: str)
+    """
+    try:
+        log_media("[WEBP→JPEG WORDPRESS] 🚀 CONVERSION OBLIGATOIRE WebP→JPEG + sauvegarde WordPress", "INFO")
+        log_media(f"[WEBP→JPEG WORDPRESS] Fichier source: {input_path}", "INFO")
+        
+        if not os.path.exists(input_path):
+            return False, None, f"Fichier source introuvable: {input_path}"
+        
+        # Analyse du fichier source
+        file_size = os.path.getsize(input_path)
+        file_size_mb = file_size / (1024 * 1024)
+        log_media(f"[WEBP→JPEG WORDPRESS] Taille source: {file_size_mb:.2f}MB", "INFO")
+        
+        # Utiliser notre fonction robuste pour analyser
+        success, image_info, error_msg = await safe_image_processing_with_fallbacks(input_path, "analyze")
+        
+        if not success:
+            log_media(f"[WEBP→JPEG WORDPRESS] ❌ Impossible d'analyser: {error_msg}", "ERROR")
+            return False, None, f"Analyse échouée: {error_msg}"
+        
+        source_format = image_info["format"]
+        source_size = image_info["size"]
+        source_mode = image_info["mode"]
+        has_transparency = image_info["has_transparency"]
+        
+        log_media(f"[WEBP→JPEG WORDPRESS] Source analysée: {source_format} {source_size} {source_mode}", "INFO")
+        log_media(f"[WEBP→JPEG WORDPRESS] Transparence: {'Oui' if has_transparency else 'Non'}", "INFO")
+        
+        # Créer nom de fichier WordPress avec timestamp unique
+        now = datetime.now()
+        timestamp = int(now.timestamp())
+        unique_id = uuid.uuid4().hex[:8]
+        
+        if filename_hint:
+            # Utiliser le nom suggéré mais forcer extension .jpeg
+            base_name = os.path.splitext(filename_hint)[0]
+            wordpress_filename = f"{base_name}_{timestamp}_{unique_id}.jpeg"
+        else:
+            # Nom générique basé sur le format source
+            wordpress_filename = f"converted_{source_format.lower()}_{timestamp}_{unique_id}.jpeg"
+        
+        # Nettoyer le nom de fichier (caractères sécurisés)
+        wordpress_filename = re.sub(r'[^\w\-_\.]', '_', wordpress_filename)
+        
+        # Créer structure de dossiers par date dans WordPress
+        date_path = f"{now.year:04d}/{now.month:02d}/{now.day:02d}"
+        wordpress_date_dir = os.path.join(WORDPRESS_UPLOADS_DIR, date_path)
+        os.makedirs(wordpress_date_dir, exist_ok=True)
+        
+        wordpress_full_path = os.path.join(wordpress_date_dir, wordpress_filename)
+        
+        log_media(f"[WEBP→JPEG WORDPRESS] Destination: {wordpress_full_path}", "INFO")
+        
+        # CONVERSION OBLIGATOIRE (même si déjà JPEG, on re-encode pour garantir la compatibilité)
+        try:
+            with Image.open(input_path) as img:
+                log_media(f"[WEBP→JPEG WORDPRESS] Image ouverte: {img.format} {img.size} {img.mode}", "SUCCESS")
+                
+                # Correction orientation EXIF (strip automatiquement les métadonnées)
+                try:
+                    processed_img = ImageOps.exif_transpose(img)
+                    log_media("[WEBP→JPEG WORDPRESS] Orientation EXIF corrigée et métadonnées supprimées", "INFO")
+                except Exception:
+                    processed_img = img.copy()
+                    log_media("[WEBP→JPEG WORDPRESS] Pas de correction EXIF nécessaire", "INFO")
+                
+                # Conversion mode couleur pour JPEG (gestion transparence obligatoire)
+                if processed_img.mode in ('RGBA', 'LA', 'P'):
+                    log_media(f"[WEBP→JPEG WORDPRESS] Conversion mode {processed_img.mode} → RGB avec fond blanc", "INFO")
+                    # Créer fond blanc pour transparence
+                    rgb_img = Image.new('RGB', processed_img.size, (255, 255, 255))
+                    
+                    # Gérer le mode palette
+                    if processed_img.mode == 'P':
+                        processed_img = processed_img.convert('RGBA')
+                    
+                    # Composer avec fond blanc si transparence
+                    if processed_img.mode in ('RGBA', 'LA'):
+                        rgb_img.paste(processed_img, mask=processed_img.split()[-1])
+                    else:
+                        rgb_img.paste(processed_img)
+                    
+                    processed_img = rgb_img
+                elif processed_img.mode != 'RGB':
+                    processed_img = processed_img.convert('RGB')
+                    log_media(f"[WEBP→JPEG WORDPRESS] Mode converti: {source_mode} → RGB", "INFO")
+                
+                # Redimensionnement pour Facebook/Instagram (limite 1080px max)
+                if processed_img.width > 1080 or processed_img.height > 1080:
+                    original_size = processed_img.size
+                    processed_img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
+                    log_media(f"[WEBP→JPEG WORDPRESS] Redimensionné: {original_size} → {processed_img.size}", "INFO")
+                
+                # Sauvegarde JPEG optimisé dans WordPress
+                processed_img.save(
+                    wordpress_full_path, 
+                    'JPEG',
+                    quality=85,           # Qualité élevée pour Facebook/Instagram
+                    optimize=True,        # Optimisation taille
+                    progressive=True,     # Chargement progressif
+                    subsampling=0,        # Meilleure qualité chrominance
+                )
+                
+                log_media("[WEBP→JPEG WORDPRESS] Sauvegarde JPEG WordPress réussie", "SUCCESS")
+        
+        except Exception as conversion_error:
+            log_media(f"[WEBP→JPEG WORDPRESS] ❌ Erreur conversion PIL: {conversion_error}", "ERROR")
+            
+            # FALLBACK: Essayer avec FFmpeg
+            try:
+                log_media("[WEBP→JPEG WORDPRESS] Tentative de récupération FFmpeg...", "WARNING")
+                
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-i', input_path,
+                    '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease',
+                    '-q:v', '3',  # Qualité élevée (équivalent ~85%)
+                    '-frames:v', '1',  # Une seule frame pour les images
+                    wordpress_full_path
+                ]
+                
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=60)
+                
+                if result.returncode != 0 or not os.path.exists(wordpress_full_path):
+                    raise Exception(f"FFmpeg a échoué: {result.stderr[:200]}")
+                
+                log_media("[WEBP→JPEG WORDPRESS] ✅ Récupération FFmpeg réussie", "SUCCESS")
+                
+            except Exception as ffmpeg_error:
+                log_media(f"[WEBP→JPEG WORDPRESS] ❌ Récupération FFmpeg échouée: {ffmpeg_error}", "ERROR") 
+                return False, None, f"Conversion échouée (PIL + FFmpeg): {str(conversion_error)}"
+        
+        # Vérification finale
+        if os.path.exists(wordpress_full_path):
+            final_size = os.path.getsize(wordpress_full_path)
+            final_size_mb = final_size / (1024 * 1024)
+            
+            log_media(f"[WEBP→JPEG WORDPRESS] ✅ CONVERSION RÉUSSIE!", "SUCCESS")
+            log_media(f"[WEBP→JPEG WORDPRESS] Fichier WordPress: {wordpress_full_path}", "SUCCESS")
+            log_media(f"[WEBP→JPEG WORDPRESS] Taille finale: {file_size_mb:.2f}MB → {final_size_mb:.2f}MB", "SUCCESS")
+            log_media(f"[WEBP→JPEG WORDPRESS] Format: {source_format} → JPEG (extension .jpeg)", "SUCCESS")
+            
+            return True, wordpress_full_path, None
+        else:
+            return False, None, "Fichier WordPress JPEG non créé"
+    
+    except Exception as e:
+        error_msg = f"Erreur générale conversion WordPress: {str(e)}"
+        log_media(f"[WEBP→JPEG WORDPRESS] ❌ {error_msg}", "ERROR")
+        return False, None, error_msg
+
 async def convert_heic_to_jpeg(input_path: str) -> tuple:
     """
     Convertit automatiquement un fichier HEIC/HEIF en JPEG avec qualité optimale
