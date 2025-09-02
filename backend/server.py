@@ -697,7 +697,18 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
                     if final_size_mb > 8:
                         log_media(f"[CONVERSION INSTAGRAM] ⚠️ Taille finale élevée: {final_size_mb:.1f}MB (limite IG: 8MB)", "WARNING")
                     
-                    return True, output_path, None
+                    # NOUVEAU: Upload automatique vers FTP après conversion réussie
+                    log_media("[CONVERSION INSTAGRAM] Upload automatique vers FTP...", "INFO")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_{unique_id}{output_ext}")
+                    
+                    if ftp_success:
+                        log_media(f"[CONVERSION INSTAGRAM] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
+                        return True, https_url, None  # Retourner URL HTTPS au lieu du chemin local
+                    else:
+                        log_media(f"[CONVERSION INSTAGRAM] ⚠️ FTP Upload échoué: {ftp_error}", "WARNING")
+                        log_media("[CONVERSION INSTAGRAM] Utilisation fichier local en fallback", "WARNING")
+                        return True, output_path, None  # Fallback sur fichier local
+                
                 else:
                     return False, None, "Fichier de sortie non créé"
         
