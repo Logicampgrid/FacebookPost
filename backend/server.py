@@ -364,6 +364,13 @@ def log_ftp(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [FTP] {message}")
 
+def log_strategy(strategy_name: str, message: str, level: str = "INFO"):
+    """Log structuré spécialement pour les stratégies de publication avec préfixe"""
+    icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "ATTEMPT": "🎯", "FALLBACK": "🔄"}
+    icon = icons.get(level.upper(), "📝")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [STRATÉGIE {strategy_name}] {message}")
+
 async def ensure_file_on_ftp(local_file_path: str, description: str = "fichier") -> tuple:
     """
     FONCTION UTILITAIRE CENTRALISÉE : S'assure qu'un fichier local passe systématiquement par FTP
