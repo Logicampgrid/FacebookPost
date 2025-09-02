@@ -729,17 +729,27 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
                     if final_size_mb > 8:
                         log_media(f"[CONVERSION INSTAGRAM] ⚠️ Taille finale élevée: {final_size_mb:.1f}MB (limite IG: 8MB)", "WARNING")
                     
-                    # NOUVEAU: Upload automatique vers FTP après conversion réussie
-                    log_media("[CONVERSION INSTAGRAM] Upload automatique vers FTP...", "INFO")
+                    # Upload SYSTÉMATIQUE vers FTP après conversion réussie
+                    log_media("[CONVERSION INSTAGRAM] Upload OBLIGATOIRE vers FTP...", "INFO")
                     ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_{unique_id}{output_ext}")
                     
                     if ftp_success:
                         log_media(f"[CONVERSION INSTAGRAM] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
-                        return True, https_url, None  # Retourner URL HTTPS au lieu du chemin local
+                        # Supprimer fichier local après upload réussi pour économiser l'espace
+                        try:
+                            os.unlink(output_path)
+                            log_media("[CONVERSION INSTAGRAM] Fichier local supprimé après upload FTP", "INFO")
+                        except:
+                            log_media("[CONVERSION INSTAGRAM] ⚠️ Impossible de supprimer fichier local", "WARNING")
+                        return True, https_url, None  # TOUJOURS retourner URL HTTPS
                     else:
-                        log_media(f"[CONVERSION INSTAGRAM] ⚠️ FTP Upload échoué: {ftp_error}", "WARNING")
-                        log_media("[CONVERSION INSTAGRAM] Utilisation fichier local en fallback", "WARNING")
-                        return True, output_path, None  # Fallback sur fichier local
+                        log_media(f"[CONVERSION INSTAGRAM] ❌ FTP Upload échoué: {ftp_error}", "ERROR")
+                        if FORCE_FTP:
+                            log_media("[CONVERSION INSTAGRAM] FORCE_FTP=true: échec définitif, pas de fallback", "ERROR")
+                            return False, None, f"Upload FTP obligatoire échoué: {ftp_error}"
+                        else:
+                            log_media("[CONVERSION INSTAGRAM] Fallback fichier local autorisé", "WARNING")
+                            return True, output_path, None
                 
                 else:
                     return False, None, "Fichier de sortie non créé"
