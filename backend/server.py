@@ -55,6 +55,7 @@ app = FastAPI(title="Meta Publishing Platform - Instagram Optimized")
 
 # Configuration flags - NOUVELLES CONFIGURATIONS
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+FORCE_FTP = os.getenv("FORCE_FTP", "false").lower() == "true"
 SELFTEST_MODE = "--selftest" in sys.argv
 
 # CORS configuration
