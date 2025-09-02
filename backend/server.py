@@ -115,6 +115,159 @@ FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
 FTP_BASE_URL = os.getenv("FTP_BASE_URL", "https://logicamp.org/wordpress/uploads/")
 
 # ============================================================================
+# UPLOAD FTP AVEC STRUCTURE DE DOSSIERS PAR DATE - REMPLACE NGROK
+# ============================================================================
+
+async def upload_to_ftp(local_file_path: str, original_filename: str = None) -> tuple:
+    """
+    Upload un fichier vers le serveur FTP avec structure YYYY/MM/DD/
+    Retourne l'URL HTTPS stable pour Facebook/Instagram
+    """
+    try:
+        log_media(f"[FTP UPLOAD] Début upload: {local_file_path}", "INFO")
+        
+        if not os.path.exists(local_file_path):
+            return False, None, "Fichier local introuvable"
+        
+        # Créer structure de dossiers par date (YYYY/MM/DD)
+        now = datetime.now()
+        date_path = f"{now.year:04d}/{now.month:02d}/{now.day:02d}"
+        
+        # Générer nom de fichier unique avec timestamp
+        timestamp = int(now.timestamp())
+        unique_id = uuid.uuid4().hex[:8]
+        
+        if original_filename:
+            # Conserver extension originale
+            name, ext = os.path.splitext(original_filename)
+            filename = f"{timestamp}_{unique_id}_{name[:30]}{ext}"
+        else:
+            # Détecter extension du fichier local
+            _, ext = os.path.splitext(local_file_path)
+            filename = f"media_{timestamp}_{unique_id}{ext}"
+        
+        # Nettoyer le nom de fichier (caractères FTP-safe)
+        filename = re.sub(r'[^\w\-_\.]', '_', filename)
+        
+        # Chemin complet sur le serveur FTP
+        remote_path = f"{FTP_DIRECTORY.rstrip('/')}/{date_path}/{filename}"
+        
+        # URL HTTPS finale accessible publiquement
+        https_url = f"{FTP_BASE_URL.rstrip('/')}/{date_path}/{filename}"
+        
+        log_media(f"[FTP UPLOAD] Destination: {remote_path}", "INFO")
+        log_media(f"[FTP UPLOAD] URL HTTPS: {https_url}", "INFO")
+        
+        if DRY_RUN:
+            log_media("[FTP UPLOAD] Mode DRY_RUN: upload simulé", "INFO")
+            return True, https_url, None
+        
+        # Connexion FTP avec retry
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                log_media(f"[FTP UPLOAD] Tentative connexion {attempt}/{max_attempts}", "INFO")
+                
+                # Établir connexion FTP
+                ftp = ftplib.FTP()
+                ftp.connect(FTP_HOST, FTP_PORT, timeout=30)
+                ftp.login(FTP_USER, FTP_PASSWORD)
+                
+                log_media(f"[FTP UPLOAD] Connexion réussie: {FTP_HOST}:{FTP_PORT}", "SUCCESS")
+                
+                # Créer structure de dossiers si nécessaire
+                try:
+                    # Naviguer vers le répertoire de base
+                    ftp.cwd(FTP_DIRECTORY)
+                    log_media(f"[FTP UPLOAD] Répertoire de base: {FTP_DIRECTORY}", "INFO")
+                    
+                    # Créer/naviguer vers YYYY
+                    try:
+                        ftp.cwd(f"{now.year:04d}")
+                    except ftplib.error_perm:
+                        ftp.mkd(f"{now.year:04d}")
+                        ftp.cwd(f"{now.year:04d}")
+                        log_media(f"[FTP UPLOAD] Dossier créé: {now.year:04d}", "INFO")
+                    
+                    # Créer/naviguer vers MM
+                    try:
+                        ftp.cwd(f"{now.month:02d}")
+                    except ftplib.error_perm:
+                        ftp.mkd(f"{now.month:02d}")
+                        ftp.cwd(f"{now.month:02d}")
+                        log_media(f"[FTP UPLOAD] Dossier créé: {now.month:02d}", "INFO")
+                    
+                    # Créer/naviguer vers DD
+                    try:
+                        ftp.cwd(f"{now.day:02d}")
+                    except ftplib.error_perm:
+                        ftp.mkd(f"{now.day:02d}")
+                        ftp.cwd(f"{now.day:02d}")
+                        log_media(f"[FTP UPLOAD] Dossier créé: {now.day:02d}", "INFO")
+                    
+                except ftplib.error_perm as e:
+                    log_media(f"[FTP UPLOAD] Erreur navigation/création dossiers: {str(e)}", "ERROR")
+                    ftp.quit()
+                    continue
+                
+                # Upload du fichier en mode binaire
+                log_media(f"[FTP UPLOAD] Upload fichier: {filename}", "INFO")
+                
+                with open(local_file_path, 'rb') as file:
+                    ftp.storbinary(f'STOR {filename}', file)
+                
+                # Vérifier que le fichier est bien uploadé
+                try:
+                    file_list = ftp.nlst()
+                    if filename in file_list:
+                        log_media(f"[FTP UPLOAD] ✅ Upload réussi: {filename}", "SUCCESS")
+                        
+                        # Obtenir taille pour validation
+                        try:
+                            remote_size = ftp.size(filename)
+                            local_size = os.path.getsize(local_file_path)
+                            if remote_size == local_size:
+                                log_media(f"[FTP UPLOAD] Validation taille OK: {remote_size} bytes", "SUCCESS")
+                            else:
+                                log_media(f"[FTP UPLOAD] ⚠️ Tailles différentes: local={local_size}, remote={remote_size}", "WARNING")
+                        except:
+                            log_media("[FTP UPLOAD] Impossible de vérifier la taille (serveur ne supporte pas SIZE)", "WARNING")
+                        
+                        ftp.quit()
+                        return True, https_url, None
+                    else:
+                        log_media(f"[FTP UPLOAD] Fichier non trouvé après upload: {filename}", "ERROR")
+                        ftp.quit()
+                        continue
+                except Exception as list_error:
+                    log_media(f"[FTP UPLOAD] Erreur vérification upload: {str(list_error)}", "ERROR")
+                    ftp.quit()
+                    continue
+                
+            except ftplib.error_perm as e:
+                log_media(f"[FTP UPLOAD] Erreur permissions FTP (tentative {attempt}): {str(e)}", "ERROR")
+                if attempt < max_attempts:
+                    await asyncio.sleep(2 * attempt)  # Backoff
+            except ftplib.error_temp as e:
+                log_media(f"[FTP UPLOAD] Erreur temporaire FTP (tentative {attempt}): {str(e)}", "ERROR")
+                if attempt < max_attempts:
+                    await asyncio.sleep(3 * attempt)  # Backoff plus long
+            except Exception as e:
+                log_media(f"[FTP UPLOAD] Erreur connexion FTP (tentative {attempt}): {str(e)}", "ERROR")
+                if attempt < max_attempts:
+                    await asyncio.sleep(1 * attempt)
+        
+        # Échec après toutes les tentatives
+        error_msg = f"Échec upload FTP après {max_attempts} tentatives"
+        log_media(f"[FTP UPLOAD] ❌ {error_msg}", "ERROR")
+        return False, None, error_msg
+        
+    except Exception as e:
+        error_msg = f"Erreur générale upload FTP: {str(e)}"
+        log_media(f"[FTP UPLOAD] ❌ {error_msg}", "ERROR")
+        return False, None, error_msg
+
+# ============================================================================
 # UTILITAIRES DE LOGGING STRUCTURÉS - NOUVEAUX
 # ============================================================================
 
