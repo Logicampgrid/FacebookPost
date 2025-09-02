@@ -814,7 +814,7 @@ async def convert_image_to_instagram_optimal(input_path: str) -> tuple:
                     
                     # Upload SYSTÉMATIQUE vers FTP après conversion réussie
                     log_media("[CONVERSION INSTAGRAM] Upload OBLIGATOIRE vers FTP...", "INFO")
-                    ftp_success, https_url, ftp_error = await upload_to_ftp(output_path, f"instagram_{unique_id}{output_ext}")
+                    ftp_success, https_url, ftp_error = await upload_to_ftp_fixed(output_path, f"instagram_{unique_id}{output_ext}")
                     
                     if ftp_success:
                         log_media(f"[CONVERSION INSTAGRAM] ✅ FTP Upload réussi: {https_url}", "SUCCESS")
