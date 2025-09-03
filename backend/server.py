@@ -380,16 +380,31 @@ async def convert_image_for_social(input_path: str) -> tuple:
 # === API ENDPOINTS ===
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with ngrok info"""
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow(),
+        "ngrok": {
+            "enabled": ENABLE_NGROK,
+            "url": NGROK_URL,
+            "tunnel_active": NGROK_TUNNEL is not None
+        },
         "directories": {
             "upload": os.path.exists(UPLOAD_DIR),
             "download": os.path.exists(DOWNLOAD_DIR),
             "optimized": os.path.exists(OPTIMIZED_DIR),
             "processed": os.path.exists(PROCESSED_DIR)
         }
+    }
+
+@app.get("/api/ngrok-info")
+async def get_ngrok_info():
+    """Get current ngrok tunnel information"""
+    return {
+        "enabled": ENABLE_NGROK,
+        "url": NGROK_URL,
+        "tunnel_active": NGROK_TUNNEL is not None,
+        "public_url": NGROK_URL if NGROK_TUNNEL else None
     }
 
 @app.post("/api/posts", response_model=PostResponse)
