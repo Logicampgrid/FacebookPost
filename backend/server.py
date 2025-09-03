@@ -238,6 +238,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# === STATIC FILES CONFIGURATION ===
+# Mount static files if frontend build is available
+if frontend_build_available:
+    # Mount static assets (CSS, JS, images, etc.)
+    app.mount("/static", StaticFiles(directory=f"{FRONTEND_BUILD_DIR}/static"), name="static")
+    print("✅ Frontend static files mounted at /static")
+else:
+    print("⚠️ Frontend build not available, static files not mounted")
+
 # Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
