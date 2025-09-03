@@ -544,12 +544,11 @@ async def health_check():
         }
     }
 
-@app.get("/api/ngrok-info")
-async def get_ngrok_info():
-    """Get current ngrok tunnel information"""
-    return {
-        "enabled": ENABLE_NGROK,
-        "url": NGROK_URL,
-        "tunnel_active": NGROK_TUNNEL is not None,
-        "public_url": NGROK_URL if NGROK_TUNNEL else None
-    }
+if __name__ == "__main__":
+    import uvicorn
+    
+    # Start ngrok tunnel before starting server
+    if ENABLE_NGROK:
+        start_ngrok_tunnel()
+    
+    uvicorn.run(app, host="0.0.0.0", port=8001)
