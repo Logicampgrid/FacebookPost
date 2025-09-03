@@ -47,6 +47,9 @@ OPTIMIZED_DIR = os.path.join(UPLOAD_DIR, "optimized")
 PROCESSED_DIR = os.path.join(UPLOAD_DIR, "processed")
 WORDPRESS_UPLOADS_DIR = "/app/backend/wordpress/uploads/"
 
+# === FRONTEND BUILD DIRECTORY ===
+FRONTEND_BUILD_DIR = "/app/frontend/build"
+
 # Ensure directories exist
 def ensure_upload_directories():
     """Create required directories automatically"""
