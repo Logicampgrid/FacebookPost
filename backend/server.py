@@ -62,6 +62,15 @@ def ensure_upload_directories():
             print(f"❌ Error creating directory {directory}: {e}")
             raise
 
+def ensure_frontend_build():
+    """Check if frontend build exists"""
+    if os.path.exists(FRONTEND_BUILD_DIR):
+        print(f"✅ Frontend build found: {FRONTEND_BUILD_DIR}")
+        return True
+    else:
+        print(f"⚠️ Frontend build not found: {FRONTEND_BUILD_DIR}")
+        return False
+
 # Create directories at startup
 ensure_upload_directories()
 
