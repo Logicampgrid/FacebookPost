@@ -49,7 +49,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 ```json
 {
   "method": "POST",
-  "url": "https://tunnel-update.preview.emergentagent.com/api/webhook",
+  "url": "https://frontend-access.preview.emergentagent.com/api/webhook",
   "contentType": "multipart-form-data",
   "bodyParameters": {
     "parameters": [
@@ -117,7 +117,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### Quick Test with cURL:
 ```bash
-curl -X POST "https://tunnel-update.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://frontend-access.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/your/image.jpg" \
   -F 'json_data={"title":"Test Product","description":"Testing n8n fix","url":"https://yourstore.com/product","store":"gizmobbs"}'
 ```

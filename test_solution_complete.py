@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-PUBLIC_BASE_URL = "https://tunnel-update.preview.emergentagent.com"
+PUBLIC_BASE_URL = "https://frontend-access.preview.emergentagent.com"
 
 def test_solution_complete():
     """Test complet de la solution"""
