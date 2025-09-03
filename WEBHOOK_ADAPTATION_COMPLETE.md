@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://ecu-corrector.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://login-gateway-fix.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://ecu-corrector.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://ecu-corrector.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://ecu-corrector.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://login-gateway-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://login-gateway-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://login-gateway-fix.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
