@@ -25,9 +25,19 @@ import time
 import sys
 import ftplib
 import shutil
+from contextlib import asynccontextmanager
+from pyngrok import ngrok, conf
+import threading
+import signal
 
 # Load environment variables
 load_dotenv()
+
+# === NGROK CONFIGURATION ===
+NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")  # Optional for basic usage
+ENABLE_NGROK = os.getenv("ENABLE_NGROK", "true").lower() == "true"
+NGROK_TUNNEL = None
+NGROK_URL = None
 
 # === CONFIGURATION DIRECTORIES - CORRECTED FOR LINUX ===
 UPLOAD_DIR = "/app/backend/uploads"
@@ -51,8 +61,115 @@ def ensure_upload_directories():
 # Create directories at startup
 ensure_upload_directories()
 
+# === NGROK FUNCTIONS ===
+def start_ngrok_tunnel():
+    """Start ngrok tunnel and save URL to file"""
+    global NGROK_TUNNEL, NGROK_URL
+    
+    if not ENABLE_NGROK:
+        print("🔧 Ngrok is disabled (ENABLE_NGROK=false)")
+        return None
+        
+    try:
+        # Set auth token if provided
+        if NGROK_AUTH_TOKEN:
+            ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+            print("🔑 Ngrok auth token configured")
+        
+        # Start tunnel on port 8001
+        print("🚀 Starting ngrok tunnel on port 8001...")
+        NGROK_TUNNEL = ngrok.connect(8001)
+        NGROK_URL = NGROK_TUNNEL.public_url
+        
+        print(f"🌐 Ngrok tunnel active: {NGROK_URL}")
+        
+        # Save URL to file for frontend access
+        ngrok_url_file = "/app/backend/ngrok_url.txt"
+        with open(ngrok_url_file, "w") as f:
+            f.write(NGROK_URL)
+        print(f"💾 Ngrok URL saved to: {ngrok_url_file}")
+        
+        # Also save to frontend .env file
+        try:
+            frontend_env_path = "/app/frontend/.env"
+            if os.path.exists(frontend_env_path):
+                # Read current .env
+                with open(frontend_env_path, "r") as f:
+                    lines = f.readlines()
+                
+                # Update REACT_APP_BACKEND_URL
+                updated_lines = []
+                backend_url_updated = False
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                        backend_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                # If REACT_APP_BACKEND_URL doesn't exist, add it
+                if not backend_url_updated:
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                
+                # Write back to file
+                with open(frontend_env_path, "w") as f:
+                    f.writelines(updated_lines)
+                print(f"✅ Frontend .env updated with ngrok URL: {NGROK_URL}")
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not update frontend .env: {e}")
+        
+        return NGROK_URL
+        
+    except Exception as e:
+        print(f"❌ Failed to start ngrok tunnel: {e}")
+        print("🔧 Continuing without ngrok - backend will be available locally only")
+        return None
+
+def stop_ngrok_tunnel():
+    """Stop ngrok tunnel"""
+    global NGROK_TUNNEL
+    if NGROK_TUNNEL:
+        try:
+            ngrok.disconnect(NGROK_TUNNEL.public_url)
+            print("🛑 Ngrok tunnel stopped")
+        except Exception as e:
+            print(f"⚠️ Error stopping ngrok tunnel: {e}")
+        finally:
+            NGROK_TUNNEL = None
+
+# === LIFESPAN CONTEXT MANAGER ===
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan events - startup and shutdown"""
+    # Startup
+    print("🚀 Meta Publishing Platform - Ngrok Integration Starting...")
+    print(f"📁 Upload directory: {UPLOAD_DIR}")
+    print(f"🌐 FTP Host: {os.getenv('FTP_HOST', 'logicamp.org')}")
+    print(f"🔧 DRY_RUN mode: {os.getenv('DRY_RUN', 'false')}")
+    
+    # Start ngrok tunnel in background thread
+    if ENABLE_NGROK:
+        ngrok_thread = threading.Thread(target=start_ngrok_tunnel, daemon=True)
+        ngrok_thread.start()
+        # Give ngrok a moment to start
+        await asyncio.sleep(2)
+    
+    print("✅ Application started successfully!")
+    
+    yield  # This is where the application runs
+    
+    # Shutdown
+    print("🛑 Shutting down application...")
+    if ENABLE_NGROK:
+        stop_ngrok_tunnel()
+    print("✅ Application shutdown complete!")
+
 # === FASTAPI APP INITIALIZATION ===
-app = FastAPI(title="Meta Publishing Platform - Fixed")
+app = FastAPI(
+    title="Meta Publishing Platform - Ngrok Integration",
+    lifespan=lifespan
+)
 
 # Configuration flags
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
