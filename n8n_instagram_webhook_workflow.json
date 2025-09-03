@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://login-gateway-fix.preview.emergentagent.com/api/webhook",
+        "url": "https://tunnel-update.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",

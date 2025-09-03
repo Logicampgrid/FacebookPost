@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://login-gateway-fix.preview.emergentagent.com
+🔗 https://tunnel-update.preview.emergentagent.com

@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://login-gateway-fix.preview.emergentagent.com
+URL : https://tunnel-update.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
