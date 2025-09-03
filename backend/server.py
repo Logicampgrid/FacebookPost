@@ -73,6 +73,7 @@ def ensure_frontend_build():
 
 # Create directories at startup
 ensure_upload_directories()
+frontend_build_available = ensure_frontend_build()
 
 # === NGROK FUNCTIONS ===
 def start_ngrok_tunnel():
