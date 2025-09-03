@@ -602,6 +602,44 @@ async def webhook_handler(request: Request):
         log_media(f"Webhook error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+# === FRONTEND ROUTES ===
+# Serve React app for all non-API routes
+@app.get("/{path:path}")
+async def serve_frontend(path: str):
+    """Serve React frontend for all non-API routes"""
+    # Skip API routes
+    if path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # If frontend build is not available, return error message
+    if not frontend_build_available:
+        return {"error": "Frontend not built. Run 'npm run build' in /app/frontend"}
+    
+    # Try to serve specific file first
+    file_path = os.path.join(FRONTEND_BUILD_DIR, path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # For SPA routing, serve index.html for all other routes
+    index_path = os.path.join(FRONTEND_BUILD_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")
+
+# Root route - serve React app
+@app.get("/")
+async def serve_root():
+    """Serve React app at root"""
+    if not frontend_build_available:
+        return {"error": "Frontend not built. Run 'npm run build' in /app/frontend"}
+    
+    index_path = os.path.join(FRONTEND_BUILD_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")
+
 
 
 if __name__ == "__main__":
