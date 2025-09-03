@@ -588,4 +588,4 @@ if __name__ == "__main__":
     if ENABLE_NGROK:
         start_ngrok_tunnel()
     
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=3000)
