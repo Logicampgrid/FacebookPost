@@ -525,15 +525,31 @@ async def webhook_handler(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 # === STARTUP EVENT ===
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
-    print("🚀 Meta Publishing Platform - Fixed Version Starting...")
-    print(f"📁 Upload directory: {UPLOAD_DIR}")
-    print(f"🌐 FTP Host: {FTP_HOST}")
-    print(f"🔧 DRY_RUN mode: {DRY_RUN}")
-    print("✅ Application started successfully!")
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint with ngrok info"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow(),
+        "ngrok": {
+            "enabled": ENABLE_NGROK,
+            "url": NGROK_URL,
+            "tunnel_active": NGROK_TUNNEL is not None
+        },
+        "directories": {
+            "upload": os.path.exists(UPLOAD_DIR),
+            "download": os.path.exists(DOWNLOAD_DIR),
+            "optimized": os.path.exists(OPTIMIZED_DIR),
+            "processed": os.path.exists(PROCESSED_DIR)
+        }
+    }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+@app.get("/api/ngrok-info")
+async def get_ngrok_info():
+    """Get current ngrok tunnel information"""
+    return {
+        "enabled": ENABLE_NGROK,
+        "url": NGROK_URL,
+        "tunnel_active": NGROK_TUNNEL is not None,
+        "public_url": NGROK_URL if NGROK_TUNNEL else None
+    }
