@@ -539,25 +539,7 @@ async def webhook_handler(request: Request):
         log_media(f"Webhook error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
-# === STARTUP EVENT ===
-@app.get("/api/health")
-async def health_check():
-    """Health check endpoint with ngrok info"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow(),
-        "ngrok": {
-            "enabled": ENABLE_NGROK,
-            "url": NGROK_URL,
-            "tunnel_active": NGROK_TUNNEL is not None
-        },
-        "directories": {
-            "upload": os.path.exists(UPLOAD_DIR),
-            "download": os.path.exists(DOWNLOAD_DIR),
-            "optimized": os.path.exists(OPTIMIZED_DIR),
-            "processed": os.path.exists(PROCESSED_DIR)
-        }
-    }
+
 
 if __name__ == "__main__":
     import uvicorn
