@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://fb-webhook-local.preview.emergentagent.com"
+BACKEND_URL = "https://flask-webhook-fix.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""

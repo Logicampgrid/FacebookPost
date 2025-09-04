@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fb-webhook-local.preview.emergentagent.com
+URL : https://flask-webhook-fix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

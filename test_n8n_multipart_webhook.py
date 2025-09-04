@@ -12,7 +12,7 @@ import tempfile
 import os
 
 # Configuration
-API_BASE = "https://fb-webhook-local.preview.emergentagent.com"
+API_BASE = "https://flask-webhook-fix.preview.emergentagent.com"
 WEBHOOK_URL = f"{API_BASE}/api/webhook"
 
 def create_test_image():
