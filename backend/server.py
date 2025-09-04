@@ -602,8 +602,8 @@ async def webhook_verify(request: Request):
         # Check if this is a verification request
         if mode == "subscribe" and token == VERIFY_TOKEN:
             log_media("Webhook verification successful!", "SUCCESS")
-            # Return the challenge value to verify the webhook
-            return int(challenge)
+            # Return the challenge value to verify the webhook (as string, not int)
+            return challenge
         else:
             log_media(f"Webhook verification failed: Invalid token or mode", "ERROR")
             raise HTTPException(status_code=403, detail="Verification failed")
