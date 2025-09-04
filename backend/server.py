@@ -589,28 +589,58 @@ async def upload_file(file: UploadFile = File(...)):
 async def webhook_verify(request: Request):
     """Handle Facebook webhook verification (GET request)"""
     try:
-        # Get query parameters
+        # ===== CORRECTION 1: Amélioration de la récupération des paramètres =====
+        # Récupération plus robuste des paramètres de requête Facebook
         mode = request.query_params.get("hub.mode")
-        token = request.query_params.get("hub.verify_token")
+        token = request.query_params.get("hub.verify_token") 
         challenge = request.query_params.get("hub.challenge")
         
-        # Facebook verification token (you should set this in your .env file)
+        # ===== CORRECTION 2: Configuration du token de vérification =====
+        # Token de vérification depuis .env (doit correspondre au script GUI Windows)
         VERIFY_TOKEN = os.getenv("FACEBOOK_VERIFY_TOKEN", "mon_token_secret_webhook")
         
-        log_media(f"Webhook verification: mode={mode}, token={token}, challenge={challenge}", "INFO")
+        # ===== CORRECTION 3: Logging détaillé pour debug =====
+        print(f"🔍 [WEBHOOK DEBUG] Paramètres reçus:")
+        print(f"    - hub.mode: '{mode}'")
+        print(f"    - hub.verify_token: '{token}'") 
+        print(f"    - hub.challenge: '{challenge}'")
+        print(f"    - Token attendu: '{VERIFY_TOKEN}'")
+        print(f"    - URL complète: {request.url}")
         
-        # Check if this is a verification request
+        # ===== CORRECTION 4: Validation stricte des paramètres requis =====
+        if not mode or not token or not challenge:
+            log_media("Paramètres manquants dans la requête webhook", "ERROR")
+            print(f"❌ Paramètres manquants: mode={mode}, token={token}, challenge={challenge}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Paramètres hub.mode, hub.verify_token et hub.challenge requis"
+            )
+        
+        # ===== CORRECTION 5: Vérification exacte des conditions Facebook =====
         if mode == "subscribe" and token == VERIFY_TOKEN:
-            log_media("Webhook verification successful!", "SUCCESS")
-            # Return the challenge value to verify the webhook (as string, not int)
-            return challenge
-        else:
-            log_media(f"Webhook verification failed: Invalid token or mode", "ERROR")
-            raise HTTPException(status_code=403, detail="Verification failed")
+            log_media("✅ Webhook verification successful!", "SUCCESS")
+            print(f"✅ Vérification réussie - Renvoi du challenge: '{challenge}'")
             
+            # ===== CORRECTION 6: Réponse en format texte plain pour Facebook =====
+            # Facebook attend une réponse texte directe, pas JSON
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(content=str(challenge), status_code=200)
+        else:
+            # ===== CORRECTION 7: Messages d'erreur détaillés pour debug =====
+            error_msg = f"Vérification échouée - Mode: '{mode}' vs 'subscribe', Token: '{token}' vs '{VERIFY_TOKEN}'"
+            log_media(error_msg, "ERROR")
+            print(f"❌ {error_msg}")
+            raise HTTPException(status_code=403, detail="Token de vérification invalide")
+            
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
     except Exception as e:
-        log_media(f"Webhook verification error: {str(e)}", "ERROR")
-        raise HTTPException(status_code=500, detail=str(e))
+        # ===== CORRECTION 8: Gestion d'erreur robuste =====
+        error_detail = f"Erreur interne webhook: {str(e)}"
+        log_media(error_detail, "ERROR")
+        print(f"❌ Exception webhook: {e}")
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
