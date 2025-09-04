@@ -686,8 +686,10 @@ async def webhook_handler(request: Request):
                         value = change.get("value", {})
                         log_media(f"Page change: {field} - {value}", "INFO")
         
-        # Return success response (Facebook expects 200 OK)
-        return {"status": "received", "timestamp": datetime.utcnow()}
+        # ===== CORRECTION: Réponse POST webhook conforme aux spécifications =====
+        # Facebook attend {"status": "received"} pour confirmer la réception
+        print(f"✅ [WEBHOOK POST] Événement traité avec succès")
+        return {"status": "received"}
         
     except Exception as e:
         log_media(f"Webhook processing error: {str(e)}", "ERROR")
