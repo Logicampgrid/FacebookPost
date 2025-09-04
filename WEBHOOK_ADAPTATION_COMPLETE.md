@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://frontend-access.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fb-webhook-local.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://frontend-access.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://frontend-access.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://frontend-access.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fb-webhook-local.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fb-webhook-local.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fb-webhook-local.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
