@@ -623,7 +623,6 @@ async def webhook_verify(request: Request):
             
             # ===== CORRECTION 6: Réponse en format texte plain pour Facebook =====
             # Facebook attend une réponse texte directe, pas JSON
-            from fastapi.responses import PlainTextResponse
             return PlainTextResponse(content=str(challenge), status_code=200)
         else:
             # ===== CORRECTION 7: Messages d'erreur détaillés pour debug =====
