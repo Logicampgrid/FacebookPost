@@ -585,21 +585,83 @@ async def upload_file(file: UploadFile = File(...)):
         log_media(f"Upload error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/webhook")
+async def webhook_verify(request: Request):
+    """Handle Facebook webhook verification (GET request)"""
+    try:
+        # Get query parameters
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token")
+        challenge = request.query_params.get("hub.challenge")
+        
+        # Facebook verification token (you should set this in your .env file)
+        VERIFY_TOKEN = os.getenv("FACEBOOK_VERIFY_TOKEN", "mon_token_secret_webhook")
+        
+        log_media(f"Webhook verification: mode={mode}, token={token}, challenge={challenge}", "INFO")
+        
+        # Check if this is a verification request
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            log_media("Webhook verification successful!", "SUCCESS")
+            # Return the challenge value to verify the webhook
+            return int(challenge)
+        else:
+            log_media(f"Webhook verification failed: Invalid token or mode", "ERROR")
+            raise HTTPException(status_code=403, detail="Verification failed")
+            
+    except Exception as e:
+        log_media(f"Webhook verification error: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
-    """Handle webhooks from external services"""
+    """Handle Facebook webhook events (POST request)"""
     try:
         # Get request body
         body = await request.body()
         
-        # Log webhook received
-        log_media("Webhook received", "INFO")
+        # Parse JSON body
+        try:
+            webhook_data = json.loads(body.decode('utf-8'))
+        except json.JSONDecodeError:
+            log_media("Invalid JSON in webhook request", "ERROR")
+            raise HTTPException(status_code=400, detail="Invalid JSON")
         
-        # Return success response
+        # Log webhook received
+        log_media(f"Webhook received: {json.dumps(webhook_data, indent=2)}", "INFO")
+        
+        # Process Facebook webhook data
+        if webhook_data.get("object") == "page":
+            entries = webhook_data.get("entry", [])
+            for entry in entries:
+                # Handle page messages
+                if "messaging" in entry:
+                    for messaging_event in entry["messaging"]:
+                        sender_id = messaging_event.get("sender", {}).get("id")
+                        message = messaging_event.get("message", {})
+                        
+                        if message:
+                            log_media(f"Message from {sender_id}: {message.get('text', 'No text')}", "INFO")
+                            
+                            # Handle attachments (images, videos, etc.)
+                            if "attachments" in message:
+                                for attachment in message["attachments"]:
+                                    attachment_type = attachment.get("type")
+                                    payload = attachment.get("payload", {})
+                                    url = payload.get("url")
+                                    log_media(f"Attachment received: {attachment_type} - {url}", "INFO")
+                
+                # Handle page feed changes
+                if "changes" in entry:
+                    for change in entry["changes"]:
+                        field = change.get("field")
+                        value = change.get("value", {})
+                        log_media(f"Page change: {field} - {value}", "INFO")
+        
+        # Return success response (Facebook expects 200 OK)
         return {"status": "received", "timestamp": datetime.utcnow()}
         
     except Exception as e:
-        log_media(f"Webhook error: {str(e)}", "ERROR")
+        log_media(f"Webhook processing error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
 # === FRONTEND ROUTES ===
