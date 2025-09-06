@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://flask-webhook-fix.preview.emergentagent.com"
+    base_url = "https://fb-static-api.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     

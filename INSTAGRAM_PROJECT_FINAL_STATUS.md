@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://flask-webhook-fix.preview.emergentagent.com/api/webhook
+https://fb-static-api.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

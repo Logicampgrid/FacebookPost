@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://flask-webhook-fix.preview.emergentagent.com
+URL : https://fb-static-api.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
