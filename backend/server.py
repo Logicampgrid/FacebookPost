@@ -923,6 +923,87 @@ async def upload_file(file: UploadFile = File(...)):
         log_media(f"Upload error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/publish", response_model=PublishResponse)
+async def publish_to_social_media(request: PublishRequest):
+    """Endpoint principal pour publier sur Facebook et/ou Instagram"""
+    try:
+        log_publish(f"Nouvelle demande de publication: {request.store} -> {request.platforms}", "INFO")
+        
+        # Validation des paramètres
+        if not request.message.strip():
+            raise HTTPException(status_code=400, detail="Le message ne peut pas être vide")
+        
+        if not request.product_url.strip():
+            raise HTTPException(status_code=400, detail="L'URL du produit ne peut pas être vide")
+        
+        # Vérifier que le store existe
+        if request.store not in STORES:
+            available_stores = list(STORES.keys())
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Store '{request.store}' inconnu. Stores disponibles: {available_stores}"
+            )
+        
+        # Vérifier la configuration du store
+        store_config = STORES[request.store]
+        missing_config = []
+        
+        if "facebook" in request.platforms:
+            if not store_config.get("fb_page_id"):
+                missing_config.append("fb_page_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+        
+        if "instagram" in request.platforms:
+            if not store_config.get("ig_user_id"):
+                missing_config.append("ig_user_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+        
+        if missing_config:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Configuration manquante pour {request.store}: {missing_config}"
+            )
+        
+        # Effectuer la publication
+        result = await publish_post(
+            store=request.store,
+            message=request.message,
+            product_url=request.product_url,
+            image_url=request.image_url,
+            platforms=request.platforms
+        )
+        
+        # Sauvegarder en base de données pour historique
+        try:
+            post_doc = {
+                "_id": str(uuid.uuid4()),
+                "store": request.store,
+                "message": request.message,
+                "product_url": request.product_url,
+                "image_url": request.image_url,
+                "platforms": request.platforms,
+                "result": result,
+                "created_at": datetime.utcnow(),
+                "test_mode": PUBLICATION_TEST_MODE
+            }
+            await db.publications.insert_one(post_doc)
+            log_publish("Publication sauvegardée en base", "INFO")
+        except Exception as db_error:
+            log_publish(f"Erreur sauvegarde DB: {str(db_error)}", "WARNING")
+        
+        # Retourner le résultat
+        return PublishResponse(**result)
+        
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
+    except Exception as e:
+        error_msg = f"Erreur interne publication: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @app.get("/api/webhook")
 async def webhook_verify(request: Request):
     """Handle Facebook webhook verification (GET request)"""
