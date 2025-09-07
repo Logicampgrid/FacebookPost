@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://fb-static-api.preview.emergentagent.com
+🔗 https://socialapi-sync.preview.emergentagent.com
