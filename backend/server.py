@@ -781,10 +781,25 @@ async def publish_post(store: str, message: str, product_url: str, image_url: Op
 # === API ENDPOINTS ===
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint with ngrok info"""
+    """Health check endpoint with ngrok info and store configurations"""
+    # Vérifier la configuration des stores
+    store_status = {}
+    for store_name, config in STORES.items():
+        store_status[store_name] = {
+            "fb_page_id": bool(config.get("fb_page_id")),
+            "ig_user_id": bool(config.get("ig_user_id")),
+            "access_token": bool(config.get("access_token"))
+        }
+    
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow(),
+        "publication": {
+            "test_mode": PUBLICATION_TEST_MODE,
+            "stores_configured": len([s for s in store_status.values() if all(s.values())]),
+            "total_stores": len(STORES)
+        },
+        "stores": store_status,
         "ngrok": {
             "enabled": ENABLE_NGROK,
             "url": NGROK_URL,
