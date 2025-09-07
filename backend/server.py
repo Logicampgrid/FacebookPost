@@ -820,6 +820,130 @@ async def publish_post(store: str, message: str, product_url: str, image_url: Op
             "test_mode": PUBLICATION_TEST_MODE
         }
 
+# === FONCTIONS D'AUTHENTIFICATION FACEBOOK ===
+def log_auth(message: str, level: str = "INFO"):
+    """Logging spécialisé pour l'authentification"""
+    icons = {"INFO": "🔐", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌"}
+    icon = icons.get(level.upper(), "🔐")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [AUTH] {message}")
+
+async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
+    """Échange un code d'autorisation Facebook contre un access token"""
+    try:
+        log_auth(f"Échange du code d'autorisation Facebook", "INFO")
+        
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
+        
+        # Étape 1: Échanger le code contre un access token
+        token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
+        token_params = {
+            'client_id': FACEBOOK_APP_ID,
+            'client_secret': FACEBOOK_APP_SECRET,
+            'redirect_uri': redirect_uri,
+            'code': code
+        }
+        
+        log_auth("Requête d'échange de token...", "INFO")
+        response = requests.get(token_url, params=token_params, timeout=30)
+        response.raise_for_status()
+        
+        token_data = response.json()
+        
+        if "access_token" not in token_data:
+            raise Exception(f"Token non reçu: {token_data}")
+        
+        access_token = token_data["access_token"]
+        log_auth("Access token reçu avec succès", "SUCCESS")
+        
+        # Étape 2: Obtenir les informations utilisateur et ses pages
+        user_url = f"{FACEBOOK_GRAPH_URL}/me"
+        user_params = {
+            'access_token': access_token,
+            'fields': 'id,name,accounts'
+        }
+        
+        user_response = requests.get(user_url, params=user_params, timeout=30)
+        user_response.raise_for_status()
+        user_data = user_response.json()
+        
+        log_auth(f"Utilisateur: {user_data.get('name', 'Inconnu')}", "INFO")
+        
+        # Étape 3: Obtenir les pages gérées par l'utilisateur
+        pages_url = f"{FACEBOOK_GRAPH_URL}/me/accounts"
+        pages_params = {
+            'access_token': access_token,
+            'fields': 'id,name,access_token,instagram_business_account'
+        }
+        
+        pages_response = requests.get(pages_url, params=pages_params, timeout=30)
+        pages_response.raise_for_status()
+        pages_data = pages_response.json()
+        
+        pages = pages_data.get('data', [])
+        log_auth(f"Trouvé {len(pages)} page(s) gérée(s)", "INFO")
+        
+        result = {
+            "user_access_token": access_token,
+            "user_id": user_data.get('id'),
+            "user_name": user_data.get('name'),
+            "pages": []
+        }
+        
+        # Traiter chaque page
+        for page in pages:
+            page_info = {
+                "page_id": page.get('id'),
+                "page_name": page.get('name'),
+                "page_access_token": page.get('access_token'),
+                "instagram_business_account": None
+            }
+            
+            # Vérifier si la page a un compte Instagram Business connecté
+            if 'instagram_business_account' in page:
+                ig_account = page['instagram_business_account']
+                if ig_account:
+                    page_info["instagram_business_account"] = ig_account.get('id')
+                    log_auth(f"Page '{page.get('name')}' a un compte Instagram: {ig_account.get('id')}", "INFO")
+                else:
+                    log_auth(f"Page '{page.get('name')}' n'a pas de compte Instagram", "WARNING")
+            
+            result["pages"].append(page_info)
+        
+        log_auth("Authentification Facebook réussie", "SUCCESS")
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP lors de l'authentification: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_auth(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur authentification: {str(e)}"
+        log_auth(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_id: str = None):
+    """Sauvegarde les tokens d'un store dans le dictionnaire TOKENS"""
+    global TOKENS
+    
+    log_auth(f"Sauvegarde tokens pour {store}", "INFO")
+    
+    TOKENS[store] = {
+        "fb_page_id": page_id,
+        "access_token": page_access_token,
+        "ig_user_id": ig_user_id,
+        "updated_at": datetime.utcnow()
+    }
+    
+    log_auth(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
+
 # === API ENDPOINTS ===
 @app.get("/api/health")
 async def health_check():
