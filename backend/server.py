@@ -1313,6 +1313,65 @@ async def publish_to_social_media(request: PublishRequest):
         log_publish(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+@app.post("/api/auth/facebook/exchange-code", response_model=FacebookAuthResponse)
+async def exchange_facebook_code_endpoint(request: FacebookAuthRequest):
+    """Échange un code d'autorisation Facebook contre un access token et configure le store"""
+    try:
+        log_auth(f"Demande d'authentification pour le store: {request.store}", "INFO")
+        
+        # Vérifier que le store existe
+        if request.store not in STORES:
+            available_stores = list(STORES.keys())
+            raise HTTPException(
+                status_code=400,
+                detail=f"Store '{request.store}' inconnu. Stores disponibles: {available_stores}"
+            )
+        
+        # Échanger le code contre les tokens
+        auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
+        
+        # Chercher une page appropriée pour ce store
+        pages = auth_result.get("pages", [])
+        if not pages:
+            return FacebookAuthResponse(
+                success=False,
+                store=request.store,
+                error="Aucune page Facebook trouvée pour cet utilisateur"
+            )
+        
+        # Pour l'instant, prendre la première page disponible
+        # TODO: Améliorer la logique de sélection de page
+        selected_page = pages[0]
+        
+        page_id = selected_page["page_id"]
+        page_access_token = selected_page["page_access_token"]
+        ig_user_id = selected_page.get("instagram_business_account")
+        
+        # Sauvegarder les tokens pour ce store
+        save_store_tokens(request.store, page_id, page_access_token, ig_user_id)
+        
+        log_auth(f"Authentification réussie pour {request.store}", "SUCCESS")
+        
+        return FacebookAuthResponse(
+            success=True,
+            store=request.store,
+            access_token=page_access_token,
+            fb_page_id=page_id,
+            ig_user_id=ig_user_id
+        )
+        
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
+    except Exception as e:
+        error_msg = f"Erreur authentification Facebook: {str(e)}"
+        log_auth(error_msg, "ERROR")
+        return FacebookAuthResponse(
+            success=False,
+            store=request.store,
+            error=error_msg
+        )
+
 @app.get("/api/webhook")
 async def webhook_verify(request: Request):
     """Handle Facebook webhook verification (GET request)"""
