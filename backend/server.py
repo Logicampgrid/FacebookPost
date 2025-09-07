@@ -823,6 +823,134 @@ async def get_ngrok_info():
         "public_url": NGROK_URL if NGROK_TUNNEL else None
     }
 
+@app.get("/api/stores")
+async def get_stores():
+    """Obtenir la liste des stores configurés"""
+    stores_info = {}
+    for store_name, config in STORES.items():
+        stores_info[store_name] = {
+            "name": store_name,
+            "facebook_configured": bool(config.get("fb_page_id") and config.get("access_token")),
+            "instagram_configured": bool(config.get("ig_user_id") and config.get("access_token")),
+            "fb_page_id": config.get("fb_page_id", "Non configuré"),
+            "ig_user_id": config.get("ig_user_id", "Non configuré")
+        }
+    
+    return {
+        "stores": stores_info,
+        "test_mode": PUBLICATION_TEST_MODE,
+        "total_stores": len(STORES)
+    }
+
+@app.get("/api/publications")
+async def get_publications(skip: int = 0, limit: int = 20, store: Optional[str] = None):
+    """Obtenir l'historique des publications"""
+    try:
+        # Construire le filtre
+        filter_query = {}
+        if store:
+            if store not in STORES:
+                raise HTTPException(status_code=400, detail=f"Store '{store}' inconnu")
+            filter_query["store"] = store
+        
+        # Récupérer les publications
+        cursor = db.publications.find(filter_query).skip(skip).limit(limit).sort("created_at", -1)
+        publications = await cursor.to_list(length=limit)
+        
+        # Convertir pour la réponse
+        for pub in publications:
+            pub["id"] = pub["_id"]
+            del pub["_id"]
+        
+        # Compter le total
+        total = await db.publications.count_documents(filter_query)
+        
+        return {
+            "publications": publications,
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "store_filter": store
+        }
+        
+    except Exception as e:
+        log_publish(f"Erreur récupération publications: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/test-config")
+async def test_store_configuration(store: str):
+    """Tester la configuration d'un store sans publier"""
+    try:
+        if store not in STORES:
+            raise HTTPException(status_code=400, detail=f"Store '{store}' inconnu")
+        
+        config = STORES[store]
+        results = {
+            "store": store,
+            "facebook_test": None,
+            "instagram_test": None,
+            "errors": []
+        }
+        
+        # Test Facebook
+        if config.get("fb_page_id") and config.get("access_token"):
+            try:
+                url = f"{FACEBOOK_GRAPH_URL}/{config['fb_page_id']}"
+                params = {"access_token": config["access_token"]}
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    results["facebook_test"] = {
+                        "success": True,
+                        "page_name": data.get("name", "Inconnu"),
+                        "page_id": data.get("id")
+                    }
+                else:
+                    results["facebook_test"] = {
+                        "success": False,
+                        "error": f"Status {response.status_code}"
+                    }
+                    results["errors"].append(f"Facebook API error: {response.status_code}")
+            except Exception as e:
+                results["facebook_test"] = {"success": False, "error": str(e)}
+                results["errors"].append(f"Facebook test error: {str(e)}")
+        else:
+            results["errors"].append("Configuration Facebook incomplète")
+        
+        # Test Instagram
+        if config.get("ig_user_id") and config.get("access_token"):
+            try:
+                url = f"{FACEBOOK_GRAPH_URL}/{config['ig_user_id']}"
+                params = {"fields": "account_type,username", "access_token": config["access_token"]}
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    results["instagram_test"] = {
+                        "success": True,
+                        "username": data.get("username", "Inconnu"),
+                        "account_type": data.get("account_type", "Inconnu"),
+                        "user_id": data.get("id")
+                    }
+                else:
+                    results["instagram_test"] = {
+                        "success": False,
+                        "error": f"Status {response.status_code}"
+                    }
+                    results["errors"].append(f"Instagram API error: {response.status_code}")
+            except Exception as e:
+                results["instagram_test"] = {"success": False, "error": str(e)}
+                results["errors"].append(f"Instagram test error: {str(e)}")
+        else:
+            results["errors"].append("Configuration Instagram incomplète")
+        
+        return results
+        
+    except Exception as e:
+        log_publish(f"Erreur test configuration: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/posts", response_model=PostResponse)
 async def create_post(post: PostCreate):
     """Create a new social media post"""
