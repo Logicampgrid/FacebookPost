@@ -1254,7 +1254,7 @@ async def publish_to_social_media(request: PublishRequest):
             )
         
         # Vérifier la configuration du store
-        store_config = STORES[request.store]
+        store_config = get_store_config(request.store)
         missing_config = []
         
         if "facebook" in request.platforms:
