@@ -1430,50 +1430,70 @@ async def webhook_verify(request: Request):
 
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
-    """Handle Facebook webhook events (POST request)"""
+    """Handle Facebook webhook events (POST request) - Support JSON et fichiers binaires"""
     try:
         # Get request body
         body = await request.body()
         
-        # Parse JSON body
-        try:
-            webhook_data = json.loads(body.decode('utf-8'))
-        except json.JSONDecodeError:
-            log_media("Invalid JSON in webhook request", "ERROR")
-            raise HTTPException(status_code=400, detail="Invalid JSON")
+        # Vérifier le Content-Type pour déterminer le traitement
+        content_type = request.headers.get("content-type", "").lower()
+        log_media(f"Webhook Content-Type: {content_type}", "INFO")
         
-        # Log webhook received
-        log_media(f"Webhook received: {json.dumps(webhook_data, indent=2)}", "INFO")
-        
-        # Process Facebook webhook data
-        if webhook_data.get("object") == "page":
-            entries = webhook_data.get("entry", [])
-            for entry in entries:
-                # Handle page messages
-                if "messaging" in entry:
-                    for messaging_event in entry["messaging"]:
-                        sender_id = messaging_event.get("sender", {}).get("id")
-                        message = messaging_event.get("message", {})
-                        
-                        if message:
-                            log_media(f"Message from {sender_id}: {message.get('text', 'No text')}", "INFO")
-                            
-                            # Handle attachments (images, videos, etc.)
-                            if "attachments" in message:
-                                for attachment in message["attachments"]:
-                                    attachment_type = attachment.get("type")
-                                    payload = attachment.get("payload", {})
-                                    url = payload.get("url")
-                                    log_media(f"Attachment received: {attachment_type} - {url}", "INFO")
+        # Si c'est du JSON, traiter normalement
+        if "application/json" in content_type or "text/" in content_type:
+            try:
+                webhook_data = json.loads(body.decode('utf-8'))
+                log_media(f"Webhook JSON reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
                 
-                # Handle page feed changes
-                if "changes" in entry:
-                    for change in entry["changes"]:
-                        field = change.get("field")
-                        value = change.get("value", {})
-                        log_media(f"Page change: {field} - {value}", "INFO")
+                # Process Facebook webhook data
+                if webhook_data.get("object") == "page":
+                    entries = webhook_data.get("entry", [])
+                    for entry in entries:
+                        # Handle page messages
+                        if "messaging" in entry:
+                            for messaging_event in entry["messaging"]:
+                                sender_id = messaging_event.get("sender", {}).get("id")
+                                message = messaging_event.get("message", {})
+                                
+                                if message:
+                                    log_media(f"Message from {sender_id}: {message.get('text', 'No text')}", "INFO")
+                                    
+                                    # Handle attachments (images, videos, etc.)
+                                    if "attachments" in message:
+                                        for attachment in message["attachments"]:
+                                            attachment_type = attachment.get("type")
+                                            payload = attachment.get("payload", {})
+                                            url = payload.get("url")
+                                            log_media(f"Attachment received: {attachment_type} - {url}", "INFO")
+                        
+                        # Handle page feed changes
+                        if "changes" in entry:
+                            for change in entry["changes"]:
+                                field = change.get("field")
+                                value = change.get("value", {})
+                                log_media(f"Page change: {field} - {value}", "INFO")
+            
+            except json.JSONDecodeError:
+                log_media("Erreur de décodage JSON, traitement comme données binaires", "WARNING")
+                # Si ce n'est pas du JSON valide, traiter comme binaire
+                await handle_binary_webhook_data(body, content_type)
         
-        # ===== CORRECTION: Réponse POST webhook conforme aux spécifications =====
+        # Si c'est des données binaires (images, vidéos, etc.)
+        elif any(binary_type in content_type for binary_type in ["image/", "video/", "audio/", "application/octet-stream", "multipart/"]):
+            log_media(f"Données binaires reçues: {len(body)} bytes", "INFO")
+            await handle_binary_webhook_data(body, content_type)
+        
+        # Type de contenu non reconnu
+        else:
+            log_media(f"Type de contenu non reconnu: {content_type}", "WARNING")
+            # Essayer de traiter comme texte si possible
+            try:
+                text_data = body.decode('utf-8')
+                log_media(f"Contenu texte reçu: {text_data[:200]}...", "INFO")
+            except UnicodeDecodeError:
+                log_media("Impossible de décoder le contenu comme texte", "WARNING")
+                await handle_binary_webhook_data(body, content_type)
+        
         # Facebook attend {"status": "received"} pour confirmer la réception
         print(f"✅ [WEBHOOK POST] Événement traité avec succès")
         return {"status": "received"}
@@ -1481,6 +1501,60 @@ async def webhook_handler(request: Request):
     except Exception as e:
         log_media(f"Webhook processing error: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
+
+async def handle_binary_webhook_data(body: bytes, content_type: str):
+    """Traite les données binaires reçues via webhook"""
+    try:
+        log_media(f"Traitement données binaires: {len(body)} bytes, type: {content_type}", "INFO")
+        
+        # Générer un nom de fichier unique
+        timestamp = int(datetime.utcnow().timestamp())
+        unique_id = uuid.uuid4().hex[:8]
+        
+        # Déterminer l'extension du fichier basée sur le Content-Type
+        extension = ".bin"  # par défaut
+        if "image/jpeg" in content_type:
+            extension = ".jpg"
+        elif "image/png" in content_type:
+            extension = ".png"
+        elif "image/gif" in content_type:
+            extension = ".gif"
+        elif "video/mp4" in content_type:
+            extension = ".mp4"
+        elif "audio/" in content_type:
+            extension = ".audio"
+        
+        filename = f"webhook_{timestamp}_{unique_id}{extension}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        # Sauvegarder le fichier binaire
+        with open(file_path, "wb") as f:
+            f.write(body)
+        
+        log_media(f"Fichier binaire sauvegardé: {file_path}", "SUCCESS")
+        
+        # Si c'est une image, on peut la traiter pour publication
+        if "image/" in content_type:
+            try:
+                # Convertir l'image pour les réseaux sociaux
+                success, converted_path, error = await convert_image_for_social(file_path)
+                if success:
+                    # Uploader sur FTP pour rendre accessible
+                    ftp_success, ftp_url, ftp_error = await upload_to_ftp_simple(converted_path, filename)
+                    if ftp_success:
+                        log_media(f"Image webhook uploadée: {ftp_url}", "SUCCESS")
+                    
+                    # Nettoyer les fichiers temporaires
+                    try:
+                        os.unlink(file_path)
+                        os.unlink(converted_path)
+                    except:
+                        pass
+            except Exception as img_error:
+                log_media(f"Erreur traitement image webhook: {str(img_error)}", "WARNING")
+        
+    except Exception as e:
+        log_media(f"Erreur traitement données binaires: {str(e)}", "ERROR")
 
 # === FRONTEND ROUTES ===
 # Root route - serve React app
