@@ -330,6 +330,36 @@ class PostResponse(BaseModel):
     facebook_post_id: Optional[str] = None
     instagram_post_id: Optional[str] = None
 
+class PublishRequest(BaseModel):
+    store: str
+    message: str
+    product_url: str
+    image_url: Optional[str] = None
+    platforms: List[str] = ["facebook", "instagram"]  # Par défaut les deux
+    
+    @validator('store')
+    def validate_store(cls, v):
+        if v not in STORES:
+            raise ValueError(f'Store must be one of: {list(STORES.keys())}')
+        return v
+    
+    @validator('platforms')
+    def validate_platforms(cls, v):
+        valid_platforms = ["facebook", "instagram"]
+        for platform in v:
+            if platform not in valid_platforms:
+                raise ValueError(f'Platform must be one of: {valid_platforms}')
+        return v
+
+class PublishResponse(BaseModel):
+    success: bool
+    store: str
+    platforms: List[str]
+    facebook_result: Optional[dict] = None
+    instagram_result: Optional[dict] = None
+    errors: List[str] = []
+    test_mode: bool = False
+
 # === UTILITY FUNCTIONS ===
 def log_media(message: str, level: str = "INFO"):
     """Structured logging for media operations"""
