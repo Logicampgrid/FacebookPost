@@ -389,6 +389,19 @@ class PublishResponse(BaseModel):
     errors: List[str] = []
     test_mode: bool = False
 
+class FacebookAuthRequest(BaseModel):
+    code: str
+    store: str
+    redirect_uri: str
+
+class FacebookAuthResponse(BaseModel):
+    success: bool
+    store: str
+    access_token: Optional[str] = None
+    fb_page_id: Optional[str] = None
+    ig_user_id: Optional[str] = None
+    error: Optional[str] = None
+
 # === UTILITY FUNCTIONS ===
 def log_media(message: str, level: str = "INFO"):
     """Structured logging for media operations"""
