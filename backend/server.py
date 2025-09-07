@@ -273,6 +273,32 @@ FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
 FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
 FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com/v18.0")
 
+# === CONFIGURATION BOUTIQUES MULTI-PLATFORM ===
+PUBLICATION_TEST_MODE = os.getenv("PUBLICATION_TEST_MODE", "true").lower() == "true"
+
+STORES = {
+    "logicantiq": {
+        "fb_page_id": os.getenv("FB_PAGE_ID_LOGICANTIQ"),
+        "ig_user_id": os.getenv("IG_USER_ID_LOGICANTIQ"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICANTIQ")
+    },
+    "logicampoutdoor": {
+        "fb_page_id": os.getenv("FB_PAGE_ID_LOGICAMPOUTDOOR"),
+        "ig_user_id": os.getenv("IG_USER_ID_LOGICAMPOUTDOOR"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICAMPOUTDOOR")
+    },
+    "bergerblancsuisse": {
+        "fb_page_id": os.getenv("FB_PAGE_ID_BERGER"),
+        "ig_user_id": os.getenv("IG_USER_ID_BERGER"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_BERGER")
+    },
+    "gizmobbs": {
+        "fb_page_id": os.getenv("FB_PAGE_ID_GIZMO"),
+        "ig_user_id": os.getenv("IG_USER_ID_GIZMO"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_GIZMO")
+    }
+}
+
 # === FTP CONFIGURATION ===
 FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
 FTP_PORT = int(os.getenv("FTP_PORT", "21"))
