@@ -657,7 +657,7 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         if store not in STORES:
             raise ValueError(f"Store inconnu: {store}")
         
-        creds = STORES[store]
+        creds = get_store_config(store)
         
         if not creds["ig_user_id"] or not creds["access_token"]:
             raise ValueError(f"Configuration Instagram manquante pour {store}")
