@@ -55,6 +55,8 @@ const SmartCrossPostSelector = ({
       }
     } catch (error) {
       console.error('Error loading related platforms:', error);
+      const errorMessage = handleAxiosError(error);
+      console.error('Formatted error:', errorMessage);
     } finally {
       setLoading(false);
     }
