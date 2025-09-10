@@ -24,9 +24,10 @@ const ConnectionDiagnostic = ({ API_BASE }) => {
         [testName]: { status: 'success', message: result.message, details: result.details }
       }));
     } catch (error) {
+      const errorMessage = safeErrorDisplay(error.message || error);
       setTests(prev => ({
         ...prev,
-        [testName]: { status: 'error', message: error.message, details: error.details || null }
+        [testName]: { status: 'error', message: errorMessage, details: error.details || null }
       }));
     }
   };
