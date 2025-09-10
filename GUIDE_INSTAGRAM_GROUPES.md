@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://invalid-object-fix.preview.emergentagent.com
+URL : https://facebookpost-app.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

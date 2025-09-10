@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://facebookpost-app.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://invalid-object-fix.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://facebookpost-app.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://facebookpost-app.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://facebookpost-app.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

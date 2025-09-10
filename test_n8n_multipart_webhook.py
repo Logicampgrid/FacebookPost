@@ -12,7 +12,7 @@ import tempfile
 import os
 
 # Configuration
-API_BASE = "https://invalid-object-fix.preview.emergentagent.com"
+API_BASE = "https://facebookpost-app.preview.emergentagent.com"
 WEBHOOK_URL = f"{API_BASE}/api/webhook"
 
 def create_test_image():
