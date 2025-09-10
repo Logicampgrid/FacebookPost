@@ -23,7 +23,8 @@ const BusinessManagerSelector = ({ user, onBusinessManagerSelect }) => {
       
     } catch (error) {
       console.error('Error selecting business manager:', error);
-      alert('Erreur lors de la sélection du Business Manager');
+      const errorMessage = handleAxiosError(error);
+      alert('Erreur lors de la sélection du Business Manager: ' + errorMessage);
     } finally {
       setLoading(false);
     }
