@@ -364,7 +364,8 @@ function App() {
   const stats = getPlatformStats();
 
   return (
-    <div className="min-h-screen bg-gray-facebook">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-facebook">
       {/* Header */}
       <header className="facebook-card mb-6 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4">
