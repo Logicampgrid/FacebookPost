@@ -178,13 +178,8 @@ const FacebookLogin = ({ onLogin, loading }) => {
       
     } catch (err) {
       console.error('Error with manual token:', err);
-      if (err.message.includes('HTTP')) {
-        setError(`Erreur de connexion: ${err.message}`);
-      } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setError('Impossible de se connecter au serveur. Vérifiez que le backend est accessible.');
-      } else {
-        setError(`Erreur lors de la validation du token: ${err.message}`);
-      }
+      const errorMsg = handleAxiosError(err);
+      setError(errorMsg);
     } finally {
       setExchangingCode(false);
     }
