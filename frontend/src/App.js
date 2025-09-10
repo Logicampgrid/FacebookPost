@@ -17,6 +17,7 @@ import LogicampBergerSetup from './components/LogicampBergerSetup';
 import LogicampBergerConnector from './components/LogicampBergerConnector';
 import InstagramTunnelSetup from './components/InstagramTunnelSetup';
 import TunnelStatusWidget from './components/TunnelStatusWidget';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
