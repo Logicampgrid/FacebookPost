@@ -3,6 +3,7 @@ import { Users, AlertCircle, Search } from 'lucide-react';
 import axios from 'axios';
 import ConnectionStatus from './ConnectionStatus';
 import PermissionDiagnostic from './PermissionDiagnostic';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const FacebookLogin = ({ onLogin, loading }) => {
   const [error, setError] = useState('');
