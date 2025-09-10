@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Check, Users, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const BusinessManagerSelector = ({ user, onBusinessManagerSelect }) => {
   const [loading, setLoading] = useState(false);
