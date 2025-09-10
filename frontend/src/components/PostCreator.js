@@ -250,7 +250,8 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
           console.log('Post published immediately:', publishResponse.data);
         } catch (publishError) {
           console.error('Error publishing post:', publishError);
-          alert('Post créé mais échec de publication: ' + (publishError.response?.data?.detail || 'Erreur inconnue'));
+          const errorMessage = handleAxiosError(publishError);
+          alert('Post créé mais échec de publication: ' + errorMessage);
         }
       }
 
