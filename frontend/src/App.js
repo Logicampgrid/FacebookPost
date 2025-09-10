@@ -270,7 +270,8 @@ function App() {
       alert('Post republié avec succès !');
     } catch (error) {
       console.error('Error republishing post:', error);
-      alert('Erreur lors de la republication: ' + (error.response?.data?.detail || 'Erreur inconnue'));
+      const errorMessage = handleAxiosError(error);
+      alert('Erreur lors de la republication: ' + errorMessage);
     } finally {
       setLoading(false);
     }
