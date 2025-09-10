@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Package, Calendar, ExternalLink, CheckCircle, XCircle, RefreshCw, Store, Users, MessageSquare, Instagram } from 'lucide-react';
 import MultiPlatformStatus from './MultiPlatformStatus';
 import MediaDisplay from './MediaDisplay';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
