@@ -32,6 +32,8 @@ export const useLinkDetection = (text, debounceMs = 1000) => {
         setDetectedLinks(filteredLinks);
       } catch (error) {
         console.error('Error detecting links:', error);
+        const errorMessage = handleAxiosError(error);
+        console.error('Formatted error:', errorMessage);
         setDetectedLinks([]);
       } finally {
         setLoading(false);
