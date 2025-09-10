@@ -67,7 +67,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
       
     } catch (err) {
       console.error('Error exchanging code for token:', err);
-      const errorMsg = err.response?.data?.detail || 'Erreur lors de la connexion Facebook';
+      const errorMsg = handleAxiosError(err);
       setError(errorMsg);
     } finally {
       setExchangingCode(false);
