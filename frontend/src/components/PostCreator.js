@@ -279,7 +279,8 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
       
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Erreur lors de la création du post: ' + (error.response?.data?.detail || 'Erreur inconnue'));
+      const errorMessage = handleAxiosError(error);
+      alert('Erreur lors de la création du post: ' + errorMessage);
     } finally {
       setLoading(false);
     }
