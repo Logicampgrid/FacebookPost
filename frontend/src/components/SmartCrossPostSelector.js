@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Instagram, Users, MessageSquare, ChevronDown, ChevronUp, Sparkles, Zap } from 'lucide-react';
 import axios from 'axios';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
