@@ -739,6 +739,7 @@ function App() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 
