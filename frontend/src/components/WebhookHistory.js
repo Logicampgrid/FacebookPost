@@ -24,6 +24,9 @@ const WebhookHistory = () => {
       setShopMapping(response.data.data.shop_mapping || {});
     } catch (error) {
       console.error('Error loading webhook history:', error);
+      const errorMessage = handleAxiosError(error);
+      console.error('Formatted error:', errorMessage);
+      // Could add error state here if needed
     } finally {
       setLoading(false);
     }
