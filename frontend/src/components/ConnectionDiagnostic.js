@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Wifi, Database, Users, Globe } from 'lucide-react';
+import { handleAxiosError, safeErrorDisplay } from '../utils/errorHandler';
 
 const ConnectionDiagnostic = ({ API_BASE }) => {
   const [tests, setTests] = useState({
