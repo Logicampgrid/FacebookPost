@@ -210,18 +210,7 @@ function App() {
       console.error('Meta auth error:', error);
       console.error('Error details:', error.response?.data);
       
-      let errorMessage = 'Erreur lors de l\'authentification Meta';
-      
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Token Facebook invalide ou expiré';
-      } else if (error.response?.status >= 500) {
-        errorMessage = 'Erreur serveur. Veuillez réessayer.';
-      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion.';
-      }
-      
+      const errorMessage = handleAxiosError(error);
       alert(errorMessage);
     } finally {
       setLoading(false);
