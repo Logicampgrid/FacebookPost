@@ -239,7 +239,8 @@ const PostCreator = ({ user, selectedPlatform, selectedBusinessManager, allPlatf
             console.log('Post published after media upload:', publishResponse.data);
           } catch (publishError) {
             console.error('Error publishing post after media upload:', publishError);
-            alert('Post créé avec médias mais échec de publication: ' + (publishError.response?.data?.detail || 'Erreur inconnue'));
+            const errorMessage = handleAxiosError(publishError);
+            alert('Post créé avec médias mais échec de publication: ' + errorMessage);
           }
         }
       } else if (!scheduledTime) {
