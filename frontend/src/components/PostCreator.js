@@ -6,6 +6,7 @@ import PostPreview from './PostPreview';
 import LinkPreview from './LinkPreview';
 import SmartCrossPostSelector from './SmartCrossPostSelector';
 import { useLinkDetection } from '../hooks/useLinkDetection';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
