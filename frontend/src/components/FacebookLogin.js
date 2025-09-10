@@ -167,9 +167,7 @@ const FacebookLogin = ({ onLogin, loading }) => {
       console.log('Token validation response:', testData);
       
       if (testData.status !== 'valid') {
-        const errorMessage = testData.error?.error?.message || 
-                            testData.error?.message || 
-                            'Token expiré ou incorrect';
+        const errorMessage = handleAxiosError(testData.error) || 'Token expiré ou incorrect';
         setError(`Token Facebook invalide: ${errorMessage}`);
         return;
       }
