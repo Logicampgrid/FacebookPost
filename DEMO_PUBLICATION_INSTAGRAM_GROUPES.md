@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://fb-insta-autopub.preview.emergentagent.com
+🔗 https://invalid-object-fix.preview.emergentagent.com

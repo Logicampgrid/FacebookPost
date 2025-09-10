@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fb-insta-autopub.preview.emergentagent.com
+URL : https://invalid-object-fix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

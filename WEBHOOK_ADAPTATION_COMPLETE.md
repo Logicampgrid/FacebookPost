@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://fb-insta-autopub.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://fb-insta-autopub.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://fb-insta-autopub.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://fb-insta-autopub.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://invalid-object-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://invalid-object-fix.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
