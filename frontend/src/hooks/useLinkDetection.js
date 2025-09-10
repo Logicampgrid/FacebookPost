@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { handleAxiosError } from '../utils/errorHandler';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
