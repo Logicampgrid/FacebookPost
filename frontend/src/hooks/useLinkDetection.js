@@ -91,7 +91,8 @@ export const useLinkPreview = (url) => {
         setLinkData(response.data.metadata);
       } catch (err) {
         console.error('Error fetching link preview:', err);
-        setError(err.response?.data?.detail || 'Erreur lors de la récupération de l\'aperçu');
+        const errorMessage = handleAxiosError(err);
+        setError(errorMessage);
         setLinkData(null);
       } finally {
         setLoading(false);
