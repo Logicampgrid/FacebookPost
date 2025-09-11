@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fb-post-ngrok.preview.emergentagent.com
+URL : https://fastapi-oauth.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

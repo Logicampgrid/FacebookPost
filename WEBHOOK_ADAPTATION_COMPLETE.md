@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://fb-post-ngrok.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fastapi-oauth.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://fb-post-ngrok.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://fb-post-ngrok.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://fb-post-ngrok.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fastapi-oauth.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fastapi-oauth.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fastapi-oauth.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

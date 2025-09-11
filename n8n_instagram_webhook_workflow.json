@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://fb-post-ngrok.preview.emergentagent.com/api/webhook",
+        "url": "https://fastapi-oauth.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",
