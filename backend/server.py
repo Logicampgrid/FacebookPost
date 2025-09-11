@@ -281,9 +281,10 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
 db = client.meta_posts
 
-# === FACEBOOK/META CONFIGURATION ===
+# === FACEBOOK/META CONFIGURATION MISE À JOUR ===
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
 FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
+FACEBOOK_CLIENT_TOKEN = os.getenv("FACEBOOK_CLIENT_TOKEN")  # Token client AutoGPT
 FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com/v18.0")
 
 # === CONFIGURATION BOUTIQUES MULTI-PLATFORM ===
