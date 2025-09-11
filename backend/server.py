@@ -1480,8 +1480,11 @@ async def publish_to_social_media(request: PublishRequest):
 
 @app.post("/api/post/test")
 async def test_publish_endpoint(request: TestPublishRequest):
-    """Endpoint pour publier un message de test sur les stores configurés"""
+    """Endpoint pour publier un message de test sur les stores configurés - VERSION CORRIGÉE"""
     try:
+        # Mettre à jour les IDs Instagram automatiquement avant publication
+        await update_instagram_ids()
+        
         # Récupérer le message de test depuis .env ou utiliser celui fourni
         test_message = request.custom_message or os.getenv("TEST_MESSAGE", "Test automatique 🚀")
         
