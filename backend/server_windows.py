@@ -676,11 +676,105 @@ def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_
     log_app(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
 
 # === AUTHENTICATION ENDPOINTS ===
-@app.post("/api/auth/facebook/exchange-code", response_model=FacebookAuthResponse)
-async def exchange_facebook_code_endpoint(request: FacebookAuthRequest):
-    """Échange un code d'autorisation Facebook contre un access token et configure le store"""
+@app.post("/api/auth/facebook/exchange-code")
+async def exchange_facebook_code_endpoint(request: Request):
+    """Échange un code d'autorisation Facebook - Accepte JSON et form-data"""
     try:
-        log_app(f"Demande d'authentification pour le store: {request.store}", "INFO")
+        # Déterminer le type de contenu
+        content_type = request.headers.get("content-type", "").lower()
+        
+        # Variables pour stocker les données
+        code = None
+        state = None
+        store = "default"
+        redirect_uri = ""
+        
+        if "application/json" in content_type:
+            # Format JSON: {"code": "...", "state": "..."}
+            try:
+                json_data = await request.json()
+                code = json_data.get("code")
+                state = json_data.get("state")
+                store = json_data.get("store", "default")
+                redirect_uri = json_data.get("redirect_uri", "")
+                log_app("Données reçues en JSON", "INFO")
+            except Exception as e:
+                log_app(f"Erreur parsing JSON: {e}", "ERROR")
+                raise HTTPException(status_code=400, detail="Format JSON invalide")
+                
+        elif "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            # Format form-data: code=...&state=...
+            try:
+                form_data = await request.form()
+                code = form_data.get("code")
+                state = form_data.get("state")
+                store = form_data.get("store", "default")
+                redirect_uri = form_data.get("redirect_uri", "")
+                log_app("Données reçues en form-data", "INFO")
+            except Exception as e:
+                log_app(f"Erreur parsing form-data: {e}", "ERROR")
+                raise HTTPException(status_code=400, detail="Format form-data invalide")
+        else:
+            # Fallback: essayer les deux formats
+            try:
+                # Essayer JSON d'abord
+                json_data = await request.json()
+                code = json_data.get("code")
+                state = json_data.get("state")
+                store = json_data.get("store", "default")
+                redirect_uri = json_data.get("redirect_uri", "")
+                log_app("Données reçues en JSON (fallback)", "INFO")
+            except:
+                try:
+                    # Essayer form-data ensuite
+                    form_data = await request.form()
+                    code = form_data.get("code")
+                    state = form_data.get("state")
+                    store = form_data.get("store", "default")
+                    redirect_uri = form_data.get("redirect_uri", "")
+                    log_app("Données reçues en form-data (fallback)", "INFO")
+                except Exception as e:
+                    log_app(f"Impossible de parser les données: {e}", "ERROR")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Format de données non supporté. Utilisez JSON ou form-data"
+                    )
+        
+        # Validation des paramètres requis
+        if not code:
+            raise HTTPException(status_code=400, detail="Paramètre 'code' requis")
+        if not state:
+            raise HTTPException(status_code=400, detail="Paramètre 'state' requis")
+        
+        log_app(f"Code exchange reçu - Store: {store}, Code: {code[:10]}..., State: {state}", "INFO")
+        
+        # Retourner la réponse avec les valeurs reçues (comme demandé pour validation)
+        return {
+            "success": True,
+            "message": "Code et state reçus avec succès",
+            "data": {
+                "code": code,
+                "state": state,
+                "store": store,
+                "redirect_uri": redirect_uri
+            },
+            "formats_supported": ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
+    except Exception as e:
+        error_msg = f"Erreur exchange-code: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.post("/api/auth/facebook/exchange-code-legacy", response_model=FacebookAuthResponse)
+async def exchange_facebook_code_legacy(request: FacebookAuthRequest):
+    """Ancien endpoint pour compatibilité (utilise store et redirect_uri)"""
+    try:
+        log_app(f"Demande d'authentification legacy pour le store: {request.store}", "INFO")
         
         # Vérifier que le store existe
         if request.store not in STORES:
@@ -712,7 +806,7 @@ async def exchange_facebook_code_endpoint(request: FacebookAuthRequest):
         # Sauvegarder les tokens pour ce store
         save_store_tokens(request.store, page_id, page_access_token, ig_user_id)
         
-        log_app(f"Authentification réussie pour {request.store}", "SUCCESS")
+        log_app(f"Authentification legacy réussie pour {request.store}", "SUCCESS")
         
         return FacebookAuthResponse(
             success=True,
@@ -726,7 +820,7 @@ async def exchange_facebook_code_endpoint(request: FacebookAuthRequest):
         # Re-lancer les HTTPException sans les wrapper
         raise
     except Exception as e:
-        error_msg = f"Erreur authentification Facebook: {str(e)}"
+        error_msg = f"Erreur authentification Facebook legacy: {str(e)}"
         log_app(error_msg, "ERROR")
         return FacebookAuthResponse(
             success=False,
