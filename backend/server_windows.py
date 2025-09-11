@@ -1240,29 +1240,165 @@ async def publish_post_endpoint(request: PublishRequest):
         if request.store not in STORES:
             raise HTTPException(status_code=400, detail=f"Store '{request.store}' inconnu")
         
-        # Simulation en mode test
-        if PUBLICATION_TEST_MODE:
-            log_app(f"MODE TEST - Publication simulée pour {request.store}", "INFO")
-            return {
-                "success": True,
-                "store": request.store,
-                "platforms": request.platforms,
-                "test_mode": True,
-                "message": "Publication simulée en mode test",
-                "facebook_result": {"id": f"test_fb_{uuid.uuid4().hex[:8]}", "message": request.message} if "facebook" in request.platforms else None,
-                "instagram_result": {"id": f"test_ig_{uuid.uuid4().hex[:8]}", "caption": request.message} if "instagram" in request.platforms else None
-            }
+        store_config = get_store_config(request.store)
         
-        # TODO: Implémenter la publication réelle
-        log_app("Publication réelle non implémentée dans cette version", "WARNING")
+        # Vérifier la configuration du store
+        missing_config = []
+        if "facebook" in request.platforms:
+            if not store_config.get("fb_page_id"):
+                missing_config.append("fb_page_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+        
+        if "instagram" in request.platforms:
+            if not store_config.get("ig_user_id"):
+                missing_config.append("ig_user_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+        
+        if missing_config:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Configuration manquante pour {request.store}: {missing_config}"
+            )
+        
+        # Effectuer la publication
+        result = await publish_post(
+            store=request.store,
+            message=request.message,
+            product_url=request.product_url,
+            image_url=request.image_url,
+            platforms=request.platforms
+        )
+        
+        return result
+        
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
+    except Exception as e:
+        error_msg = f"Erreur interne publication: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.post("/api/post/test")
+async def test_publish_endpoint(request: TestPublishRequest):
+    """Endpoint pour publier un message de test sur les stores configurés"""
+    try:
+        # Récupérer le message de test depuis .env ou utiliser celui fourni
+        test_message = request.custom_message or os.getenv("TEST_MESSAGE", "Test automatique 🚀")
+        
+        # Déterminer quels stores utiliser
+        stores_to_use = request.stores if request.stores else list(STORES.keys())
+        
+        log_publish(f"Publication de test pour stores: {stores_to_use} sur plateformes: {request.platforms}", "INFO")
+        log_publish(f"Message de test: {test_message}", "INFO")
+        
+        results = []
+        
+        for store in stores_to_use:
+            if store not in STORES:
+                log_publish(f"Store inconnu ignoré: {store}", "WARNING")
+                continue
+                
+            store_config = get_store_config(store)
+            
+            # Vérifier la configuration du store
+            missing_config = []
+            if not store_config.get("fb_page_id"):
+                missing_config.append("fb_page_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+            
+            # Pour Instagram, vérifier si ig_user_id est configuré
+            if "instagram" in request.platforms and not store_config.get("ig_user_id"):
+                log_publish(f"Store {store}: Instagram non configuré (ig_user_id manquant), publication uniquement sur Facebook", "WARNING")
+                # Filtrer Instagram pour ce store
+                platforms_for_store = [p for p in request.platforms if p != "instagram"]
+            else:
+                platforms_for_store = request.platforms.copy()
+            
+            if missing_config:
+                error_msg = f"Configuration manquante pour {store}: {missing_config}"
+                log_publish(error_msg, "ERROR")
+                results.append({
+                    "store": store,
+                    "success": False,
+                    "error": error_msg,
+                    "platforms": platforms_for_store
+                })
+                continue
+            
+            try:
+                # Publier le message de test
+                if platforms_for_store:  # S'il reste des plateformes à publier
+                    result = await publish_post(
+                        store=store,
+                        message=test_message,
+                        product_url="https://example.com/test",  # URL de test
+                        image_url=None,  # Pas d'image pour le test
+                        platforms=platforms_for_store
+                    )
+                    
+                    results.append({
+                        "store": store,
+                        "success": result["success"],
+                        "platforms": platforms_for_store,
+                        "facebook_result": result.get("facebook_result"),
+                        "instagram_result": result.get("instagram_result"),
+                        "errors": result.get("errors", [])
+                    })
+                    
+                    if result["success"]:
+                        log_publish(f"✅ Publication de test réussie pour {store}", "SUCCESS")
+                    else:
+                        log_publish(f"❌ Échec publication de test pour {store}: {result.get('errors', [])}", "ERROR")
+                else:
+                    # Aucune plateforme disponible pour ce store
+                    results.append({
+                        "store": store,
+                        "success": False,
+                        "error": "Aucune plateforme configurée disponible",
+                        "platforms": []
+                    })
+                    
+            except Exception as e:
+                error_msg = f"Erreur publication test {store}: {str(e)}"
+                log_publish(error_msg, "ERROR")
+                results.append({
+                    "store": store,
+                    "success": False,
+                    "error": error_msg,
+                    "platforms": platforms_for_store
+                })
+        
+        # Calculer le succès global
+        total_stores = len(results)
+        successful_stores = sum(1 for r in results if r["success"])
+        
+        overall_success = successful_stores > 0
+        
+        log_publish(f"Publication de test terminée: {successful_stores}/{total_stores} stores réussis", 
+                   "SUCCESS" if overall_success else "ERROR")
+        
         return {
-            "success": False,
-            "error": "Publication réelle non implémentée - utilisez le mode test"
+            "success": overall_success,
+            "message": f"Publication de test terminée: {successful_stores}/{total_stores} stores réussis",
+            "test_message": test_message,
+            "stores_requested": stores_to_use,
+            "platforms_requested": request.platforms,
+            "results": results,
+            "summary": {
+                "total_stores": total_stores,
+                "successful_stores": successful_stores,
+                "failed_stores": total_stores - successful_stores
+            },
+            "timestamp": datetime.utcnow().isoformat()
         }
         
     except Exception as e:
-        error_msg = f"Erreur publication: {str(e)}"
-        log_app(error_msg, "ERROR")
+        error_msg = f"Erreur interne test publication: {str(e)}"
+        log_publish(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
 if __name__ == "__main__":
