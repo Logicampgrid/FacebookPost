@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://facebook-auth-patch.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://facebook-auth-patch.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://facebook-auth-patch.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://facebook-auth-patch.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://crosspost-oauth.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

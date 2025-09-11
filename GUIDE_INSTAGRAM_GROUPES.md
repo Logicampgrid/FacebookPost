@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://facebook-auth-patch.preview.emergentagent.com
+URL : https://crosspost-oauth.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
