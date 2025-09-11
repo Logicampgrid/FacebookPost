@@ -1,6 +1,7 @@
 @echo off
 echo =========================================
 echo    DEMARRAGE BACKEND - FacebookPost
+echo    Version Windows Optimisée
 echo =========================================
 echo.
 
@@ -19,20 +20,31 @@ if errorlevel 1 (
 echo ✅ MongoDB détecté
 echo.
 
-REM Définir les variables d'environnement locales
+REM Définir les variables d'environnement pour usage local
 set MONGO_URL=mongodb://localhost:27017
 set ENABLE_NGROK=false
 set PUBLIC_BASE_URL=http://localhost:8001
 set REACT_APP_BACKEND_URL=http://localhost:8001
+set DRY_RUN=false
+set PUBLICATION_TEST_MODE=true
 
-REM Démarrer le backend
-echo 🚀 Démarrage du serveur backend sur http://localhost:8001...
+REM Créer répertoires nécessaires
+if not exist "C:\FacebookPost\logs" (
+    mkdir "C:\FacebookPost\logs"
+)
+
+echo 🚀 Démarrage du serveur backend Windows sur http://localhost:8001...
 echo.
 echo ⚠️  IMPORTANT: Laissez cette fenêtre ouverte pendant l'utilisation de l'application
+echo 📁 Répertoires Windows : C:\FacebookPost\
+echo 💾 Logs disponibles dans : C:\FacebookPost\logs\
 echo.
 
+REM Changer vers le répertoire backend
 cd /d "%~dp0..\backend"
-python server.py
+
+REM Démarrer le serveur Windows optimisé
+python server_windows.py
 
 REM Si on arrive ici, le backend s'est arrêté
 echo.
