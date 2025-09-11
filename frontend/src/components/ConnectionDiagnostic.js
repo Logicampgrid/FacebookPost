@@ -80,9 +80,6 @@ const ConnectionDiagnostic = ({ API_BASE }) => {
       throw error;
     }
   };
-        database_posts: data.database?.posts_count || 0
-      }
-    };
   };
 
   const testDatabaseConnection = async () => {
