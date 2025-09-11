@@ -538,21 +538,253 @@ async def serve_frontend(path: str):
     else:
         raise HTTPException(status_code=404, detail="Frontend index.html non trouvé")
 
-# === WEBHOOK HANDLER ===
+# === PYDANTIC MODELS FOR AUTHENTICATION ===
+class FacebookAuthRequest(BaseModel):
+    code: str
+    store: str
+    redirect_uri: str
+
+class FacebookAuthResponse(BaseModel):
+    success: bool
+    store: str
+    access_token: Optional[str] = None
+    fb_page_id: Optional[str] = None
+    ig_user_id: Optional[str] = None
+    error: Optional[str] = None
+
+# === AUTHENTICATION FUNCTIONS ===
+async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
+    """Échange un code d'autorisation Facebook contre un access token"""
+    try:
+        log_app(f"Échange du code d'autorisation Facebook", "INFO")
+        
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
+        
+        # Étape 1: Échanger le code contre un access token
+        token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
+        token_params = {
+            'client_id': FACEBOOK_APP_ID,
+            'client_secret': FACEBOOK_APP_SECRET,
+            'redirect_uri': redirect_uri,
+            'code': code
+        }
+        
+        log_app("Requête d'échange de token...", "INFO")
+        response = requests.get(token_url, params=token_params, timeout=30)
+        response.raise_for_status()
+        
+        token_data = response.json()
+        
+        if "access_token" not in token_data:
+            raise Exception(f"Token non reçu: {token_data}")
+        
+        access_token = token_data["access_token"]
+        log_app("Access token reçu avec succès", "SUCCESS")
+        
+        # Étape 2: Obtenir les informations utilisateur et ses pages
+        user_url = f"{FACEBOOK_GRAPH_URL}/me"
+        user_params = {
+            'access_token': access_token,
+            'fields': 'id,name,accounts'
+        }
+        
+        user_response = requests.get(user_url, params=user_params, timeout=30)
+        user_response.raise_for_status()
+        user_data = user_response.json()
+        
+        log_app(f"Utilisateur: {user_data.get('name', 'Inconnu')}", "INFO")
+        
+        # Étape 3: Obtenir les pages gérées par l'utilisateur
+        pages_url = f"{FACEBOOK_GRAPH_URL}/me/accounts"
+        pages_params = {
+            'access_token': access_token,
+            'fields': 'id,name,access_token,instagram_business_account'
+        }
+        
+        pages_response = requests.get(pages_url, params=pages_params, timeout=30)
+        pages_response.raise_for_status()
+        pages_data = pages_response.json()
+        
+        pages = pages_data.get('data', [])
+        log_app(f"Trouvé {len(pages)} page(s) gérée(s)", "INFO")
+        
+        result = {
+            "user_access_token": access_token,
+            "user_id": user_data.get('id'),
+            "user_name": user_data.get('name'),
+            "pages": []
+        }
+        
+        # Traiter chaque page
+        for page in pages:
+            page_info = {
+                "page_id": page.get('id'),
+                "page_name": page.get('name'),
+                "page_access_token": page.get('access_token'),
+                "instagram_business_account": None
+            }
+            
+            # Vérifier si la page a un compte Instagram Business connecté
+            if 'instagram_business_account' in page:
+                ig_account = page['instagram_business_account']
+                if ig_account:
+                    page_info["instagram_business_account"] = ig_account.get('id')
+                    log_app(f"Page '{page.get('name')}' a un compte Instagram: {ig_account.get('id')}", "INFO")
+                else:
+                    log_app(f"Page '{page.get('name')}' n'a pas de compte Instagram", "WARNING")
+            
+            result["pages"].append(page_info)
+        
+        log_app("Authentification Facebook réussie", "SUCCESS")
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP lors de l'authentification: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_app(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur authentification: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_id: str = None):
+    """Sauvegarde les tokens d'un store"""
+    global STORES
+    
+    log_app(f"Sauvegarde tokens pour {store}", "INFO")
+    
+    # Mettre à jour la configuration du store
+    STORES[store].update({
+        "fb_page_id": page_id,
+        "access_token": page_access_token,
+        "ig_user_id": ig_user_id
+    })
+    
+    log_app(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
+
+# === AUTHENTICATION ENDPOINTS ===
+@app.post("/api/auth/facebook/exchange-code", response_model=FacebookAuthResponse)
+async def exchange_facebook_code_endpoint(request: FacebookAuthRequest):
+    """Échange un code d'autorisation Facebook contre un access token et configure le store"""
+    try:
+        log_app(f"Demande d'authentification pour le store: {request.store}", "INFO")
+        
+        # Vérifier que le store existe
+        if request.store not in STORES:
+            available_stores = list(STORES.keys())
+            raise HTTPException(
+                status_code=400,
+                detail=f"Store '{request.store}' inconnu. Stores disponibles: {available_stores}"
+            )
+        
+        # Échanger le code contre les tokens
+        auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
+        
+        # Chercher une page appropriée pour ce store
+        pages = auth_result.get("pages", [])
+        if not pages:
+            return FacebookAuthResponse(
+                success=False,
+                store=request.store,
+                error="Aucune page Facebook trouvée pour cet utilisateur"
+            )
+        
+        # Pour l'instant, prendre la première page disponible
+        selected_page = pages[0]
+        
+        page_id = selected_page["page_id"]
+        page_access_token = selected_page["page_access_token"]
+        ig_user_id = selected_page.get("instagram_business_account")
+        
+        # Sauvegarder les tokens pour ce store
+        save_store_tokens(request.store, page_id, page_access_token, ig_user_id)
+        
+        log_app(f"Authentification réussie pour {request.store}", "SUCCESS")
+        
+        return FacebookAuthResponse(
+            success=True,
+            store=request.store,
+            access_token=page_access_token,
+            fb_page_id=page_id,
+            ig_user_id=ig_user_id
+        )
+        
+    except HTTPException:
+        # Re-lancer les HTTPException sans les wrapper
+        raise
+    except Exception as e:
+        error_msg = f"Erreur authentification Facebook: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return FacebookAuthResponse(
+            success=False,
+            store=request.store,
+            error=error_msg
+        )
+
+# === WEBHOOK HANDLERS ===
+@app.get("/api/webhook")
+async def webhook_verify(request: Request):
+    """Handle Facebook webhook verification (GET request)"""
+    try:
+        # Récupération des paramètres de requête Facebook
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token") 
+        challenge = request.query_params.get("hub.challenge")
+        
+        # Token de vérification depuis .env
+        VERIFY_TOKEN = os.getenv("FACEBOOK_VERIFY_TOKEN", "mon_token_secret_webhook")
+        
+        log_app(f"Webhook verification - mode: {mode}, token: {token}", "INFO")
+        
+        if not mode or not token or not challenge:
+            log_app("Paramètres manquants dans la requête webhook", "ERROR")
+            raise HTTPException(
+                status_code=400, 
+                detail="Paramètres hub.mode, hub.verify_token et hub.challenge requis"
+            )
+        
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            log_app("✅ Webhook verification successful!", "SUCCESS")
+            return PlainTextResponse(content=str(challenge), status_code=200)
+        else:
+            log_app(f"Vérification échouée - Mode: {mode}, Token attendu: {VERIFY_TOKEN}", "ERROR")
+            raise HTTPException(status_code=403, detail="Token de vérification invalide")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_detail = f"Erreur interne webhook: {str(e)}"
+        log_app(error_detail, "ERROR")
+        raise HTTPException(status_code=500, detail=error_detail)
+
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
-    """Gestionnaire webhook Windows"""
+    """Handle Facebook webhook events (POST request)"""
     try:
         body = await request.body()
-        content_type = request.headers.get("content-type", "")
+        content_type = request.headers.get("content-type", "").lower()
         
         log_app(f"Webhook reçu: {len(body)} bytes, type: {content_type}", "INFO")
         
         # Traitement selon le type de contenu
-        if "application/json" in content_type:
+        if "application/json" in content_type or "text/" in content_type:
             try:
-                json_data = json.loads(body.decode('utf-8'))
-                log_app(f"Données JSON webhook: {json.dumps(json_data, indent=2)}", "INFO")
+                webhook_data = json.loads(body.decode('utf-8'))
+                log_app(f"Webhook JSON reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
+                
+                # Process Facebook webhook data
+                if webhook_data.get("object") == "page":
+                    entries = webhook_data.get("entry", [])
+                    for entry in entries:
+                        log_app(f"Processing entry: {entry.get('id', 'unknown')}", "INFO")
+                        
             except json.JSONDecodeError:
                 log_app("Impossible de décoder le JSON webhook", "WARNING")
         
