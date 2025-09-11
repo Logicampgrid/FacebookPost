@@ -111,9 +111,19 @@ export const handleAxiosError = (axiosError) => {
     return 'Erreur inconnue';
   }
   
-  // Network error
-  if (axiosError.code === 'NETWORK_ERROR' || !axiosError.response) {
-    return 'Impossible de se connecter au serveur. Vérifiez votre connexion.';
+  // Network error or connection refused
+  if (axiosError.code === 'NETWORK_ERROR' || axiosError.code === 'ERR_NETWORK' || !axiosError.response) {
+    return 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré et que l\'URL ngrok est correcte.';
+  }
+  
+  // Handle JSON parsing errors specifically
+  if (axiosError.message && axiosError.message.includes('JSON.parse')) {
+    return 'Le serveur a renvoyé une réponse invalide (pas du JSON). Vérifiez que l\'endpoint /api/health fonctionne correctement.';
+  }
+  
+  // Handle fetch errors
+  if (axiosError.message && axiosError.message.includes('NetworkError')) {
+    return 'Erreur réseau. Vérifiez l\'URL ngrok et que le serveur est accessible.';
   }
   
   // HTTP error with response
