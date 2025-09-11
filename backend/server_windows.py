@@ -546,9 +546,21 @@ class FacebookAuthRequest(BaseModel):
 
 class FacebookExchangeCodeRequest(BaseModel):
     code: str
-    state: str
-    store: Optional[str] = "default"
-    redirect_uri: Optional[str] = ""
+    state: Optional[str] = None
+    store: Optional[str] = None
+    redirect_uri: Optional[str] = "http://localhost:3000/auth/callback"
+    
+    @validator('store', pre=True, always=True)
+    def set_store_from_state(cls, v, values):
+        """Map state to store if store is not provided"""
+        if v is None and 'state' in values and values['state']:
+            return values['state']
+        return v or "default"
+    
+    @validator('redirect_uri', pre=True, always=True) 
+    def set_default_redirect_uri(cls, v):
+        """Set default redirect_uri if not provided"""
+        return v or "http://localhost:3000/auth/callback"
 
 class FacebookAuthResponse(BaseModel):
     success: bool
