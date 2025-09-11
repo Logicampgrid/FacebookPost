@@ -180,7 +180,7 @@ app.add_middleware(
 )
 
 # Request logging middleware
-@app.middleware("http")
+#@app.middleware("http")
 async def log_requests(request: Request, call_next):
     # Log webhook requests specifically
     if request.url.path == "/api/webhook":

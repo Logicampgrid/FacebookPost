@@ -188,7 +188,7 @@ else:
     print("⚠️ Frontend build not available, static files not mounted")
 
 # Request logging middleware
-@app.middleware("http")
+#@app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log requests for debugging"""
     if request.url.path == "/api/webhook":
