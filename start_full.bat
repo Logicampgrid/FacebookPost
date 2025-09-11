@@ -187,15 +187,39 @@ call :log "🌐 Attente URL ngrok (60 secondes max)..."
 set /a "ngrok_timeout=60"
 set "ngrok_url="
 
-:wait_ngrok
-timeout /t 1 /nobreak >nul
+::wait_ngrok
+timeout /t 2 /nobreak >nul
 
-:: Vérifier si le fichier ngrok_url.txt existe
+:: Vérifier si le fichier ngrok_url.txt existe et n'est pas vide
 if exist "%BACKEND_DIR%\ngrok_url.txt" (
     set /p ngrok_url=<"%BACKEND_DIR%\ngrok_url.txt"
     if not "!ngrok_url!"=="" (
-        call :log "✅ URL Ngrok obtenue: !ngrok_url!"
-        goto ngrok_ready
+        :: Vérifier que l'URL est valide (commence par https)
+        echo !ngrok_url! | findstr /B "https://" >nul
+        if !errorlevel! equ 0 (
+            call :log "✅ URL Ngrok valide obtenue: !ngrok_url!"
+            goto ngrok_ready
+        )
+    )
+)
+
+:: Essayer d'obtenir l'URL via l'API ngrok directement
+curl -s http://127.0.0.1:4040/api/tunnels 2>nul | findstr "public_url" >nul
+if !errorlevel! equ 0 (
+    for /f "tokens=*" %%i in ('curl -s http://127.0.0.1:4040/api/tunnels 2^>nul ^| findstr "https://.*\.ngrok.*\.app"') do (
+        set "temp_line=%%i"
+        for /f "tokens=2 delims=:" %%j in ("!temp_line!") do (
+            set "temp_url=%%j"
+            set "temp_url=!temp_url: =!"
+            set "temp_url=!temp_url:"=!"
+            set "temp_url=!temp_url:,=!"
+            if not "!temp_url!"=="" (
+                set "ngrok_url=https:!temp_url!"
+                call :log "✅ URL Ngrok récupérée via API: !ngrok_url!"
+                echo !ngrok_url! > "%BACKEND_DIR%\ngrok_url.txt"
+                goto ngrok_ready
+            )
+        )
     )
 )
 
