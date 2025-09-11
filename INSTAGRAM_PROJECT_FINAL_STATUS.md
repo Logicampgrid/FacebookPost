@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://crosspost-oauth.preview.emergentagent.com/api/webhook
+https://fbpost-backfix.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

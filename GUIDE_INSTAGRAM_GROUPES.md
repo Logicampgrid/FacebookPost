@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://crosspost-oauth.preview.emergentagent.com
+URL : https://fbpost-backfix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

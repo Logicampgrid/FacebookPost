@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fbpost-backfix.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://crosspost-oauth.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://crosspost-oauth.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fbpost-backfix.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fbpost-backfix.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fbpost-backfix.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
