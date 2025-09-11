@@ -84,7 +84,7 @@ frontend_build_available = ensure_frontend_build()
 
 # === NGROK FUNCTIONS ===
 def start_ngrok_tunnel():
-    """Start ngrok tunnel and save URL to file"""
+    """Start ngrok tunnel and save URL to file - CORRIGÉ pour synchronisation"""
     global NGROK_TUNNEL, NGROK_URL
     
     if not ENABLE_NGROK:
@@ -112,59 +112,70 @@ def start_ngrok_tunnel():
         # Give ngrok time to start
         time.sleep(3)
         
-        # Get ngrok URL via API
-        try:
-            response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
-            if response.status_code == 200:
-                tunnels = response.json()
-                if tunnels.get('tunnels'):
-                    public_url = tunnels['tunnels'][0]['public_url']
-                    NGROK_URL = public_url
-                    print(f"🌐 Ngrok tunnel active: {NGROK_URL}")
-                    
-                    # Save URL to file for frontend access
-                    ngrok_url_file = "/app/backend/ngrok_url.txt"
-                    with open(ngrok_url_file, "w") as f:
-                        f.write(NGROK_URL)
-                    print(f"💾 Ngrok URL saved to: {ngrok_url_file}")
-                    
-                    # Also save to frontend .env file
-                    try:
-                        frontend_env_path = "/app/frontend/.env"
-                        if os.path.exists(frontend_env_path):
-                            # Read current .env
-                            with open(frontend_env_path, "r") as f:
-                                lines = f.readlines()
-                            
-                            # Update REACT_APP_BACKEND_URL
-                            updated_lines = []
-                            backend_url_updated = False
-                            for line in lines:
-                                if line.startswith("REACT_APP_BACKEND_URL="):
-                                    updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
-                                    backend_url_updated = True
-                                else:
-                                    updated_lines.append(line)
-                            
-                            # If REACT_APP_BACKEND_URL doesn't exist, add it
-                            if not backend_url_updated:
-                                updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
-                            
-                            # Write back to file
-                            with open(frontend_env_path, "w") as f:
-                                f.writelines(updated_lines)
-                            print(f"✅ Frontend .env updated with ngrok URL: {NGROK_URL}")
+        # Get ngrok URL via API - TENTATIVES MULTIPLES
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            try:
+                response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
+                if response.status_code == 200:
+                    tunnels = response.json()
+                    if tunnels.get('tunnels') and len(tunnels['tunnels']) > 0:
+                        public_url = tunnels['tunnels'][0]['public_url']
+                        NGROK_URL = public_url
+                        print(f"🌐 Ngrok tunnel active: {NGROK_URL}")
                         
-                    except Exception as e:
-                        print(f"⚠️ Warning: Could not update frontend .env: {e}")
-                    
-                    return NGROK_URL
+                        # Save URL to file for backend access
+                        ngrok_url_file = "/app/backend/ngrok_url.txt"
+                        with open(ngrok_url_file, "w") as f:
+                            f.write(NGROK_URL)
+                        print(f"💾 Ngrok URL saved to: {ngrok_url_file}")
+                        
+                        # CORRECTION CRITIQUE : Mettre à jour le frontend .env automatiquement
+                        try:
+                            frontend_env_path = "/app/frontend/.env"
+                            if os.path.exists(frontend_env_path):
+                                # Read current .env
+                                with open(frontend_env_path, "r") as f:
+                                    lines = f.readlines()
+                                
+                                # Update REACT_APP_BACKEND_URL
+                                updated_lines = []
+                                backend_url_updated = False
+                                for line in lines:
+                                    if line.startswith("REACT_APP_BACKEND_URL="):
+                                        updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                        backend_url_updated = True
+                                        print(f"✅ Ligne REACT_APP_BACKEND_URL mise à jour: {NGROK_URL}")
+                                    else:
+                                        updated_lines.append(line)
+                                
+                                # If REACT_APP_BACKEND_URL doesn't exist, add it
+                                if not backend_url_updated:
+                                    updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                    print(f"✅ Nouvelle ligne REACT_APP_BACKEND_URL ajoutée: {NGROK_URL}")
+                                
+                                # Write back to file
+                                with open(frontend_env_path, "w") as f:
+                                    f.writelines(updated_lines)
+                                print(f"🎯 Frontend .env synchronisé avec l'URL ngrok: {NGROK_URL}")
+                            else:
+                                print(f"⚠️ Frontend .env non trouvé: {frontend_env_path}")
+                            
+                        except Exception as e:
+                            print(f"⚠️ Warning: Could not update frontend .env: {e}")
+                        
+                        return NGROK_URL
+                    else:
+                        print(f"⏳ Tentative {attempt + 1}/{max_attempts}: Aucun tunnel trouvé, attente...")
+                        time.sleep(2)
                 else:
-                    print("❌ No tunnels found in ngrok API response")
-            else:
-                print(f"❌ Ngrok API returned status: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Could not connect to ngrok API: {e}")
+                    print(f"⏳ Tentative {attempt + 1}/{max_attempts}: API ngrok status {response.status_code}, attente...")
+                    time.sleep(2)
+            except requests.exceptions.RequestException as e:
+                print(f"⏳ Tentative {attempt + 1}/{max_attempts}: Connexion API ngrok échouée: {e}")
+                time.sleep(2)
+        
+        print("❌ Impossible d'obtenir l'URL ngrok après plusieurs tentatives")
         
         # If API method failed, try pyngrok as fallback
         if PYNGROK_AVAILABLE:
@@ -177,6 +188,32 @@ def start_ngrok_tunnel():
                 NGROK_TUNNEL = ngrok.connect(8001)
                 NGROK_URL = NGROK_TUNNEL.public_url
                 print(f"🌐 Ngrok tunnel active via pyngrok: {NGROK_URL}")
+                
+                # Update frontend .env with pyngrok URL too
+                try:
+                    frontend_env_path = "/app/frontend/.env"
+                    if os.path.exists(frontend_env_path):
+                        with open(frontend_env_path, "r") as f:
+                            lines = f.readlines()
+                        
+                        updated_lines = []
+                        backend_url_updated = False
+                        for line in lines:
+                            if line.startswith("REACT_APP_BACKEND_URL="):
+                                updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                backend_url_updated = True
+                            else:
+                                updated_lines.append(line)
+                        
+                        if not backend_url_updated:
+                            updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                        
+                        with open(frontend_env_path, "w") as f:
+                            f.writelines(updated_lines)
+                        print(f"🎯 Frontend .env synchronisé via pyngrok: {NGROK_URL}")
+                except Exception as e:
+                    print(f"⚠️ Warning: Could not update frontend .env via pyngrok: {e}")
+                
                 return NGROK_URL
             except Exception as pyngrok_error:
                 print(f"❌ Pyngrok also failed: {pyngrok_error}")
