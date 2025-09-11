@@ -433,6 +433,19 @@ class FacebookAuthResponse(BaseModel):
     ig_user_id: Optional[str] = None
     error: Optional[str] = None
 
+class TestPublishRequest(BaseModel):
+    stores: Optional[List[str]] = None  # Si None, publie sur tous les stores
+    platforms: List[str] = ["facebook"]  # facebook, instagram
+    custom_message: Optional[str] = None  # Si None, utilise TEST_MESSAGE de .env
+    
+    @validator('platforms')
+    def validate_platforms(cls, v):
+        valid_platforms = ["facebook", "instagram"]
+        for platform in v:
+            if platform not in valid_platforms:
+                raise ValueError(f'Platform must be one of: {valid_platforms}')
+        return v
+
 # === UTILITY FUNCTIONS ===
 def log_media(message: str, level: str = "INFO"):
     """Structured logging for media operations"""
