@@ -687,7 +687,7 @@ def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_
     
     log_app(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
 
-# === AUTHENTICATION FUNCTIONS ===
+# === AUTHENTICATION ENDPOINTS ===
 @app.post("/api/auth/facebook/exchange-code")
 async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
