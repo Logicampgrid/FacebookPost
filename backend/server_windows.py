@@ -480,11 +480,19 @@ async def health_check():
 @app.get("/api/ngrok-url")
 async def get_ngrok_url():
     """Endpoint pour récupérer l'URL ngrok actuelle"""
-    return {
+    from fastapi.responses import JSONResponse
+    
+    response_data = {
         "ngrok_enabled": ENABLE_NGROK,
         "ngrok_url": NGROK_URL,
         "ngrok_active": NGROK_URL is not None
     }
+    
+    return JSONResponse(content=response_data, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+    })
 
 # === FRONTEND ROUTES ===
 @app.get("/")
