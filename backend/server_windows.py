@@ -764,16 +764,14 @@ async def parse_code_state_request(request: Request) -> dict:
 
 # === AUTHENTICATION ENDPOINTS ===
 @app.post("/api/auth/facebook/exchange-code")
-async def exchange_facebook_code_endpoint(request: Request):
-    """Échange un code d'autorisation Facebook - Accepte JSON et form-data et retourne access_token"""
+async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
+    """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
     try:
-        # Parser les données selon le format
-        data = await parse_code_state_request(request)
-        
-        log_app(f"Code exchange reçu - Store: {data['store']}, Code: {data['code'][:10]}..., State: {data['state']}", "INFO")
-        
-        # Si pas de redirect_uri fourni, utiliser une valeur par défaut
-        redirect_uri = data.get('redirect_uri') or "http://localhost:3000/auth/callback"
+        # Log des données reçues pour debug
+        log_app(f"Code exchange reçu - Store: {request.store}, Code: {request.code[:10]}...", "INFO")
+        if request.state:
+            log_app(f"State reçu: {request.state} (mappé vers store: {request.store})", "INFO")
+        log_app(f"Redirect URI: {request.redirect_uri}", "INFO")
         
         # VALIDATION: Configuration Facebook requise
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
@@ -782,13 +780,18 @@ async def exchange_facebook_code_endpoint(request: Request):
                 "success": False,
                 "error": "Configuration Facebook manquante (FACEBOOK_APP_ID ou FACEBOOK_APP_SECRET)",
                 "test_mode": True,
-                "data": data,
+                "data": {
+                    "code": request.code[:10] + "...",
+                    "state": request.state,
+                    "store": request.store,
+                    "redirect_uri": request.redirect_uri
+                },
                 "timestamp": datetime.utcnow().isoformat()
             }
         
         try:
             # VRAIE AUTHENTIFICATION FACEBOOK
-            auth_result = await exchange_facebook_code(data['code'], redirect_uri)
+            auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
             
             # Chercher une page appropriée pour ce store
             pages = auth_result.get("pages", [])
@@ -800,7 +803,12 @@ async def exchange_facebook_code_endpoint(request: Request):
                         "user_id": auth_result.get("user_id"),
                         "user_name": auth_result.get("user_name")
                     },
-                    "data": data,
+                    "data": {
+                        "code": request.code[:10] + "...",
+                        "state": request.state,
+                        "store": request.store,
+                        "redirect_uri": request.redirect_uri
+                    },
                     "timestamp": datetime.utcnow().isoformat()
                 }
             
@@ -811,9 +819,9 @@ async def exchange_facebook_code_endpoint(request: Request):
             ig_user_id = selected_page.get("instagram_business_account")
             
             # Sauvegarder les tokens pour ce store si ce n'est pas "default"
-            if data['store'] != "default" and data['store'] in STORES:
-                save_store_tokens(data['store'], page_id, page_access_token, ig_user_id)
-                log_app(f"Tokens sauvegardés pour le store: {data['store']}", "SUCCESS")
+            if request.store != "default" and request.store in STORES:
+                save_store_tokens(request.store, page_id, page_access_token, ig_user_id)
+                log_app(f"Tokens sauvegardés pour le store: {request.store}", "SUCCESS")
             
             # SUCCÈS - Retourner l'access token
             return {
@@ -822,13 +830,18 @@ async def exchange_facebook_code_endpoint(request: Request):
                 "access_token": page_access_token,
                 "fb_page_id": page_id,
                 "ig_user_id": ig_user_id,
-                "store": data['store'],
+                "store": request.store,
                 "user_info": {
                     "user_id": auth_result.get("user_id"),
                     "user_name": auth_result.get("user_name"),
                     "total_pages": len(pages)
                 },
-                "data": data,
+                "data": {
+                    "code": request.code[:10] + "...",
+                    "state": request.state,
+                    "store": request.store,
+                    "redirect_uri": request.redirect_uri
+                },
                 "timestamp": datetime.utcnow().isoformat()
             }
             
@@ -838,13 +851,15 @@ async def exchange_facebook_code_endpoint(request: Request):
             return {
                 "success": False,
                 "error": f"Erreur Facebook OAuth: {str(facebook_error)}",
-                "data": data,
+                "data": {
+                    "code": request.code[:10] + "...",
+                    "state": request.state,
+                    "store": request.store,
+                    "redirect_uri": request.redirect_uri
+                },
                 "timestamp": datetime.utcnow().isoformat()
             }
         
-    except HTTPException:
-        # Re-lancer les HTTPException sans les wrapper
-        raise
     except Exception as e:
         error_msg = f"Erreur exchange-code: {str(e)}"
         log_app(error_msg, "ERROR")
