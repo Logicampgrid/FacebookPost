@@ -196,29 +196,38 @@ def start_ngrok_tunnel_windows():
         
         log_app("Processus ngrok démarré, attente de l'URL...", "INFO")
         
-        # Attendre que ngrok soit prêt avec timeout
-        max_attempts = 30  # 30 secondes
+        # Attendre que ngrok soit prêt avec timeout intelligent
+        max_attempts = 45  # 45 secondes pour être sûr
         for attempt in range(max_attempts):
             try:
                 time.sleep(1)
                 
                 # Vérifier API ngrok
-                response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=3)
+                response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
                 if response.status_code == 200:
                     tunnels = response.json()
                     if tunnels.get('tunnels') and len(tunnels['tunnels']) > 0:
-                        public_url = tunnels['tunnels'][0]['public_url']
-                        NGROK_URL = public_url
+                        tunnel = tunnels['tunnels'][0]
+                        public_url = tunnel.get('public_url', '')
                         
-                        log_app(f"🌐 Tunnel ngrok actif: {NGROK_URL}", "SUCCESS")
+                        # Valider l'URL
+                        if public_url and public_url.startswith('https://') and 'ngrok' in public_url:
+                            NGROK_URL = public_url
+                            log_app(f"🌐 Tunnel ngrok actif: {NGROK_URL}", "SUCCESS")
+                            
+                            # Sauvegarder URL dans fichier
+                            save_ngrok_url_to_files(NGROK_URL)
+                            
+                            return NGROK_URL
+                        else:
+                            log_app(f"URL ngrok invalide reçue: {public_url}", "WARNING")
+                            continue
                         
-                        # Sauvegarder URL dans fichier
-                        save_ngrok_url_to_files(NGROK_URL)
-                        
-                        return NGROK_URL
-                        
-            except requests.exceptions.RequestException:
-                log_app(f"Tentative {attempt + 1}/{max_attempts} - API ngrok pas prête", "INFO")
+            except requests.exceptions.RequestException as e:
+                if attempt < 10:  # Logs moins verbeux les premières secondes
+                    pass
+                else:
+                    log_app(f"Tentative {attempt + 1}/{max_attempts} - API ngrok: {str(e)}", "INFO")
                 continue
                 
         # Timeout atteint
