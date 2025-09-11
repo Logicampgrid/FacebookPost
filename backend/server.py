@@ -242,14 +242,14 @@ app = FastAPI(
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 FORCE_FTP = os.getenv("FORCE_FTP", "false").lower() == "true"
 
-# CORS configuration - temporarily disabled for testing
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-#     allow_headers=["*"],
-# )
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 # === STATIC FILES CONFIGURATION ===
 # Mount static files if frontend build is available
