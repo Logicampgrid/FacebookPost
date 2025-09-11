@@ -12,6 +12,7 @@ import threading
 import subprocess
 import signal
 import requests
+import asyncio
 from datetime import datetime
 import webbrowser
 from contextlib import asynccontextmanager
