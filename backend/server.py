@@ -167,18 +167,21 @@ def start_ngrok_tunnel():
             print(f"❌ Could not connect to ngrok API: {e}")
         
         # If API method failed, try pyngrok as fallback
-        try:
-            print("🔄 Trying pyngrok as fallback...")
-            if NGROK_AUTH_TOKEN:
-                ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-                print("🔑 Ngrok auth token configured")
-            
-            NGROK_TUNNEL = ngrok.connect(8001)
-            NGROK_URL = NGROK_TUNNEL.public_url
-            print(f"🌐 Ngrok tunnel active via pyngrok: {NGROK_URL}")
-            return NGROK_URL
-        except Exception as pyngrok_error:
-            print(f"❌ Pyngrok also failed: {pyngrok_error}")
+        if PYNGROK_AVAILABLE:
+            try:
+                print("🔄 Trying pyngrok as fallback...")
+                if NGROK_AUTH_TOKEN:
+                    ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+                    print("🔑 Ngrok auth token configured")
+                
+                NGROK_TUNNEL = ngrok.connect(8001)
+                NGROK_URL = NGROK_TUNNEL.public_url
+                print(f"🌐 Ngrok tunnel active via pyngrok: {NGROK_URL}")
+                return NGROK_URL
+            except Exception as pyngrok_error:
+                print(f"❌ Pyngrok also failed: {pyngrok_error}")
+        else:
+            print("⚠️ Pyngrok not available - skipping fallback")
         
         return None
         
