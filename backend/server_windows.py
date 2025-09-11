@@ -434,6 +434,8 @@ FTP_BASE_URL = os.getenv("FTP_BASE_URL", "https://logicamp.org/wordpress/uploads
 @app.get("/api/health")
 async def health_check():
     """Health check avec informations Windows et ngrok"""
+    from fastapi.responses import JSONResponse
+    
     try:
         # Vérifier MongoDB
         await client.admin.command('ping')
@@ -441,9 +443,9 @@ async def health_check():
     except Exception:
         mongo_status = "disconnected"
     
-    return {
+    response_data = {
         "status": "healthy",
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.utcnow().isoformat(),
         "platform": "Windows",
         "backend_port": BACKEND_PORT,
         "directories": {
@@ -468,6 +470,12 @@ async def health_check():
             "test_mode": PUBLICATION_TEST_MODE
         }
     }
+    
+    return JSONResponse(content=response_data, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+    })
 
 @app.get("/api/ngrok-url")
 async def get_ngrok_url():
