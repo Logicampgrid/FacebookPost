@@ -675,6 +675,42 @@ def log_publish(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [PUBLISH] {message}")
 
+async def update_instagram_ids():
+    """Mettre à jour automatiquement les IDs Instagram via l'API Graph"""
+    try:
+        print("🔄 Mise à jour automatique des IDs Instagram...")
+        
+        for store_name, config in STORES.items():
+            if config.get("access_token") and config.get("fb_page_id"):
+                try:
+                    # Récupérer le compte Instagram Business associé à la page
+                    url = f"{FACEBOOK_GRAPH_URL}/{config['fb_page_id']}"
+                    params = {
+                        "fields": "instagram_business_account",
+                        "access_token": config["access_token"]
+                    }
+                    
+                    response = requests.get(url, params=params, timeout=15)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if "instagram_business_account" in data and data["instagram_business_account"]:
+                        ig_id = data["instagram_business_account"]["id"]
+                        STORES[store_name]["ig_user_id"] = ig_id
+                        print(f"✅ {store_name}: Instagram ID récupéré → {ig_id}")
+                    else:
+                        print(f"⚠️ {store_name}: Aucun compte Instagram Business connecté")
+                        
+                except Exception as e:
+                    print(f"❌ {store_name}: Erreur récupération Instagram ID → {str(e)}")
+            else:
+                print(f"⚠️ {store_name}: Token d'accès ou Page ID manquant")
+        
+        print("🎯 Mise à jour des IDs Instagram terminée")
+        
+    except Exception as e:
+        print(f"❌ Erreur générale mise à jour Instagram: {str(e)}")
+
 async def extract_image_from_url(url: str) -> Optional[str]:
     """Extrait l'image principale d'une URL via Open Graph"""
     try:
