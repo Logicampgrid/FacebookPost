@@ -193,7 +193,7 @@ def start_ngrok_tunnel():
 def stop_ngrok_tunnel():
     """Stop ngrok tunnel"""
     global NGROK_TUNNEL
-    if NGROK_TUNNEL:
+    if NGROK_TUNNEL and PYNGROK_AVAILABLE:
         try:
             ngrok.disconnect(NGROK_TUNNEL.public_url)
             print("🛑 Ngrok tunnel stopped")
@@ -201,6 +201,9 @@ def stop_ngrok_tunnel():
             print(f"⚠️ Error stopping ngrok tunnel: {e}")
         finally:
             NGROK_TUNNEL = None
+    elif NGROK_TUNNEL and not PYNGROK_AVAILABLE:
+        print("⚠️ Cannot stop ngrok tunnel - pyngrok not available")
+        NGROK_TUNNEL = None
 
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
