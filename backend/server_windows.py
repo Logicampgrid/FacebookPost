@@ -271,20 +271,27 @@ def open_browser_when_ready():
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan events - startup and shutdown"""
+    """FastAPI lifespan events - startup and shutdown - VERSION CORRIGÉE SYNCHRONISATION"""
     # Startup
     log_app("🚀 Meta Publishing Platform - Version Windows CORRIGÉE", "START")
     log_app(f"📁 Répertoire backend: {WINDOWS_PATHS['backend_dir']}", "INFO")
     log_app(f"🌐 Port backend: {BACKEND_PORT}", "INFO")
     log_app(f"🔧 Mode test: {PUBLICATION_TEST_MODE}", "INFO")
     
-    # Démarrer ngrok en arrière-plan
+    # Démarrer ngrok de manière synchrone pour s'assurer qu'il est prêt
     if ENABLE_NGROK:
-        ngrok_thread = threading.Thread(target=start_ngrok_tunnel_windows, daemon=True)
-        ngrok_thread.start()
+        log_app("🔄 Démarrage ngrok en mode synchrone...", "INFO")
+        ngrok_result = start_ngrok_tunnel_windows()
         
-        # Ouvrir le navigateur une fois ngrok prêt et synchronisé
-        open_browser_when_ready()
+        if ngrok_result:
+            log_app(f"✅ Ngrok configuré avec succès: {ngrok_result}", "SUCCESS")
+            # Attendre encore un peu pour s'assurer que tout est stable
+            await asyncio.sleep(2)
+            
+            # Maintenant ouvrir le navigateur avec une synchronisation garantie
+            open_browser_when_ready()
+        else:
+            log_app("⚠️ Échec configuration ngrok, pas d'ouverture de navigateur", "WARNING")
     
     log_app("✅ Application démarrée avec succès!", "SUCCESS")
     
