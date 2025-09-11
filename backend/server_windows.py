@@ -794,6 +794,107 @@ async def webhook_handler(request: Request):
         log_app(f"Erreur traitement webhook: {e}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/auth/facebook")
+async def authenticate_facebook(request: Request):
+    """Authentification Facebook avec token d'accès direct"""
+    try:
+        data = await request.json()
+        access_token = data.get("access_token")
+        
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Token d'accès requis")
+            
+        log_app("Authentification Facebook avec token direct", "INFO")
+        
+        # Récupérer les informations utilisateur
+        user_url = f"{FACEBOOK_GRAPH_URL}/me"
+        user_params = {
+            'access_token': access_token,
+            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account},business_users{business{id,name}}'
+        }
+        
+        response = requests.get(user_url, params=user_params, timeout=30)
+        response.raise_for_status()
+        user_data = response.json()
+        
+        log_app(f"Utilisateur connecté: {user_data.get('name')}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "user": user_data,
+            "message": "Authentification réussie"
+        }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur API Facebook: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        error_msg = f"Erreur authentification: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.get("/api/stores")
+async def get_stores():
+    """Obtenir la liste des stores configurés"""
+    stores_info = {}
+    for store_name, config in STORES.items():
+        stores_info[store_name] = {
+            "name": store_name,
+            "facebook_configured": bool(config.get("fb_page_id") and config.get("access_token")),
+            "instagram_configured": bool(config.get("ig_user_id") and config.get("access_token")),
+            "fb_page_id": config.get("fb_page_id", "Non configuré"),
+            "ig_user_id": config.get("ig_user_id", "Non configuré")
+        }
+    
+    return {
+        "stores": stores_info,
+        "test_mode": PUBLICATION_TEST_MODE,
+        "total_stores": len(STORES)
+    }
+
+# === PUBLICATION ENDPOINTS ===
+class PublishRequest(BaseModel):
+    store: str
+    message: str
+    product_url: str
+    image_url: Optional[str] = None
+    platforms: List[str] = ["facebook", "instagram"]
+
+@app.post("/api/publish")
+async def publish_post_endpoint(request: PublishRequest):
+    """Publier un post sur les plateformes sélectionnées"""
+    try:
+        log_app(f"Demande de publication pour {request.store} sur {request.platforms}", "INFO")
+        
+        if request.store not in STORES:
+            raise HTTPException(status_code=400, detail=f"Store '{request.store}' inconnu")
+        
+        # Simulation en mode test
+        if PUBLICATION_TEST_MODE:
+            log_app(f"MODE TEST - Publication simulée pour {request.store}", "INFO")
+            return {
+                "success": True,
+                "store": request.store,
+                "platforms": request.platforms,
+                "test_mode": True,
+                "message": "Publication simulée en mode test",
+                "facebook_result": {"id": f"test_fb_{uuid.uuid4().hex[:8]}", "message": request.message} if "facebook" in request.platforms else None,
+                "instagram_result": {"id": f"test_ig_{uuid.uuid4().hex[:8]}", "caption": request.message} if "instagram" in request.platforms else None
+            }
+        
+        # TODO: Implémenter la publication réelle
+        log_app("Publication réelle non implémentée dans cette version", "WARNING")
+        return {
+            "success": False,
+            "error": "Publication réelle non implémentée - utilisez le mode test"
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur publication: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 if __name__ == "__main__":
     import uvicorn
     
