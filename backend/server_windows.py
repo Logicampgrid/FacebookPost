@@ -213,30 +213,57 @@ def stop_ngrok_tunnel():
         kill_existing_ngrok()
 
 def open_browser_when_ready():
-    """Ouvrir le navigateur avec l'URL EXACTE du frontend .env - CORRECTION CRITIQUE"""
+    """Ouvrir le navigateur avec l'URL EXACTE du frontend .env - VERSION CORRIGÉE RACE CONDITION"""
     def wait_and_open():
         max_wait = 60  # 60 secondes
         start_time = time.time()
         
-        log_app("Attente de la synchronisation ngrok avec le frontend...", "INFO")
+        log_app("🔄 Attente de la synchronisation ngrok avec le frontend...", "INFO")
         
         while time.time() - start_time < max_wait:
-            # CORRECTION : Utiliser l'URL du frontend .env au lieu de NGROK_URL direct
+            # ÉTAPE 1: Vérifier que ngrok est actif et NGROK_URL est défini
+            if not NGROK_URL:
+                log_app("⏳ Attente activation tunnel ngrok...", "INFO")
+                time.sleep(3)
+                continue
+            
+            # ÉTAPE 2: Vérifier que le frontend .env est synchronisé avec la bonne URL
             frontend_url = get_frontend_backend_url()
-            if frontend_url:
-                try:
-                    log_app(f"🌐 Ouverture navigateur avec URL synchronisée: {frontend_url}", "SUCCESS")
-                    webbrowser.open(frontend_url)
-                    return
-                except Exception as e:
-                    log_app(f"Erreur ouverture navigateur: {e}", "WARNING")
-                    return
-            time.sleep(2)
+            if not frontend_url:
+                log_app("⏳ Frontend .env non disponible, nouvelle tentative...", "INFO")
+                time.sleep(2)
+                continue
+                
+            if frontend_url != NGROK_URL:
+                log_app(f"⚠️ Désynchronisation: Frontend={frontend_url} vs Ngrok={NGROK_URL}", "WARNING")
+                time.sleep(2)
+                continue
+            
+            # ÉTAPE 3: Vérifier que l'URL ngrok est accessible
+            try:
+                test_response = requests.get(f"{NGROK_URL}/api/health", timeout=10)
+                if test_response.status_code == 200:
+                    log_app(f"✅ URL ngrok accessible et synchronisée: {NGROK_URL}", "SUCCESS")
+                    
+                    # ÉTAPE 4: Ouvrir le navigateur avec l'URL confirmée
+                    try:
+                        log_app(f"🌐 Ouverture navigateur avec URL vérifiée: {NGROK_URL}", "SUCCESS")
+                        webbrowser.open(NGROK_URL)
+                        return
+                    except Exception as e:
+                        log_app(f"Erreur ouverture navigateur: {e}", "WARNING")
+                        return
+                else:
+                    log_app(f"⏳ URL ngrok non accessible (status: {test_response.status_code})", "INFO")
+                    time.sleep(3)
+            except requests.exceptions.RequestException as e:
+                log_app(f"⏳ Test accessibilité ngrok échoué: {e}", "INFO")
+                time.sleep(3)
         
-        log_app("⚠️ Timeout: URL frontend non disponible après 60s", "WARNING")
-        log_app("💡 Ouvrez manuellement http://localhost:8001 ou vérifiez ngrok", "INFO")
+        log_app("⚠️ Timeout: Synchronisation ngrok non obtenue après 60s", "WARNING")
+        log_app("💡 Vérifiez manuellement l'URL ngrok ou utilisez http://localhost:8001", "INFO")
     
-    # Lancer dans un thread séparé
+    # Lancer dans un thread séparé avec délai pour laisser ngrok démarrer
     browser_thread = threading.Thread(target=wait_and_open, daemon=True)
     browser_thread.start()
 
