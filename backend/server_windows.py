@@ -570,6 +570,256 @@ class FacebookAuthResponse(BaseModel):
     ig_user_id: Optional[str] = None
     error: Optional[str] = None
 
+class TestPublishRequest(BaseModel):
+    stores: Optional[List[str]] = None  # Si None, publie sur tous les stores
+    platforms: List[str] = ["facebook"]  # facebook, instagram
+    custom_message: Optional[str] = None  # Si None, utilise TEST_MESSAGE de .env
+    
+    @validator('platforms')
+    def validate_platforms(cls, v):
+        valid_platforms = ["facebook", "instagram"]
+        for platform in v:
+            if platform not in valid_platforms:
+                raise ValueError(f'Platform must be one of: {valid_platforms}')
+        return v
+
+# === PUBLICATION FUNCTIONS ===
+def log_publish(message: str, level: str = "INFO"):
+    """Logging spécialisé pour les publications"""
+    icons = {"INFO": "📢", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "TEST": "🧪"}
+    icon = icons.get(level.upper(), "📢")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [PUBLISH] {message}")
+
+def get_store_config(store: str) -> dict:
+    """Récupère la configuration d'un store"""
+    if store not in STORES:
+        raise ValueError(f"Store inconnu: {store}")
+    
+    return STORES[store].copy()
+
+async def post_to_facebook(store: str, message: str, product_url: str) -> dict:
+    """Publie un post sur la page Facebook correspondante"""
+    try:
+        log_publish(f"Publication Facebook pour {store}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        creds = get_store_config(store)
+        
+        if not creds["fb_page_id"] or not creds["access_token"]:
+            raise ValueError(f"Configuration Facebook manquante pour {store}")
+        
+        # Mode test : simulation
+        if PUBLICATION_TEST_MODE:
+            log_publish(f"MODE TEST - Publication Facebook simulée pour {store}", "TEST")
+            return {
+                "id": f"test_fb_post_{uuid.uuid4().hex[:8]}",
+                "message": message,
+                "link": product_url,
+                "test_mode": True
+            }
+        
+        # Publication réelle
+        url = f"{FACEBOOK_GRAPH_URL}/{creds['fb_page_id']}/feed"
+        payload = {
+            "message": message,
+            "link": product_url,
+            "access_token": creds["access_token"]
+        }
+        
+        log_publish(f"Requête Facebook: POST {url}", "INFO")
+        response = requests.post(url, data=payload, timeout=30)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if "id" not in data:
+            raise Exception(f"Réponse Facebook invalide: {data}")
+        
+        log_publish(f"Publication Facebook réussie: {data['id']}", "SUCCESS")
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP Facebook: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur Facebook: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
+    """Publie une image avec légende sur Instagram (processus en 2 étapes)"""
+    try:
+        log_publish(f"Publication Instagram pour {store}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        creds = get_store_config(store)
+        
+        if not creds["ig_user_id"] or not creds["access_token"]:
+            raise ValueError(f"Configuration Instagram manquante pour {store}")
+        
+        if not image_url:
+            raise ValueError("Image URL requise pour Instagram")
+        
+        # Mode test : simulation
+        if PUBLICATION_TEST_MODE:
+            log_publish(f"MODE TEST - Publication Instagram simulée pour {store}", "TEST")
+            return {
+                "id": f"test_ig_post_{uuid.uuid4().hex[:8]}",
+                "caption": f"{message}\n\n{product_url}",
+                "image_url": image_url,
+                "test_mode": True
+            }
+        
+        ig_user_id = creds["ig_user_id"]
+        access_token = creds["access_token"]
+        
+        # Étape 1 : Créer le conteneur média
+        log_publish("Étape 1/2 - Création conteneur média Instagram", "INFO")
+        create_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
+        
+        create_payload = {
+            "image_url": image_url,
+            "caption": f"{message}\n\n{product_url}",
+            "access_token": access_token
+        }
+        
+        create_response = requests.post(create_url, data=create_payload, timeout=30)
+        create_response.raise_for_status()
+        
+        media_data = create_response.json()
+        
+        if "id" not in media_data:
+            raise Exception(f"Erreur création conteneur Instagram: {media_data}")
+        
+        creation_id = media_data["id"]
+        log_publish(f"Conteneur créé: {creation_id}", "SUCCESS")
+        
+        # Étape 2 : Publier le média
+        log_publish("Étape 2/2 - Publication du média Instagram", "INFO")
+        publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
+        
+        publish_payload = {
+            "creation_id": creation_id,
+            "access_token": access_token
+        }
+        
+        publish_response = requests.post(publish_url, data=publish_payload, timeout=30)
+        publish_response.raise_for_status()
+        
+        publish_data = publish_response.json()
+        
+        if "id" not in publish_data:
+            raise Exception(f"Erreur publication Instagram: {publish_data}")
+        
+        log_publish(f"Publication Instagram réussie: {publish_data['id']}", "SUCCESS")
+        
+        # Retourner les données combinées
+        return {
+            "id": publish_data["id"],
+            "creation_id": creation_id,
+            "caption": f"{message}\n\n{product_url}",
+            "image_url": image_url
+        }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP Instagram: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur Instagram: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+async def publish_post(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
+    """Fonction principale pour publier sur Facebook et/ou Instagram"""
+    try:
+        log_publish(f"Début publication multi-plateforme pour {store} sur {platforms}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        results = {
+            "success": False,
+            "store": store,
+            "platforms": platforms,
+            "facebook_result": None,
+            "instagram_result": None,
+            "errors": [],
+            "test_mode": PUBLICATION_TEST_MODE
+        }
+        
+        # Publication Facebook
+        if "facebook" in platforms:
+            try:
+                fb_result = await post_to_facebook(store, message, product_url)
+                results["facebook_result"] = fb_result
+                log_publish("Publication Facebook terminée", "SUCCESS")
+            except Exception as e:
+                error_msg = f"Échec Facebook: {str(e)}"
+                results["errors"].append(error_msg)
+                log_publish(error_msg, "ERROR")
+        
+        # Publication Instagram
+        if "instagram" in platforms:
+            try:
+                if not image_url:
+                    raise Exception("Image requise pour Instagram")
+                
+                ig_result = await post_to_instagram(store, message, product_url, image_url)
+                results["instagram_result"] = ig_result
+                log_publish("Publication Instagram terminée", "SUCCESS")
+            except Exception as e:
+                error_msg = f"Échec Instagram: {str(e)}"
+                results["errors"].append(error_msg)
+                log_publish(error_msg, "ERROR")
+        
+        # Déterminer le succès global
+        success_count = 0
+        if "facebook" in platforms and results["facebook_result"]:
+            success_count += 1
+        if "instagram" in platforms and results["instagram_result"]:
+            success_count += 1
+        
+        results["success"] = success_count > 0 and len(results["errors"]) == 0
+        
+        if results["success"]:
+            log_publish(f"Publication multi-plateforme réussie pour {store}", "SUCCESS")
+        else:
+            log_publish(f"Publication partiellement échouée pour {store}: {results['errors']}", "WARNING")
+        
+        return results
+        
+    except Exception as e:
+        error_msg = f"Erreur générale publication: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        return {
+            "success": False,
+            "store": store,
+            "platforms": platforms,
+            "facebook_result": None,
+            "instagram_result": None,
+            "errors": [error_msg],
+            "test_mode": PUBLICATION_TEST_MODE
+        }
+
 # === AUTHENTICATION FUNCTIONS ===
 async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
     """Échange un code d'autorisation Facebook contre un access token"""
