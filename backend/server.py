@@ -321,8 +321,8 @@ async def lifespan(app: FastAPI):
 
 # === FASTAPI APP INITIALIZATION ===
 app = FastAPI(
-    title="Meta Publishing Platform - Ngrok Integration",
-    # lifespan=lifespan  # Temporarily disabled for testing
+    title="Meta Publishing Platform - Ngrok Integration CORRIGÉE",
+    lifespan=lifespan
 )
 
 # Configuration flags
