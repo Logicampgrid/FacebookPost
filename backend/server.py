@@ -314,10 +314,9 @@ STORES = {
 
 # Dictionnaire dynamique pour les tokens récupérés via authentification
 TOKENS = {
+    "gizmobbs": {},
     "logicantiq": {},
-    "logicampoutdoor": {},
-    "bergerblancsuisse": {},
-    "gizmobbs": {}
+    "outdoor": {}
 }
 
 def get_store_config(store: str) -> dict:
