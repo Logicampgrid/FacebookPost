@@ -1,0 +1,198 @@
+=======================================================
+    MANUEL D'UTILISATION FACEBOOK POST - WINDOWS
+=======================================================
+
+📋 PRÉREQUIS SYSTÈME
+=======================================================
+
+1. PYTHON 3.8+
+   - Télécharger : https://python.org/downloads/
+   - ✅ Cocher "Add Python to PATH" lors de l'installation
+
+2. NODE.JS 16+
+   - Télécharger : https://nodejs.org/
+   - Version LTS recommandée
+
+3. MONGODB 8.0
+   - Installé dans : C:\Program Files\MongoDB\Server\8.0\bin
+   - Le script démarrera MongoDB automatiquement
+
+4. GIT (optionnel)
+   - Pour cloner/synchroniser le code
+
+📁 STRUCTURE DES FICHIERS
+=======================================================
+
+C:\FacebookPost\
+├── backend\
+│   ├── server_windows.py        # Serveur principal
+│   ├── requirements.txt         # Dépendances Python
+│   ├── .env                     # Configuration
+│   └── start\
+│       ├── start_backend.bat    # Script démarrage backend
+│       ├── start_frontend.bat   # Script démarrage frontend
+│       └── stop_all.bat         # Script arrêt complet
+├── frontend\
+│   ├── package.json             # Dépendances React
+│   ├── .env                     # Configuration frontend
+│   └── src\                     # Code source React
+├── logs\                        # Logs application
+└── data\db\                     # Base MongoDB (créé auto)
+
+🚀 DÉMARRAGE RAPIDE
+=======================================================
+
+1. PLACER LES FICHIERS
+   - Copier tous les fichiers dans C:\FacebookPost\
+   - Vérifier que les scripts .bat sont dans C:\FacebookPost\start\
+
+2. CONFIGURATION FACEBOOK (IMPORTANT)
+   - Modifier C:\FacebookPost\backend\.env :
+     
+     FACEBOOK_APP_ID=votre_app_id_facebook
+     FACEBOOK_APP_SECRET=votre_secret_facebook
+     MONGO_URL=mongodb://localhost:27017
+     ENABLE_NGROK=false
+     DRY_RUN=true
+     PUBLICATION_TEST_MODE=true
+
+3. DÉMARRAGE BACKEND
+   - Double-clic sur : C:\FacebookPost\start\start_backend.bat
+   - Attendre le message "✅ Application démarrée avec succès!"
+   - URL backend : http://localhost:8001
+
+4. DÉMARRAGE FRONTEND (nouveau terminal)
+   - Double-clic sur : C:\FacebookPost\start\start_frontend.bat
+   - Attendre "Compiled successfully!"
+   - URL frontend : http://localhost:3000
+
+🔧 CONFIGURATION FACEBOOK OAUTH
+=======================================================
+
+1. CRÉER UNE APP FACEBOOK
+   - Aller sur : https://developers.facebook.com/
+   - Créer une nouvelle app "Business"
+   - Ajouter le produit "Facebook Login"
+
+2. CONFIGURATION OAUTH
+   - URI de redirection valides : http://localhost:3000/auth/callback
+   - Domaines d'app : localhost
+   - URL de politique de confidentialité : http://localhost:3000/privacy
+
+3. RÉCUPÉRER LES CLÉS
+   - App ID : dans "Paramètres > Général"
+   - App Secret : dans "Paramètres > Général"
+
+4. METTRE À JOUR .ENV
+   - Remplacer your_app_id_facebook par votre App ID
+   - Remplacer your_secret_facebook par votre App Secret
+
+🧪 TEST DE L'AUTHENTIFICATION FACEBOOK
+=======================================================
+
+1. VÉRIFIER LE BACKEND
+   - Ouvrir : http://localhost:8001/api/health
+   - Vérifier que "status": "healthy"
+
+2. TEST MANUEL OAUTH
+   curl -X POST http://localhost:8001/api/auth/facebook/exchange-code \
+     -H "Content-Type: application/json" \
+     -d '{"code": "TEST123", "state": "TESTSTATE"}'
+
+   RÉPONSE ATTENDUE (200 OK) :
+   {
+     "success": true,
+     "access_token": "EAAxxxxx...",
+     "fb_page_id": "123456789",
+     "message": "Authentification Facebook réussie"
+   }
+
+3. TEST DEPUIS LE FRONTEND
+   - Aller sur : http://localhost:3000
+   - Cliquer sur "Se connecter avec Facebook"
+   - Autoriser l'application
+   - Vérifier que vous êtes connecté
+
+❌ RÉSOLUTION DE PROBLÈMES
+=======================================================
+
+PROBLÈME : Erreur 400 sur /api/auth/facebook/exchange-code
+SOLUTION :
+   - Vérifier FACEBOOK_APP_ID et FACEBOOK_APP_SECRET dans .env
+   - Vérifier que l'URI de redirection est configurée dans Facebook
+   - Redémarrer le backend après modification du .env
+
+PROBLÈME : "MongoDB non accessible"
+SOLUTION :
+   - Vérifier que MongoDB est installé dans le bon répertoire
+   - Créer le dossier : C:\FacebookPost\data\db
+   - Redémarrer start_backend.bat
+
+PROBLÈME : "Python non trouvé"
+SOLUTION :
+   - Réinstaller Python avec "Add to PATH"
+   - Redémarrer l'invite de commande
+   - Vérifier avec : python --version
+
+PROBLÈME : "Node.js non trouvé"  
+SOLUTION :
+   - Installer Node.js LTS depuis nodejs.org
+   - Redémarrer l'invite de commande
+   - Vérifier avec : node --version
+
+PROBLÈME : Port 8001 ou 3000 déjà utilisé
+SOLUTION :
+   - Exécuter stop_all.bat
+   - Attendre 10 secondes
+   - Relancer les scripts de démarrage
+
+PROBLÈME : Frontend ne se connecte pas au backend
+SOLUTION :
+   - Vérifier que REACT_APP_BACKEND_URL=http://localhost:8001 dans frontend\.env
+   - Reconstruire le frontend : npm run build
+   - Redémarrer frontend
+
+🔍 LOGS ET DEBUGGING
+=======================================================
+
+1. LOGS BACKEND
+   - Fichiers : C:\FacebookPost\logs\backend_*.log
+   - Console : visible dans la fenêtre start_backend.bat
+
+2. LOGS FRONTEND
+   - Console navigateur : F12 > Console
+   - Logs build : visible dans start_frontend.bat
+
+3. VÉRIFICATIONS SYSTÈME
+   - Backend : http://localhost:8001/api/health
+   - MongoDB : "C:\Program Files\MongoDB\Server\8.0\bin\mongosh.exe"
+   - Ports occupés : netstat -ano | findstr :8001
+
+⚡ COMMANDES UTILES
+=======================================================
+
+# Tester le backend
+curl http://localhost:8001/api/health
+
+# Vérifier les ports
+netstat -ano | findstr :8001
+netstat -ano | findstr :3000
+
+# MongoDB direct
+"C:\Program Files\MongoDB\Server\8.0\bin\mongosh.exe"
+
+# Arrêt d'urgence
+taskkill /F /IM python.exe
+taskkill /F /IM node.exe
+
+📞 SUPPORT
+=======================================================
+
+En cas de problème persistant :
+1. Exécuter stop_all.bat
+2. Vérifier les logs dans C:\FacebookPost\logs\
+3. Redémarrer en mode debug avec DRY_RUN=true
+4. Tester l'endpoint /api/health avant tout
+
+VERSION : Windows Local 1.0
+DERNIÈRE MISE À JOUR : 2024
