@@ -260,16 +260,16 @@ if frontend_build_available:
 else:
     print("⚠️ Frontend build not available, static files not mounted")
 
-# Request logging middleware
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Log requests for debugging"""
-    if request.url.path == "/api/webhook":
-        method = request.method
-        print(f"🌐 Webhook request: {method} {request.url}")
-    
-    response = await call_next(request)
-    return response
+# Request logging middleware - temporarily disabled for testing
+# @app.middleware("http")
+# async def log_requests(request: Request, call_next):
+#     """Log requests for debugging"""
+#     if request.url.path == "/api/webhook":
+#         method = request.method
+#         print(f"🌐 Webhook request: {method} {request.url}")
+#     
+#     response = await call_next(request)
+#     return response
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
