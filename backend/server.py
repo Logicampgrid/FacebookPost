@@ -1390,21 +1390,82 @@ async def parse_code_state_request(request: Request) -> dict:
 
 @app.post("/api/auth/facebook/exchange-code")
 async def exchange_facebook_code_endpoint(request: Request):
-    """Échange un code d'autorisation Facebook - Accepte JSON et form-data"""
+    """Échange un code d'autorisation Facebook - Accepte JSON et form-data et retourne access_token"""
     try:
         # Parser les données selon le format
         data = await parse_code_state_request(request)
         
         log_auth(f"Code exchange reçu - Store: {data['store']}, Code: {data['code'][:10]}..., State: {data['state']}", "INFO")
         
-        # Retourner la réponse avec les valeurs reçues (comme demandé pour validation)
-        return {
-            "success": True,
-            "message": "Code et state reçus avec succès",
-            "data": data,
-            "formats_supported": ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        # Si pas de redirect_uri fourni, utiliser une valeur par défaut
+        redirect_uri = data.get('redirect_uri') or "http://localhost:3000/auth/callback"
+        
+        # VALIDATION: Configuration Facebook requise
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            log_auth("Configuration Facebook manquante", "WARNING")
+            return {
+                "success": False,
+                "error": "Configuration Facebook manquante (FACEBOOK_APP_ID ou FACEBOOK_APP_SECRET)",
+                "test_mode": True,
+                "data": data,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        try:
+            # VRAIE AUTHENTIFICATION FACEBOOK
+            auth_result = await exchange_facebook_code(data['code'], redirect_uri)
+            
+            # Chercher une page appropriée pour ce store
+            pages = auth_result.get("pages", [])
+            if not pages:
+                return {
+                    "success": False,
+                    "error": "Aucune page Facebook trouvée pour cet utilisateur",
+                    "user_info": {
+                        "user_id": auth_result.get("user_id"),
+                        "user_name": auth_result.get("user_name")
+                    },
+                    "data": data,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            
+            # Prendre la première page disponible
+            selected_page = pages[0]
+            page_id = selected_page["page_id"]
+            page_access_token = selected_page["page_access_token"]
+            ig_user_id = selected_page.get("instagram_business_account")
+            
+            # Sauvegarder les tokens pour ce store si ce n'est pas "default"
+            if data['store'] != "default" and data['store'] in STORES:
+                save_store_tokens(data['store'], page_id, page_access_token, ig_user_id)
+                log_auth(f"Tokens sauvegardés pour le store: {data['store']}", "SUCCESS")
+            
+            # SUCCÈS - Retourner l'access token
+            return {
+                "success": True,
+                "message": "Authentification Facebook réussie",
+                "access_token": page_access_token,
+                "fb_page_id": page_id,
+                "ig_user_id": ig_user_id,
+                "store": data['store'],
+                "user_info": {
+                    "user_id": auth_result.get("user_id"),
+                    "user_name": auth_result.get("user_name"),
+                    "total_pages": len(pages)
+                },
+                "data": data,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as facebook_error:
+            # Erreur lors de l'échange Facebook
+            log_auth(f"Erreur échange Facebook: {str(facebook_error)}", "ERROR")
+            return {
+                "success": False,
+                "error": f"Erreur Facebook OAuth: {str(facebook_error)}",
+                "data": data,
+                "timestamp": datetime.utcnow().isoformat()
+            }
         
     except HTTPException:
         # Re-lancer les HTTPException sans les wrapper
