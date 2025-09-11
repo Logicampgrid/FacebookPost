@@ -287,30 +287,28 @@ FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
 FACEBOOK_CLIENT_TOKEN = os.getenv("FACEBOOK_CLIENT_TOKEN")  # Token client AutoGPT
 FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com/v18.0")
 
-# === CONFIGURATION BOUTIQUES MULTI-PLATFORM ===
+# === CONFIGURATION BOUTIQUES MULTI-PLATFORM (MISE À JOUR) ===
 PUBLICATION_TEST_MODE = os.getenv("PUBLICATION_TEST_MODE", "true").lower() == "true"
 
-# Dictionnaire statique pour les configurations par défaut
+# Configuration des 3 stores selon les spécifications
 STORES = {
+    "gizmobbs": {
+        "name": "Le Berger Blanc Suisse",
+        "fb_page_id": "102401876209415",
+        "ig_user_id": os.getenv("IG_USER_ID_GIZMO"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_GIZMO")
+    },
     "logicantiq": {
-        "fb_page_id": os.getenv("FB_PAGE_ID_LOGICANTIQ"),
+        "name": "LogicAntiq", 
+        "fb_page_id": "210654558802531",
         "ig_user_id": os.getenv("IG_USER_ID_LOGICANTIQ"),
         "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICANTIQ")
     },
-    "logicampoutdoor": {
-        "fb_page_id": os.getenv("FB_PAGE_ID_LOGICAMPOUTDOOR"),
-        "ig_user_id": os.getenv("IG_USER_ID_LOGICAMPOUTDOOR"),
-        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICAMPOUTDOOR")
-    },
-    "bergerblancsuisse": {
-        "fb_page_id": os.getenv("FB_PAGE_ID_BERGER"),
-        "ig_user_id": os.getenv("IG_USER_ID_BERGER"),
-        "access_token": os.getenv("FB_ACCESS_TOKEN_BERGER")
-    },
-    "gizmobbs": {
-        "fb_page_id": os.getenv("FB_PAGE_ID_GIZMO"),
-        "ig_user_id": os.getenv("IG_USER_ID_GIZMO"),
-        "access_token": os.getenv("FB_ACCESS_TOKEN_GIZMO")
+    "outdoor": {
+        "name": "Logicamp Outdoor",
+        "fb_page_id": "236260991673388", 
+        "ig_user_id": os.getenv("IG_USER_ID_OUTDOOR"),
+        "access_token": os.getenv("FB_ACCESS_TOKEN_OUTDOOR")
     }
 }
 
