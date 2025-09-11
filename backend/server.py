@@ -27,7 +27,14 @@ import sys
 import ftplib
 import shutil
 from contextlib import asynccontextmanager
-from pyngrok import ngrok, conf
+# from pyngrok import ngrok, conf  # Temporarily disabled for testing
+try:
+    from pyngrok import ngrok, conf
+    PYNGROK_AVAILABLE = True
+except ImportError:
+    PYNGROK_AVAILABLE = False
+    ngrok = None
+    conf = None
 import threading
 import signal
 
