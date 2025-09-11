@@ -544,6 +544,12 @@ class FacebookAuthRequest(BaseModel):
     store: str
     redirect_uri: str
 
+class FacebookExchangeCodeRequest(BaseModel):
+    code: str
+    state: str
+    store: Optional[str] = "default"
+    redirect_uri: Optional[str] = ""
+
 class FacebookAuthResponse(BaseModel):
     success: bool
     store: str
