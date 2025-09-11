@@ -272,14 +272,28 @@ call :log "⚠️ Frontend pas encore complètement prêt"
 :: ===================================================================
 call :log "🌐 Ouverture du navigateur..."
 
-:: Ouvrir le navigateur sur l'URL ngrok (qui servira le frontend)
-if not "!ngrok_url!"=="http://localhost:8001" (
-    call :log "🚀 Ouverture: !ngrok_url!"
-    start "" "!ngrok_url!"
-) else (
-    call :log "🚀 Ouverture: http://localhost:3000"
-    start "" "http://localhost:3000"
+:: Attendre un peu pour que le frontend soit complètement prêt
+timeout /t 3 /nobreak >nul
+
+:: Relire l'URL ngrok pour être sûr d'avoir la dernière version
+if exist "%BACKEND_DIR%\ngrok_url.txt" (
+    set /p final_ngrok_url=<"%BACKEND_DIR%\ngrok_url.txt"
+    if not "!final_ngrok_url!"=="" (
+        echo !final_ngrok_url! | findstr /B "https://" >nul
+        if !errorlevel! equ 0 (
+            call :log "🚀 Ouverture navigateur: !final_ngrok_url!"
+            start "" "!final_ngrok_url!"
+            goto browser_opened
+        )
+    )
 )
+
+:: Fallback sur localhost si ngrok pas disponible
+call :log "⚠️ URL ngrok non disponible, ouverture localhost"
+call :log "🚀 Ouverture: http://localhost:3000"
+start "" "http://localhost:3000"
+
+:browser_opened
 
 :: ===================================================================
 :: ÉTAPE 8: MONITORING ET REDÉMARRAGE AUTOMATIQUE
