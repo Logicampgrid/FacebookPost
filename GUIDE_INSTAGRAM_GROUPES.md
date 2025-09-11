@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-sync-5.preview.emergentagent.com
+URL : https://fb-autopub-config.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://social-sync-5.preview.emergentagent.com
+🔗 https://fb-autopub-config.preview.emergentagent.com
