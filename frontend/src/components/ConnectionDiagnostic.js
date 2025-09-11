@@ -33,21 +33,53 @@ const ConnectionDiagnostic = ({ API_BASE }) => {
   };
 
   const testBackendConnection = async () => {
-    const response = await fetch(`${API_BASE}/api/health`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
+    try {
+      const response = await fetch(`${API_BASE}/api/health`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
 
-    if (!response.ok) {
-      throw new Error(`Backend inaccessible: HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Backend inaccessible: HTTP ${response.status} - ${response.statusText}`);
+      }
+
+      // Vérifier le content-type de la réponse
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Réponse backend invalide (pas JSON): ${text.substring(0, 100)}...`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        throw new Error(`Erreur JSON parsing: ${jsonError.message}. Contenu reçu: ${text.substring(0, 100)}...`);
+      }
+
+      return {
+        message: `Backend connecté - ${data.status}`,
+        details: {
+          timestamp: data.timestamp,
+          platform: data.platform,
+          backend_port: data.backend_port,
+          ngrok_url: data.services?.ngrok?.url,
+          ngrok_active: data.services?.ngrok?.active,
+          database_status: data.services?.mongodb
+        }
+      };
+    } catch (error) {
+      // Transformer l'erreur pour qu'elle soit plus lisible
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Impossible de contacter le backend. Vérifiez que le serveur est démarré et l\'URL ngrok est correcte.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    return {
-      message: `Backend connecté - ${data.status}`,
-      details: {
-        timestamp: data.timestamp,
-        database_users: data.database?.users_count || 0,
+  };
         database_posts: data.database?.posts_count || 0
       }
     };
