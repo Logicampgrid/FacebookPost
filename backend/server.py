@@ -242,6 +242,56 @@ def stop_ngrok_tunnel():
         print("⚠️ Cannot stop ngrok tunnel - pyngrok not available")
         NGROK_TUNNEL = None
 
+def get_frontend_backend_url():
+    """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
+    try:
+        frontend_env_path = "/app/frontend/.env"
+        
+        if os.path.exists(frontend_env_path):
+            with open(frontend_env_path, "r") as f:
+                lines = f.readlines()
+            
+            for line in lines:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    backend_url = line.split("=", 1)[1].strip()
+                    print(f"✅ URL backend du frontend .env: {backend_url}")
+                    return backend_url
+        
+        print("⚠️ Frontend .env non trouvé ou REACT_APP_BACKEND_URL manquant")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erreur lecture frontend .env: {e}")
+        return None
+
+def open_browser_when_ready():
+    """Ouvrir le navigateur avec l'URL EXACTE du frontend .env - CORRECTION CRITIQUE"""
+    def wait_and_open():
+        max_wait = 60  # 60 secondes
+        start_time = time.time()
+        
+        print("ℹ️ Attente de la synchronisation ngrok avec le frontend...")
+        
+        while time.time() - start_time < max_wait:
+            # CORRECTION : Utiliser l'URL du frontend .env au lieu de NGROK_URL direct
+            frontend_url = get_frontend_backend_url()
+            if frontend_url:
+                try:
+                    print(f"🌐 Ouverture navigateur avec URL synchronisée: {frontend_url}")
+                    import webbrowser
+                    webbrowser.open(frontend_url)
+                    return
+                except Exception as e:
+                    print(f"⚠️ Erreur ouverture navigateur: {e}")
+                    return
+            time.sleep(2)
+        
+        print("⚠️ Timeout: URL frontend non disponible après 60s")
+        print("💡 Ouvrez manuellement http://localhost:8001 ou vérifiez ngrok")
+    
+    # Lancer dans un thread séparé
+    browser_thread = threading.Thread(target=wait_and_open, daemon=True)
+    browser_thread.start()
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
 async def lifespan(app: FastAPI):
