@@ -80,7 +80,6 @@ const ConnectionDiagnostic = ({ API_BASE }) => {
       throw error;
     }
   };
-  };
 
   const testDatabaseConnection = async () => {
     const response = await fetch(`${API_BASE}/api/health`);
