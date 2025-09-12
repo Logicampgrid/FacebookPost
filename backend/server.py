@@ -1336,21 +1336,44 @@ async def create_post(post: PostCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/posts")
-async def get_posts(skip: int = 0, limit: int = 10):
-    """Get list of posts"""
+async def get_posts(skip: int = 0, limit: int = 10, user_id: Optional[str] = None):
+    """Get list of posts for a specific user"""
     try:
-        cursor = db.posts.find().skip(skip).limit(limit).sort("created_at", -1)
+        query = {}
+        if user_id and user_id != "undefined":
+            query["user_id"] = user_id
+        
+        cursor = db.posts.find(query).skip(skip).limit(limit).sort("created_at", -1)
         posts = await cursor.to_list(length=limit)
         
         # Convert ObjectId to string
         for post in posts:
-            post["id"] = post["_id"]
+            post["id"] = str(post["_id"])
             del post["_id"]
         
         return {"posts": posts, "total": len(posts)}
         
     except Exception as e:
         log_media(f"Error fetching posts: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/users/{user_id}/platforms")
+async def get_user_platforms(user_id: str):
+    """Get user's available platforms (placeholder - returns empty data structure)"""
+    try:
+        # Pour l'instant, retourner une structure vide car les plateformes
+        # sont gérées via l'authentification Facebook directement
+        return {
+            "personal_pages": [],
+            "personal_groups": [],
+            "business_pages": [],
+            "business_groups": [],
+            "business_instagram": [],
+            "selected_business_manager": None
+        }
+        
+    except Exception as e:
+        log_media(f"Error fetching user platforms: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/upload")
