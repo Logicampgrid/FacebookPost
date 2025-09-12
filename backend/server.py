@@ -1756,9 +1756,17 @@ async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
                 "timestamp": datetime.utcnow().isoformat()
             }
         
+        # CORRECTION NGROK: Utiliser l'URL ngrok comme redirect_uri
+        redirect_uri = request.redirect_uri
+        if NGROK_URL and (not redirect_uri or "localhost" in redirect_uri):
+            redirect_uri = NGROK_URL
+            log_auth(f"Redirect URI corrigé avec ngrok: {redirect_uri}", "INFO")
+        else:
+            log_auth(f"Redirect URI: {redirect_uri}", "INFO")
+        
         try:
-            # VRAIE AUTHENTIFICATION FACEBOOK
-            auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
+            # VRAIE AUTHENTIFICATION FACEBOOK avec l'URL corrigée
+            auth_result = await exchange_facebook_code(request.code, redirect_uri)
             
             # Chercher une page appropriée pour ce store
             pages = auth_result.get("pages", [])
