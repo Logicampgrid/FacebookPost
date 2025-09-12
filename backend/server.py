@@ -130,39 +130,49 @@ def start_ngrok_tunnel():
                             f.write(NGROK_URL)
                         print(f"💾 Ngrok URL saved to: {ngrok_url_file}")
                         
-                        # CORRECTION CRITIQUE : Mettre à jour le frontend .env automatiquement
-                        try:
-                            frontend_env_path = "/app/frontend/.env"
-                            if os.path.exists(frontend_env_path):
-                                # Read current .env
-                                with open(frontend_env_path, "r") as f:
-                                    lines = f.readlines()
-                                
-                                # Update REACT_APP_BACKEND_URL
-                                updated_lines = []
-                                backend_url_updated = False
-                                for line in lines:
-                                    if line.startswith("REACT_APP_BACKEND_URL="):
-                                        updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
-                                        backend_url_updated = True
-                                        print(f"✅ Ligne REACT_APP_BACKEND_URL mise à jour: {NGROK_URL}")
+                        # MISE À JOUR FRONTEND .ENV (seulement si pas en mode développement local)
+                        local_dev_mode = os.getenv("LOCAL_DEV_MODE", "false").lower() == "true"
+                        if not local_dev_mode:
+                            try:
+                                frontend_env_path = "/app/frontend/.env"
+                                if os.path.exists(frontend_env_path):
+                                    # Read current .env
+                                    with open(frontend_env_path, "r") as f:
+                                        lines = f.readlines()
+                                    
+                                    # Check if it's already pointing to localhost (local development)
+                                    is_local_config = any("localhost" in line for line in lines)
+                                    
+                                    if not is_local_config:
+                                        # Update REACT_APP_BACKEND_URL only if not local
+                                        updated_lines = []
+                                        backend_url_updated = False
+                                        for line in lines:
+                                            if line.startswith("REACT_APP_BACKEND_URL="):
+                                                updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                                backend_url_updated = True
+                                                print(f"✅ Ligne REACT_APP_BACKEND_URL mise à jour: {NGROK_URL}")
+                                            else:
+                                                updated_lines.append(line)
+                                        
+                                        # If REACT_APP_BACKEND_URL doesn't exist, add it
+                                        if not backend_url_updated:
+                                            updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                            print(f"✅ Nouvelle ligne REACT_APP_BACKEND_URL ajoutée: {NGROK_URL}")
+                                        
+                                        # Write back to file
+                                        with open(frontend_env_path, "w") as f:
+                                            f.writelines(updated_lines)
+                                        print(f"🎯 Frontend .env synchronisé avec l'URL ngrok: {NGROK_URL}")
                                     else:
-                                        updated_lines.append(line)
+                                        print(f"ℹ️ Configuration locale détectée, pas de mise à jour automatique du frontend .env")
+                                else:
+                                    print(f"⚠️ Frontend .env non trouvé: {frontend_env_path}")
                                 
-                                # If REACT_APP_BACKEND_URL doesn't exist, add it
-                                if not backend_url_updated:
-                                    updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
-                                    print(f"✅ Nouvelle ligne REACT_APP_BACKEND_URL ajoutée: {NGROK_URL}")
-                                
-                                # Write back to file
-                                with open(frontend_env_path, "w") as f:
-                                    f.writelines(updated_lines)
-                                print(f"🎯 Frontend .env synchronisé avec l'URL ngrok: {NGROK_URL}")
-                            else:
-                                print(f"⚠️ Frontend .env non trouvé: {frontend_env_path}")
-                            
-                        except Exception as e:
-                            print(f"⚠️ Warning: Could not update frontend .env: {e}")
+                            except Exception as e:
+                                print(f"⚠️ Warning: Could not update frontend .env: {e}")
+                        else:
+                            print(f"ℹ️ Mode développement local activé, pas de modification du frontend .env")
                         
                         return NGROK_URL
                     else:
