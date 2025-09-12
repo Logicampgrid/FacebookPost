@@ -1482,7 +1482,7 @@ async def authenticate_facebook(request: Request):
                 user["business_managers"][0]["instagram_accounts"].append(ig_account)
                 total_instagram_accounts += 1
         
-        log_app(f"Récupéré: {len(user['facebook_pages'])} pages personnelles, {len(user['business_managers'])} business managers, {total_instagram_accounts} comptes Instagram", "SUCCESS")
+        log_app(f"Récupéré: {len(pages)} pages, {total_instagram_accounts} comptes Instagram", "SUCCESS")
         
         return {
             "success": True,
