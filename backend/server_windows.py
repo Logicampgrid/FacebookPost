@@ -1429,6 +1429,94 @@ async def authenticate_facebook(request: Request):
         log_app(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+@app.post("/api/debug/facebook-token")
+async def debug_facebook_token():
+    """Route de debug pour tester le token Facebook direct"""
+    try:
+        log_app("Test du token Facebook direct", "INFO")
+        
+        # Récupérer le token direct depuis l'environnement
+        direct_token = os.getenv("FACEBOOK_DIRECT_TOKEN")
+        if not direct_token:
+            return {
+                "success": False,
+                "error": "FACEBOOK_DIRECT_TOKEN non configuré dans .env",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Tester le token avec l'API Graph
+        test_url = f"{FACEBOOK_GRAPH_URL}/me"
+        params = {
+            "access_token": direct_token,
+            "fields": "id,name,accounts{id,name,access_token,instagram_business_account{id,username}}"
+        }
+        
+        response = requests.get(test_url, params=params, timeout=30)
+        response.raise_for_status()
+        user_data = response.json()
+        
+        log_app(f"Token Facebook valide - Utilisateur: {user_data.get('name', 'Inconnu')}", "SUCCESS")
+        
+        # Récupérer les pages et comptes Instagram
+        pages_data = user_data.get('accounts', {}).get('data', [])
+        
+        result = {
+            "success": True,
+            "user": {
+                "id": user_data.get('id'),
+                "name": user_data.get('name')
+            },
+            "pages_count": len(pages_data),
+            "pages": [],
+            "instagram_accounts": [],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Traiter chaque page
+        for page in pages_data:
+            page_info = {
+                "id": page.get('id'),
+                "name": page.get('name'),
+                "has_instagram": bool(page.get('instagram_business_account'))
+            }
+            result["pages"].append(page_info)
+            
+            # Ajouter le compte Instagram si présent
+            if page.get('instagram_business_account'):
+                ig_account = page['instagram_business_account']
+                result["instagram_accounts"].append({
+                    "id": ig_account.get('id'),
+                    "username": ig_account.get('username'),
+                    "page_name": page.get('name'),
+                    "page_id": page.get('id')
+                })
+        
+        log_app(f"Token validé: {len(pages_data)} pages, {len(result['instagram_accounts'])} comptes Instagram", "SUCCESS")
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur API Facebook: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_app(error_msg, "ERROR")
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        error_msg = f"Erreur debug token: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
 @app.get("/api/stores")
 async def get_stores():
     """Obtenir la liste des stores configurés"""
