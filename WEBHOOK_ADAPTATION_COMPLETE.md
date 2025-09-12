@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://fb-insta-bridge.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://backend-alignment.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://fb-insta-bridge.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://fb-insta-bridge.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://fb-insta-bridge.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://backend-alignment.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://backend-alignment.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://backend-alignment.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

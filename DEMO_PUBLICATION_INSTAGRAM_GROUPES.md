@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://fb-insta-bridge.preview.emergentagent.com
+🔗 https://backend-alignment.preview.emergentagent.com
