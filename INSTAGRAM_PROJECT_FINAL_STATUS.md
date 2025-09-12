@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://social-domain-fix.preview.emergentagent.com/api/webhook
+https://fb-insta-bridge.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
