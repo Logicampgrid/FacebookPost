@@ -1468,33 +1468,19 @@ async def authenticate_facebook(request: Request):
         }
         
         # Traiter les comptes Instagram depuis les pages personnelles
-        business_users = user_data.get("business_users", {}).get("data", [])
+        pages = user_data.get("accounts", {}).get("data", [])
         total_instagram_accounts = 0
         
-        if business_users:
-            for business_user in business_users:
-                business = business_user.get("business", {})
-                business_manager = {
-                    "id": business.get("id"),
-                    "name": business.get("name"),
-                    "pages": business.get("pages", {}).get("data", []),
-                    "groups": business.get("groups", {}).get("data", []),
-                    "instagram_accounts": []
-                }
-                
-                # Collecter les comptes Instagram depuis les pages
-                for page in business_manager["pages"]:
-                    if page.get("instagram_business_account"):
-                        ig_account = page["instagram_business_account"]
-                        business_manager["instagram_accounts"].append({
-                            "id": ig_account.get("id"),
-                            "username": ig_account.get("username"),
-                            "page_name": page.get("name"),
-                            "page_id": page.get("id")
-                        })
-                        total_instagram_accounts += 1
-                
-                user["business_managers"].append(business_manager)
+        for page in pages:
+            if page.get("instagram_business_account"):
+                ig_account = page["instagram_business_account"]
+                ig_account["_sourceType"] = "business"
+                ig_account["platform"] = "instagram" 
+                ig_account["type"] = "instagram"
+                ig_account["page_name"] = page.get("name")
+                ig_account["page_id"] = page.get("id")
+                user["business_managers"][0]["instagram_accounts"].append(ig_account)
+                total_instagram_accounts += 1
         
         log_app(f"Récupéré: {len(user['facebook_pages'])} pages personnelles, {len(user['business_managers'])} business managers, {total_instagram_accounts} comptes Instagram", "SUCCESS")
         
