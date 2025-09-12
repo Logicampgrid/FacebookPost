@@ -1450,7 +1450,7 @@ async def authenticate_facebook(request: Request):
         
         log_app(f"Utilisateur connecté: {user_data.get('name')}", "SUCCESS")
         
-        # Structurer les données pour l'interface
+        # Structure des données pour l'interface - VERSION CORRIGÉE POUR ÉVITER business_managers undefined
         user = {
             "_id": user_data.get("id"),  # ID unique de l'utilisateur Facebook
             "id": user_data.get("id"),
