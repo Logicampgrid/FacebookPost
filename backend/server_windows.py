@@ -1673,6 +1673,16 @@ async def health_check():
         }
     }
 
+@app.get("/api/ngrok-info")
+async def get_ngrok_info():
+    """Get current ngrok tunnel information"""
+    return {
+        "enabled": ENABLE_NGROK,
+        "url": NGROK_URL,
+        "tunnel_active": NGROK_PROCESS is not None,
+        "public_url": NGROK_URL if NGROK_PROCESS else None
+    }
+
 @app.get("/api/auth/facebook/login-url")
 async def get_facebook_login_url(store: str = "default"):
     """Obtenir l'URL d'authentification Facebook avec redirect_uri dynamique basé sur ngrok"""
