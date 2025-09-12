@@ -1609,6 +1609,83 @@ async def test_publish_endpoint(request: TestPublishRequest):
 
 # === AUTHENTICATION ENDPOINTS ===
 
+@app.post("/api/auth/facebook")
+async def authenticate_facebook(request: Request):
+    """Authentification Facebook avec token d'accès direct"""
+    try:
+        data = await request.json()
+        access_token = data.get("access_token")
+        
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Token d'accès requis")
+            
+        log_auth("Authentification Facebook avec token direct", "INFO")
+        
+        # Récupérer les informations utilisateur
+        user_url = f"{FACEBOOK_GRAPH_URL}/me"
+        user_params = {
+            'access_token': access_token,
+            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}},business_users{business{id,name,pages{id,name,access_token,instagram_business_account{id,username}},groups{id,name}}}'
+        }
+        
+        response = requests.get(user_url, params=user_params, timeout=30)
+        response.raise_for_status()
+        user_data = response.json()
+        
+        log_auth(f"Utilisateur connecté: {user_data.get('name')}", "SUCCESS")
+        
+        # Structure des données pour l'interface
+        user = {
+            "_id": user_data.get("id"),  # ID unique de l'utilisateur Facebook
+            "id": user_data.get("id"),
+            "name": user_data.get("name"),
+            "facebook_pages": user_data.get("accounts", {}).get("data", []),
+            "business_managers": []
+        }
+        
+        # Traiter les business managers si présents
+        business_users = user_data.get("business_users", {}).get("data", [])
+        if business_users:
+            for business_user in business_users:
+                business = business_user.get("business", {})
+                business_manager = {
+                    "id": business.get("id"),
+                    "name": business.get("name"),
+                    "pages": business.get("pages", {}).get("data", []),
+                    "groups": business.get("groups", {}).get("data", []),
+                    "instagram_accounts": []
+                }
+                
+                # Collecter les comptes Instagram depuis les pages
+                for page in business_manager["pages"]:
+                    if page.get("instagram_business_account"):
+                        ig_account = page["instagram_business_account"]
+                        ig_account["_sourceType"] = "business"
+                        ig_account["platform"] = "instagram"
+                        ig_account["type"] = "instagram"
+                        business_manager["instagram_accounts"].append(ig_account)
+                
+                user["business_managers"].append(business_manager)
+        
+        # Compter les comptes Instagram total
+        total_instagram = sum(len(bm.get("instagram_accounts", [])) for bm in user["business_managers"])
+        
+        return {
+            "success": True,
+            "user": user,
+            "total_instagram_accounts": total_instagram,
+            "message": "Authentification réussie"
+        }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur API Facebook: {str(e)}"
+        log_auth(error_msg, "ERROR")
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        error_msg = f"Erreur authentification: {str(e)}"
+        log_auth(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @app.post("/api/auth/facebook/exchange-code")
 async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
