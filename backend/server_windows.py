@@ -491,7 +491,8 @@ class TestPublishRequest(BaseModel):
     platforms: List[str] = ["facebook"]  # facebook, instagram
     custom_message: Optional[str] = None  # Si None, utilise TEST_MESSAGE de .env
     
-    @validator('platforms')
+    @field_validator('platforms')
+    @classmethod
     def validate_platforms(cls, v):
         valid_platforms = ["facebook", "instagram"]
         for platform in v:
