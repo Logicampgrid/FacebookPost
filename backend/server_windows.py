@@ -1467,7 +1467,7 @@ async def authenticate_facebook(request: Request):
             ]
         }
         
-        # Traiter les business managers si présents
+        # Traiter les comptes Instagram depuis les pages personnelles
         business_users = user_data.get("business_users", {}).get("data", [])
         total_instagram_accounts = 0
         
