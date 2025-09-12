@@ -225,10 +225,13 @@ def start_ngrok_tunnel_windows():
         log_app(f"⏳ Attente {initial_wait}s pour le démarrage ngrok...", "INFO")
         time.sleep(initial_wait)
         
-        # Vérifier que le processus est toujours en vie
-        if NGROK_PROCESS.poll() is not None:
+        # Vérifier que le processus ngrok est toujours en vie après l'attente initiale
+        ngrok_process_status = NGROK_PROCESS.poll()
+        if ngrok_process_status is not None:
             # Le processus s'est arrêté
             stdout, stderr = NGROK_PROCESS.communicate()
+            
+            log_app(f"❌ Processus ngrok terminé avec code: {ngrok_process_status}", "ERROR")
             
             # Analyser les erreurs spécifiques
             if "ERR_NGROK_108" in stderr or "authentication failed" in stderr:
@@ -238,12 +241,17 @@ def start_ngrok_tunnel_windows():
             elif "ERR_NGROK_105" in stderr:
                 log_app("❌ Erreur ngrok: Token d'authentification invalide", "ERROR")
                 log_app("💡 Vérifiez votre NGROK_AUTH_TOKEN dans le fichier .env", "INFO")
+            elif "command not found" in stderr or "no such file" in stderr:
+                log_app("❌ Erreur ngrok: Commande ngrok introuvable", "ERROR")
+                log_app("💡 Vérifiez que ngrok est installé et dans le PATH", "INFO")
             else:
-                log_app(f"❌ Processus ngrok s'est arrêté. STDOUT: {stdout[:500]}{'...' if len(stdout) > 500 else ''}", "ERROR")
+                log_app(f"❌ STDOUT: {stdout[:500]}{'...' if len(stdout) > 500 else ''}", "ERROR")
                 log_app(f"❌ STDERR: {stderr[:500]}{'...' if len(stderr) > 500 else ''}", "ERROR")
             
             NGROK_PROCESS = None
             return None
+        else:
+            log_app("✅ Processus ngrok toujours actif, tentative de récupération d'URL...", "INFO")
         
         log_app("✅ Processus ngrok démarré, récupération de l'URL...", "INFO")
         
