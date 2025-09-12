@@ -1009,13 +1009,24 @@ def log_auth(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [AUTH] {message}")
 
-async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
+async def exchange_facebook_code(code: str, redirect_uri: str = None) -> dict:
     """Échange un code d'autorisation Facebook contre un access token"""
     try:
         log_auth(f"Échange du code d'autorisation Facebook", "INFO")
         
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
             raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
+        
+        # CORRECTION CRITIQUE: Utiliser l'URL ngrok au lieu de localhost
+        if not redirect_uri:
+            if NGROK_URL:
+                redirect_uri = NGROK_URL
+                log_auth(f"Utilisation URL ngrok: {redirect_uri}", "INFO")
+            else:
+                redirect_uri = "http://localhost:8001"
+                log_auth(f"Fallback URL localhost: {redirect_uri}", "WARNING")
+        
+        log_auth(f"Redirect URI: {redirect_uri}", "INFO")
         
         # Étape 1: Échanger le code contre un access token
         token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
