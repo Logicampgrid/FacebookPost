@@ -698,7 +698,7 @@ class FacebookExchangeCodeRequest(BaseModel):
     code: str
     state: Optional[str] = None
     store: Optional[str] = None
-    redirect_uri: Optional[str] = "http://localhost:3000/auth/callback"
+    redirect_uri: Optional[str] = None
     
     @field_validator('store', mode='before')
     @classmethod
@@ -710,9 +710,13 @@ class FacebookExchangeCodeRequest(BaseModel):
     
     @field_validator('redirect_uri', mode='before')
     @classmethod
-    def set_default_redirect_uri(cls, v):
-        """Set default redirect_uri if not provided"""
-        return v or "http://localhost:3000/auth/callback"
+    def set_dynamic_redirect_uri(cls, v):
+        """Set dynamic redirect_uri based on active ngrok URL if not provided"""
+        if v:
+            return v  # Utiliser l'URI fournie si spécifiée
+        
+        # Sinon, construire dynamiquement l'URI de redirection
+        return build_dynamic_redirect_uri("/auth/callback")
 
 class FacebookAuthResponse(BaseModel):
     success: bool
