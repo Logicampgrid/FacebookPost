@@ -322,6 +322,11 @@ async def lifespan(app: FastAPI):
     print(f"🌐 FTP Host: {os.getenv('FTP_HOST', 'logicamp.org')}")
     print(f"🔧 DRY_RUN mode: {os.getenv('DRY_RUN', 'false')}")
     
+    # Récupérer l'URL ngrok actuelle
+    current_ngrok_url = get_current_ngrok_url()
+    if current_ngrok_url:
+        print(f"✅ URL ngrok détectée: {current_ngrok_url}")
+    
     # Start ngrok tunnel in background thread
     if ENABLE_NGROK:
         ngrok_thread = threading.Thread(target=start_ngrok_tunnel, daemon=True)
