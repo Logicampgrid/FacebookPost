@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://bugfix-login.preview.emergentagent.com
+URL : https://auto-post-ig.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
