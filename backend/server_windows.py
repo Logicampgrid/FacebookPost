@@ -1948,6 +1948,208 @@ async def test_publish_endpoint(request: TestPublishRequest):
         log_publish(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+@app.get("/api/publications")
+async def get_publications(skip: int = 0, limit: int = 20, store: Optional[str] = None):
+    """Obtenir l'historique des publications (stub pour compatibilité)"""
+    try:
+        # Pour l'instant, retourner une structure vide car pas de base de données MongoDB configurée
+        log_app(f"Demande d'historique publications: skip={skip}, limit={limit}, store={store}", "INFO")
+        
+        return {
+            "publications": [],
+            "total": 0,
+            "skip": skip,
+            "limit": limit,
+            "store_filter": store,
+            "message": "Historique publications non implémenté (nécessite MongoDB)"
+        }
+        
+    except Exception as e:
+        log_app(f"Erreur récupération publications: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/test-config")
+async def test_store_configuration(store: str):
+    """Tester la configuration d'un store sans publier"""
+    try:
+        if store not in STORES:
+            raise HTTPException(status_code=400, detail=f"Store '{store}' inconnu")
+        
+        config = get_store_config(store)
+        results = {
+            "store": store,
+            "facebook_test": None,
+            "instagram_test": None,
+            "errors": []
+        }
+        
+        # Test Facebook
+        if config.get("fb_page_id") and config.get("access_token"):
+            try:
+                url = f"{FACEBOOK_GRAPH_URL}/{config['fb_page_id']}"
+                params = {"access_token": config["access_token"]}
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    results["facebook_test"] = {
+                        "success": True,
+                        "page_name": data.get("name", "Inconnu"),
+                        "page_id": data.get("id")
+                    }
+                else:
+                    results["facebook_test"] = {
+                        "success": False,
+                        "error": f"Status {response.status_code}"
+                    }
+                    results["errors"].append(f"Facebook API error: {response.status_code}")
+            except Exception as e:
+                results["facebook_test"] = {"success": False, "error": str(e)}
+                results["errors"].append(f"Facebook test error: {str(e)}")
+        else:
+            results["errors"].append("Configuration Facebook incomplète")
+        
+        # Test Instagram
+        if config.get("ig_user_id") and config.get("access_token"):
+            try:
+                url = f"{FACEBOOK_GRAPH_URL}/{config['ig_user_id']}"
+                params = {"fields": "account_type,username", "access_token": config["access_token"]}
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    results["instagram_test"] = {
+                        "success": True,
+                        "username": data.get("username", "Inconnu"),
+                        "account_type": data.get("account_type", "Inconnu"),
+                        "user_id": data.get("id")
+                    }
+                else:
+                    results["instagram_test"] = {
+                        "success": False,
+                        "error": f"Status {response.status_code}"
+                    }
+                    results["errors"].append(f"Instagram API error: {response.status_code}")
+            except Exception as e:
+                results["instagram_test"] = {"success": False, "error": str(e)}
+                results["errors"].append(f"Instagram test error: {str(e)}")
+        else:
+            results["errors"].append("Configuration Instagram incomplète")
+        
+        return results
+        
+    except Exception as e:
+        log_app(f"Erreur test configuration: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === PYDANTIC MODELS FOR POSTS ===
+class PostCreate(BaseModel):
+    content: str
+    media_urls: Optional[List[str]] = []
+    platform: str = "facebook"  # facebook, instagram, both
+    page_id: Optional[str] = None
+    
+    @field_validator('platform')
+    @classmethod
+    def validate_platform(cls, v):
+        if v not in ['facebook', 'instagram', 'both']:
+            raise ValueError('Platform must be facebook, instagram, or both')
+        return v
+
+class PostResponse(BaseModel):
+    id: str
+    content: str
+    media_urls: List[str]
+    platform: str
+    status: str
+    created_at: datetime
+    facebook_post_id: Optional[str] = None
+    instagram_post_id: Optional[str] = None
+
+@app.post("/api/posts", response_model=PostResponse)
+async def create_post(post: PostCreate):
+    """Create a new social media post (stub pour compatibilité)"""
+    try:
+        log_app(f"Création post pour plateforme: {post.platform}", "INFO")
+        
+        # Generate post ID
+        post_id = str(uuid.uuid4())
+        
+        # Create post document structure
+        post_doc = {
+            "id": post_id,
+            "content": post.content,
+            "media_urls": post.media_urls or [],
+            "platform": post.platform,
+            "status": "created",
+            "created_at": datetime.utcnow(),
+            "facebook_post_id": None,
+            "instagram_post_id": None
+        }
+        
+        log_app(f"Post créé avec succès: {post_id}", "SUCCESS")
+        
+        return PostResponse(**post_doc)
+        
+    except Exception as e:
+        log_app(f"Erreur création post: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/posts")
+async def get_posts(skip: int = 0, limit: int = 10, user_id: Optional[str] = None):
+    """Get list of posts (stub pour compatibilité)"""
+    try:
+        log_app(f"Demande de posts: skip={skip}, limit={limit}, user_id={user_id}", "INFO")
+        
+        # Retourner une structure vide car pas de base de données
+        return {"posts": [], "total": 0, "message": "Posts storage non implémenté"}
+        
+    except Exception as e:
+        log_app(f"Erreur récupération posts: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/users/{user_id}/platforms")
+async def get_user_platforms(user_id: str):
+    """Get user's available platforms (stub pour compatibilité)"""
+    try:
+        log_app(f"Demande plateformes pour utilisateur: {user_id}", "INFO")
+        
+        # Retourner une structure vide
+        return {
+            "personal_pages": [],
+            "personal_groups": [],
+            "business_pages": [],
+            "business_groups": [],
+            "business_instagram": [],
+            "selected_business_manager": None
+        }
+        
+    except Exception as e:
+        log_app(f"Erreur récupération plateformes utilisateur: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload a media file (stub simplifié)"""
+    try:
+        log_app(f"Upload de fichier: {file.filename}", "INFO")
+        
+        # Pour l'instant, retourner une URL mock
+        mock_url = f"https://example.com/uploads/{file.filename}"
+        
+        log_app(f"Upload simulé: {mock_url}", "SUCCESS")
+        
+        return {
+            "url": mock_url,
+            "filename": file.filename,
+            "processed": False,
+            "message": "Upload simulé - implémentation complète requiert FTP"
+        }
+        
+    except Exception as e:
+        log_app(f"Erreur upload: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # === GESTION DES ROUTES FRONTEND (DOIT ÊTRE EN DERNIER) ===
 @app.get("/", response_class=FileResponse)
 async def serve_frontend_root():
