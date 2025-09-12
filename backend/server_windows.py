@@ -377,15 +377,53 @@ def start_ngrok_tunnel_windows():
         
         log_app("❌ Impossible d'obtenir l'URL ngrok après plusieurs tentatives", "ERROR")
         
-        # Diagnostics supplémentaires
+        # Diagnostics supplémentaires et solutions
         if NGROK_PROCESS and NGROK_PROCESS.poll() is None:
             log_app("💡 Le processus ngrok est toujours en cours mais l'API n'est pas accessible", "INFO")
             log_app("💡 Cela peut être dû à des restrictions de firewall ou de réseau", "INFO")
+            # Tenter d'arrêter le processus ngrok défaillant
+            try:
+                NGROK_PROCESS.terminate()
+                NGROK_PROCESS.wait(timeout=5)
+            except:
+                pass
         else:
-            log_app("💡 Le processus ngrok s'est arrêté - vérifiez votre installation ngrok", "INFO")
+            log_app("💡 Le processus ngrok s'est arrêté - limitation de session probable", "INFO")
         
-        log_app("🔄 Mode fallback: L'application sera accessible uniquement en local", "WARNING")
+        # Solution alternative : Mettre à jour le frontend avec l'URL locale si ngrok échoue
+        log_app("🔄 Mode fallback: Configuration pour accès local uniquement", "WARNING")
         log_app(f"🌐 URL locale: http://localhost:{BACKEND_PORT}", "INFO")
+        
+        # Mettre à jour le frontend .env avec l'URL locale comme fallback
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                local_url = f"http://localhost:{BACKEND_PORT}"
+                updated_lines = []
+                backend_url_updated = False
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        # Garder l'URL ngrok existante mais commenter et ajouter locale
+                        if "ngrok" in line:
+                            updated_lines.append(f"# Ngrok échoué: {line}")
+                            updated_lines.append(f"REACT_APP_BACKEND_URL={local_url}\n")
+                        else:
+                            updated_lines.append(f"REACT_APP_BACKEND_URL={local_url}\n")
+                        backend_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                if not backend_url_updated:
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={local_url}\n")
+                
+                with open(frontend_env_path, "w", encoding='utf-8') as f:
+                    f.writelines(updated_lines)
+                log_app(f"✅ Frontend .env configuré pour accès local: {local_url}", "SUCCESS")
+        except Exception as e:
+            log_app(f"⚠️ Erreur update .env local: {e}", "WARNING")
         
         return None
         
