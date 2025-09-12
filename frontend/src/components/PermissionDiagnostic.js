@@ -158,28 +158,30 @@ const PermissionDiagnostic = ({ token, onClose }) => {
                   )}
 
                   {/* Business API Test */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-800 mb-3">Test API Business Manager</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm">Code de réponse:</span>
-                        <span className={`text-sm font-mono px-2 py-1 rounded ${
-                          diagnostic.business_api_test.status_code === 200 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {diagnostic.business_api_test.status_code}
-                        </span>
-                      </div>
-                      {diagnostic.business_api_test.error && (
-                        <div className="bg-red-100 border border-red-200 rounded p-2">
-                          <p className="text-red-800 text-sm font-mono">
-                            {JSON.stringify(diagnostic.business_api_test.error, null, 2)}
-                          </p>
+                  {diagnostic.business_api_test && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-medium text-gray-800 mb-3">Test API Business Manager</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">Code de réponse:</span>
+                          <span className={`text-sm font-mono px-2 py-1 rounded ${
+                            diagnostic.business_api_test.status_code === 200 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {diagnostic.business_api_test.status_code || 'N/A'}
+                          </span>
                         </div>
-                      )}
+                        {diagnostic.business_api_test.error && (
+                          <div className="bg-red-100 border border-red-200 rounded p-2">
+                            <p className="text-red-800 text-sm font-mono">
+                              {JSON.stringify(diagnostic.business_api_test.error, null, 2)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Recommendations */}
                   <div>
