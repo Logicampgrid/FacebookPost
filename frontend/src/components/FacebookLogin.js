@@ -104,12 +104,21 @@ const FacebookLogin = ({ onLogin, loading }) => {
     }
     
     window.FB.login((response) => {
-      if (response.authResponse) {
-        onLogin(response.authResponse.accessToken);
-      } else if (response.status === 'not_authorized') {
-        setError('Vous devez autoriser l\'application pour continuer');
-      } else {
-        setError('Connexion Facebook annulée ou échouée');
+      try {
+        console.log('Facebook popup response:', response);
+        
+        if (response && response.authResponse && response.authResponse.accessToken) {
+          console.log('Facebook login successful, calling onLogin...');
+          onLogin(response.authResponse.accessToken);
+        } else if (response && response.status === 'not_authorized') {
+          setError('Vous devez autoriser l\'application pour continuer');
+        } else {
+          console.error('Facebook login failed or cancelled:', response);
+          setError('Connexion Facebook annulée ou échouée');
+        }
+      } catch (error) {
+        console.error('Error in Facebook popup callback:', error);
+        setError('Erreur lors du traitement de la réponse Facebook: ' + error.message);
       }
     }, {
       scope: 'pages_manage_posts,pages_read_engagement,pages_show_list,business_management,read_insights'
