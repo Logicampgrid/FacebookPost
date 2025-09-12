@@ -463,6 +463,13 @@ def start_ngrok_tunnel_windows():
                         except Exception as e:
                             log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
                         
+                        # NOUVEAU: Mise à jour automatique des endpoints Facebook
+                        try:
+                            update_facebook_endpoints_with_ngrok()
+                            log_app(f"✅ Endpoints Facebook mis à jour automatiquement", "SUCCESS")
+                        except Exception as e:
+                            log_app(f"⚠️ Erreur mise à jour endpoints Facebook: {e}", "WARNING")
+                        
                         return NGROK_URL
                     else:
                         log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Aucun tunnel trouvé dans la réponse", "INFO")
