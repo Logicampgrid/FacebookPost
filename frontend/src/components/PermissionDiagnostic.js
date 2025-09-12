@@ -143,14 +143,14 @@ const PermissionDiagnostic = ({ token, onClose }) => {
                   </div>
 
                   {/* Declined Permissions */}
-                  {diagnostic.declined_permissions.length > 0 && (
+                  {Array.isArray(diagnostic.declined_permissions) && diagnostic.declined_permissions.length > 0 && (
                     <div>
                       <h3 className="font-medium text-gray-800 mb-3">Permissions Refusées</h3>
                       <div className="space-y-2">
                         {diagnostic.declined_permissions.map((item, index) => (
                           <div key={index} className="flex items-center space-x-2 text-sm text-red-600">
                             <XCircle className="w-4 h-4" />
-                            <span>{item.permission} ({item.status})</span>
+                            <span>{item?.permission || 'Permission inconnue'} ({item?.status || 'statut inconnu'})</span>
                           </div>
                         ))}
                       </div>
