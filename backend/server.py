@@ -1675,10 +1675,15 @@ async def authenticate_facebook(request: Request):
         data = await request.json()
         access_token = data.get("access_token")
         
+        # NOUVELLE FONCTIONNALITÉ: Utiliser le token direct de l'environnement si aucun token fourni
         if not access_token:
-            raise HTTPException(status_code=400, detail="Token d'accès requis")
-            
-        log_auth("Authentification Facebook avec token direct", "INFO")
+            access_token = os.getenv("FACEBOOK_DIRECT_TOKEN")
+            if access_token:
+                log_auth("Utilisation du token Facebook direct depuis .env", "INFO")
+            else:
+                raise HTTPException(status_code=400, detail="Token d'accès requis (via paramètre ou FACEBOOK_DIRECT_TOKEN)")
+        else:
+            log_auth("Utilisation du token Facebook fourni dans la requête", "INFO")
         
         # Récupérer les informations utilisateur
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
