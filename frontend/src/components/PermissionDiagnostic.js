@@ -186,17 +186,21 @@ const PermissionDiagnostic = ({ token, onClose }) => {
                   {/* Recommendations */}
                   <div>
                     <h3 className="font-medium text-gray-800 mb-3">Recommandations</h3>
-                    <div className="space-y-3">
-                      {diagnostic.recommendations.map((rec, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg">
-                          {getRecommendationIcon(rec.type)}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-800">{rec.message}</p>
-                            <p className="text-xs text-gray-600 mt-1">{rec.action}</p>
+                    {Array.isArray(diagnostic.recommendations) && diagnostic.recommendations.length > 0 ? (
+                      <div className="space-y-3">
+                        {diagnostic.recommendations.map((rec, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg">
+                            {getRecommendationIcon(rec?.type)}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800">{rec?.message || 'Message non disponible'}</p>
+                              <p className="text-xs text-gray-600 mt-1">{rec?.action || 'Action non spécifiée'}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Aucune recommandation disponible.</p>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
