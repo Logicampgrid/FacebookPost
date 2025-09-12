@@ -104,6 +104,53 @@ def kill_existing_ngrok():
     except Exception as e:
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
+def update_facebook_endpoints_with_ngrok():
+    """Met à jour automatiquement les endpoints Facebook avec l'URL ngrok active"""
+    try:
+        active_url = get_active_ngrok_url()
+        if not active_url:
+            log_app("⚠️ Aucune URL ngrok active - pas de mise à jour des endpoints", "WARNING")
+            return False
+        
+        log_app(f"🔄 Mise à jour des endpoints Facebook avec: {active_url}", "INFO")
+        
+        # Mettre à jour l'URL globale si nécessaire
+        global NGROK_URL
+        if NGROK_URL != active_url:
+            NGROK_URL = active_url
+            log_app(f"✅ URL globale ngrok mise à jour: {NGROK_URL}", "SUCCESS")
+        
+        # Mettre à jour le frontend .env avec l'URL active
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                updated_lines = []
+                backend_url_updated = False
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                        backend_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                if not backend_url_updated:
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                
+                with open(frontend_env_path, "w", encoding='utf-8') as f:
+                    f.writelines(updated_lines)
+                log_app(f"✅ Frontend .env synchronisé avec URL active", "SUCCESS")
+        except Exception as e:
+            log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
+        
+        return True
+        
+    except Exception as e:
+        log_app(f"❌ Erreur mise à jour endpoints Facebook: {e}", "ERROR")
+        return False
+
 def get_active_ngrok_url():
     """Récupère l'URL ngrok active via l'API locale - NOUVELLE FONCTION DYNAMIQUE"""
     try:
