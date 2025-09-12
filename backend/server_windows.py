@@ -2150,6 +2150,43 @@ async def upload_file(file: UploadFile = File(...)):
         log_app(f"Erreur upload: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/webhook/n8n")
+async def n8n_webhook_handler(request: Request):
+    """Endpoint spécialisé pour recevoir les objets de n8n"""
+    try:
+        log_app("Réception webhook n8n", "INFO")
+        
+        # Récupérer le body de la requête
+        body = await request.body()
+        content_type = request.headers.get("content-type", "").lower()
+        
+        # Parser les données JSON
+        if "application/json" in content_type:
+            webhook_data = json.loads(body.decode('utf-8'))
+            log_app(f"Données n8n reçues: {json.dumps(webhook_data, indent=2)}", "INFO")
+        else:
+            # Essayer de parser comme JSON même si pas spécifié
+            try:
+                webhook_data = json.loads(body.decode('utf-8'))
+                log_app(f"Données n8n (JSON détecté): {json.dumps(webhook_data, indent=2)}", "INFO")
+            except:
+                # Si pas JSON, traiter comme texte
+                webhook_data = {"raw_data": body.decode('utf-8', errors='ignore')}
+                log_app(f"Données n8n (texte): {webhook_data}", "INFO")
+        
+        # Pour l'instant, juste logger car pas de base de données MongoDB
+        log_app(f"Événement n8n reçu et traité (pas de sauvegarde - nécessite MongoDB)", "SUCCESS")
+        
+        # Traitement basique des données n8n
+        if isinstance(webhook_data, dict):
+            log_app(f"Données n8n contiennent {len(webhook_data)} clés", "INFO")
+        
+        return {"status": "received", "source": "n8n", "message": "Données n8n traitées avec succès (mode stub)"}
+        
+    except Exception as e:
+        log_app(f"Erreur webhook n8n: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # === GESTION DES ROUTES FRONTEND (DOIT ÊTRE EN DERNIER) ===
 @app.get("/", response_class=FileResponse)
 async def serve_frontend_root():
