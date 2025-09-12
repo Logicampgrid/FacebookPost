@@ -342,6 +342,9 @@ def start_ngrok_tunnel_windows():
         else:
             log_app("💡 Le processus ngrok s'est arrêté - vérifiez votre installation ngrok", "INFO")
         
+        log_app("🔄 Mode fallback: L'application sera accessible uniquement en local", "WARNING")
+        log_app(f"🌐 URL locale: http://localhost:{BACKEND_PORT}", "INFO")
+        
         return None
         
     except Exception as e:
