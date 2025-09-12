@@ -336,7 +336,17 @@ def start_ngrok_tunnel_windows():
                     time.sleep(2)
                     
             except requests.exceptions.ConnectionError:
-                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: API ngrok non accessible (connexion refusée)", "INFO")
+                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: API ngrok non accessible (connexion refusée sur port 4040)", "INFO")
+                # Diagnostic additionnel : vérifier si le processus ngrok est toujours là
+                if attempt == 2:  # À la 3ème tentative, faire un diagnostic
+                    try:
+                        ngrok_status = NGROK_PROCESS.poll()
+                        if ngrok_status is None:
+                            log_app("🔍 Processus ngrok actif mais API 4040 inaccessible - possible lenteur de démarrage", "INFO")
+                        else:
+                            log_app(f"🔍 Processus ngrok terminé avec code {ngrok_status}", "WARNING")
+                    except:
+                        pass
                 time.sleep(2)
             except requests.exceptions.Timeout:
                 log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Timeout connexion API ngrok", "INFO")
