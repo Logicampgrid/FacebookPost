@@ -1698,41 +1698,39 @@ async def authenticate_facebook(request: Request):
         
         log_auth(f"Utilisateur connecté: {user_data.get('name')}", "SUCCESS")
         
-        # Structure des données pour l'interface
+        # Structure des données pour l'interface - VERSION SIMPLIFIÉE
         user = {
             "_id": user_data.get("id"),  # ID unique de l'utilisateur Facebook
             "id": user_data.get("id"),
             "name": user_data.get("name"),
             "facebook_pages": user_data.get("accounts", {}).get("data", []),
-            "business_managers": []
-        }
-        
-        # Traiter les business managers si présents
-        business_users = user_data.get("business_users", {}).get("data", [])
-        if business_users:
-            for business_user in business_users:
-                business = business_user.get("business", {})
-                business_manager = {
-                    "id": business.get("id"),
-                    "name": business.get("name"),
-                    "pages": business.get("pages", {}).get("data", []),
-                    "groups": business.get("groups", {}).get("data", []),
+            "business_managers": [
+                {
+                    "id": "direct_token_business",
+                    "name": "Entreprise de Didier Preud'homme",
+                    "pages": user_data.get("accounts", {}).get("data", []),
+                    "groups": [],
                     "instagram_accounts": []
                 }
-                
-                # Collecter les comptes Instagram depuis les pages
-                for page in business_manager["pages"]:
-                    if page.get("instagram_business_account"):
-                        ig_account = page["instagram_business_account"]
-                        ig_account["_sourceType"] = "business"
-                        ig_account["platform"] = "instagram"
-                        ig_account["type"] = "instagram"
-                        business_manager["instagram_accounts"].append(ig_account)
-                
-                user["business_managers"].append(business_manager)
+            ]
+        }
         
-        # Compter les comptes Instagram total
-        total_instagram = sum(len(bm.get("instagram_accounts", [])) for bm in user["business_managers"])
+        # Traiter les comptes Instagram depuis les pages personnelles
+        pages = user_data.get("accounts", {}).get("data", [])
+        total_instagram = 0
+        
+        for page in pages:
+            if page.get("instagram_business_account"):
+                ig_account = page["instagram_business_account"]
+                ig_account["_sourceType"] = "business"
+                ig_account["platform"] = "instagram" 
+                ig_account["type"] = "instagram"
+                ig_account["page_name"] = page.get("name")
+                ig_account["page_id"] = page.get("id")
+                user["business_managers"][0]["instagram_accounts"].append(ig_account)
+                total_instagram += 1
+        
+        log_auth(f"Récupéré: {len(pages)} pages, {total_instagram} comptes Instagram", "SUCCESS")
         
         return {
             "success": True,
