@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Configuration de base
-API_BASE = "https://json-repair.preview.emergentagent.com"
+API_BASE = "https://auth-key-manager.preview.emergentagent.com"
 
 def test_backend_connection():
     """Test de connexion au backend"""

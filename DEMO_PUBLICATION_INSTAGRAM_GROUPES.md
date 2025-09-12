@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://json-repair.preview.emergentagent.com
+🔗 https://auth-key-manager.preview.emergentagent.com
