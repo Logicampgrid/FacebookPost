@@ -1050,6 +1050,17 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
             raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
         
+        # CORRECTION CRITIQUE: Utiliser l'URL ngrok active au lieu de localhost
+        if not redirect_uri or "localhost" in redirect_uri:
+            active_ngrok_url = get_active_ngrok_url()
+            if active_ngrok_url:
+                redirect_uri = active_ngrok_url
+                log_app(f"Redirect URI corrigée avec ngrok: {redirect_uri}", "INFO")
+            else:
+                log_app(f"Redirect URI fallback: {redirect_uri}", "WARNING")
+        
+        log_app(f"Redirect URI (dynamique): {redirect_uri}", "INFO")
+        
         # Étape 1: Échanger le code contre un access token
         token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
         token_params = {
