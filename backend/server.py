@@ -1936,6 +1936,88 @@ async def webhook_verify(request: Request):
         print(f"❌ Exception webhook: {e}")
         raise HTTPException(status_code=500, detail=error_detail)
 
+@app.post("/api/webhook/n8n")
+async def n8n_webhook_handler(request: Request):
+    """Endpoint spécialisé pour recevoir les objets de n8n"""
+    try:
+        log_media("Réception webhook n8n", "INFO")
+        
+        # Récupérer le body de la requête
+        body = await request.body()
+        content_type = request.headers.get("content-type", "").lower()
+        
+        # Parser les données JSON
+        if "application/json" in content_type:
+            webhook_data = json.loads(body.decode('utf-8'))
+            log_media(f"Données n8n reçues: {json.dumps(webhook_data, indent=2)}", "INFO")
+        else:
+            # Essayer de parser comme JSON même si pas spécifié
+            try:
+                webhook_data = json.loads(body.decode('utf-8'))
+                log_media(f"Données n8n (JSON détecté): {json.dumps(webhook_data, indent=2)}", "INFO")
+            except:
+                # Si pas JSON, traiter comme texte
+                webhook_data = {"raw_data": body.decode('utf-8', errors='ignore')}
+                log_media(f"Données n8n (texte): {webhook_data}", "INFO")
+        
+        # Sauvegarder l'événement n8n en base de données
+        try:
+            event_doc = {
+                "_id": str(uuid.uuid4()),
+                "source": "n8n",
+                "data": webhook_data,
+                "timestamp": datetime.utcnow(),
+                "content_type": content_type,
+                "processed": False
+            }
+            await db.n8n_events.insert_one(event_doc)
+            log_media("Événement n8n sauvegardé en base", "SUCCESS")
+        except Exception as e:
+            log_media(f"Erreur sauvegarde n8n: {str(e)}", "WARNING")
+        
+        # Si les données contiennent des informations de publication, les traiter
+        if isinstance(webhook_data, dict):
+            await process_n8n_webhook_data(webhook_data)
+        
+        return {"status": "received", "source": "n8n", "message": "Données n8n traitées avec succès"}
+        
+    except Exception as e:
+        log_media(f"Erreur webhook n8n: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def process_n8n_webhook_data(data: dict):
+    """Traite les données spécifiques de n8n pour publication automatique"""
+    try:
+        log_media("Traitement des données n8n pour publication", "INFO")
+        
+        # Extraire les informations communes
+        message = data.get("message") or data.get("content") or data.get("text")
+        product_url = data.get("product_url") or data.get("url") or data.get("link")
+        image_url = data.get("image_url") or data.get("image") or data.get("media")
+        store = data.get("store") or data.get("shop") or "gizmobbs"  # Store par défaut
+        platforms = data.get("platforms") or ["facebook"]  # Plateforme par défaut
+        
+        log_media(f"Données extraites - Store: {store}, Message: {message[:50] if message else 'None'}...", "INFO")
+        
+        # Si on a les données nécessaires, effectuer une publication
+        if message and product_url:
+            log_media("Données suffisantes pour publication, lancement...", "INFO")
+            
+            result = await publish_post(
+                store=store,
+                message=message,
+                product_url=product_url,
+                image_url=image_url,
+                platforms=platforms
+            )
+            
+            log_media(f"Publication n8n terminée: {result['success']}", "SUCCESS" if result['success'] else "ERROR")
+        else:
+            log_media("Données insuffisantes pour publication automatique", "WARNING")
+            
+    except Exception as e:
+        log_media(f"Erreur traitement n8n: {str(e)}", "ERROR")
+
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
     """Handle Facebook webhook events (POST request) - Support JSON et fichiers binaires"""
