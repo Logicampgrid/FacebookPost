@@ -51,12 +51,16 @@ def test_complete_implementation():
                 print(f"   Auth URL: {data['auth_url'][:80]}...")
                 tests_passed += 1
                 
-                # Vérifier que l'URL d'auth contient bien l'URL ngrok
-                if ngrok_url in data['auth_url']:
+                # Vérifier que l'URL d'auth contient bien l'URL ngrok (avec ou sans encodage)
+                import urllib.parse
+                encoded_ngrok = urllib.parse.quote(ngrok_url, safe='')
+                if ngrok_url in data['auth_url'] or encoded_ngrok in data['auth_url']:
                     print(f"✅ URL ngrok correctement injectée dans l'auth URL")
                     tests_passed += 1
                 else:
                     print(f"❌ URL ngrok non trouvée dans l'auth URL")
+                    print(f"   Cherché: {ngrok_url} ou {encoded_ngrok}")
+                    print(f"   Trouvé: {data['auth_url']}")
             else:
                 print("❌ Génération d'URL d'authentification échouée")
         else:
