@@ -104,6 +104,75 @@ def kill_existing_ngrok():
     except Exception as e:
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
+def get_active_ngrok_url():
+    """Récupère l'URL ngrok active via l'API locale - NOUVELLE FONCTION DYNAMIQUE"""
+    try:
+        log_app("🔍 Détection de l'URL ngrok active...", "INFO")
+        
+        # Interroger l'API ngrok locale
+        response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
+        
+        if response.status_code == 200:
+            tunnels_data = response.json()
+            tunnels = tunnels_data.get('tunnels', [])
+            
+            if tunnels:
+                # Chercher le tunnel qui correspond à notre port backend
+                for tunnel in tunnels:
+                    config = tunnel.get('config', {})
+                    if config.get('addr') == f"http://localhost:{BACKEND_PORT}":
+                        public_url = tunnel.get('public_url')
+                        if public_url:
+                            log_app(f"✅ URL ngrok active détectée: {public_url}", "SUCCESS")
+                            return public_url
+                
+                # Si pas de tunnel spécifique trouvé, prendre le premier
+                first_tunnel = tunnels[0]
+                public_url = first_tunnel.get('public_url')
+                if public_url:
+                    log_app(f"✅ URL ngrok active (premier tunnel): {public_url}", "SUCCESS")
+                    return public_url
+            
+            log_app("⚠️ Aucun tunnel ngrok actif trouvé", "WARNING")
+            return None
+        else:
+            log_app(f"⚠️ API ngrok non accessible (status: {response.status_code})", "WARNING")
+            return None
+            
+    except requests.exceptions.ConnectionError:
+        log_app("⚠️ API ngrok non accessible (connexion refusée)", "WARNING")
+        return None
+    except Exception as e:
+        log_app(f"❌ Erreur détection ngrok: {e}", "ERROR")
+        return None
+
+def build_dynamic_redirect_uri(callback_path="/auth/callback"):
+    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active"""
+    try:
+        # Tentative 1: Récupérer l'URL ngrok active
+        ngrok_url = get_active_ngrok_url()
+        if ngrok_url:
+            redirect_uri = f"{ngrok_url}{callback_path}"
+            log_app(f"🎯 Redirect URI dynamique (ngrok): {redirect_uri}", "SUCCESS")
+            return redirect_uri
+        
+        # Tentative 2: Utiliser l'URL globale si ngrok est défini
+        global NGROK_URL
+        if NGROK_URL:
+            redirect_uri = f"{NGROK_URL}{callback_path}"
+            log_app(f"🎯 Redirect URI dynamique (global): {redirect_uri}", "SUCCESS")
+            return redirect_uri
+        
+        # Fallback: URL locale
+        redirect_uri = f"http://localhost:{FRONTEND_PORT}{callback_path}"
+        log_app(f"🎯 Redirect URI fallback (local): {redirect_uri}", "WARNING")
+        return redirect_uri
+        
+    except Exception as e:
+        log_app(f"❌ Erreur construction redirect URI: {e}", "ERROR")
+        # Fallback d'urgence
+        return f"http://localhost:{FRONTEND_PORT}{callback_path}"
+
 def get_frontend_backend_url():
     """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
     try:
