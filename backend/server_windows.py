@@ -1406,11 +1406,11 @@ async def authenticate_facebook(request: Request):
         else:
             log_app("Utilisation du token Facebook fourni dans la requête", "INFO")
         
-        # Récupérer les informations utilisateur
+        # Récupérer les informations utilisateur avec détails complets
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
         user_params = {
             'access_token': access_token,
-            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account},business_users{business{id,name}}'
+            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}},business_users{business{id,name,pages{id,name,access_token,instagram_business_account{id,username}},groups{id,name}}}'
         }
         
         response = requests.get(user_url, params=user_params, timeout=30)
