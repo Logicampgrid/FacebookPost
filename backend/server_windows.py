@@ -1773,6 +1773,34 @@ async def test_publish_endpoint(request: TestPublishRequest):
         log_publish(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+# === GESTION DES ROUTES FRONTEND (DOIT ÊTRE EN DERNIER) ===
+@app.get("/", response_class=FileResponse)
+async def serve_frontend_root():
+    """Servir la page d'accueil du frontend"""
+    index_path = os.path.join(WINDOWS_PATHS["frontend_build"], "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        return {"message": "Frontend non disponible", "build_path": WINDOWS_PATHS["frontend_build"], "hint": "Exécutez 'npm run build' dans C:\\FacebookPost\\frontend"}
+
+@app.get("/{path:path}", response_class=FileResponse)
+async def serve_frontend(path: str):
+    """Servir les fichiers du frontend (SPA routing) - ROUTE CATCH-ALL EN DERNIER"""
+    if not frontend_available:
+        return {"message": "Frontend non disponible", "build_path": WINDOWS_PATHS["frontend_build"], "hint": "Exécutez 'npm run build' dans C:\\FacebookPost\\frontend"}
+    
+    # Servir fichier spécifique s'il existe
+    file_path = os.path.join(WINDOWS_PATHS["frontend_build"], path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # Sinon servir index.html pour le routing SPA
+    index_path = os.path.join(WINDOWS_PATHS["frontend_build"], "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend index.html non trouvé")
+
 if __name__ == "__main__":
     import uvicorn
     
