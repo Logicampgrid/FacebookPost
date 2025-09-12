@@ -229,8 +229,19 @@ def start_ngrok_tunnel_windows():
         if NGROK_PROCESS.poll() is not None:
             # Le processus s'est arrêté
             stdout, stderr = NGROK_PROCESS.communicate()
-            log_app(f"❌ Processus ngrok s'est arrêté. STDOUT: {stdout}", "ERROR")
-            log_app(f"❌ STDERR: {stderr}", "ERROR")
+            
+            # Analyser les erreurs spécifiques
+            if "ERR_NGROK_108" in stderr or "authentication failed" in stderr:
+                log_app("❌ Erreur ngrok: Session simultanée limitée (ERR_NGROK_108)", "ERROR")
+                log_app("💡 Suggestion: Fermez les autres sessions ngrok ou utilisez un compte payant", "INFO")
+                log_app("🔗 Dashboard ngrok: https://dashboard.ngrok.com/agents", "INFO")
+            elif "ERR_NGROK_105" in stderr:
+                log_app("❌ Erreur ngrok: Token d'authentification invalide", "ERROR")
+                log_app("💡 Vérifiez votre NGROK_AUTH_TOKEN dans le fichier .env", "INFO")
+            else:
+                log_app(f"❌ Processus ngrok s'est arrêté. STDOUT: {stdout[:500]}{'...' if len(stdout) > 500 else ''}", "ERROR")
+                log_app(f"❌ STDERR: {stderr[:500]}{'...' if len(stderr) > 500 else ''}", "ERROR")
+            
             NGROK_PROCESS = None
             return None
         
