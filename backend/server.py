@@ -252,27 +252,37 @@ def stop_ngrok_tunnel():
         print("⚠️ Cannot stop ngrok tunnel - pyngrok not available")
         NGROK_TUNNEL = None
 
-def get_frontend_backend_url():
-    """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
+def get_current_ngrok_url():
+    """Récupère l'URL ngrok actuelle depuis l'API ou le fichier"""
+    global NGROK_URL
+    
+    # Méthode 1: Depuis l'API ngrok
     try:
-        frontend_env_path = "/app/frontend/.env"
-        
-        if os.path.exists(frontend_env_path):
-            with open(frontend_env_path, "r") as f:
-                lines = f.readlines()
-            
-            for line in lines:
-                if line.startswith("REACT_APP_BACKEND_URL="):
-                    backend_url = line.split("=", 1)[1].strip()
-                    print(f"✅ URL backend du frontend .env: {backend_url}")
-                    return backend_url
-        
-        print("⚠️ Frontend .env non trouvé ou REACT_APP_BACKEND_URL manquant")
-        return None
-        
-    except Exception as e:
-        print(f"❌ Erreur lecture frontend .env: {e}")
-        return None
+        response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=2)
+        if response.status_code == 200:
+            tunnels = response.json()
+            if tunnels.get('tunnels') and len(tunnels['tunnels']) > 0:
+                url = tunnels['tunnels'][0]['public_url']
+                NGROK_URL = url
+                print(f"🌐 URL ngrok détectée via API: {url}")
+                return url
+    except:
+        pass
+    
+    # Méthode 2: Depuis le fichier
+    try:
+        ngrok_file = "/app/backend/ngrok_url.txt"
+        if os.path.exists(ngrok_file):
+            with open(ngrok_file, "r") as f:
+                url = f.read().strip()
+                if url:
+                    NGROK_URL = url
+                    print(f"🌐 URL ngrok chargée depuis fichier: {url}")
+                    return url
+    except:
+        pass
+    
+    return None
 
 def open_browser_when_ready():
     """Ouvrir le navigateur avec l'URL EXACTE du frontend .env - CORRECTION CRITIQUE"""
@@ -284,7 +294,7 @@ def open_browser_when_ready():
         
         while time.time() - start_time < max_wait:
             # CORRECTION : Utiliser l'URL du frontend .env au lieu de NGROK_URL direct
-            frontend_url = get_frontend_backend_url()
+            frontend_url = get_current_ngrok_url()
             if frontend_url:
                 try:
                     print(f"🌐 Ouverture navigateur avec URL synchronisée: {frontend_url}")
