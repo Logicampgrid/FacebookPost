@@ -186,24 +186,46 @@ function App() {
   const handleFacebookLogin = async (accessToken) => {
     try {
       setLoading(true);
-      console.log('Authenticating with Meta platforms...', accessToken.substring(0, 20) + '...');
+      console.log('Authenticating with Meta platforms...', accessToken?.substring(0, 20) + '...');
+      
+      if (!accessToken) {
+        throw new Error('Token d\'accès manquant');
+      }
       
       const response = await axios.post(`${API_BASE}/api/auth/facebook`, {
         access_token: accessToken
       });
       
       console.log('Meta auth successful:', response.data);
-      setUser(response.data.user);
+      
+      if (!response.data.user) {
+        throw new Error('Données utilisateur manquantes dans la réponse');
+      }
+      
+      const userData = response.data.user;
+      
+      // Vérifier que l'utilisateur a un ID valide
+      if (!userData._id && !userData.id) {
+        throw new Error('ID utilisateur manquant dans la réponse');
+      }
+      
+      // S'assurer que _id est défini
+      if (!userData._id && userData.id) {
+        userData._id = userData.id;
+      }
+      
+      console.log('Setting user with ID:', userData._id);
+      setUser(userData);
       
       // Check for business managers
-      if (response.data.user.business_managers && response.data.user.business_managers.length > 0) {
-        console.log(`Found ${response.data.user.business_managers.length} Business Managers`);
-        console.log(`Found ${response.data.total_instagram_accounts} Instagram accounts`);
+      if (userData.business_managers && userData.business_managers.length > 0) {
+        console.log(`Found ${userData.business_managers.length} Business Managers`);
+        console.log(`Found ${response.data.total_instagram_accounts || 0} Instagram accounts`);
         
         // Find "Entreprise de Didier Preud'homme" and auto-select it
-        const didierBM = response.data.user.business_managers.find(bm => 
-          bm.name.toLowerCase().includes("didier") || 
-          bm.name.toLowerCase().includes("preud'homme")
+        const didierBM = userData.business_managers.find(bm => 
+          bm.name && (bm.name.toLowerCase().includes("didier") || 
+          bm.name.toLowerCase().includes("preud'homme"))
         );
         if (didierBM) {
           setSelectedBusinessManager(didierBM);
@@ -212,8 +234,8 @@ function App() {
       }
       
       // Set default platform if available
-      if (response.data.user.facebook_pages && response.data.user.facebook_pages.length > 0) {
-        console.log('Personal pages found:', response.data.user.facebook_pages.length);
+      if (userData.facebook_pages && userData.facebook_pages.length > 0) {
+        console.log('Personal pages found:', userData.facebook_pages.length);
       }
       
     } catch (error) {
