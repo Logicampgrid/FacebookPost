@@ -1182,17 +1182,17 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         raise Exception(error_msg)
 
 def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_id: str = None):
-    """Sauvegarde les tokens d'un store"""
-    global STORES
+    """Sauvegarde les tokens d'un store dans le dictionnaire TOKENS"""
+    global TOKENS
     
     log_app(f"Sauvegarde tokens pour {store}", "INFO")
     
-    # Mettre à jour la configuration du store
-    STORES[store].update({
+    TOKENS[store] = {
         "fb_page_id": page_id,
         "access_token": page_access_token,
-        "ig_user_id": ig_user_id
-    })
+        "ig_user_id": ig_user_id,
+        "updated_at": datetime.utcnow()
+    }
     
     log_app(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
 
