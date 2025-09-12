@@ -1854,8 +1854,16 @@ async def exchange_facebook_code_legacy(request: FacebookAuthRequest):
                 detail=f"Store '{request.store}' inconnu. Stores disponibles: {available_stores}"
             )
         
-        # Échanger le code contre les tokens
-        auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
+        # CORRECTION NGROK: Utiliser l'URL ngrok comme redirect_uri 
+        redirect_uri = request.redirect_uri
+        if NGROK_URL and (not redirect_uri or "localhost" in redirect_uri):
+            redirect_uri = NGROK_URL
+            log_auth(f"Redirect URI legacy corrigé avec ngrok: {redirect_uri}", "INFO")
+        else:
+            log_auth(f"Redirect URI legacy: {redirect_uri}", "INFO")
+        
+        # Échanger le code contre les tokens avec l'URL corrigée
+        auth_result = await exchange_facebook_code(request.code, redirect_uri)
         
         # Chercher une page appropriée pour ce store
         pages = auth_result.get("pages", [])
