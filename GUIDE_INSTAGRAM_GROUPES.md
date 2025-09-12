@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fb-autopub-config.preview.emergentagent.com
+URL : https://auth-system-13.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

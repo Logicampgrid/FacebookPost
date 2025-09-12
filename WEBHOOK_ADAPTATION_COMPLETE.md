@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://fb-autopub-config.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://auth-system-13.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://fb-autopub-config.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://fb-autopub-config.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://fb-autopub-config.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://auth-system-13.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://auth-system-13.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://auth-system-13.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
