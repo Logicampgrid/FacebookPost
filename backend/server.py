@@ -1689,7 +1689,7 @@ async def authenticate_facebook(request: Request):
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
         user_params = {
             'access_token': access_token,
-            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}},business_users{business{id,name,pages{id,name,access_token,instagram_business_account{id,username}},groups{id,name}}}'
+            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}}'
         }
         
         response = requests.get(user_url, params=user_params, timeout=30)
