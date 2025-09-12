@@ -1194,6 +1194,66 @@ async def get_stores():
         "total_stores": len(STORES)
     }
 
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint with comprehensive ngrok diagnostics and store configurations"""
+    global NGROK_PROCESS, NGROK_URL
+    
+    # Vérifier la configuration des stores
+    store_status = {}
+    for store_name, config in STORES.items():
+        store_status[store_name] = {
+            "fb_page_id": bool(config.get("fb_page_id")),
+            "ig_user_id": bool(config.get("ig_user_id")),
+            "access_token": bool(config.get("access_token"))
+        }
+    
+    # Diagnostic complet ngrok
+    ngrok_status = {
+        "enabled": ENABLE_NGROK,
+        "url": NGROK_URL,
+        "process_running": NGROK_PROCESS is not None and NGROK_PROCESS.poll() is None,
+        "api_accessible": False,
+        "tunnel_count": 0,
+        "error": None
+    }
+    
+    if ENABLE_NGROK and NGROK_PROCESS is not None:
+        try:
+            # Tester l'accessibilité de l'API ngrok
+            response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=3)
+            if response.status_code == 200:
+                ngrok_status["api_accessible"] = True
+                tunnels_data = response.json()
+                ngrok_status["tunnel_count"] = len(tunnels_data.get('tunnels', []))
+                if tunnels_data.get('tunnels'):
+                    ngrok_status["tunnels"] = [
+                        {
+                            "public_url": tunnel.get('public_url'),
+                            "proto": tunnel.get('proto'),
+                            "config": tunnel.get('config', {}).get('addr')
+                        }
+                        for tunnel in tunnels_data['tunnels']
+                    ]
+        except Exception as e:
+            ngrok_status["error"] = str(e)
+    
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow(),
+        "publication": {
+            "test_mode": PUBLICATION_TEST_MODE,
+            "stores_configured": len([s for s in store_status.values() if all(s.values())]),
+            "total_stores": len(STORES)
+        },
+        "stores": store_status,
+        "ngrok": ngrok_status,
+        "backend": {
+            "port": BACKEND_PORT,
+            "windows_paths": WINDOWS_PATHS
+        }
+    }
+
 # === PUBLICATION ENDPOINTS ===
 class PublishRequest(BaseModel):
     store: str
