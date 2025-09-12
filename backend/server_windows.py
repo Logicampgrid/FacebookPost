@@ -1570,6 +1570,25 @@ async def get_facebook_login_url(store: str = "default"):
         log_app(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+@app.post("/api/ngrok/update-endpoints")
+async def update_facebook_endpoints():
+    """Force la mise à jour des endpoints Facebook avec l'URL ngrok active"""
+    try:
+        result = update_facebook_endpoints_with_ngrok()
+        
+        return {
+            "success": result,
+            "message": "Mise à jour des endpoints terminée" if result else "Aucune URL ngrok active trouvée",
+            "active_url": get_active_ngrok_url(),
+            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callback"),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur mise à jour endpoints: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @app.get("/api/ngrok/status")
 async def get_ngrok_status():
     """Obtenir le statut détaillé de ngrok et l'URL active"""
