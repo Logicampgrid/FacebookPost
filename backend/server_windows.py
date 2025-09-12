@@ -143,10 +143,54 @@ def start_ngrok_tunnel_windows():
         
         # Vérifier si ngrok est installé
         try:
-            subprocess.run(["ngrok", "version"], capture_output=True, check=True)
+            version_result = subprocess.run(["ngrok", "version"], capture_output=True, check=True, text=True)
+            log_app(f"✅ Ngrok installé: {version_result.stdout.strip()}", "SUCCESS")
         except (subprocess.CalledProcessError, FileNotFoundError):
             log_app("❌ Ngrok n'est pas installé ou pas dans le PATH", "ERROR")
             return None
+        
+        # Vérifier s'il y a des sessions ngrok actives sur d'autres machines
+        try:
+            existing_tunnels = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=2)
+            if existing_tunnels.status_code == 200:
+                tunnels_data = existing_tunnels.json()
+                if tunnels_data.get('tunnels'):
+                    log_app(f"⚠️ {len(tunnels_data['tunnels'])} tunnel(s) ngrok déjà actif(s)", "WARNING")
+                    # Récupérer l'URL du tunnel existant
+                    for tunnel in tunnels_data['tunnels']:
+                        if tunnel.get('config', {}).get('addr') == f"http://localhost:{BACKEND_PORT}":
+                            existing_url = tunnel['public_url']
+                            NGROK_URL = existing_url
+                            log_app(f"🔄 Réutilisation tunnel ngrok existant: {NGROK_URL}", "SUCCESS")
+                            
+                            # Mettre à jour le frontend .env avec l'URL existante
+                            try:
+                                frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+                                if os.path.exists(frontend_env_path):
+                                    with open(frontend_env_path, "r", encoding='utf-8') as f:
+                                        lines = f.readlines()
+                                    
+                                    updated_lines = []
+                                    backend_url_updated = False
+                                    for line in lines:
+                                        if line.startswith("REACT_APP_BACKEND_URL="):
+                                            updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                            backend_url_updated = True
+                                        else:
+                                            updated_lines.append(line)
+                                    
+                                    if not backend_url_updated:
+                                        updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                                    
+                                    with open(frontend_env_path, "w", encoding='utf-8') as f:
+                                        f.writelines(updated_lines)
+                                    log_app(f"✅ Frontend .env mis à jour avec tunnel existant", "SUCCESS")
+                            except Exception as e:
+                                log_app(f"⚠️ Erreur update .env: {e}", "WARNING")
+                            
+                            return NGROK_URL
+        except:
+            pass  # Pas de tunnel existant accessible
         
         # Configurer l'authentification ngrok si un token est fourni
         ngrok_token = os.getenv("NGROK_AUTH_TOKEN")
