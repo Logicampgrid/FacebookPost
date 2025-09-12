@@ -220,10 +220,30 @@ def start_ngrok_tunnel_windows():
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
         )
         
-        # Attendre que ngrok démarre avec vérification de processus
-        initial_wait = 5
+        log_app(f"✅ Processus ngrok lancé (PID: {NGROK_PROCESS.pid})", "SUCCESS")
+        
+        # Attendre progressivement que ngrok démarre avec vérifications intermédiaires
+        initial_wait = 7  # Augmenté à 7 secondes
         log_app(f"⏳ Attente {initial_wait}s pour le démarrage ngrok...", "INFO")
-        time.sleep(initial_wait)
+        
+        # Vérifications toutes les 2 secondes pendant l'attente
+        for i in range(0, initial_wait, 2):
+            time.sleep(2)
+            if NGROK_PROCESS.poll() is not None:
+                # Le processus s'est arrêté pendant l'attente
+                stdout, stderr = NGROK_PROCESS.communicate()
+                log_app(f"❌ Processus ngrok arrêté pendant l'attente initiale", "ERROR")
+                if "authentication failed" in stderr or "ERR_NGROK_108" in stderr:
+                    log_app("💡 Erreur: Session ngrok déjà active ou compte limité", "INFO")
+                elif stderr:
+                    log_app(f"💡 Erreur ngrok: {stderr[:200]}{'...' if len(stderr) > 200 else ''}", "INFO")
+                NGROK_PROCESS = None
+                return None
+            else:
+                log_app(f"✅ Processus ngrok actif ({i+2}s/{initial_wait}s)", "INFO")
+        
+        if initial_wait % 2 != 0:
+            time.sleep(1)  # Compléter l'attente si nécessaire
         
         # Vérifier que le processus ngrok est toujours en vie après l'attente initiale
         ngrok_process_status = NGROK_PROCESS.poll()
