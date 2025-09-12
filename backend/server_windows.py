@@ -1480,6 +1480,71 @@ async def health_check():
         }
     }
 
+@app.get("/api/auth/facebook/login-url")
+async def get_facebook_login_url(store: str = "default"):
+    """Obtenir l'URL d'authentification Facebook avec redirect_uri dynamique basé sur ngrok"""
+    try:
+        # Construire dynamiquement l'URI de redirection
+        redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        
+        # Construire l'URL d'authentification Facebook
+        facebook_auth_url = f"https://www.facebook.com/v18.0/dialog/oauth"
+        
+        auth_params = {
+            "client_id": FACEBOOK_APP_ID,
+            "redirect_uri": redirect_uri,
+            "scope": "pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish,business_management",
+            "response_type": "code",
+            "state": store  # Utiliser store comme state pour mapper le retour
+        }
+        
+        # Construire l'URL complète
+        auth_url_parts = []
+        for key, value in auth_params.items():
+            auth_url_parts.append(f"{key}={requests.utils.quote(str(value))}")
+        
+        full_auth_url = f"{facebook_auth_url}?{'&'.join(auth_url_parts)}"
+        
+        log_app(f"URL d'authentification Facebook générée pour store: {store}", "INFO")
+        log_app(f"Redirect URI dynamique: {redirect_uri}", "INFO")
+        
+        return {
+            "success": True,
+            "auth_url": full_auth_url,
+            "redirect_uri": redirect_uri,
+            "store": store,
+            "ngrok_detected": get_active_ngrok_url() is not None,
+            "facebook_app_id": FACEBOOK_APP_ID,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur génération URL Facebook: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.get("/api/ngrok/status")
+async def get_ngrok_status():
+    """Obtenir le statut détaillé de ngrok et l'URL active"""
+    try:
+        active_url = get_active_ngrok_url()
+        
+        return {
+            "ngrok_enabled": ENABLE_NGROK,
+            "active_url": active_url,
+            "global_url": NGROK_URL,  # URL stockée globalement
+            "process_running": NGROK_PROCESS is not None and NGROK_PROCESS.poll() is None,
+            "api_accessible": active_url is not None,
+            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callback"),
+            "backend_port": BACKEND_PORT,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur statut ngrok: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 # === PUBLICATION ENDPOINTS ===
 class PublishRequest(BaseModel):
     store: str
