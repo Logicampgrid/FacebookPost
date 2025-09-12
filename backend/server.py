@@ -465,13 +465,15 @@ class PublishRequest(BaseModel):
     image_url: Optional[str] = None
     platforms: List[str] = ["facebook", "instagram"]  # Par défaut les deux
     
-    @validator('store')
+    @field_validator('store')
+    @classmethod
     def validate_store(cls, v):
         if v not in STORES:
             raise ValueError(f'Store must be one of: {list(STORES.keys())}')
         return v
     
-    @validator('platforms')
+    @field_validator('platforms')
+    @classmethod
     def validate_platforms(cls, v):
         valid_platforms = ["facebook", "instagram"]
         for platform in v:
