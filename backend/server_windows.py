@@ -37,35 +37,42 @@ ENABLE_NGROK = os.getenv("ENABLE_NGROK", "true").lower() == "true"
 NGROK_PROCESS = None
 NGROK_URL = None
 
-# === CONFIGURATION FACEBOOK AUTOGPT (MISE À JOUR) ===
-FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "5664227323683118")
-FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "b359a1c87c920288385daf75aed873a3")
-FACEBOOK_CLIENT_TOKEN = os.getenv("FACEBOOK_CLIENT_TOKEN", "7725f6e0b13d367a829b44ff16a3421f")
+# === FACEBOOK/META CONFIGURATION MISE À JOUR ===
+FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
+FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
+FACEBOOK_CLIENT_TOKEN = os.getenv("FACEBOOK_CLIENT_TOKEN")  # Token client AutoGPT
 FACEBOOK_GRAPH_URL = os.getenv("FACEBOOK_GRAPH_URL", "https://graph.facebook.com/v18.0")
 
-# === CONFIGURATION STORES (MISE À JOUR) ===
-PUBLICATION_TEST_MODE = os.getenv("PUBLICATION_TEST_MODE", "false").lower() == "true"
+# === CONFIGURATION BOUTIQUES MULTI-PLATFORM (MISE À JOUR) ===
+PUBLICATION_TEST_MODE = os.getenv("PUBLICATION_TEST_MODE", "true").lower() == "true"
 
-# Configuration des 3 stores selon les spécifications actualisées
+# Configuration des 3 stores selon les spécifications
 STORES = {
     "gizmobbs": {
         "name": "Le Berger Blanc Suisse",
         "fb_page_id": "102401876209415",
         "ig_user_id": os.getenv("IG_USER_ID_GIZMO"),
-        "access_token": "EABQflbGOIS4BPcNEepg39xXlNSs5ufNY2ZCZAOaowF2jBR9tOqZAa3fPwQZBZBo7BkQ8pvL2ZClSmkQh4zFjIfLuyTz3ZAQyQfc4HimmG2TWs81HI3xlorpOOvb5yyR6MJDYlz6ywXrPtZBs8rejrE1KIeOyb24EMkU79KIporIC3WZB2LZCEDMBYj4cfkf6Wh9r7PJUchVjskVnCLi6ZAR"
+        "access_token": os.getenv("FB_ACCESS_TOKEN_GIZMO")
     },
     "logicantiq": {
-        "name": "LogicAntiq",
+        "name": "LogicAntiq", 
         "fb_page_id": "210654558802531",
         "ig_user_id": os.getenv("IG_USER_ID_LOGICANTIQ"),
-        "access_token": "EABQflbGOIS4BPQwnZCcFNhgWW0NLkP51fapkZBpwmZBEwwCOiTR9P8I8ZAQv7acYZBjVMWNDMPzlO3RdMbNkWhZBfqFzh4qPxtZAT6hA6AZALBM46G8Ho5QpSQmZAKIaeSoXMogbLvph0ZC2wsPXvHBMD0dMb77bhpwdOSkVLAZB2bf9lR798zOaF0wEw3Uqc9OZCA9QhDuZCtJO9Eyp4mmi1"
+        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICANTIQ")
     },
     "outdoor": {
         "name": "Logicamp Outdoor",
-        "fb_page_id": "236260991673388",
+        "fb_page_id": "236260991673388", 
         "ig_user_id": os.getenv("IG_USER_ID_OUTDOOR"),
-        "access_token": "EABQflbGOIS4BPSQxgJZA7rmIdoSOZCZBYbuAzY4TDjezHZCDGqB3MOZB6CAcJoZB1CJ7AZAE89cTUtWZBu165MT3zZCxlHAfBZCJWwWl1dwnsYC8rzqvcwOdQzpuwzik4HeGP6HggT2GHhUvyxtakytQiAORV17watHXBQOrU1ZA55DZAhTJTpv11gQvxd3yI9vahJUZBEbF5LNEZAKYxKyZCtb"
+        "access_token": os.getenv("FB_ACCESS_TOKEN_OUTDOOR")
     }
+}
+
+# Dictionnaire dynamique pour les tokens récupérés via authentification
+TOKENS = {
+    "gizmobbs": {},
+    "logicantiq": {},
+    "outdoor": {}
 }
 
 def log_app(message: str, level: str = "INFO"):
