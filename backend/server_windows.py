@@ -109,7 +109,7 @@ def get_frontend_backend_url():
         return None
 
 def start_ngrok_tunnel_windows():
-    """Démarrer le tunnel ngrok et synchroniser avec le frontend .env - VERSION CORRIGÉE"""
+    """Démarrer le tunnel ngrok et synchroniser avec le frontend .env - VERSION CORRIGÉE ROBUSTE"""
     global NGROK_PROCESS, NGROK_URL
     
     if not ENABLE_NGROK:
@@ -119,25 +119,78 @@ def start_ngrok_tunnel_windows():
     try:
         # Tuer les processus ngrok existants
         kill_existing_ngrok()
+        time.sleep(2)  # Attendre que les processus se ferment complètement
         
         log_app(f"🚀 Démarrage tunnel ngrok sur port {BACKEND_PORT}...", "INFO")
         
-        # Démarrer ngrok
+        # Vérifier si ngrok est installé
+        try:
+            subprocess.run(["ngrok", "version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            log_app("❌ Ngrok n'est pas installé ou pas dans le PATH", "ERROR")
+            return None
+        
+        # Configurer l'authentification ngrok si un token est fourni
+        ngrok_token = os.getenv("NGROK_AUTH_TOKEN")
+        if ngrok_token:
+            try:
+                subprocess.run([
+                    "ngrok", "config", "add-authtoken", ngrok_token
+                ], capture_output=True, check=True)
+                log_app("✅ Token d'authentification ngrok configuré", "SUCCESS")
+            except subprocess.CalledProcessError as e:
+                log_app(f"⚠️ Erreur configuration token ngrok: {e}", "WARNING")
+        
+        # Démarrer ngrok avec configuration robuste
+        ngrok_cmd = [
+            "ngrok", "http", str(BACKEND_PORT),
+            "--log=stdout",
+            "--log-level=info"
+        ]
+        
+        log_app(f"Commande ngrok: {' '.join(ngrok_cmd)}", "INFO")
+        
         NGROK_PROCESS = subprocess.Popen(
-            ["ngrok", "http", str(BACKEND_PORT), "--log=stdout"],
+            ngrok_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
         )
         
-        # Attendre que ngrok démarre
-        time.sleep(3)
+        # Attendre que ngrok démarre avec vérification de processus
+        initial_wait = 5
+        log_app(f"⏳ Attente {initial_wait}s pour le démarrage ngrok...", "INFO")
+        time.sleep(initial_wait)
         
-        # Récupérer l'URL via l'API ngrok
-        max_attempts = 10
+        # Vérifier que le processus est toujours en vie
+        if NGROK_PROCESS.poll() is not None:
+            # Le processus s'est arrêté
+            stdout, stderr = NGROK_PROCESS.communicate()
+            log_app(f"❌ Processus ngrok s'est arrêté. STDOUT: {stdout}", "ERROR")
+            log_app(f"❌ STDERR: {stderr}", "ERROR")
+            NGROK_PROCESS = None
+            return None
+        
+        log_app("✅ Processus ngrok démarré, récupération de l'URL...", "INFO")
+        
+        # Récupérer l'URL via l'API ngrok avec timeout progressif
+        max_attempts = 12
+        base_timeout = 2
+        
         for attempt in range(max_attempts):
+            timeout = base_timeout + (attempt * 0.5)  # Timeout progressif
+            
             try:
-                response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
+                # Vérifier que le processus ngrok est toujours en vie
+                if NGROK_PROCESS.poll() is not None:
+                    log_app("❌ Processus ngrok s'est arrêté pendant la récupération URL", "ERROR")
+                    return None
+                
+                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Connexion API ngrok (timeout: {timeout}s)...", "INFO")
+                
+                response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=timeout)
+                
                 if response.status_code == 200:
                     tunnels = response.json()
                     if tunnels.get('tunnels') and len(tunnels['tunnels']) > 0:
@@ -145,12 +198,22 @@ def start_ngrok_tunnel_windows():
                         NGROK_URL = public_url
                         log_app(f"🌐 Tunnel ngrok actif: {NGROK_URL}", "SUCCESS")
                         
+                        # Tester l'accessibilité du tunnel
+                        try:
+                            test_response = requests.get(f"{NGROK_URL}/api/health", timeout=10)
+                            if test_response.status_code in [200, 404]:  # 404 est OK si l'endpoint n'existe pas encore
+                                log_app(f"✅ Tunnel ngrok accessible et fonctionnel", "SUCCESS")
+                            else:
+                                log_app(f"⚠️ Tunnel ngrok répond avec status: {test_response.status_code}", "WARNING")
+                        except:
+                            log_app("⚠️ Test d'accessibilité tunnel impossible (serveur non démarré)", "WARNING")
+                        
                         # CORRECTION CRITIQUE : Mettre à jour le frontend .env automatiquement
                         try:
                             frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
                             if os.path.exists(frontend_env_path):
                                 # Lire le .env actuel
-                                with open(frontend_env_path, "r") as f:
+                                with open(frontend_env_path, "r", encoding='utf-8') as f:
                                     lines = f.readlines()
                                 
                                 # Mettre à jour REACT_APP_BACKEND_URL
@@ -170,7 +233,7 @@ def start_ngrok_tunnel_windows():
                                     log_app(f"✅ REACT_APP_BACKEND_URL ajouté: {NGROK_URL}", "SUCCESS")
                                 
                                 # Réécrire le fichier
-                                with open(frontend_env_path, "w") as f:
+                                with open(frontend_env_path, "w", encoding='utf-8') as f:
                                     f.writelines(updated_lines)
                                 log_app(f"🎯 Frontend .env synchronisé avec ngrok: {NGROK_URL}", "SUCCESS")
                             else:
@@ -181,16 +244,31 @@ def start_ngrok_tunnel_windows():
                         
                         return NGROK_URL
                     else:
-                        log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Aucun tunnel trouvé", "INFO")
+                        log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Aucun tunnel trouvé dans la réponse", "INFO")
                         time.sleep(2)
                 else:
                     log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: API ngrok status {response.status_code}", "INFO")
                     time.sleep(2)
+                    
+            except requests.exceptions.ConnectionError:
+                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: API ngrok non accessible (connexion refusée)", "INFO")
+                time.sleep(2)
+            except requests.exceptions.Timeout:
+                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Timeout connexion API ngrok", "INFO")
+                time.sleep(2)
             except requests.exceptions.RequestException as e:
-                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Connexion API ngrok échouée: {e}", "INFO")
+                log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Erreur requête API ngrok: {e}", "INFO")
                 time.sleep(2)
         
         log_app("❌ Impossible d'obtenir l'URL ngrok après plusieurs tentatives", "ERROR")
+        
+        # Diagnostics supplémentaires
+        if NGROK_PROCESS and NGROK_PROCESS.poll() is None:
+            log_app("💡 Le processus ngrok est toujours en cours mais l'API n'est pas accessible", "INFO")
+            log_app("💡 Cela peut être dû à des restrictions de firewall ou de réseau", "INFO")
+        else:
+            log_app("💡 Le processus ngrok s'est arrêté - vérifiez votre installation ngrok", "INFO")
+        
         return None
         
     except Exception as e:
