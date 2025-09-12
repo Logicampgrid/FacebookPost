@@ -394,6 +394,17 @@ def start_ngrok_tunnel_windows():
         log_app("🔄 Mode fallback: Configuration pour accès local uniquement", "WARNING")
         log_app(f"🌐 URL locale: http://localhost:{BACKEND_PORT}", "INFO")
         
+        # Afficher des recommandations pour résoudre le problème ngrok
+        log_app("", "INFO")
+        log_app("💡 === SOLUTIONS POUR NGROK ===", "INFO")
+        log_app("1. Fermer toute session ngrok active depuis le dashboard:", "INFO")
+        log_app("   https://dashboard.ngrok.com/agents", "INFO")
+        log_app("2. Ou passer à un compte ngrok payant pour plusieurs sessions", "INFO")
+        log_app("3. Ou utiliser une alternative comme localtunnel:", "INFO")
+        log_app("   npm install -g localtunnel && lt --port 8001", "INFO")
+        log_app("=====================================", "INFO")
+        log_app("", "INFO")
+        
         # Mettre à jour le frontend .env avec l'URL locale comme fallback
         try:
             frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
