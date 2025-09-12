@@ -464,14 +464,16 @@ class FacebookExchangeCodeRequest(BaseModel):
     store: Optional[str] = None
     redirect_uri: Optional[str] = "http://localhost:3000/auth/callback"
     
-    @validator('store', pre=True, always=True)
-    def set_store_from_state(cls, v, values):
+    @field_validator('store', mode='before')
+    @classmethod
+    def set_store_from_state(cls, v, info):
         """Map state to store if store is not provided"""
-        if v is None and 'state' in values and values['state']:
-            return values['state']
+        if v is None and info.data and info.data.get('state'):
+            return info.data.get('state')
         return v or "default"
     
-    @validator('redirect_uri', pre=True, always=True) 
+    @field_validator('redirect_uri', mode='before')
+    @classmethod
     def set_default_redirect_uri(cls, v):
         """Set default redirect_uri if not provided"""
         return v or "http://localhost:3000/auth/callback"
