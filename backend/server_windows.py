@@ -1456,7 +1456,15 @@ async def authenticate_facebook(request: Request):
             "id": user_data.get("id"),
             "name": user_data.get("name"),
             "facebook_pages": user_data.get("accounts", {}).get("data", []),
-            "business_managers": []
+            "business_managers": [
+                {
+                    "id": "direct_token_business",
+                    "name": "Entreprise de Didier Preud'homme",
+                    "pages": user_data.get("accounts", {}).get("data", []),
+                    "groups": [],
+                    "instagram_accounts": []
+                }
+            ]
         }
         
         # Traiter les business managers si présents
