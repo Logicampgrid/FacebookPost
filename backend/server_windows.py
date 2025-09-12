@@ -1135,11 +1135,15 @@ def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_
 async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
     try:
-        # Log des données reçues pour debug
+        # NOUVEAU: Détection automatique de l'URL ngrok active pour redirect_uri
+        if not request.redirect_uri:
+            request.redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        
+        # Log des données reçues pour debug avec URL dynamique
         log_app(f"Code exchange reçu - Store: {request.store}, Code: {request.code[:10]}...", "INFO")
         if request.state:
             log_app(f"State reçu: {request.state} (mappé vers store: {request.store})", "INFO")
-        log_app(f"Redirect URI: {request.redirect_uri}", "INFO")
+        log_app(f"Redirect URI (dynamique): {request.redirect_uri}", "INFO")
         
         # VALIDATION: Configuration Facebook requise
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
@@ -1158,7 +1162,7 @@ async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
             }
         
         try:
-            # VRAIE AUTHENTIFICATION FACEBOOK
+            # VRAIE AUTHENTIFICATION FACEBOOK avec URI dynamique
             auth_result = await exchange_facebook_code(request.code, request.redirect_uri)
             
             # Chercher une page appropriée pour ce store
