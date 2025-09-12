@@ -109,7 +109,7 @@ const PermissionDiagnostic = ({ token, onClose }) => {
                     <h3 className="font-medium text-blue-800 mb-3">Statut des Permissions</h3>
                     <div className="flex items-center space-x-4 mb-2">
                       <span className="text-sm">Business Management:</span>
-                      {diagnostic.has_business_management ? (
+                      {diagnostic?.has_business_management ? (
                         <div className="flex items-center space-x-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
                           <span className="text-sm">Accordée</span>
