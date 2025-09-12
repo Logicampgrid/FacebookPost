@@ -441,7 +441,8 @@ class PostCreate(BaseModel):
     platform: str = "facebook"  # facebook, instagram, both
     page_id: Optional[str] = None
     
-    @validator('platform')
+    @field_validator('platform')
+    @classmethod
     def validate_platform(cls, v):
         if v not in ['facebook', 'instagram', 'both']:
             raise ValueError('Platform must be facebook, instagram, or both')
