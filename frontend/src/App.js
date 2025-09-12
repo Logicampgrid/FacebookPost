@@ -214,6 +214,11 @@ function App() {
         userData._id = userData.id;
       }
       
+      // S'assurer que business_managers est toujours un tableau
+      if (!userData.business_managers || !Array.isArray(userData.business_managers)) {
+        userData.business_managers = [];
+      }
+      
       console.log('Setting user with ID:', userData._id);
       setUser(userData);
       
