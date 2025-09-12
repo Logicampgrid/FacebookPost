@@ -52,15 +52,15 @@ def test_complete_implementation():
                 tests_passed += 1
                 
                 # Vérifier que l'URL d'auth contient bien l'URL ngrok (avec ou sans encodage)
-                import urllib.parse
-                encoded_ngrok = urllib.parse.quote(ngrok_url, safe='')
-                if ngrok_url in data['auth_url'] or encoded_ngrok in data['auth_url']:
+                # Facebook encode seulement les : en %3A
+                partial_encoded = ngrok_url.replace(':', '%3A')
+                if ngrok_url in data['auth_url'] or partial_encoded in data['auth_url']:
                     print(f"✅ URL ngrok correctement injectée dans l'auth URL")
                     tests_passed += 1
                 else:
                     print(f"❌ URL ngrok non trouvée dans l'auth URL")
-                    print(f"   Cherché: {ngrok_url} ou {encoded_ngrok}")
-                    print(f"   Trouvé: {data['auth_url']}")
+                    print(f"   Cherché: {ngrok_url} ou {partial_encoded}")
+                    print(f"   Trouvé dans URL: {'OUI' if partial_encoded in data['auth_url'] else 'NON'}")
             else:
                 print("❌ Génération d'URL d'authentification échouée")
         else:
