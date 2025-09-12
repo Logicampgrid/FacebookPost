@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://auth-key-manager.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fbpost-tunnel.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://auth-key-manager.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://auth-key-manager.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://auth-key-manager.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fbpost-tunnel.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fbpost-tunnel.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fbpost-tunnel.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

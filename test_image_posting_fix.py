@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://auth-key-manager.preview.emergentagent.com"
+BASE_URL = "https://fbpost-tunnel.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
