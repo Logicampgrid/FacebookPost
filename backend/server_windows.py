@@ -803,13 +803,6 @@ def log_publish(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [PUBLISH] {message}")
 
-def get_store_config(store: str) -> dict:
-    """Récupère la configuration d'un store"""
-    if store not in STORES:
-        raise ValueError(f"Store inconnu: {store}")
-    
-    return STORES[store].copy()
-
 async def update_instagram_ids():
     """Mettre à jour automatiquement les IDs Instagram via l'API Graph"""
     try:
