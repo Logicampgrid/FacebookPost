@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://fbpost-tunnel.preview.emergentagent.com
+URL : https://fb-post-backend.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
