@@ -125,15 +125,21 @@ const PermissionDiagnostic = ({ token, onClose }) => {
 
                   {/* Granted Permissions */}
                   <div>
-                    <h3 className="font-medium text-gray-800 mb-3">Permissions Accordées ({diagnostic.granted_permissions.length})</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {diagnostic.granted_permissions.map((permission) => (
-                        <div key={permission} className="flex items-center space-x-2 text-sm">
-                          {getPermissionIcon(permission)}
-                          <span>{permission}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <h3 className="font-medium text-gray-800 mb-3">
+                      Permissions Accordées ({Array.isArray(diagnostic.granted_permissions) ? diagnostic.granted_permissions.length : 0})
+                    </h3>
+                    {Array.isArray(diagnostic.granted_permissions) && diagnostic.granted_permissions.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {diagnostic.granted_permissions.map((permission) => (
+                          <div key={permission} className="flex items-center space-x-2 text-sm">
+                            {getPermissionIcon(permission)}
+                            <span>{permission}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Aucune permission accordée ou données non disponibles.</p>
+                    )}
                   </div>
 
                   {/* Declined Permissions */}
