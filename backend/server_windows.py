@@ -264,8 +264,12 @@ def start_ngrok_tunnel_windows():
             
             try:
                 # Vérifier que le processus ngrok est toujours en vie
-                if NGROK_PROCESS.poll() is not None:
-                    log_app("❌ Processus ngrok s'est arrêté pendant la récupération URL", "ERROR")
+                ngrok_status = NGROK_PROCESS.poll()
+                if ngrok_status is not None:
+                    stdout, stderr = NGROK_PROCESS.communicate()
+                    log_app(f"❌ Processus ngrok arrêté (code: {ngrok_status}) pendant récupération URL", "ERROR")
+                    if stderr:
+                        log_app(f"❌ Erreur ngrok: {stderr[:300]}{'...' if len(stderr) > 300 else ''}", "ERROR")
                     return None
                 
                 log_app(f"⏳ Tentative {attempt + 1}/{max_attempts}: Connexion API ngrok (timeout: {timeout}s)...", "INFO")
