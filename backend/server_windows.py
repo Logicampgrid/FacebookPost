@@ -466,7 +466,7 @@ class FacebookExchangeCodeRequest(BaseModel):
     
     @field_validator('store', mode='before')
     @classmethod
-    def set_store_from_state(cls, v, info):
+    def set_store_from_state(cls, v, info: ValidationInfo):
         """Map state to store if store is not provided"""
         if v is None and info.data and info.data.get('state'):
             return info.data.get('state')
