@@ -39,7 +39,7 @@ def test_url_construction():
         full_media_url = media_url
     else:
         # This is the logic from the fixed backend
-        base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-oauth-tunnel.preview.emergentagent.com")
+        base_url = os.getenv("PUBLIC_BASE_URL", "https://auth-token-fix-5.preview.emergentagent.com")
         full_media_url = f"{base_url}{media_url}"
     
     print(f"📸 Constructed media URL: {full_media_url}")
@@ -65,7 +65,7 @@ def test_environment_variable():
         print("⚠️  PUBLIC_BASE_URL not set, using default")
         
     # Test the default fallback
-    base_url = os.getenv("PUBLIC_BASE_URL", "https://fb-oauth-tunnel.preview.emergentagent.com")
+    base_url = os.getenv("PUBLIC_BASE_URL", "https://auth-token-fix-5.preview.emergentagent.com")
     print(f"📍 Base URL being used: {base_url}")
     
     return base_url
@@ -90,7 +90,7 @@ def main():
         
     print("\n📋 Summary of the fix:")
     print("- Changed hardcoded 'http://localhost:8001' to use PUBLIC_BASE_URL environment variable")
-    print("- Default fallback to 'https://fb-oauth-tunnel.preview.emergentagent.com'")
+    print("- Default fallback to 'https://auth-token-fix-5.preview.emergentagent.com'")
     print("- Applied fix to both Facebook and Instagram posting functions")
     print("- This allows Facebook/Instagram APIs to access uploaded media from external servers")
 

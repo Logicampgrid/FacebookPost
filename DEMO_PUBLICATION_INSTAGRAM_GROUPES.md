@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://fb-oauth-tunnel.preview.emergentagent.com
+🔗 https://auth-token-fix-5.preview.emergentagent.com

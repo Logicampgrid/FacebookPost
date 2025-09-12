@@ -4,7 +4,7 @@
 Document and test the workflow for publishing to Instagram and Facebook Groups through the Meta Publishing Platform.
 
 ## 📋 Application Overview
-- **URL**: https://fb-oauth-tunnel.preview.emergentagent.com
+- **URL**: https://auth-token-fix-5.preview.emergentagent.com
 - **Backend**: FastAPI with MongoDB
 - **Frontend**: React with Facebook SDK integration
 - **Key Features**: Cross-platform publishing (Pages, Groups, Instagram)

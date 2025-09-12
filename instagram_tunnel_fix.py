@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://fb-oauth-tunnel.preview.emergentagent.com"
+BACKEND_URL = "https://auth-token-fix-5.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""
