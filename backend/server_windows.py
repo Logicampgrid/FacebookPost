@@ -75,6 +75,26 @@ TOKENS = {
     "outdoor": {}
 }
 
+def get_store_config(store: str) -> dict:
+    """Récupère la configuration d'un store (tokens dynamiques prioritaires sur statiques)"""
+    if store not in STORES:
+        raise ValueError(f"Store inconnu: {store}")
+    
+    # Commencer avec la configuration statique
+    config = STORES[store].copy()
+    
+    # Surcharger avec les tokens dynamiques si disponibles
+    if store in TOKENS and TOKENS[store]:
+        dynamic_config = TOKENS[store]
+        if dynamic_config.get("access_token"):
+            config["access_token"] = dynamic_config["access_token"]
+        if dynamic_config.get("fb_page_id"):
+            config["fb_page_id"] = dynamic_config["fb_page_id"]
+        if dynamic_config.get("ig_user_id"):
+            config["ig_user_id"] = dynamic_config["ig_user_id"]
+    
+    return config
+
 def log_app(message: str, level: str = "INFO"):
     """Logging pour l'application"""
     icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "START": "🚀"}
