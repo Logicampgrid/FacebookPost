@@ -179,6 +179,16 @@ export const handleAxiosError = (axiosError) => {
  */
 export const safeErrorDisplay = (error) => {
   try {
+    // Handle undefined or null
+    if (error === undefined || error === null) {
+      return 'Erreur non définie';
+    }
+    
+    // Handle strings directly
+    if (typeof error === 'string') {
+      return error;
+    }
+    
     return formatErrorMessage(error);
   } catch (e) {
     console.error('Error formatting error message:', e);
