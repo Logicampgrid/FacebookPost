@@ -1391,15 +1391,20 @@ async def webhook_handler(request: Request):
 
 @app.post("/api/auth/facebook")
 async def authenticate_facebook(request: Request):
-    """Authentification Facebook avec token d'accès direct"""
+    """Authentification Facebook avec token d'accès direct ou token environnement"""
     try:
         data = await request.json()
         access_token = data.get("access_token")
         
+        # NOUVELLE FONCTIONNALITÉ: Utiliser le token direct de l'environnement si aucun token fourni
         if not access_token:
-            raise HTTPException(status_code=400, detail="Token d'accès requis")
-            
-        log_app("Authentification Facebook avec token direct", "INFO")
+            access_token = os.getenv("FACEBOOK_DIRECT_TOKEN")
+            if access_token:
+                log_app("Utilisation du token Facebook direct depuis .env", "INFO")
+            else:
+                raise HTTPException(status_code=400, detail="Token d'accès requis (via paramètre ou FACEBOOK_DIRECT_TOKEN)")
+        else:
+            log_app("Utilisation du token Facebook fourni dans la requête", "INFO")
         
         # Récupérer les informations utilisateur
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
