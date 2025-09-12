@@ -76,15 +76,33 @@ def log_app(message: str, level: str = "INFO"):
     print(f"{icon} [{timestamp}] [WIN] {message}")
 
 def kill_existing_ngrok():
-    """Tuer tous les processus ngrok existants"""
+    """Tuer tous les processus ngrok existants avec vérification robuste"""
     try:
         if os.name == 'nt':  # Windows
-            subprocess.run(["taskkill", "/f", "/im", "ngrok.exe"], capture_output=True)
+            # Vérifier s'il y a des processus ngrok en cours
+            check_result = subprocess.run(
+                ["tasklist", "/fi", "imagename eq ngrok.exe"],
+                capture_output=True, text=True
+            )
+            
+            if "ngrok.exe" in check_result.stdout:
+                log_app("🔍 Processus ngrok détectés, arrêt en cours...", "INFO")
+                kill_result = subprocess.run(
+                    ["taskkill", "/f", "/im", "ngrok.exe"],
+                    capture_output=True, text=True
+                )
+                if kill_result.returncode == 0:
+                    log_app("✅ Processus ngrok existants terminés", "SUCCESS")
+                else:
+                    log_app(f"⚠️ Erreur arrêt ngrok: {kill_result.stderr}", "WARNING")
+            else:
+                log_app("ℹ️ Aucun processus ngrok en cours", "INFO")
         else:  # Linux/Mac
             subprocess.run(["pkill", "-f", "ngrok"], capture_output=True)
-        log_app("Processus ngrok existants terminés", "INFO")
+            log_app("Processus ngrok existants terminés", "INFO")
+            
     except Exception as e:
-        log_app(f"Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
+        log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
 def get_frontend_backend_url():
     """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
