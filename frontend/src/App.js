@@ -145,6 +145,11 @@ function App() {
   const loadPosts = async () => {
     try {
       setLoading(true);
+      if (!user || !user._id) {
+        console.warn('Cannot load posts: user or user._id is undefined');
+        setPosts([]);
+        return;
+      }
       const response = await axios.get(`${API_BASE}/api/posts?user_id=${user._id}`);
       setPosts(response.data.posts);
     } catch (error) {
@@ -156,6 +161,10 @@ function App() {
 
   const loadUserPlatforms = async () => {
     try {
+      if (!user || !user._id) {
+        console.warn('Cannot load platforms: user or user._id is undefined');
+        return;
+      }
       const response = await axios.get(`${API_BASE}/api/users/${user._id}/platforms`);
       setAllPlatforms({
         personal_pages: response.data.personal_pages || [],
