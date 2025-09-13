@@ -1294,6 +1294,8 @@ async def check_url_status():
             "error": f"Erreur vérification statut: {str(e)}",
             "timestamp": datetime.utcnow().isoformat()
         }
+
+# === AUTHENTICATION ENDPOINTS ===
 @app.post("/api/auth/facebook/exchange-code")
 async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
