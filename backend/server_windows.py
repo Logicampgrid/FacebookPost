@@ -1203,7 +1203,97 @@ def save_store_tokens(store: str, page_id: str, page_access_token: str, ig_user_
     
     log_app(f"Tokens sauvegardés: Page={page_id}, Instagram={ig_user_id}", "SUCCESS")
 
-# === AUTHENTICATION ENDPOINTS ===
+# === SYNCHRONISATION ENDPOINTS ===
+@app.get("/api/ngrok/sync")
+async def sync_ngrok_urls():
+    """Endpoint pour forcer la synchronisation des URLs ngrok"""
+    try:
+        log_app("🔄 Synchronisation manuelle des URLs ngrok demandée", "INFO")
+        
+        # Récupérer l'URL ngrok active
+        active_url = get_active_ngrok_url()
+        if not active_url:
+            return {
+                "success": False,
+                "error": "Aucune URL ngrok active détectée",
+                "current_frontend_url": get_frontend_backend_url(),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Mettre à jour le frontend .env
+        frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+        if os.path.exists(frontend_env_path):
+            with open(frontend_env_path, "r", encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            updated_lines = []
+            backend_url_updated = False
+            for line in lines:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                    backend_url_updated = True
+                else:
+                    updated_lines.append(line)
+            
+            if not backend_url_updated:
+                updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+            
+            with open(frontend_env_path, "w", encoding='utf-8') as f:
+                f.writelines(updated_lines)
+        
+        # Mettre à jour la variable globale
+        global NGROK_URL
+        NGROK_URL = active_url
+        
+        # Tester la construction du redirect_uri
+        test_redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        
+        log_app(f"✅ Synchronisation ngrok terminée: {active_url}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "message": "URLs ngrok synchronisées avec succès",
+            "active_ngrok_url": active_url,
+            "frontend_env_updated": True,
+            "test_redirect_uri": test_redirect_uri,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur synchronisation ngrok: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@app.get("/api/status/urls")
+async def check_url_status():
+    """Endpoint pour vérifier le statut des URLs et la synchronisation"""
+    try:
+        active_ngrok = get_active_ngrok_url()
+        frontend_url = get_frontend_backend_url()
+        test_redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        
+        # Vérifier la synchronisation
+        is_synced = active_ngrok and frontend_url and active_ngrok == frontend_url
+        
+        return {
+            "active_ngrok_url": active_ngrok,
+            "frontend_backend_url": frontend_url, 
+            "test_redirect_uri": test_redirect_uri,
+            "is_synchronized": is_synced,
+            "sync_status": "✅ Synchronisé" if is_synced else "⚠️ Désynchronisé",
+            "global_ngrok_url": NGROK_URL,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "error": f"Erreur vérification statut: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
 @app.post("/api/auth/facebook/exchange-code")
 async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook - Accepte JSON avec code/state ou code/store et retourne access_token"""
