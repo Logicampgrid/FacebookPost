@@ -221,31 +221,38 @@ def get_active_ngrok_url():
         return None
 
 def build_dynamic_redirect_uri(callback_path="/auth/callback"):
-    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active"""
+    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - CORRIGÉ"""
     try:
         # Tentative 1: Récupérer l'URL ngrok active
         ngrok_url = get_active_ngrok_url()
         if ngrok_url:
             redirect_uri = f"{ngrok_url}{callback_path}"
-            log_app(f"🎯 Redirect URI dynamique (ngrok): {redirect_uri}", "SUCCESS")
+            log_app(f"✅ Redirect URI dynamique (ngrok active): {redirect_uri}", "SUCCESS")
             return redirect_uri
         
         # Tentative 2: Utiliser l'URL globale si ngrok est défini
         global NGROK_URL
         if NGROK_URL:
             redirect_uri = f"{NGROK_URL}{callback_path}"
-            log_app(f"🎯 Redirect URI dynamique (global): {redirect_uri}", "SUCCESS")
+            log_app(f"✅ Redirect URI dynamique (global ngrok): {redirect_uri}", "SUCCESS")
             return redirect_uri
         
-        # Fallback: URL locale
-        redirect_uri = f"http://localhost:{FRONTEND_PORT}{callback_path}"
-        log_app(f"🎯 Redirect URI fallback (local): {redirect_uri}", "WARNING")
+        # Tentative 3: Lire l'URL depuis le frontend .env pour cohérence 
+        frontend_backend_url = get_frontend_backend_url()
+        if frontend_backend_url and "ngrok" in frontend_backend_url:
+            redirect_uri = f"{frontend_backend_url}{callback_path}"
+            log_app(f"✅ Redirect URI depuis frontend .env: {redirect_uri}", "SUCCESS")
+            return redirect_uri
+        
+        # Fallback: URL locale SEULEMENT si aucune URL ngrok disponible
+        redirect_uri = f"http://localhost:{BACKEND_PORT}{callback_path}"  # CORRIGÉ: Utiliser BACKEND_PORT au lieu de FRONTEND_PORT
+        log_app(f"⚠️ Redirect URI fallback (local): {redirect_uri}", "WARNING")
         return redirect_uri
         
     except Exception as e:
         log_app(f"❌ Erreur construction redirect URI: {e}", "ERROR")
         # Fallback d'urgence
-        return f"http://localhost:{FRONTEND_PORT}{callback_path}"
+        return f"http://localhost:{BACKEND_PORT}{callback_path}"
 
 def get_frontend_backend_url():
     """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
