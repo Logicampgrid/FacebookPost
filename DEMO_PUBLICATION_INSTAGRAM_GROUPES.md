@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://backend-alignment.preview.emergentagent.com
+🔗 https://fb-connector-app.preview.emergentagent.com
