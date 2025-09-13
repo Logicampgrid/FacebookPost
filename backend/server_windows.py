@@ -1079,14 +1079,21 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         
         # CORRECTION CRITIQUE: Utiliser l'URL ngrok active au lieu de localhost
         if not redirect_uri or "localhost" in redirect_uri:
+            # Forcer l'utilisation de l'URL ngrok active
             active_ngrok_url = get_active_ngrok_url()
             if active_ngrok_url:
-                redirect_uri = active_ngrok_url
-                log_app(f"Redirect URI corrigée avec ngrok: {redirect_uri}", "INFO")
+                redirect_uri = f"{active_ngrok_url}/auth/callback"  # Chemin complet avec callback
+                log_app(f"✅ Redirect URI corrigée avec ngrok: {redirect_uri}", "SUCCESS")
             else:
-                log_app(f"Redirect URI fallback: {redirect_uri}", "WARNING")
+                # Si pas de ngrok, utiliser l'URL du frontend .env comme fallback
+                frontend_url = get_frontend_backend_url()
+                if frontend_url and "ngrok" in frontend_url:
+                    redirect_uri = f"{frontend_url}/auth/callback"
+                    log_app(f"✅ Redirect URI depuis frontend .env: {redirect_uri}", "SUCCESS")
+                else:
+                    log_app(f"⚠️ Redirect URI fallback (peut échouer OAuth): {redirect_uri}", "WARNING")
         
-        log_app(f"Redirect URI (dynamique): {redirect_uri}", "INFO")
+        log_app(f"🎯 Redirect URI finale: {redirect_uri}", "INFO")
         
         # Étape 1: Échanger le code contre un access token
         token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
