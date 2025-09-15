@@ -889,27 +889,30 @@ def open_browser_when_ready():
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan events - startup and shutdown - VERSION CORRIGÉE SYNCHRONISATION"""
+    """FastAPI lifespan events - startup and shutdown - VERSION DÉTECTION NGROK"""
     # Startup
-    log_app("🚀 Meta Publishing Platform - Version Windows CORRIGÉE", "START")
+    log_app("🚀 Meta Publishing Platform - Version Détection Ngrok STABLE", "START")
     log_app(f"📁 Répertoire backend: {WINDOWS_PATHS['backend_dir']}", "INFO")
     log_app(f"🌐 Port backend: {BACKEND_PORT}", "INFO")
     log_app(f"🔧 Mode test: {PUBLICATION_TEST_MODE}", "INFO")
     
-    # Démarrer ngrok de manière synchrone pour s'assurer qu'il est prêt
-    if ENABLE_NGROK:
-        log_app("🔄 Démarrage ngrok en mode synchrone...", "INFO")
+    # NOUVELLE APPROCHE: Détection ngrok existant d'abord
+    enable_setting = os.getenv("ENABLE_NGROK", "detect").lower()
+    log_app(f"🔍 Configuration ngrok: {enable_setting}", "INFO")
+    
+    if enable_setting in ["detect", "true"]:
+        log_app("🔄 Recherche et configuration ngrok...", "INFO")
         ngrok_result = start_ngrok_tunnel_windows()
         
         if ngrok_result:
-            log_app(f"✅ Ngrok configuré avec succès: {ngrok_result}", "SUCCESS")
-            # Attendre encore un peu pour s'assurer que tout est stable
-            await asyncio.sleep(2)
-            
-            # Maintenant ouvrir le navigateur avec une synchronisation garantie
-            open_browser_when_ready()
+            log_app(f"✅ Ngrok configuré: {ngrok_result}", "SUCCESS")
+            log_app("🌐 Application accessible via ngrok", "SUCCESS")
         else:
-            log_app("⚠️ Échec configuration ngrok, pas d'ouverture de navigateur", "WARNING")
+            log_app("⚠️ Ngrok non disponible - mode local uniquement", "WARNING")
+            log_app(f"🌐 Application accessible sur: http://localhost:{BACKEND_PORT}", "INFO")
+    else:
+        log_app("🌐 Mode local uniquement (ngrok désactivé)", "INFO")
+        log_app(f"🌐 Application accessible sur: http://localhost:{BACKEND_PORT}", "INFO")
     
     log_app("✅ Application démarrée avec succès!", "SUCCESS")
     
@@ -917,7 +920,8 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     log_app("🛑 Arrêt de l'application...", "INFO")
-    if ENABLE_NGROK:
+    # Ne pas arrêter ngrok s'il est externe
+    if NGROK_PROCESS:  # Seulement si on a démarré ngrok nous-mêmes
         stop_ngrok_tunnel()
     log_app("✅ Application arrêtée proprement!", "SUCCESS")
 
