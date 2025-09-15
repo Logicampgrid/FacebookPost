@@ -2034,6 +2034,29 @@ async def handle_facebook_callback(code: Optional[str] = None, state: Optional[s
         log_app(f"❌ Erreur callback Facebook: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=f"Erreur callback: {str(e)}")
 
+@app.get("/auth/callback")
+async def handle_facebook_callback_legacy(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    """Endpoint de compatibilité pour l'ancien path /auth/callback - redirige vers /auth/callb"""
+    try:
+        log_app(f"🔄 Redirection callback legacy /auth/callback vers /auth/callb", "INFO")
+        # Rediriger vers le nouveau endpoint avec les mêmes paramètres
+        from fastapi.responses import RedirectResponse
+        
+        params = []
+        if code:
+            params.append(f"code={code}")
+        if state:
+            params.append(f"state={state}")
+        if error:
+            params.append(f"error={error}")
+        
+        redirect_url = f"/auth/callb{'?' + '&'.join(params) if params else ''}"
+        return RedirectResponse(url=redirect_url, status_code=302)
+        
+    except Exception as e:
+        log_app(f"❌ Erreur redirection callback legacy: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=f"Erreur redirection: {str(e)}")
+
 # === PUBLICATION ENDPOINTS ===
 class PublishRequest(BaseModel):
     store: str
