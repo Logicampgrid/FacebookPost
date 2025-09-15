@@ -2048,13 +2048,11 @@ async def get_current_urls():
         
         if active_ngrok:
             urls_info["callback_urls_to_add_in_facebook"] = [
-                f"{active_ngrok}/auth/callback",
-                f"{active_ngrok}/auth/callb"
+                f"{active_ngrok}/auth/callb"  # ✅ URL courte pour Facebook
             ]
         else:
             urls_info["callback_urls_to_add_in_facebook"] = [
-                f"http://localhost:{BACKEND_PORT}/auth/callback",
-                f"http://localhost:{BACKEND_PORT}/auth/callb"
+                f"http://localhost:{BACKEND_PORT}/auth/callb"  # ✅ URL courte pour localhost
             ]
         
         return urls_info
