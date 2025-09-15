@@ -1857,7 +1857,7 @@ async def get_ngrok_status():
             "global_url": NGROK_URL,  # URL stockée globalement
             "process_running": NGROK_PROCESS is not None and NGROK_PROCESS.poll() is None,
             "api_accessible": active_url is not None,
-            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callback"),
+            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callb"),
             "backend_port": BACKEND_PORT,
             "timestamp": datetime.utcnow().isoformat()
         }
