@@ -300,31 +300,62 @@ def get_active_ngrok_url():
         return None
 
 def build_dynamic_redirect_uri(callback_path="/auth/callback"):
-    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active"""
+    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - VERSION AMÉLIORÉE"""
     try:
-        # Tentative 1: Récupérer l'URL ngrok active
+        # PRIORITÉ 1: Récupérer l'URL ngrok active en temps réel
         ngrok_url = get_active_ngrok_url()
         if ngrok_url:
             redirect_uri = f"{ngrok_url}{callback_path}"
-            log_app(f"🎯 Redirect URI dynamique (ngrok): {redirect_uri}", "SUCCESS")
+            log_app(f"🎯 Redirect URI dynamique (ngrok actif): {redirect_uri}", "SUCCESS")
             return redirect_uri
         
-        # Tentative 2: Utiliser l'URL globale si ngrok est défini
+        # PRIORITÉ 2: Utiliser l'URL globale si ngrok est défini
         global NGROK_URL
         if NGROK_URL:
             redirect_uri = f"{NGROK_URL}{callback_path}"
             log_app(f"🎯 Redirect URI dynamique (global): {redirect_uri}", "SUCCESS")
             return redirect_uri
         
-        # Fallback: URL locale
-        redirect_uri = f"http://localhost:{FRONTEND_PORT}{callback_path}"
-        log_app(f"🎯 Redirect URI fallback (local): {redirect_uri}", "WARNING")
+        # PRIORITÉ 3: Lire depuis le fichier ngrok_url.txt si disponible
+        try:
+            ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+            if os.path.exists(ngrok_file_path):
+                with open(ngrok_file_path, "r", encoding='utf-8') as f:
+                    file_url = f.read().strip()
+                    if file_url and file_url.startswith("https://"):
+                        redirect_uri = f"{file_url}{callback_path}"
+                        log_app(f"🎯 Redirect URI depuis fichier: {redirect_uri}", "INFO")
+                        return redirect_uri
+        except Exception as e:
+            log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
+        
+        # PRIORITÉ 4: Vérifier le frontend .env pour l'URL backend
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        backend_url = line.split("=", 1)[1].strip()
+                        if backend_url and "ngrok" in backend_url:
+                            redirect_uri = f"{backend_url}{callback_path}"
+                            log_app(f"🎯 Redirect URI depuis frontend .env: {redirect_uri}", "INFO")
+                            return redirect_uri
+        except Exception as e:
+            log_app(f"⚠️ Erreur lecture frontend .env: {e}", "WARNING")
+        
+        # FALLBACK: URL locale (seulement si ngrok n'est pas disponible)
+        redirect_uri = f"http://localhost:{BACKEND_PORT}{callback_path}"
+        log_app(f"⚠️ Redirect URI fallback (local): {redirect_uri}", "WARNING")
+        log_app("💡 ATTENTION: Cette URL locale ne fonctionnera pas avec Facebook en production!", "WARNING")
         return redirect_uri
         
     except Exception as e:
         log_app(f"❌ Erreur construction redirect URI: {e}", "ERROR")
         # Fallback d'urgence
-        return f"http://localhost:{FRONTEND_PORT}{callback_path}"
+        return f"http://localhost:{BACKEND_PORT}{callback_path}"
 
 def get_frontend_backend_url():
     """Récupère l'URL backend depuis le .env du frontend - CORRECTION CRITIQUE"""
