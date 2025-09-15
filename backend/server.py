@@ -380,13 +380,113 @@ def get_frontend_backend_url():
         log_app(f"Erreur lecture frontend .env: {e}", "ERROR")
         return None
 
+def detect_and_use_existing_ngrok():
+    """Détecter et utiliser ngrok existant au lieu de le redémarrer - NOUVELLE APPROCHE"""
+    global NGROK_URL
+    
+    try:
+        log_app("🔍 Détection de ngrok existant...", "INFO")
+        
+        # Vérifier via l'API ngrok locale
+        active_url = get_active_ngrok_url()
+        if active_url:
+            NGROK_URL = active_url
+            log_app(f"✅ Ngrok existant détecté et utilisé: {NGROK_URL}", "SUCCESS")
+            
+            # Mettre à jour les configurations avec l'URL existante
+            try:
+                # Mettre à jour le frontend .env
+                frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+                if os.path.exists(frontend_env_path):
+                    with open(frontend_env_path, "r", encoding='utf-8') as f:
+                        lines = f.readlines()
+                    
+                    updated_lines = []
+                    backend_url_updated = False
+                    for line in lines:
+                        if line.startswith("REACT_APP_BACKEND_URL="):
+                            updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                            backend_url_updated = True
+                        else:
+                            updated_lines.append(line)
+                    
+                    if not backend_url_updated:
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={NGROK_URL}\n")
+                    
+                    with open(frontend_env_path, "w", encoding='utf-8') as f:
+                        f.writelines(updated_lines)
+                    log_app("✅ Frontend .env synchronisé avec ngrok existant", "SUCCESS")
+                
+                # Mettre à jour le fichier ngrok_url.txt
+                ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+                with open(ngrok_file_path, "w", encoding='utf-8') as f:
+                    f.write(NGROK_URL)
+                log_app("✅ Fichier ngrok_url.txt mis à jour", "SUCCESS")
+                
+                # Afficher les informations de configuration Facebook
+                domain = NGROK_URL.replace("https://", "").replace("http://", "")
+                log_app("=" * 60, "INFO")
+                log_app("📋 CONFIGURATION FACEBOOK ACTUELLE:", "INFO")
+                log_app(f"🌐 URL ngrok stable: {NGROK_URL}", "INFO")
+                log_app(f"📱 App Domains: {domain}", "INFO")
+                log_app(f"🔗 OAuth Redirect URIs: {NGROK_URL}/auth/callback", "INFO")
+                log_app(f"🎯 Webhooks: {NGROK_URL}/api/webhook", "INFO")
+                log_app("=" * 60, "INFO")
+                
+                return True
+                
+            except Exception as e:
+                log_app(f"⚠️ Erreur mise à jour configurations: {e}", "WARNING")
+                return True  # Ngrok détecté quand même
+        
+        # Vérifier dans le fichier ngrok_url.txt
+        try:
+            ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+            if os.path.exists(ngrok_file_path):
+                with open(ngrok_file_path, "r", encoding='utf-8') as f:
+                    file_url = f.read().strip()
+                    if file_url and file_url.startswith("https://"):
+                        NGROK_URL = file_url
+                        log_app(f"✅ URL ngrok récupérée depuis fichier: {NGROK_URL}", "SUCCESS")
+                        log_app("⚠️ ATTENTION: Vérifiez que ngrok est toujours actif avec cette URL", "WARNING")
+                        return True
+        except Exception as e:
+            log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
+        
+        log_app("❌ Aucun ngrok existant détecté", "WARNING")
+        return False
+        
+    except Exception as e:
+        log_app(f"❌ Erreur détection ngrok existant: {e}", "ERROR")
+        return False
+
 def start_ngrok_tunnel_windows():
-    """Démarrer le tunnel ngrok et synchroniser avec le frontend .env - VERSION CORRIGÉE ROBUSTE"""
+    """Démarrer le tunnel ngrok SEULEMENT si aucun ngrok existant - VERSION AMÉLIORÉE"""
     global NGROK_PROCESS, NGROK_URL
     
-    if not ENABLE_NGROK:
+    # ÉTAPE 1: Toujours essayer de détecter ngrok existant d'abord
+    if DETECT_EXISTING_NGROK:
+        if detect_and_use_existing_ngrok():
+            log_app("✅ Utilisation de ngrok existant - pas de redémarrage", "SUCCESS")
+            return NGROK_URL
+    
+    # ÉTAPE 2: Vérifier la configuration pour démarrer ngrok
+    enable_setting = os.getenv("ENABLE_NGROK", "detect").lower()
+    
+    if enable_setting == "false":
         log_app("Ngrok désactivé (ENABLE_NGROK=false)", "INFO")
         return None
+    elif enable_setting == "detect":
+        log_app("⚠️ Mode détection: Aucun ngrok existant trouvé", "WARNING")
+        log_app("💡 Démarrez ngrok manuellement avec start_ngrok_standalone.py", "INFO")
+        log_app("💡 Ou changez ENABLE_NGROK=true pour démarrage automatique", "INFO")
+        return None
+    elif enable_setting != "true":
+        log_app(f"Configuration ENABLE_NGROK invalide: {enable_setting}", "WARNING")
+        return None
+    
+    # ÉTAPE 3: Démarrage automatique ngrok (seulement si ENABLE_NGROK=true)
+    log_app("🚀 Démarrage automatique ngrok (ENABLE_NGROK=true)...", "INFO")
     
     try:
         # Tuer les processus ngrok existants
