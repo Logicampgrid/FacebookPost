@@ -2034,6 +2034,34 @@ async def handle_facebook_callback(code: Optional[str] = None, state: Optional[s
         log_app(f"❌ Erreur callback Facebook: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=f"Erreur callback: {str(e)}")
 
+@app.get("/api/current-urls")
+async def get_current_urls():
+    """Obtenir les URLs actuelles pour la configuration Facebook"""
+    try:
+        active_ngrok = get_active_ngrok_url()
+        
+        urls_info = {
+            "current_ngrok_url": active_ngrok,
+            "callback_urls_to_add_in_facebook": [],
+            "instructions": "Ajoutez ces URLs dans Facebook Developer Console > Votre App > Produits > Connexion Facebook > Paramètres > URI de redirection OAuth valides"
+        }
+        
+        if active_ngrok:
+            urls_info["callback_urls_to_add_in_facebook"] = [
+                f"{active_ngrok}/auth/callback",
+                f"{active_ngrok}/auth/callb"
+            ]
+        else:
+            urls_info["callback_urls_to_add_in_facebook"] = [
+                f"http://localhost:{BACKEND_PORT}/auth/callback",
+                f"http://localhost:{BACKEND_PORT}/auth/callb"
+            ]
+        
+        return urls_info
+        
+    except Exception as e:
+        return {"error": f"Erreur récupération URLs: {str(e)}"}
+
 @app.get("/auth/callback")
 async def handle_facebook_callback_legacy(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
     """Endpoint de compatibilité pour l'ancien path /auth/callback - redirige vers /auth/callb"""
