@@ -1082,7 +1082,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
             # Forcer l'utilisation de l'URL ngrok active
             active_ngrok_url = get_active_ngrok_url()
             if active_ngrok_url:
-                redirect_uri = f"{active_ngrok_url}/auth/callback"  # Chemin complet avec callback
+                redirect_uri = f"{active_ngrok_url}/auth/callb"  # Chemin complet avec callback
                 log_app(f"✅ Redirect URI corrigée avec ngrok: {redirect_uri}", "SUCCESS")
             else:
                 # Si pas de ngrok, utiliser l'URL du frontend .env comme fallback
