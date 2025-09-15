@@ -220,7 +220,7 @@ def get_active_ngrok_url():
         log_app(f"❌ Erreur détection ngrok: {e}", "ERROR")
         return None
 
-def build_dynamic_redirect_uri(callback_path="/auth/callback"):
+def build_dynamic_redirect_uri(callback_path="/auth/callb"):
     """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - CORRIGÉ"""
     try:
         # Tentative 1: Récupérer l'URL ngrok active
