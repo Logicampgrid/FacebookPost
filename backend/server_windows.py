@@ -1836,7 +1836,7 @@ async def update_facebook_endpoints():
             "success": result,
             "message": "Mise à jour des endpoints terminée" if result else "Aucune URL ngrok active trouvée",
             "active_url": get_active_ngrok_url(),
-            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callback"),
+            "current_redirect_uri": build_dynamic_redirect_uri("/auth/callb"),
             "timestamp": datetime.utcnow().isoformat()
         }
         
