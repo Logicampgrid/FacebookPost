@@ -459,7 +459,7 @@ def main():
     """Main test execution"""
     # Get backend URL from environment
     import os
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://ngrok-uri-sync.preview.emergentagent.com')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://redirect-domain-fix.preview.emergentagent.com')
     
     print(f"🚀 Meta Publishing Platform - Backend API Tests")
     print(f"📡 Backend URL: {backend_url}")

@@ -22,14 +22,14 @@ python3 test_instagram_tunnel.py
 
 ### URL du tunnel
 ```
-https://ngrok-uri-sync.preview.emergentagent.com/api/webhook
+https://redirect-domain-fix.preview.emergentagent.com/api/webhook
 ```
 
 ### Méthode d'utilisation
 
 #### Avec cURL :
 ```bash
-curl -X POST "https://ngrok-uri-sync.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://redirect-domain-fix.preview.emergentagent.com/api/webhook" \
   -F "image=@/path/to/your/image.jpg" \
   -F 'json_data={"title":"Titre du post","description":"Description du produit","url":"https://votresite.com/produit","store":"gizmobbs"}'
 ```
