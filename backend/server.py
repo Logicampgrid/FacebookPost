@@ -1173,23 +1173,48 @@ async def publish_post(store: str, message: str, product_url: str, image_url: Op
 
 # === AUTHENTICATION FUNCTIONS ===
 async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
-    """Échange un code d'autorisation Facebook contre un access token"""
+    """Échange un code d'autorisation Facebook contre un access token - VERSION CORRIGÉE NGROK"""
     try:
         log_app(f"Échange du code d'autorisation Facebook", "INFO")
         
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
             raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
         
-        # CORRECTION CRITIQUE: Utiliser l'URL ngrok active au lieu de localhost
-        if not redirect_uri or "localhost" in redirect_uri:
+        # CORRECTION CRITIQUE: S'assurer d'utiliser l'URL ngrok active au lieu de localhost
+        original_redirect_uri = redirect_uri
+        
+        # Si l'URI contient localhost ou est vide, la remplacer par l'URL ngrok active
+        if not redirect_uri or "localhost" in redirect_uri or redirect_uri.startswith("http://127.0.0.1"):
             active_ngrok_url = get_active_ngrok_url()
             if active_ngrok_url:
-                redirect_uri = active_ngrok_url
-                log_app(f"Redirect URI corrigée avec ngrok: {redirect_uri}", "INFO")
+                # Construire l'URI de callback avec l'URL ngrok active
+                redirect_uri = f"{active_ngrok_url}/auth/callback"
+                log_app(f"🔄 Redirect URI corrigée avec ngrok actif: {redirect_uri}", "SUCCESS")
             else:
-                log_app(f"Redirect URI fallback: {redirect_uri}", "WARNING")
+                # Essayer de construire dynamiquement
+                redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+                log_app(f"🔄 Redirect URI construite dynamiquement: {redirect_uri}", "INFO")
         
-        log_app(f"Redirect URI (dynamique): {redirect_uri}", "INFO")
+        # Vérifier que l'URI ne contient toujours pas localhost
+        if "localhost" in redirect_uri:
+            log_app(f"⚠️ ATTENTION: Redirect URI contient encore localhost: {redirect_uri}", "WARNING")
+            log_app(f"💡 Facebook rejettera cette requête car localhost n'est pas dans les App Domains", "WARNING")
+            
+            # Dernière tentative: forcer l'utilisation de ngrok
+            try:
+                active_url = get_active_ngrok_url()
+                if active_url:
+                    redirect_uri = f"{active_url}/auth/callback"
+                    log_app(f"🔄 Redirect URI forcée avec ngrok: {redirect_uri}", "SUCCESS")
+                else:
+                    raise Exception("Impossible de récupérer l'URL ngrok active")
+            except Exception as ngrok_error:
+                log_app(f"❌ Impossible de corriger l'URI avec ngrok: {ngrok_error}", "ERROR")
+                raise Exception(f"URI de redirection invalide (localhost) et ngrok non disponible: {redirect_uri}")
+        
+        log_app(f"✅ URI de redirection finale: {redirect_uri}", "SUCCESS")
+        if original_redirect_uri != redirect_uri:
+            log_app(f"📝 URI originale: {original_redirect_uri} → URI corrigée: {redirect_uri}", "INFO")
         
         # Étape 1: Échanger le code contre un access token
         token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
@@ -1200,7 +1225,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
             'code': code
         }
         
-        log_app("Requête d'échange de token...", "INFO")
+        log_app("🔄 Requête d'échange de token Facebook...", "INFO")
         response = requests.get(token_url, params=token_params, timeout=30)
         response.raise_for_status()
         
@@ -1210,7 +1235,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
             raise Exception(f"Token non reçu: {token_data}")
         
         access_token = token_data["access_token"]
-        log_app("Access token reçu avec succès", "SUCCESS")
+        log_app("✅ Access token Facebook reçu avec succès", "SUCCESS")
         
         # Étape 2: Obtenir les informations utilisateur et ses pages
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
@@ -1223,7 +1248,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         user_response.raise_for_status()
         user_data = user_response.json()
         
-        log_app(f"Utilisateur: {user_data.get('name', 'Inconnu')}", "INFO")
+        log_app(f"👤 Utilisateur Facebook: {user_data.get('name', 'Inconnu')}", "INFO")
         
         # Étape 3: Obtenir les pages gérées par l'utilisateur
         pages_url = f"{FACEBOOK_GRAPH_URL}/me/accounts"
@@ -1237,13 +1262,14 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         pages_data = pages_response.json()
         
         pages = pages_data.get('data', [])
-        log_app(f"Trouvé {len(pages)} page(s) gérée(s)", "INFO")
+        log_app(f"📄 Trouvé {len(pages)} page(s) Facebook gérée(s)", "INFO")
         
         result = {
             "user_access_token": access_token,
             "user_id": user_data.get('id'),
             "user_name": user_data.get('name'),
-            "pages": []
+            "pages": [],
+            "redirect_uri_used": redirect_uri  # Inclure l'URI utilisée pour debug
         }
         
         # Traiter chaque page
@@ -1260,13 +1286,13 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
                 ig_account = page['instagram_business_account']
                 if ig_account:
                     page_info["instagram_business_account"] = ig_account.get('id')
-                    log_app(f"Page '{page.get('name')}' a un compte Instagram: {ig_account.get('id')}", "INFO")
+                    log_app(f"📸 Page '{page.get('name')}' a un compte Instagram: {ig_account.get('id')}", "INFO")
                 else:
-                    log_app(f"Page '{page.get('name')}' n'a pas de compte Instagram", "WARNING")
+                    log_app(f"⚠️ Page '{page.get('name')}' n'a pas de compte Instagram", "WARNING")
             
             result["pages"].append(page_info)
         
-        log_app("Authentification Facebook réussie", "SUCCESS")
+        log_app("✅ Authentification Facebook réussie avec URL ngrok", "SUCCESS")
         return result
         
     except requests.exceptions.RequestException as e:
@@ -1274,7 +1300,21 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_msg += f" - {error_data}"
+                if "error" in error_data:
+                    fb_error = error_data["error"]
+                    error_code = fb_error.get("code", "N/A")
+                    error_message = fb_error.get("message", "N/A")
+                    error_type = fb_error.get("type", "N/A")
+                    
+                    error_msg += f" - Code: {error_code}, Type: {error_type}, Message: {error_message}"
+                    
+                    # Erreur spécifique pour les problèmes d'URI de redirection
+                    if error_code == 191 or "redirect_uri" in error_message.lower():
+                        error_msg += f"\n💡 SOLUTION: Vérifiez que '{redirect_uri}' est ajouté dans:"
+                        error_msg += f"\n   - Facebook App > Settings > Basic > App Domains"
+                        error_msg += f"\n   - Facebook Login > Settings > Valid OAuth Redirect URIs"
+                else:
+                    error_msg += f" - {error_data}"
             except:
                 error_msg += f" - Status: {e.response.status_code}"
         log_app(error_msg, "ERROR")
