@@ -1543,16 +1543,36 @@ async def authenticate_facebook(request: Request):
         else:
             log_app("Utilisation du token Facebook fourni dans la requête", "INFO")
         
-        # Récupérer les informations utilisateur avec détails complets
+        # Récupérer les informations utilisateur avec gestion d'erreur améliorée
         user_url = f"{FACEBOOK_GRAPH_URL}/me"
-        user_params = {
-            'access_token': access_token,
-            'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}},business_users{business{id,name,pages{id,name,access_token,instagram_business_account{id,username}},groups{id,name}}}'
-        }
         
-        response = requests.get(user_url, params=user_params, timeout=30)
-        response.raise_for_status()
-        user_data = response.json()
+        # Essayer d'abord avec une requête complète, puis simplifier si erreur 400
+        try:
+            user_params = {
+                'access_token': access_token,
+                'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}},business_users{business{id,name,pages{id,name,access_token,instagram_business_account{id,username}},groups{id,name}}}'
+            }
+            
+            response = requests.get(user_url, params=user_params, timeout=30)
+            response.raise_for_status()
+            user_data = response.json()
+            log_app("Requête Facebook complète réussie", "SUCCESS")
+            
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 400:
+                log_app("Requête complète échouée (400), tentative avec requête simplifiée", "WARNING")
+                # Requête simplifiée sans business_users
+                user_params_simple = {
+                    'access_token': access_token,
+                    'fields': 'id,name,accounts{id,name,access_token,instagram_business_account{id,username}}'
+                }
+                
+                response = requests.get(user_url, params=user_params_simple, timeout=30)
+                response.raise_for_status()
+                user_data = response.json()
+                log_app("Requête Facebook simplifiée réussie", "SUCCESS")
+            else:
+                raise e
         
         log_app(f"Utilisateur connecté: {user_data.get('name')}", "SUCCESS")
         
