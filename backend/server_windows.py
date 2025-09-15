@@ -1246,7 +1246,7 @@ async def sync_ngrok_urls():
         NGROK_URL = active_url
         
         # Tester la construction du redirect_uri
-        test_redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        test_redirect_uri = build_dynamic_redirect_uri("/auth/callb")
         
         log_app(f"✅ Synchronisation ngrok terminée: {active_url}", "SUCCESS")
         
