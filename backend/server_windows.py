@@ -1274,7 +1274,7 @@ async def check_url_status():
     try:
         active_ngrok = get_active_ngrok_url()
         frontend_url = get_frontend_backend_url()
-        test_redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+        test_redirect_uri = build_dynamic_redirect_uri("/auth/callb")
         
         # Vérifier la synchronisation
         is_synced = active_ngrok and frontend_url and active_ngrok == frontend_url
