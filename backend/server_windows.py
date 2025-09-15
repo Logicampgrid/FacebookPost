@@ -778,7 +778,7 @@ class FacebookExchangeCodeRequest(BaseModel):
             return v  # Utiliser l'URI fournie si spécifiée
         
         # Sinon, construire dynamiquement l'URI de redirection
-        return build_dynamic_redirect_uri("/auth/callback")
+        return build_dynamic_redirect_uri("/auth/callb")
 
 class FacebookAuthResponse(BaseModel):
     success: bool
