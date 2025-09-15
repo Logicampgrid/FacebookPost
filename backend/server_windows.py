@@ -1088,7 +1088,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
                 # Si pas de ngrok, utiliser l'URL du frontend .env comme fallback
                 frontend_url = get_frontend_backend_url()
                 if frontend_url and "ngrok" in frontend_url:
-                    redirect_uri = f"{frontend_url}/auth/callback"
+                    redirect_uri = f"{frontend_url}/auth/callb"
                     log_app(f"✅ Redirect URI depuis frontend .env: {redirect_uri}", "SUCCESS")
                 else:
                     log_app(f"⚠️ Redirect URI fallback (peut échouer OAuth): {redirect_uri}", "WARNING")
