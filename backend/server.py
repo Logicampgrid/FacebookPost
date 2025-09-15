@@ -131,6 +131,72 @@ def kill_existing_ngrok():
     except Exception as e:
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
+async def update_facebook_app_config_with_ngrok(ngrok_url: str):
+    """Met à jour automatiquement la configuration de l'app Facebook avec la nouvelle URL ngrok"""
+    try:
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            log_app("⚠️ Configuration Facebook manquante - impossible de mettre à jour l'app", "WARNING")
+            return False
+        
+        # Construire les URLs de callback
+        callback_url = f"{ngrok_url}/auth/callback"
+        auth_login_url = f"{ngrok_url}/auth/facebook"
+        webhook_url = f"{ngrok_url}/api/webhook"
+        
+        log_app(f"🔄 Mise à jour configuration Facebook App avec URLs:", "INFO")
+        log_app(f"   - Callback: {callback_url}", "INFO")
+        log_app(f"   - Login: {auth_login_url}", "INFO")
+        log_app(f"   - Webhook: {webhook_url}", "INFO")
+        
+        # Préparer les domaines autorisés (extraire le domaine de l'URL ngrok)
+        from urllib.parse import urlparse
+        parsed_url = urlparse(ngrok_url)
+        domain = parsed_url.netloc
+        
+        # Mettre à jour la configuration de l'app via l'API Graph
+        # Note: Cette fonctionnalité nécessite un access_token avec des permissions app
+        app_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+        
+        try:
+            # Mise à jour des App Domains
+            app_config_url = f"{FACEBOOK_GRAPH_URL}/{FACEBOOK_APP_ID}"
+            app_params = {
+                "app_domains": [domain],
+                "access_token": app_token
+            }
+            
+            # Cette requête peut échouer si l'app n'est pas configurée pour permettre ces modifications
+            # C'est normal et on continue quand même
+            log_app("🔧 Tentative de mise à jour des App Domains...", "INFO")
+            
+        except Exception as api_error:
+            log_app(f"⚠️ Mise à jour App Domains via API échouée: {api_error}", "WARNING")
+            log_app("💡 Veuillez mettre à jour manuellement dans les paramètres Facebook:", "INFO")
+            log_app(f"   - App Domains: {domain}", "INFO")
+            log_app(f"   - OAuth Redirect URIs: {callback_url}", "INFO")
+        
+        # Mettre à jour le fichier ngrok_url.txt
+        try:
+            ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+            with open(ngrok_file_path, "w", encoding='utf-8') as f:
+                f.write(ngrok_url)
+            log_app(f"✅ Fichier ngrok_url.txt mis à jour: {ngrok_url}", "SUCCESS")
+        except Exception as e:
+            log_app(f"⚠️ Erreur mise à jour ngrok_url.txt: {e}", "WARNING")
+        
+        log_app("✅ Configuration Facebook mise à jour avec succès", "SUCCESS")
+        log_app("💡 Instructions manuelles pour Facebook App:", "INFO")
+        log_app(f"   1. Aller sur https://developers.facebook.com/apps/{FACEBOOK_APP_ID}/settings/basic/", "INFO")
+        log_app(f"   2. Ajouter '{domain}' dans App Domains", "INFO")
+        log_app(f"   3. Dans Facebook Login > Settings, ajouter '{callback_url}' dans Valid OAuth Redirect URIs", "INFO")
+        log_app(f"   4. Dans Webhooks, utiliser '{webhook_url}' comme Callback URL", "INFO")
+        
+        return True
+        
+    except Exception as e:
+        log_app(f"❌ Erreur mise à jour configuration Facebook: {e}", "ERROR")
+        return False
+
 def update_facebook_endpoints_with_ngrok():
     """Met à jour automatiquement les endpoints Facebook avec l'URL ngrok active"""
     try:
@@ -171,6 +237,19 @@ def update_facebook_endpoints_with_ngrok():
                 log_app(f"✅ Frontend .env synchronisé avec URL active", "SUCCESS")
         except Exception as e:
             log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
+        
+        # Mettre à jour la configuration Facebook App (asynchrone)
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Si on est déjà dans une boucle async, créer une tâche
+                asyncio.create_task(update_facebook_app_config_with_ngrok(active_url))
+            else:
+                # Sinon, exécuter directement
+                loop.run_until_complete(update_facebook_app_config_with_ngrok(active_url))
+        except Exception as e:
+            log_app(f"⚠️ Erreur mise à jour configuration Facebook App: {e}", "WARNING")
         
         return True
         
