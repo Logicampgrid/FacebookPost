@@ -32,8 +32,9 @@ WINDOWS_PATHS = {
     "frontend_build": os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "frontend", "build")
 }
 
-# === CONFIGURATION NGROK ===
-ENABLE_NGROK = os.getenv("ENABLE_NGROK", "true").lower() == "true"
+# === CONFIGURATION NGROK MODIFIÉE POUR MODE STANDALONE ===
+ENABLE_NGROK = os.getenv("ENABLE_NGROK", "detect").lower()  # detect, true, false
+DETECT_EXISTING_NGROK = True  # Toujours détecter ngrok existant d'abord
 NGROK_PROCESS = None
 NGROK_URL = None
 
