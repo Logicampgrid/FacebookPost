@@ -600,12 +600,24 @@ def start_ngrok_tunnel_windows():
                         except Exception as e:
                             log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
                         
-                        # NOUVEAU: Mise à jour automatique des endpoints Facebook
+                        # NOUVEAU: Mise à jour automatique de la configuration Facebook App
                         try:
-                            update_facebook_endpoints_with_ngrok()
-                            log_app(f"✅ Endpoints Facebook mis à jour automatiquement", "SUCCESS")
+                            # Créer une tâche asynchrone pour la mise à jour Facebook App
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                                if loop.is_running():
+                                    # Si on est déjà dans une boucle async, créer une tâche
+                                    asyncio.create_task(update_facebook_app_config_with_ngrok(NGROK_URL))
+                                else:
+                                    # Sinon, exécuter directement
+                                    loop.run_until_complete(update_facebook_app_config_with_ngrok(NGROK_URL))
+                            except RuntimeError:
+                                # Si pas de boucle d'événements, créer une nouvelle
+                                asyncio.run(update_facebook_app_config_with_ngrok(NGROK_URL))
+                            log_app(f"✅ Configuration Facebook App mise à jour automatiquement", "SUCCESS")
                         except Exception as e:
-                            log_app(f"⚠️ Erreur mise à jour endpoints Facebook: {e}", "WARNING")
+                            log_app(f"⚠️ Erreur mise à jour configuration Facebook App: {e}", "WARNING")
                         
                         return NGROK_URL
                     else:
