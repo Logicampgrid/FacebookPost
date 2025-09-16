@@ -60,13 +60,13 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🔐 Valid OAuth Redirect URIs:
-   https://926b67c8f05a.ngrok-free.app/auth/instagram/callback
+   https://social-post-proxy.preview.emergentagent.com/auth/instagram/callback
 
 🚫 Deauthorize Callback URL:
-   https://926b67c8f05a.ngrok-free.app/auth/instagram/deauthorize
+   https://social-post-proxy.preview.emergentagent.com/auth/instagram/deauthorize
 
 📊 Data Deletion Requests:
-   https://926b67c8f05a.ngrok-free.app/auth/instagram/delete
+   https://social-post-proxy.preview.emergentagent.com/auth/instagram/delete
 
 ========================================================
 6. ÉTAPES DE CONFIGURATION
