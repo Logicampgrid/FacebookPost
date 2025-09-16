@@ -223,6 +223,8 @@ def get_active_ngrok_url():
 def build_dynamic_redirect_uri(callback_path="/"):
     """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - MODIFIÉ POUR URL DE BASE"""
     try:
+        log_app(f"🔍 [DEBUG] Appelé avec callback_path: '{callback_path}'", "INFO")
+        
         # Tentative 1: Récupérer l'URL ngrok active
         ngrok_url = get_active_ngrok_url()
         if ngrok_url:
