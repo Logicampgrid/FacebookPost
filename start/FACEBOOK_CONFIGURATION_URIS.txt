@@ -36,7 +36,7 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🎯 Callback URL:
-   https://926b67c8f05a.ngrok-free.app/api/webhook
+   https://social-post-proxy.preview.emergentagent.com/api/webhook
 
 🔑 Verify Token:
    your_webhook_verify_token
