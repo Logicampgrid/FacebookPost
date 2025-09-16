@@ -53,7 +53,7 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🔗 Allowed Domains for JavaScript SDK:
-   926b67c8f05a.ngrok-free.app
+   social-post-proxy.preview.emergentagent.com
 
 ========================================================
 5. INSTAGRAM BASIC DISPLAY
