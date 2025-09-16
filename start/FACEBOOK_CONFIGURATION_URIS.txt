@@ -1,0 +1,121 @@
+========================================================
+CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
+========================================================
+
+📅 Date de configuration : $(date)
+🌐 URL Ngrok active : https://926b67c8f05a.ngrok-free.app
+
+========================================================
+1. PARAMÈTRES DE BASE (Basic Settings)
+========================================================
+
+🏠 App Domains:
+   926b67c8f05a.ngrok-free.app
+
+🌐 Site Web URL:
+   https://926b67c8f05a.ngrok-free.app
+
+📱 Privacy Policy URL:
+   https://926b67c8f05a.ngrok-free.app/privacy
+
+📋 Terms of Service URL:
+   https://926b67c8f05a.ngrok-free.app/terms
+
+========================================================
+2. FACEBOOK LOGIN (OAuth Settings)
+========================================================
+
+🔐 Valid OAuth Redirect URIs:
+   https://926b67c8f05a.ngrok-free.app/auth/callback
+   https://926b67c8f05a.ngrok-free.app/auth/callb
+
+⚠️ IMPORTANT : Les deux URIs sont incluses pour compatibilité
+
+========================================================
+3. WEBHOOKS CONFIGURATION
+========================================================
+
+🎯 Callback URL:
+   https://926b67c8f05a.ngrok-free.app/api/webhook
+
+🔑 Verify Token:
+   your_webhook_verify_token
+
+📝 Subscription Fields:
+   - messages
+   - messaging_postbacks
+   - messaging_optins
+   - messaging_deliveries
+   - messaging_reads
+
+========================================================
+4. JAVASCRIPT SDK CONFIGURATION
+========================================================
+
+🔗 Allowed Domains for JavaScript SDK:
+   926b67c8f05a.ngrok-free.app
+
+========================================================
+5. INSTAGRAM BASIC DISPLAY
+========================================================
+
+🔐 Valid OAuth Redirect URIs:
+   https://926b67c8f05a.ngrok-free.app/auth/instagram/callback
+
+🚫 Deauthorize Callback URL:
+   https://926b67c8f05a.ngrok-free.app/auth/instagram/deauthorize
+
+📊 Data Deletion Requests:
+   https://926b67c8f05a.ngrok-free.app/auth/instagram/delete
+
+========================================================
+6. ÉTAPES DE CONFIGURATION
+========================================================
+
+1. Aller sur : https://developers.facebook.com/apps/
+2. Sélectionner votre application
+3. Dans "App Settings" > "Basic" :
+   - Ajouter le domaine dans "App Domains"
+   - Définir "Site Web URL"
+
+4. Dans "Facebook Login" > "Settings" :
+   - Ajouter les URIs OAuth
+
+5. Dans "Webhooks" :
+   - Définir l'URL de callback
+   - Configurer le token de vérification
+
+6. Dans "Instagram Basic Display" :
+   - Ajouter les URIs de redirection Instagram
+
+========================================================
+7. VARIABLES D'ENVIRONNEMENT À VÉRIFIER
+========================================================
+
+FACEBOOK_APP_ID=votre_app_id
+FACEBOOK_APP_SECRET=votre_app_secret  
+FACEBOOK_CLIENT_TOKEN=votre_client_token
+NGROK_AUTH_TOKEN=votre_ngrok_token
+
+========================================================
+8. TESTS DE VALIDATION
+========================================================
+
+✅ Test health check:
+   curl https://926b67c8f05a.ngrok-free.app/api/health
+
+✅ Test webhook:
+   curl https://926b67c8f05a.ngrok-free.app/api/webhook
+
+✅ Test OAuth:
+   https://926b67c8f05a.ngrok-free.app/auth/facebook
+
+========================================================
+
+⚠️ NOTES IMPORTANTES :
+- Cette URL ngrok changera si vous redémarrez ngrok
+- Mettez à jour ces paramètres à chaque changement d'URL
+- Conservez ce fichier pour référence future
+- Vérifiez que votre application Facebook est en mode "Live" si nécessaire
+
+========================================================
