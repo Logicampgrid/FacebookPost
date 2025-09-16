@@ -2504,14 +2504,35 @@ async def n8n_webhook_handler(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 # === GESTION DES ROUTES FRONTEND (DOIT ÊTRE EN DERNIER) ===
-@app.get("/", response_class=FileResponse)
-async def serve_frontend_root():
-    """Servir la page d'accueil du frontend"""
+@app.get("/")
+async def serve_frontend_root(request: Request, code: Optional[str] = None, state: Optional[str] = None):
+    """Servir la page d'accueil du frontend et gérer les callbacks Facebook"""
+    # Si on a un code Facebook, le traiter
+    if code:
+        log_app(f"🔄 Code Facebook reçu sur route racine: {code[:20]}...", "INFO")
+        if state:
+            log_app(f"🔄 State Facebook: {state}", "INFO")
+        
+        # Rediriger vers le frontend avec les paramètres en query string
+        frontend_url = f"/?code={code}"
+        if state:
+            frontend_url += f"&state={state}"
+        
+        log_app(f"🔄 Redirection vers frontend: {frontend_url}", "INFO")
+        
+        # Servir le frontend avec les paramètres
+        index_path = os.path.join(WINDOWS_PATHS["frontend_build"], "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        else:
+            return {"message": "Frontend non disponible", "build_path": WINDOWS_PATHS["frontend_build"], "hint": "Exécutez 'npm run build' dans le frontend"}
+    
+    # Route normale - servir la page d'accueil
     index_path = os.path.join(WINDOWS_PATHS["frontend_build"], "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     else:
-        return {"message": "Frontend non disponible", "build_path": WINDOWS_PATHS["frontend_build"], "hint": "Exécutez 'npm run build' dans C:\\FacebookPost\\frontend"}
+        return {"message": "Frontend non disponible", "build_path": WINDOWS_PATHS["frontend_build"], "hint": "Exécutez 'npm run build' dans le frontend"}
 
 @app.get("/{path:path}", response_class=FileResponse)
 async def serve_frontend(path: str):
