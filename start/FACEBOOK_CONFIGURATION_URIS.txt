@@ -3,7 +3,7 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 📅 Date de configuration : $(date)
-🌐 URL Ngrok active : https://926b67c8f05a.ngrok-free.app
+🌐 URL Backend active : https://social-post-proxy.preview.emergentagent.com
 
 ========================================================
 1. PARAMÈTRES DE BASE (Basic Settings)
