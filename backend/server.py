@@ -2537,6 +2537,67 @@ async def serve_frontend(path: str):
     else:
         raise HTTPException(status_code=404, detail="Frontend index.html non trouvé")
 
+# === NGROK SYNCHRONIZATION ENDPOINT ===
+@app.post("/api/sync/ngrok")
+async def sync_ngrok_endpoint():
+    """Endpoint pour synchroniser manuellement les configurations ngrok"""
+    try:
+        log_app("🔄 Synchronisation manuelle ngrok demandée", "INFO")
+        
+        # Détecter l'URL ngrok active
+        ngrok_url = get_active_ngrok_url()
+        
+        if not ngrok_url:
+            return {
+                "success": False,
+                "error": "Aucun tunnel ngrok actif trouvé",
+                "ngrok_url": None,
+                "instructions": "Démarrez ngrok avec: ngrok http 8001",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Générer les instructions Facebook
+        domain = ngrok_url.replace('https://', '').replace('http://', '')
+        facebook_config = get_facebook_app_config()
+        app_id = facebook_config.get('app_id', 'VOTRE_APP_ID')
+        
+        instructions = {
+            "ngrok_url": ngrok_url,
+            "domain": domain,
+            "facebook_developer_url": f"https://developers.facebook.com/apps/{app_id}/settings/basic/",
+            "app_domains": [domain],
+            "oauth_redirect_uris": [
+                f"{ngrok_url}/auth/callback",
+                f"{ngrok_url}/"
+            ],
+            "webhook_url": f"{ngrok_url}/api/webhook"
+        }
+        
+        return {
+            "success": True,
+            "ngrok_url": ngrok_url,
+            "message": "Configuration ngrok synchronisée avec succès",
+            "instructions": instructions,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur synchronisation ngrok: {e}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e),
+            "ngrok_url": None,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+def get_facebook_app_config() -> dict:
+    """Récupère la configuration Facebook depuis les variables d'environnement"""
+    return {
+        'app_id': FACEBOOK_APP_ID,
+        'app_secret': FACEBOOK_APP_SECRET,
+        'client_token': FACEBOOK_CLIENT_TOKEN
+    }
+
 # === FACEBOOK OAUTH CALLBACK ENDPOINT ===
 @app.get("/auth/callback")
 async def facebook_oauth_callback(request: Request):
