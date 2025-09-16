@@ -220,8 +220,8 @@ def get_active_ngrok_url():
         log_app(f"❌ Erreur détection ngrok: {e}", "ERROR")
         return None
 
-def build_dynamic_redirect_uri(callback_path="/auth/callb"):
-    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - CORRIGÉ"""
+def build_dynamic_redirect_uri(callback_path="/"):
+    """Construit dynamiquement l'URI de redirection basée sur l'URL ngrok active - MODIFIÉ POUR URL DE BASE"""
     try:
         # Tentative 1: Récupérer l'URL ngrok active
         ngrok_url = get_active_ngrok_url()
@@ -245,7 +245,7 @@ def build_dynamic_redirect_uri(callback_path="/auth/callb"):
             return redirect_uri
         
         # Fallback: URL locale SEULEMENT si aucune URL ngrok disponible
-        redirect_uri = f"http://localhost:{BACKEND_PORT}{callback_path}"  # CORRIGÉ: Utiliser BACKEND_PORT au lieu de FRONTEND_PORT
+        redirect_uri = f"http://localhost:{BACKEND_PORT}{callback_path}"
         log_app(f"⚠️ Redirect URI fallback (local): {redirect_uri}", "WARNING")
         return redirect_uri
         
