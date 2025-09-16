@@ -2477,6 +2477,55 @@ async def serve_frontend(path: str):
     else:
         raise HTTPException(status_code=404, detail="Frontend index.html non trouvé")
 
+# === FACEBOOK OAUTH CALLBACK ENDPOINT ===
+@app.get("/auth/callback")
+async def facebook_oauth_callback(request: Request):
+    """Endpoint de callback pour OAuth Facebook - redirige vers le frontend avec le code"""
+    try:
+        # Récupérer les paramètres de la query string
+        code = request.query_params.get('code')
+        state = request.query_params.get('state')
+        error = request.query_params.get('error')
+        error_description = request.query_params.get('error_description')
+        
+        log_app(f"🔄 Code Facebook reçu sur route racine: {code[:10]}..." if code else "❌ Pas de code reçu", "INFO")
+        if state:
+            log_app(f"🔄 State Facebook: {state}", "INFO")
+        if error:
+            log_app(f"❌ Erreur OAuth Facebook: {error} - {error_description}", "ERROR")
+        
+        # Construire l'URL de redirection vers le frontend avec tous les paramètres
+        frontend_url = get_frontend_backend_url() or "http://localhost:3000"
+        if frontend_url.startswith("https://") and "ngrok" in frontend_url:
+            # Utiliser la même URL ngrok pour la redirection frontend
+            redirect_url = frontend_url
+        else:
+            redirect_url = "http://localhost:3000"
+        
+        # Construire les paramètres de redirection
+        redirect_params = []
+        if code:
+            redirect_params.append(f"code={code}")
+        if state:
+            redirect_params.append(f"state={state}")
+        if error:
+            redirect_params.append(f"error={error}")
+            if error_description:
+                redirect_params.append(f"error_description={error_description}")
+        
+        # URL finale de redirection
+        final_redirect = f"{redirect_url}?{'&'.join(redirect_params)}" if redirect_params else redirect_url
+        
+        log_app(f"🔄 Redirection vers frontend: {final_redirect[:100]}...", "INFO")
+        
+        return RedirectResponse(url=final_redirect)
+        
+    except Exception as e:
+        log_app(f"❌ Erreur callback OAuth: {e}", "ERROR")
+        # En cas d'erreur, rediriger vers le frontend avec un message d'erreur
+        frontend_url = get_frontend_backend_url() or "http://localhost:3000"
+        return RedirectResponse(url=f"{frontend_url}?error=callback_error&error_description={str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     
