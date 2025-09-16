@@ -102,13 +102,13 @@ NGROK_AUTH_TOKEN=votre_ngrok_token
 ========================================================
 
 ✅ Test health check:
-   curl https://926b67c8f05a.ngrok-free.app/api/health
+   curl https://social-post-proxy.preview.emergentagent.com/api/health
 
 ✅ Test webhook:
-   curl https://926b67c8f05a.ngrok-free.app/api/webhook
+   curl https://social-post-proxy.preview.emergentagent.com/api/webhook
 
 ✅ Test OAuth:
-   https://926b67c8f05a.ngrok-free.app/auth/facebook
+   https://social-post-proxy.preview.emergentagent.com/auth/facebook
 
 ========================================================
 
