@@ -1935,7 +1935,7 @@ async def handle_facebook_callback(code: Optional[str] = None, state: Optional[s
         
         # Tenter l'échange du code
         try:
-            redirect_uri = build_dynamic_redirect_uri("/auth/callb")
+            redirect_uri = build_dynamic_redirect_uri("/")
             exchange_request = FacebookExchangeCodeRequest(
                 code=code,
                 state=state,
