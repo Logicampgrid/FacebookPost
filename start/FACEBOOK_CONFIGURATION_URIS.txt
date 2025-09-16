@@ -113,9 +113,17 @@ NGROK_AUTH_TOKEN=votre_ngrok_token
 ========================================================
 
 ⚠️ NOTES IMPORTANTES :
-- Cette URL ngrok changera si vous redémarrez ngrok
-- Mettez à jour ces paramètres à chaque changement d'URL
-- Conservez ce fichier pour référence future
+- Cette URL est stable (proxy Emergent) - pas besoin de la changer souvent
+- CRITICAL: Vous DEVEZ ajouter 'social-post-proxy.preview.emergentagent.com' dans Facebook App Domains
+- CRITICAL: Vous DEVEZ ajouter l'URI de redirection complète dans Facebook Login Settings
 - Vérifiez que votre application Facebook est en mode "Live" si nécessaire
+
+🚨 ÉTAPES OBLIGATOIRES POUR RÉSOUDRE L'ERREUR OAUTH :
+1. Aller sur https://developers.facebook.com/apps/VOTRE_APP_ID/settings/basic/
+2. Dans "App Domains", ajouter : social-post-proxy.preview.emergentagent.com  
+3. Aller sur https://developers.facebook.com/apps/VOTRE_APP_ID/fb-login/settings/
+4. Dans "Valid OAuth Redirect URIs", ajouter : https://social-post-proxy.preview.emergentagent.com/auth/callback
+5. Sauvegarder les changements
+6. Tester à nouveau l'authentification
 
 ========================================================
