@@ -10,16 +10,16 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🏠 App Domains:
-   926b67c8f05a.ngrok-free.app
+   social-post-proxy.preview.emergentagent.com
 
 🌐 Site Web URL:
-   https://926b67c8f05a.ngrok-free.app
+   https://social-post-proxy.preview.emergentagent.com
 
 📱 Privacy Policy URL:
-   https://926b67c8f05a.ngrok-free.app/privacy
+   https://social-post-proxy.preview.emergentagent.com/privacy
 
 📋 Terms of Service URL:
-   https://926b67c8f05a.ngrok-free.app/terms
+   https://social-post-proxy.preview.emergentagent.com/terms
 
 ========================================================
 2. FACEBOOK LOGIN (OAuth Settings)
