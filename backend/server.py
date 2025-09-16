@@ -1464,7 +1464,7 @@ async def exchange_facebook_code_endpoint(request: FacebookExchangeCodeRequest):
     try:
         # NOUVEAU: Détection automatique de l'URL backend active pour redirect_uri  
         if not request.redirect_uri:
-            request.redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+            request.redirect_uri = build_dynamic_redirect_uri("/")
         
         # Log des données reçues pour debug avec URL dynamique
         log_app(f"Code exchange reçu - Store: {request.store}, Code: {request.code[:10]}...", "INFO")
