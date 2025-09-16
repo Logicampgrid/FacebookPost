@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://facebook-auth-fix-1.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://social-post-proxy.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://facebook-auth-fix-1.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://facebook-auth-fix-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://facebook-auth-fix-1.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

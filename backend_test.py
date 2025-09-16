@@ -459,7 +459,7 @@ def main():
     """Main test execution"""
     # Get backend URL from environment
     import os
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://social-post-proxy.preview.emergentagent.com')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://facebook-auth-fix-1.preview.emergentagent.com')
     
     print(f"🚀 Meta Publishing Platform - Backend API Tests")
     print(f"📡 Backend URL: {backend_url}")
