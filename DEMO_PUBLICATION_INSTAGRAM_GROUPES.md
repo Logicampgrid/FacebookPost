@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://auth-callback-fix-1.preview.emergentagent.com
+🔗 https://social-post-proxy.preview.emergentagent.com

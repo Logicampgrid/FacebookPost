@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://auth-callback-fix-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://auth-callback-fix-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://auth-callback-fix-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://auth-callback-fix-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-post-proxy.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-post-proxy.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
