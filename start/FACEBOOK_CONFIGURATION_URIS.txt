@@ -26,8 +26,8 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🔐 Valid OAuth Redirect URIs:
-   https://926b67c8f05a.ngrok-free.app/auth/callback
-   https://926b67c8f05a.ngrok-free.app/auth/callb
+   https://social-post-proxy.preview.emergentagent.com/auth/callback
+   https://social-post-proxy.preview.emergentagent.com/auth/callb
 
 ⚠️ IMPORTANT : Les deux URIs sont incluses pour compatibilité
 
