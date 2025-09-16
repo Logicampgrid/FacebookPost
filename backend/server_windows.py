@@ -1808,7 +1808,7 @@ async def get_facebook_login_url(store: str = "default"):
     """Obtenir l'URL d'authentification Facebook avec redirect_uri dynamique basé sur ngrok"""
     try:
         # Construire dynamiquement l'URI de redirection
-        redirect_uri = build_dynamic_redirect_uri("/auth/callb")
+        redirect_uri = build_dynamic_redirect_uri("/")
         
         # Construire l'URL d'authentification Facebook
         facebook_auth_url = f"https://www.facebook.com/v18.0/dialog/oauth"
