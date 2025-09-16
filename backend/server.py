@@ -1310,7 +1310,7 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
                 log_app(f"🔄 Redirect URI corrigée avec ngrok actif: {redirect_uri}", "SUCCESS")
             else:
                 # Essayer de construire dynamiquement
-                redirect_uri = build_dynamic_redirect_uri("/auth/callback")
+                redirect_uri = build_dynamic_redirect_uri("/")
                 log_app(f"🔄 Redirect URI construite dynamiquement: {redirect_uri}", "INFO")
         
         # Vérifier que l'URI ne contient toujours pas localhost
