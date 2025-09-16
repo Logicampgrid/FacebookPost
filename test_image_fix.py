@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-PUBLIC_BASE_URL = "https://facebook-auth-fix-1.preview.emergentagent.com"
+PUBLIC_BASE_URL = "https://ngrok-fb-publisher.preview.emergentagent.com"
 
 def test_image_display_fix():
     """Test the image display fix"""

@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://facebook-auth-fix-1.preview.emergentagent.com"
+    base_url = "https://ngrok-fb-publisher.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     

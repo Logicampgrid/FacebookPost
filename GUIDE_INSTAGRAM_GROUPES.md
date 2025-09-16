@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://facebook-auth-fix-1.preview.emergentagent.com
+URL : https://ngrok-fb-publisher.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
