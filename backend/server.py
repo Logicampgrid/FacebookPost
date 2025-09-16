@@ -278,6 +278,11 @@ def get_active_ngrok_url():
                         public_url = tunnel.get('public_url')
                         if public_url:
                             log_app(f"✅ URL ngrok active détectée: {public_url}", "SUCCESS")
+                            # Auto-synchroniser les configurations
+                            try:
+                                sync_ngrok_config_automatic(public_url)
+                            except Exception as sync_error:
+                                log_app(f"⚠️ Erreur auto-sync: {sync_error}", "WARNING")
                             return public_url
                 
                 # Si pas de tunnel spécifique trouvé, prendre le premier
@@ -285,6 +290,11 @@ def get_active_ngrok_url():
                 public_url = first_tunnel.get('public_url')
                 if public_url:
                     log_app(f"✅ URL ngrok active (premier tunnel): {public_url}", "SUCCESS")
+                    # Auto-synchroniser les configurations
+                    try:
+                        sync_ngrok_config_automatic(public_url)
+                    except Exception as sync_error:
+                        log_app(f"⚠️ Erreur auto-sync: {sync_error}", "WARNING")
                     return public_url
             
             log_app("⚠️ Aucun tunnel ngrok actif trouvé", "WARNING")
@@ -299,6 +309,56 @@ def get_active_ngrok_url():
     except Exception as e:
         log_app(f"❌ Erreur détection ngrok: {e}", "ERROR")
         return None
+
+def sync_ngrok_config_automatic(ngrok_url: str):
+    """Synchronise automatiquement les configurations avec la nouvelle URL ngrok"""
+    try:
+        # Mettre à jour le frontend .env
+        frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+        if os.path.exists(frontend_env_path):
+            with open(frontend_env_path, "r", encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            updated_lines = []
+            backend_url_updated = False
+            for line in lines:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    old_url = line.split("=", 1)[1].strip()
+                    if old_url != ngrok_url:
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}\n")
+                        backend_url_updated = True
+                        log_app(f"🔄 Frontend .env mis à jour: {old_url} → {ngrok_url}", "SUCCESS")
+                    else:
+                        updated_lines.append(line)
+                        backend_url_updated = True
+                else:
+                    updated_lines.append(line)
+            
+            if not backend_url_updated:
+                updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}\n")
+                log_app(f"➕ Frontend .env: REACT_APP_BACKEND_URL ajouté: {ngrok_url}", "SUCCESS")
+            
+            with open(frontend_env_path, "w", encoding='utf-8') as f:
+                f.writelines(updated_lines)
+        
+        # Mettre à jour ngrok_url.txt
+        ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+        with open(ngrok_file_path, "w", encoding='utf-8') as f:
+            f.write(ngrok_url)
+        
+        # Générer et afficher les instructions Facebook
+        domain = ngrok_url.replace('https://', '').replace('http://', '')
+        log_app("=" * 60, "INFO")
+        log_app("🔧 CONFIGURATION FACEBOOK APP REQUISE:", "INFO")
+        log_app(f"🌐 URL ngrok: {ngrok_url}", "INFO")
+        log_app(f"📋 App Domains: {domain}", "INFO")
+        log_app(f"🔐 OAuth Redirect URIs:", "INFO")
+        log_app(f"   • {ngrok_url}/auth/callback", "INFO")
+        log_app(f"   • {ngrok_url}/", "INFO")
+        log_app("=" * 60, "INFO")
+        
+    except Exception as e:
+        log_app(f"❌ Erreur synchronisation automatique: {e}", "ERROR")
 
 def build_dynamic_redirect_uri(callback_path="/"):
     """Construit dynamiquement l'URI de redirection basée sur l'URL backend active - MODIFIÉ POUR URL DE BASE"""  
