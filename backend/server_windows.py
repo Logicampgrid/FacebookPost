@@ -239,7 +239,7 @@ def build_dynamic_redirect_uri(callback_path="/"):
         
         # Tentative 3: Lire l'URL depuis le frontend .env pour cohérence 
         frontend_backend_url = get_frontend_backend_url()
-        if frontend_backend_url and "ngrok" in frontend_backend_url:
+        if frontend_backend_url and (frontend_backend_url.startswith("https://") or frontend_backend_url.startswith("http://")):
             redirect_uri = f"{frontend_backend_url}{callback_path}"
             log_app(f"✅ Redirect URI depuis frontend .env: {redirect_uri}", "SUCCESS")
             return redirect_uri
