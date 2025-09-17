@@ -963,7 +963,78 @@ async def oauth_status_complete():
             "timestamp": datetime.now().isoformat()
         }
 
-@app.get("/api/debug/instagram-complete-diagnosis")
+@app.post("/api/config/force-oauth-setup")
+async def force_oauth_setup():
+    """Force la configuration OAuth avec l'URL ngrok du frontend .env"""
+    try:
+        log_app("🔧 Configuration OAuth forcée demandée", "INFO")
+        
+        # Récupérer l'URL du frontend .env
+        frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+        backend_url = None
+        
+        if os.path.exists(frontend_env_path):
+            with open(frontend_env_path, "r", encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            for line in lines:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    backend_url = line.split("=", 1)[1].strip()
+                    break
+        
+        if not backend_url:
+            return {
+                "success": False,
+                "error": "URL backend non trouvée dans frontend .env",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        if not backend_url.startswith("https://"):
+            return {
+                "success": False,
+                "error": "URL backend doit être HTTPS pour OAuth",
+                "backend_url": backend_url,
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        log_app(f"🎯 Configuration OAuth avec URL: {backend_url}", "INFO")
+        
+        # Mettre à jour l'URL globale
+        global NGROK_URL
+        NGROK_URL = backend_url
+        
+        # Configurer Facebook OAuth
+        oauth_result = update_facebook_oauth_config(backend_url)
+        
+        if oauth_result:
+            log_app("✅ Configuration Facebook OAuth forcée réussie", "SUCCESS")
+            return {
+                "success": True,
+                "message": "Configuration OAuth mise à jour avec succès",
+                "backend_url": backend_url,
+                "redirect_uris": [
+                    f"{backend_url}/",
+                    f"{backend_url}/auth/callback",
+                    f"{backend_url}/auth/callb"
+                ],
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            log_app("⚠️ Configuration Facebook OAuth forcée partiellement réussie", "WARNING")
+            return {
+                "success": True,
+                "warning": "Configuration partiellement réussie",
+                "backend_url": backend_url,
+                "timestamp": datetime.now().isoformat()
+            }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur configuration OAuth forcée: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 async def instagram_complete_diagnosis():
     """Diagnostic complet Instagram avec informations de l'utilisateur connecté"""
     try:
