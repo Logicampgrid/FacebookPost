@@ -119,6 +119,7 @@ echo.
 echo 🌐 URL Publique: %ngrok_url%
 echo 📱 Accessible depuis n'importe où sur Internet
 echo 🔐 OAuth Facebook configuré automatiquement
+echo 🚀 Configuration Facebook mise à jour en arrière-plan
 echo.
 echo 💡 URLs importantes:
 echo    • Application: %ngrok_url%
