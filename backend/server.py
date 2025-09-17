@@ -705,7 +705,7 @@ async def oauth_status():
     """Retourne le statut de la configuration OAuth"""
     try:
         ngrok_url = get_active_ngrok_url()
-        redirect_uri = build_dynamic_redirect_uri("/")
+        redirect_uri = build_dynamic_redirect_uri("/")  # Utiliser "/" comme les frontends
         
         return {
             "ngrok_active": ngrok_url is not None,
