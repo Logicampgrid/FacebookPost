@@ -606,6 +606,9 @@ function App() {
         {/* Content */}
         {activeTab === 'setup' && (
           <div className="space-y-6">
+            {/* Ngrok OAuth Status Widget */}
+            <NgrokOAuthStatus />
+            
             {/* Tunnel Instagram Status Widget */}
             <div className="facebook-card p-6">
               <TunnelStatusWidget user={user} />
