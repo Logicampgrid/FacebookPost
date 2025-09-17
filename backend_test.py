@@ -544,7 +544,7 @@ class MetaPublishingAPITester:
 
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all tests and return summary"""
-        self.log("Starting comprehensive API tests for error handling fixes", "INFO")
+        self.log("Starting comprehensive API tests for Facebook OAuth Redirect URI fixes", "INFO")
         self.log(f"Testing backend at: {self.base_url}", "INFO")
         
         # Test basic connectivity first
@@ -552,12 +552,17 @@ class MetaPublishingAPITester:
             self.log("❌ Basic connectivity failed - stopping tests", "ERROR")
             return self.get_summary()
         
+        # CRITICAL OAuth tests (main focus for this fix)
+        self.run_test("OAuth Status Check", self.test_oauth_status)
+        self.run_test("Facebook Exchange Code", self.test_facebook_exchange_code)
+        self.run_test("Instagram Diagnostics", self.test_instagram_diagnostics)
+        
         # Core API tests
         self.run_test("Stores Endpoint", self.test_stores_endpoint)
         self.run_test("Posts List Endpoint", self.test_posts_list_endpoint)
         self.run_test("Posts Creation Validation", self.test_posts_endpoint_creation)
         
-        # Error handling tests (main focus)
+        # Error handling tests
         self.run_test("Invalid Store Publish Error", self.test_invalid_store_publish)
         self.run_test("Missing Fields Validation Error", self.test_missing_fields_validation)
         self.run_test("Facebook Auth Invalid Token Error", self.test_facebook_auth_invalid_token)
