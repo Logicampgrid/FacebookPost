@@ -320,6 +320,130 @@ class MetaPublishingAPITester:
             self.log(f"Error testing Facebook auth: {str(e)}", "ERROR")
             return False
 
+    def test_oauth_status(self) -> bool:
+        """Test OAuth status endpoint - CRITICAL for redirect URI consistency"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/config/oauth-status", timeout=10)
+            
+            if response.status_code != 200:
+                self.log(f"OAuth status failed with status {response.status_code}", "ERROR")
+                return False
+            
+            data = response.json()
+            self.log(f"OAuth status response: {json.dumps(data, indent=2)}", "INFO")
+            
+            # Check critical OAuth configuration
+            ngrok_active = data.get("ngrok_active", False)
+            ngrok_url = data.get("ngrok_url")
+            redirect_uri = data.get("redirect_uri")
+            facebook_app_configured = data.get("facebook_app_configured", False)
+            oauth_ready = data.get("oauth_ready", False)
+            
+            # Validate redirect URI consistency
+            if redirect_uri:
+                if redirect_uri.startswith(self.base_url):
+                    self.log(f"✅ Redirect URI uses correct base URL: {redirect_uri}", "SUCCESS")
+                else:
+                    self.log(f"❌ Redirect URI base mismatch. Expected: {self.base_url}, Got: {redirect_uri}", "ERROR")
+                    return False
+            else:
+                self.log("❌ No redirect URI found in OAuth status", "ERROR")
+                return False
+            
+            # Check other OAuth components
+            if not facebook_app_configured:
+                self.log("⚠️ Facebook App not configured", "WARNING")
+            
+            if not oauth_ready:
+                self.log("⚠️ OAuth not ready", "WARNING")
+            
+            self.log(f"OAuth Status Summary - Ngrok: {ngrok_active}, App: {facebook_app_configured}, Ready: {oauth_ready}", "INFO")
+            return True
+            
+        except Exception as e:
+            self.log(f"Error testing OAuth status: {str(e)}", "ERROR")
+            return False
+
+    def test_facebook_exchange_code(self) -> bool:
+        """Test Facebook exchange code endpoint structure"""
+        try:
+            # Test with test data to check error handling and redirect URI usage
+            test_data = {
+                "code": "test_code_12345",
+                "state": "test_state",
+                "store": "gizmobbs",
+                "redirect_uri": f"{self.base_url}/"
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/auth/facebook/exchange-code",
+                json=test_data,
+                timeout=15
+            )
+            
+            self.log(f"Exchange code response status: {response.status_code}", "INFO")
+            
+            # We expect this to fail with test code, but check error handling
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    self.log("✅ Code exchange successful (unexpected with test code)", "SUCCESS")
+                    return True
+                else:
+                    # Expected failure - check error structure
+                    error_msg = data.get("error", "No error message")
+                    self.log(f"✅ Expected failure with test code: {error_msg[:100]}", "SUCCESS")
+                    
+                    # Check that the error is properly formatted
+                    if isinstance(error_msg, str):
+                        self.log("✅ Error message is properly formatted as string", "SUCCESS")
+                        return True
+                    else:
+                        self.log(f"❌ Error message is not a string: {type(error_msg)}", "ERROR")
+                        return False
+            else:
+                self.log(f"Exchange code returned status {response.status_code}", "INFO")
+                try:
+                    data = response.json()
+                    self.log(f"Error response: {json.dumps(data, indent=2)}", "INFO")
+                except:
+                    self.log(f"Non-JSON response: {response.text[:200]}", "INFO")
+                return True  # Non-200 status is expected with test data
+                
+        except Exception as e:
+            self.log(f"Error testing exchange code: {str(e)}", "ERROR")
+            return False
+
+    def test_instagram_diagnostics(self) -> bool:
+        """Test Instagram diagnostics endpoint"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/debug/instagram-complete-diagnosis", timeout=15)
+            
+            if response.status_code != 200:
+                self.log(f"Instagram diagnostics failed with status {response.status_code}", "ERROR")
+                return False
+            
+            data = response.json()
+            self.log(f"Instagram diagnostics response: {json.dumps(data, indent=2)}", "INFO")
+            
+            # Check diagnostic data structure
+            ngrok_active = data.get("ngrok_active", False)
+            instagram_accounts = data.get("instagram_accounts", [])
+            auth_data = data.get("authentication")
+            
+            self.log(f"Diagnostics Summary - Ngrok: {ngrok_active}, Instagram Accounts: {len(instagram_accounts)}", "INFO")
+            
+            if auth_data and auth_data.get("user_found"):
+                self.log(f"✅ User found in diagnostics: {auth_data.get('user_name', 'N/A')}", "SUCCESS")
+            else:
+                self.log("ℹ️ No user found in diagnostics (expected without valid token)", "INFO")
+            
+            return True
+            
+        except Exception as e:
+            self.log(f"Error testing Instagram diagnostics: {str(e)}", "ERROR")
+            return False
+
     def test_webhook_verification(self) -> bool:
         """Test webhook verification endpoint"""
         try:
