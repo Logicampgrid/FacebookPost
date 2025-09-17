@@ -361,8 +361,8 @@ class MetaOAuthTester:
 
 def main():
     """Main test execution"""
-    # Use the ngrok URL from frontend .env
-    backend_url = "https://06ce5a8478e3.ngrok-free.app"
+    # Use the local backend URL since ngrok is offline
+    backend_url = "http://localhost:8001"
     
     print(f"🚀 Meta/Facebook OAuth Configuration Test")
     print(f"📡 Backend URL: {backend_url}")
