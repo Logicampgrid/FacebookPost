@@ -1442,45 +1442,111 @@ async def webhook_handler(request: Request):
                 raise HTTPException(status_code=403, detail="Forbidden")
                 
         elif method == "POST":
-            # Webhook event handling with improved error handling
+            # Webhook event handling with improved multipart/form-data support
             try:
-                # Try to get the raw body first
+                # Get content type to determine parsing strategy
+                content_type = request.headers.get("content-type", "")
+                log_app(f"📦 Content-Type: {content_type}", "INFO")
+                
+                # Try to get the raw body first  
                 body = await request.body()
                 log_app(f"📦 Webhook body size: {len(body)} bytes", "INFO")
                 
-                # Try to decode as UTF-8
-                try:
-                    body_str = body.decode('utf-8')
-                    webhook_data = json.loads(body_str)
-                    log_app(f"📦 Webhook JSON reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
-                except UnicodeDecodeError as e:
-                    # Handle non-UTF-8 data
-                    log_app(f"⚠️ Webhook data is not UTF-8, trying latin-1: {str(e)}", "WARNING")
+                webhook_data = None
+                
+                # Handle multipart/form-data
+                if "multipart/form-data" in content_type:
+                    log_app("📦 Processing multipart/form-data webhook", "INFO")
                     try:
-                        body_str = body.decode('latin-1')
+                        # Use FastAPI's form parsing
+                        form_data = await request.form()
+                        log_app(f"📦 Form fields: {list(form_data.keys())}", "INFO")
+                        
+                        # Look for JSON data in form fields
+                        json_data_field = None
+                        for field_name in ["json_data", "data", "payload", "hub.signature"]:
+                            if field_name in form_data:
+                                json_data_field = field_name
+                                break
+                        
+                        if json_data_field:
+                            json_str = form_data[json_data_field]
+                            if hasattr(json_str, 'read'):  # It's a file-like object
+                                json_str = await json_str.read()
+                                json_str = json_str.decode('utf-8')
+                            webhook_data = json.loads(json_str)
+                            log_app(f"📦 Parsed JSON from {json_data_field}: {json.dumps(webhook_data, indent=2)[:500]}...", "INFO")
+                        else:
+                            # Process all form fields
+                            webhook_data = {}
+                            for key, value in form_data.items():
+                                if hasattr(value, 'read'):  # File upload
+                                    content = await value.read()
+                                    # Try to decode as text first
+                                    try:
+                                        text_content = content.decode('utf-8')
+                                        # Try to parse as JSON
+                                        try:
+                                            webhook_data[key] = json.loads(text_content)
+                                        except json.JSONDecodeError:
+                                            webhook_data[key] = text_content
+                                    except UnicodeDecodeError:
+                                        # Binary content, store as base64
+                                        import base64
+                                        webhook_data[key] = {
+                                            "type": "binary",
+                                            "size": len(content),
+                                            "base64": base64.b64encode(content[:1000]).decode('ascii')  # First 1KB only
+                                        }
+                                else:
+                                    webhook_data[key] = value
+                            log_app(f"📦 Processed form data: {list(webhook_data.keys())}", "INFO")
+                        
+                    except Exception as e:
+                        log_app(f"⚠️ Error parsing multipart data: {str(e)}", "WARNING")
+                        return {"status": "received", "note": "Multipart parsing error but acknowledged"}
+                
+                # Handle application/json or text content
+                else:
+                    log_app("📦 Processing JSON/text webhook", "INFO")
+                    # Try to decode as UTF-8 first
+                    try:
+                        body_str = body.decode('utf-8')
                         webhook_data = json.loads(body_str)
-                        log_app(f"📦 Webhook JSON (latin-1) reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
-                    except (UnicodeDecodeError, json.JSONDecodeError) as e2:
-                        # If still failing, log the raw bytes and return success anyway
-                        log_app(f"⚠️ Unable to decode webhook data as JSON: {str(e2)}", "WARNING")
-                        log_app(f"📦 Raw webhook data (first 100 bytes): {body[:100]}", "INFO")
-                        # Return success to acknowledge receipt even if we can't parse it
-                        return {"status": "received", "note": "Binary data acknowledged"}
-                except json.JSONDecodeError as e:
-                    log_app(f"⚠️ Invalid JSON in webhook: {str(e)}", "WARNING")
-                    log_app(f"📦 Raw webhook data: {body_str[:500]}...", "INFO")
-                    return {"status": "received", "note": "Invalid JSON acknowledged"}
+                        log_app(f"📦 Webhook JSON reçu: {json.dumps(webhook_data, indent=2)[:500]}...", "INFO")
+                    except UnicodeDecodeError as e:
+                        # Handle non-UTF-8 data
+                        log_app(f"⚠️ Webhook data is not UTF-8, trying latin-1: {str(e)}", "WARNING")
+                        try:
+                            body_str = body.decode('latin-1')
+                            webhook_data = json.loads(body_str)
+                            log_app(f"📦 Webhook JSON (latin-1) reçu: {json.dumps(webhook_data, indent=2)[:500]}...", "INFO")
+                        except (UnicodeDecodeError, json.JSONDecodeError) as e2:
+                            log_app(f"⚠️ Unable to decode webhook data: {str(e2)}", "WARNING")
+                            log_app(f"📦 Raw webhook data (first 100 bytes): {body[:100]}", "INFO")
+                            return {"status": "received", "note": "Binary data acknowledged"}
+                    except json.JSONDecodeError as e:
+                        log_app(f"⚠️ Invalid JSON in webhook: {str(e)}", "WARNING")
+                        log_app(f"📦 Raw webhook data: {body_str[:500]}...", "INFO")
+                        return {"status": "received", "note": "Invalid JSON acknowledged"}
                 
-                # Process webhook data here
-                # This is where you'd handle Facebook/Instagram events
-                if isinstance(webhook_data, dict):
-                    # Log key webhook information
-                    if 'object' in webhook_data:
-                        log_app(f"📦 Webhook object type: {webhook_data['object']}", "INFO")
-                    if 'entry' in webhook_data:
-                        log_app(f"📦 Webhook entries: {len(webhook_data['entry'])}", "INFO")
+                # Process webhook data if successfully parsed
+                if webhook_data:
+                    if isinstance(webhook_data, dict):
+                        # Log key webhook information
+                        if 'object' in webhook_data:
+                            log_app(f"📦 Webhook object type: {webhook_data['object']}", "INFO")
+                        if 'entry' in webhook_data:
+                            log_app(f"📦 Webhook entries: {len(webhook_data['entry'])}", "INFO")
+                        
+                        # Here you can add specific webhook event processing
+                        # For example, handling Instagram media updates, page changes, etc.
+                        
+                    log_app("✅ Webhook data processed successfully", "SUCCESS")
+                else:
+                    log_app("⚠️ No webhook data could be extracted", "WARNING")
                 
-                return {"status": "received"}
+                return {"status": "received", "processed": webhook_data is not None}
                 
             except Exception as parse_error:
                 log_app(f"⚠️ Error parsing webhook data: {str(parse_error)}", "WARNING")
