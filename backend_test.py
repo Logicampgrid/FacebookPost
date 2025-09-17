@@ -457,13 +457,13 @@ class MetaPublishingAPITester:
 
 def main():
     """Main test execution"""
-    # Get backend URL from environment
+    # Get backend URL from environment - UPDATED FOR OAUTH REDIRECT URI FIX
     import os
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://token-exchange-5.preview.emergentagent.com')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://196c57800b90.ngrok-free.app')
     
     print(f"🚀 Meta Publishing Platform - Backend API Tests")
     print(f"📡 Backend URL: {backend_url}")
-    print(f"🎯 Focus: Error handling fixes for React 'Objects are not valid as a React child' issue")
+    print(f"🎯 Focus: Facebook OAuth Redirect URI Fix Testing")
     print("=" * 80)
     
     # Initialize tester
