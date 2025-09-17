@@ -1442,19 +1442,55 @@ async def webhook_handler(request: Request):
                 raise HTTPException(status_code=403, detail="Forbidden")
                 
         elif method == "POST":
-            # Webhook event handling
-            webhook_data = await request.json()
-            
-            log_app(f"📦 Webhook reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
-            
-            # Process webhook data here
-            # This is where you'd handle Facebook/Instagram events
-            
-            return {"status": "received"}
+            # Webhook event handling with improved error handling
+            try:
+                # Try to get the raw body first
+                body = await request.body()
+                log_app(f"📦 Webhook body size: {len(body)} bytes", "INFO")
+                
+                # Try to decode as UTF-8
+                try:
+                    body_str = body.decode('utf-8')
+                    webhook_data = json.loads(body_str)
+                    log_app(f"📦 Webhook JSON reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
+                except UnicodeDecodeError as e:
+                    # Handle non-UTF-8 data
+                    log_app(f"⚠️ Webhook data is not UTF-8, trying latin-1: {str(e)}", "WARNING")
+                    try:
+                        body_str = body.decode('latin-1')
+                        webhook_data = json.loads(body_str)
+                        log_app(f"📦 Webhook JSON (latin-1) reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
+                    except (UnicodeDecodeError, json.JSONDecodeError) as e2:
+                        # If still failing, log the raw bytes and return success anyway
+                        log_app(f"⚠️ Unable to decode webhook data as JSON: {str(e2)}", "WARNING")
+                        log_app(f"📦 Raw webhook data (first 100 bytes): {body[:100]}", "INFO")
+                        # Return success to acknowledge receipt even if we can't parse it
+                        return {"status": "received", "note": "Binary data acknowledged"}
+                except json.JSONDecodeError as e:
+                    log_app(f"⚠️ Invalid JSON in webhook: {str(e)}", "WARNING")
+                    log_app(f"📦 Raw webhook data: {body_str[:500]}...", "INFO")
+                    return {"status": "received", "note": "Invalid JSON acknowledged"}
+                
+                # Process webhook data here
+                # This is where you'd handle Facebook/Instagram events
+                if isinstance(webhook_data, dict):
+                    # Log key webhook information
+                    if 'object' in webhook_data:
+                        log_app(f"📦 Webhook object type: {webhook_data['object']}", "INFO")
+                    if 'entry' in webhook_data:
+                        log_app(f"📦 Webhook entries: {len(webhook_data['entry'])}", "INFO")
+                
+                return {"status": "received"}
+                
+            except Exception as parse_error:
+                log_app(f"⚠️ Error parsing webhook data: {str(parse_error)}", "WARNING")
+                # Still return success to Facebook to avoid retries
+                return {"status": "received", "note": "Parsing error but acknowledged"}
             
     except Exception as e:
         log_app(f"❌ Erreur webhook: {str(e)}", "ERROR")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return success even on errors to avoid Facebook retries
+        return {"status": "received", "error": str(e)}
 
 # === ROUTES FRONTEND ===
 @app.get("/")
