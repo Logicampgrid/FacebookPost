@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 
 class FacebookImageFixTester:
-    def __init__(self, base_url="https://auth-relay-1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://social-login-app.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
