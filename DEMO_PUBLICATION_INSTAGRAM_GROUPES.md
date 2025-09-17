@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://local-oauth-proxy.preview.emergentagent.com
+🔗 https://token-exchange-5.preview.emergentagent.com

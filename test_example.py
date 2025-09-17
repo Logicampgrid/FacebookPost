@@ -88,7 +88,7 @@ def test_media_post_creation():
                             print(f"   📸 URL du média: {media_url}")
                             
                             # Construire l'URL complète comme le fait le backend
-                            full_url = f"https://local-oauth-proxy.preview.emergentagent.com{media_url}"
+                            full_url = f"https://token-exchange-5.preview.emergentagent.com{media_url}"
                             print(f"   🌐 URL publique: {full_url}")
                             
                             # Tester l'accessibilité du média
