@@ -66,7 +66,16 @@ cd backend
 pip install -r requirements.txt >NUL 2>&1
 if %errorlevel% neq 0 (
     echo ⚠️ Erreur lors de l'installation des dépendances Python
-    echo 💡 Vérifiez requirements.txt et votre environnement Python
+    echo 💡 Tentative avec --user et --upgrade...
+    pip install --user --upgrade -r requirements.txt >NUL 2>&1
+    if %errorlevel% neq 0 (
+        echo ⚠️ Installation des dépendances échouée - continuons quand même
+        echo 💡 Vous devrez peut-être installer manuellement : pip install -r backend/requirements.txt
+    ) else (
+        echo ✅ Dépendances Python installées avec --user
+    )
+) else (
+    echo ✅ Dépendances Python vérifiées
 )
 cd ..
 
