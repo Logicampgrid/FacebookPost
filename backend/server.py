@@ -1225,6 +1225,234 @@ async def instagram_complete_diagnosis():
             }
         }
 
+@app.get("/api/debug/instagram-complete-diagnosis")
+async def instagram_complete_diagnosis_endpoint():
+    """Complete Instagram diagnosis endpoint"""
+    try:
+        diagnosis = await instagram_complete_diagnosis()
+        return diagnosis
+    except Exception as e:
+        log_app(f"❌ Erreur diagnostic Instagram: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/posts")
+async def get_posts(user_id: str):
+    """Get posts for a specific user"""
+    try:
+        log_app(f"Récupération des posts pour l'utilisateur: {user_id}", "INFO")
+        
+        # Filter posts by user_id
+        user_posts = [post for post in posts_storage.values() if post.get("user_id") == user_id]
+        
+        # Sort by created_at descending
+        user_posts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        return {
+            "success": True,
+            "posts": user_posts,
+            "total": len(user_posts)
+        }
+    except Exception as e:
+        log_app(f"❌ Erreur récupération posts: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/posts")
+async def create_post(post_data: dict = None, request: Request = None):
+    """Create a new post"""
+    try:
+        if request:
+            post_data = await request.json()
+        
+        if not post_data:
+            raise HTTPException(status_code=400, detail="Données de post manquantes")
+        
+        # Generate post ID
+        post_id = str(uuid.uuid4())
+        
+        # Create post object
+        new_post = {
+            "id": post_id,
+            "user_id": post_data.get("user_id"),
+            "content": post_data.get("content", ""),
+            "platform": post_data.get("platform", "facebook"),
+            "platform_id": post_data.get("platform_id", ""),
+            "scheduled_time": post_data.get("scheduled_time"),
+            "media_urls": post_data.get("media_urls", []),
+            "status": "draft",
+            "created_at": datetime.now().isoformat(),
+            "published_at": None,
+            "platform_post_id": None
+        }
+        
+        # Store post
+        posts_storage[post_id] = new_post
+        
+        log_app(f"✅ Post créé: {post_id}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "post": new_post
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur création post: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/posts/{post_id}")
+async def delete_post(post_id: str):
+    """Delete a post"""
+    try:
+        if post_id not in posts_storage:
+            raise HTTPException(status_code=404, detail="Post non trouvé")
+        
+        del posts_storage[post_id]
+        
+        log_app(f"✅ Post supprimé: {post_id}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "message": "Post supprimé avec succès"
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur suppression post: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/posts/{post_id}/publish")
+async def publish_post(post_id: str):
+    """Publish a post"""
+    try:
+        if post_id not in posts_storage:
+            raise HTTPException(status_code=404, detail="Post non trouvé")
+        
+        post = posts_storage[post_id]
+        
+        # Update post status
+        post["status"] = "published"
+        post["published_at"] = datetime.now().isoformat()
+        post["platform_post_id"] = f"fake_post_id_{post_id[:8]}"  # Mock platform post ID
+        
+        log_app(f"✅ Post publié: {post_id}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "post": post
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur publication post: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/users/{user_id}/platforms")
+async def get_user_platforms(user_id: str):
+    """Get platforms for a specific user"""
+    try:
+        log_app(f"Récupération des plateformes pour l'utilisateur: {user_id}", "INFO")
+        
+        # Mock platform data - in a real app, this would come from database
+        platforms = {
+            "personal_pages": [
+                {
+                    "id": "personal_page_1",
+                    "name": "Ma Page Personnelle",
+                    "platform": "facebook",
+                    "type": "page",
+                    "access_token": "mock_token"
+                }
+            ],
+            "personal_groups": [
+                {
+                    "id": "personal_group_1", 
+                    "name": "Mon Groupe Personnel",
+                    "platform": "facebook",
+                    "type": "group",
+                    "access_token": "mock_token"
+                }
+            ],
+            "business_pages": [
+                {
+                    "id": "102401876209415",
+                    "name": "Le Berger Blanc Suisse",
+                    "platform": "facebook",
+                    "type": "page",
+                    "access_token": os.getenv("FB_ACCESS_TOKEN_GIZMO")
+                },
+                {
+                    "id": "210654558802531",
+                    "name": "LogicAntiq",
+                    "platform": "facebook", 
+                    "type": "page",
+                    "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICANTIQ")
+                },
+                {
+                    "id": "236260991673388",
+                    "name": "Logicamp Outdoor",
+                    "platform": "facebook",
+                    "type": "page", 
+                    "access_token": os.getenv("FB_ACCESS_TOKEN_OUTDOOR")
+                }
+            ],
+            "business_groups": [],
+            "business_instagram": [
+                {
+                    "id": "ig_account_1",
+                    "name": "@logicamp_berger",
+                    "platform": "instagram",
+                    "type": "instagram",
+                    "username": "logicamp_berger"
+                }
+            ],
+            "selected_business_manager": {
+                "id": "business_manager_1",
+                "name": "Entreprise de Didier Preud'homme"
+            }
+        }
+        
+        return platforms
+        
+    except Exception as e:
+        log_app(f"❌ Erreur récupération plateformes: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/webhook")
+@app.get("/api/webhook")
+async def webhook_handler(request: Request):
+    """Handle webhook requests from Facebook/Instagram"""
+    try:
+        method = request.method
+        
+        if method == "GET":
+            # Webhook verification
+            query_params = dict(request.query_params)
+            
+            hub_mode = query_params.get("hub.mode")
+            hub_challenge = query_params.get("hub.challenge")
+            hub_verify_token = query_params.get("hub.verify_token")
+            
+            verify_token = os.getenv("FACEBOOK_VERIFY_TOKEN", "mon_token_secret_webhook")
+            
+            if hub_mode == "subscribe" and hub_verify_token == verify_token:
+                log_app(f"✅ Webhook vérifié avec succès", "SUCCESS")
+                return PlainTextResponse(hub_challenge)
+            else:
+                log_app(f"❌ Échec vérification webhook", "ERROR")
+                raise HTTPException(status_code=403, detail="Forbidden")
+                
+        elif method == "POST":
+            # Webhook event handling
+            webhook_data = await request.json()
+            
+            log_app(f"📦 Webhook reçu: {json.dumps(webhook_data, indent=2)}", "INFO")
+            
+            # Process webhook data here
+            # This is where you'd handle Facebook/Instagram events
+            
+            return {"status": "received"}
+            
+    except Exception as e:
+        log_app(f"❌ Erreur webhook: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # === ROUTES FRONTEND ===
 @app.get("/")
 async def serve_frontend(request: Request):
