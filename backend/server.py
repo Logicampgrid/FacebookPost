@@ -684,6 +684,69 @@ async def facebook_auth_endpoint(request: Request):
             "error": str(e)
         }
 
+@app.post("/api/sync/ngrok")
+async def sync_ngrok_url(request: Request):
+    """Synchronise l'URL ngrok avec le backend"""
+    try:
+        data = await request.json()
+        new_ngrok_url = data.get("ngrok_url")
+        
+        if not new_ngrok_url:
+            raise HTTPException(status_code=400, detail="URL ngrok manquante")
+        
+        global NGROK_URL
+        NGROK_URL = new_ngrok_url
+        
+        log_app(f"✅ URL ngrok synchronisée: {new_ngrok_url}", "SUCCESS")
+        
+        # Sauvegarder dans le fichier
+        try:
+            ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
+            with open(ngrok_file_path, "w", encoding='utf-8') as f:
+                f.write(new_ngrok_url)
+            log_app("URL ngrok sauvegardée dans ngrok_url.txt", "SUCCESS")
+        except Exception as e:
+            log_app(f"⚠️ Erreur sauvegarde ngrok_url.txt: {e}", "WARNING")
+        
+        return {
+            "success": True,
+            "message": "URL ngrok synchronisée avec succès",
+            "ngrok_url": new_ngrok_url,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur synchronisation ngrok: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/api/config/oauth-status")
+async def oauth_status():
+    """Retourne le statut de la configuration OAuth"""
+    try:
+        ngrok_url = get_active_ngrok_url()
+        redirect_uri = build_dynamic_redirect_uri("/")
+        
+        return {
+            "ngrok_active": ngrok_url is not None,
+            "ngrok_url": ngrok_url,
+            "redirect_uri": redirect_uri,
+            "facebook_app_configured": bool(FACEBOOK_APP_ID and FACEBOOK_APP_SECRET),
+            "facebook_app_id": FACEBOOK_APP_ID,
+            "oauth_ready": bool(ngrok_url and FACEBOOK_APP_ID and FACEBOOK_APP_SECRET),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur status OAuth: {str(e)}", "ERROR")
+        return {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 @app.get("/api/debug/instagram-complete-diagnosis")
 async def instagram_complete_diagnosis():
     """Diagnostic complet Instagram avec informations de l'utilisateur connecté"""
