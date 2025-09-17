@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://ngrok-fb-publisher.preview.emergentagent.com
+🔗 https://fb-tunnel-backend.preview.emergentagent.com

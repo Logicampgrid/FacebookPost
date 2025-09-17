@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://ngrok-fb-publisher.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://ngrok-fb-publisher.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://ngrok-fb-publisher.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://ngrok-fb-publisher.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://fb-tunnel-backend.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
