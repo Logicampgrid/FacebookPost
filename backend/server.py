@@ -914,6 +914,55 @@ async def oauth_status():
             "timestamp": datetime.now().isoformat()
         }
 
+@app.get("/api/config/oauth-status-complete")
+async def oauth_status_complete():
+    """Retourne le statut complet de la configuration OAuth avec détails Facebook"""
+    try:
+        ngrok_url = get_active_ngrok_url()
+        redirect_uri = build_dynamic_redirect_uri("/")
+        
+        # Vérifier la configuration Facebook en détail
+        facebook_config_status = {
+            "app_id_configured": bool(FACEBOOK_APP_ID),
+            "app_secret_configured": bool(FACEBOOK_APP_SECRET),
+            "client_token_configured": bool(FACEBOOK_CLIENT_TOKEN),
+            "direct_token_configured": bool(os.getenv("FACEBOOK_DIRECT_TOKEN"))
+        }
+        
+        # Test de connectivité Facebook si possible
+        facebook_connectivity = False
+        if FACEBOOK_APP_ID and FACEBOOK_APP_SECRET:
+            try:
+                app_access_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+                test_url = f"{FACEBOOK_GRAPH_URL}/{FACEBOOK_APP_ID}"
+                test_response = requests.get(test_url, params={"access_token": app_access_token}, timeout=10)
+                facebook_connectivity = test_response.status_code == 200
+            except Exception:
+                facebook_connectivity = False
+        
+        return {
+            "ngrok_active": ngrok_url is not None,
+            "ngrok_url": ngrok_url,
+            "redirect_uri": redirect_uri,
+            "facebook_config": facebook_config_status,
+            "facebook_connectivity": facebook_connectivity,
+            "oauth_ready": bool(ngrok_url and FACEBOOK_APP_ID and FACEBOOK_APP_SECRET),
+            "auto_config_completed": bool(ngrok_url and facebook_connectivity),
+            "timestamp": datetime.now().isoformat(),
+            "redirect_uris_configured": [
+                f"{ngrok_url}/",
+                f"{ngrok_url}/auth/callback", 
+                f"{ngrok_url}/auth/callb"
+            ] if ngrok_url else []
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur status OAuth complet: {str(e)}", "ERROR")
+        return {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 @app.get("/api/debug/instagram-complete-diagnosis")
 async def instagram_complete_diagnosis():
     """Diagnostic complet Instagram avec informations de l'utilisateur connecté"""
