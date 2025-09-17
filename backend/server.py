@@ -282,6 +282,141 @@ def sync_frontend_env_with_ngrok():
         log_app(f"❌ Erreur synchronisation frontend .env: {e}", "ERROR")
         return False
 
+def update_facebook_oauth_config(ngrok_url):
+    """Met à jour automatiquement la configuration Facebook OAuth avec l'URL ngrok active"""
+    try:
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            log_app("⚠️ Configuration Facebook manquante - pas de mise à jour OAuth", "WARNING")
+            return False
+        
+        log_app(f"🔄 Mise à jour configuration Facebook OAuth avec: {ngrok_url}", "INFO")
+        
+        # Générer le token d'accès administrateur de l'application
+        app_access_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+        
+        # URLs de redirection multiples pour couvrir tous les cas
+        redirect_uris = [
+            f"{ngrok_url}/",
+            f"{ngrok_url}/auth/callback", 
+            f"{ngrok_url}/auth/callb"
+        ]
+        
+        # Configuration des paramètres Facebook
+        facebook_updates = [
+            {
+                "name": "app_domains",
+                "value": f'["{ngrok_url}"]',
+                "description": "Domaines autorisés"
+            },
+            {
+                "name": "website_url", 
+                "value": ngrok_url,
+                "description": "URL du site web"
+            },
+            {
+                "name": "oauth_redirect_uris",
+                "value": '[' + ','.join([f'"{uri}"' for uri in redirect_uris]) + ']',
+                "description": "URIs de redirection OAuth"
+            },
+            {
+                "name": "web_origins",
+                "value": f'["{ngrok_url}"]',
+                "description": "Origines web autorisées"
+            }
+        ]
+        
+        success_count = 0
+        total_updates = len(facebook_updates)
+        
+        # Appliquer chaque configuration
+        for update in facebook_updates:
+            try:
+                url = f"{FACEBOOK_GRAPH_URL}/{FACEBOOK_APP_ID}"
+                data = {
+                    update["name"]: update["value"],
+                    "access_token": app_access_token
+                }
+                
+                response = requests.post(url, data=data, timeout=15)
+                
+                if response.status_code == 200:
+                    log_app(f"✅ {update['description']}: Mis à jour", "SUCCESS")
+                    success_count += 1
+                else:
+                    log_app(f"⚠️ {update['description']}: Status {response.status_code}", "WARNING")
+                    
+            except Exception as e:
+                log_app(f"❌ Erreur {update['description']}: {str(e)}", "ERROR")
+        
+        # Résultat final
+        if success_count == total_updates:
+            log_app(f"✅ Configuration Facebook OAuth mise à jour complètement ({success_count}/{total_updates})", "SUCCESS")
+            log_app(f"🔐 URIs de redirection configurées: {', '.join(redirect_uris)}", "SUCCESS")
+            return True
+        elif success_count > 0:
+            log_app(f"⚠️ Configuration Facebook OAuth partiellement mise à jour ({success_count}/{total_updates})", "WARNING")
+            return True
+        else:
+            log_app(f"❌ Échec complet de la mise à jour Facebook OAuth", "ERROR")
+            return False
+            
+    except Exception as e:
+        log_app(f"❌ Erreur générale mise à jour Facebook OAuth: {e}", "ERROR")
+        return False
+
+def update_facebook_endpoints_with_ngrok():
+    """Met à jour automatiquement les endpoints Facebook avec l'URL ngrok active"""
+    try:
+        active_url = get_active_ngrok_url()
+        if not active_url:
+            log_app("⚠️ Aucune URL ngrok active - pas de mise à jour des endpoints", "WARNING")
+            return False
+        
+        log_app(f"🔄 Mise à jour des endpoints Facebook avec: {active_url}", "INFO")
+        
+        # Mettre à jour l'URL globale si nécessaire
+        global NGROK_URL
+        if NGROK_URL != active_url:
+            NGROK_URL = active_url
+            log_app(f"✅ URL globale ngrok mise à jour: {NGROK_URL}", "SUCCESS")
+        
+        # Mettre à jour le frontend .env avec l'URL active
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                updated_lines = []
+                backend_url_updated = False
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                        backend_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                if not backend_url_updated:
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                
+                with open(frontend_env_path, "w", encoding='utf-8') as f:
+                    f.writelines(updated_lines)
+                log_app(f"✅ Frontend .env synchronisé avec URL active", "SUCCESS")
+        except Exception as e:
+            log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
+        
+        # Mettre à jour la configuration Facebook OAuth
+        try:
+            update_facebook_oauth_config(active_url)
+        except Exception as e:
+            log_app(f"⚠️ Erreur mise à jour Facebook OAuth: {e}", "WARNING")
+        
+        return True
+        
+    except Exception as e:
+        log_app(f"❌ Erreur mise à jour endpoints Facebook: {e}", "ERROR")
+        return False
+
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
 async def lifespan(app: FastAPI):
