@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://local-oauth-proxy.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://fb-tunnel-backend.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://fb-tunnel-backend.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://local-oauth-proxy.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://local-oauth-proxy.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://local-oauth-proxy.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
