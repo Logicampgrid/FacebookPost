@@ -259,9 +259,10 @@ def sync_frontend_env_with_ngrok():
                 old_url = line.split("=", 1)[1].strip()
                 if old_url != ngrok_url:
                     updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}\n")
-                    log_app(f"✅ REACT_APP_BACKEND_URL mis à jour: {ngrok_url}", "SUCCESS")
+                    log_app(f"✅ REACT_APP_BACKEND_URL mis à jour: {old_url} -> {ngrok_url}", "SUCCESS")
                 else:
                     updated_lines.append(line)
+                    log_app(f"✅ REACT_APP_BACKEND_URL déjà à jour: {ngrok_url}", "SUCCESS")
                 backend_url_updated = True
             else:
                 updated_lines.append(line)
