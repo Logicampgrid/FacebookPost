@@ -405,6 +405,7 @@ def auto_configure_facebook_oauth():
     except Exception as e:
         log_app(f"❌ Erreur configuration automatique Facebook OAuth: {e}", "ERROR")
         return False
+def update_facebook_endpoints_with_ngrok():
     """Met à jour automatiquement les endpoints Facebook avec l'URL ngrok active"""
     try:
         active_url = get_active_ngrok_url()
@@ -425,22 +426,25 @@ def auto_configure_facebook_oauth():
             frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
             if os.path.exists(frontend_env_path):
                 with open(frontend_env_path, "r", encoding='utf-8') as f:
-                    lines = f.readlines()
+                    content = f.read()
                 
+                lines = content.splitlines()
                 updated_lines = []
                 backend_url_updated = False
                 for line in lines:
                     if line.startswith("REACT_APP_BACKEND_URL="):
-                        updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                        updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}")
                         backend_url_updated = True
                     else:
                         updated_lines.append(line)
                 
                 if not backend_url_updated:
-                    updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}\n")
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={active_url}")
                 
                 with open(frontend_env_path, "w", encoding='utf-8') as f:
-                    f.writelines(updated_lines)
+                    f.write("\n".join(updated_lines))
+                    if updated_lines:
+                        f.write("\n")
                 log_app(f"✅ Frontend .env synchronisé avec URL active", "SUCCESS")
         except Exception as e:
             log_app(f"⚠️ Erreur mise à jour frontend .env: {e}", "WARNING")
