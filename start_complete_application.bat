@@ -128,13 +128,14 @@ echo ⏳ Finalisation du démarrage (20 secondes)...
 timeout /t 20 /nobreak >NUL
 
 REM Tenter de récupérer l'URL ngrok pour l'ouverture
+setlocal enabledelayedexpansion
 set "ngrok_url="
 for /f "delims=" %%i in ('curl -s http://127.0.0.1:4040/api/tunnels 2^>NUL') do set "ngrok_response=%%i"
 
-echo %ngrok_response% | findstr "public_url" >NUL 2>&1
-if %errorlevel% equ 0 (
+echo !ngrok_response! | findstr "public_url" >NUL 2>&1
+if !errorlevel! equ 0 (
     REM Extraire l'URL ngrok
-    for /f "tokens=4 delims=:," %%a in ('echo %ngrok_response% ^| findstr "public_url"') do (
+    for /f "tokens=4 delims=:," %%a in ('echo !ngrok_response! ^| findstr "public_url"') do (
         set "raw_url=%%a"
     )
     set "ngrok_url=!raw_url:"=!"
