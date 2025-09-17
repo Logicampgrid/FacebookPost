@@ -460,7 +460,7 @@ def auto_configure_facebook_oauth():
 # === LIFESPAN CONTEXT MANAGER ===
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan events - startup and shutdown - VERSION CORRIGÉE NGROK"""
+    """FastAPI lifespan events - startup and shutdown - VERSION CORRIGÉE AVEC AUTO-CONFIG FACEBOOK"""
     # Startup
     log_app("🚀 Meta Publishing Platform - Version Windows CORRIGÉE", "START")
     log_app(f"📁 Répertoire backend: {WINDOWS_PATHS['backend_dir']}", "INFO")
@@ -484,10 +484,20 @@ async def lifespan(app: FastAPI):
             log_app(f"✅ Ngrok configuré avec succès: {NGROK_URL}", "SUCCESS")
             
             # Synchroniser le frontend .env
-            sync_frontend_env_with_ngrok()
+            sync_result = sync_frontend_env_with_ngrok()
+            if sync_result:
+                log_app("✅ Frontend .env synchronisé avec succès", "SUCCESS")
             
-            log_app("ℹ️ 🔄 Attente de la synchronisation ngrok avec le frontend...", "INFO")
-            time.sleep(2)  # Laisser le temps au frontend de se synchroniser
+            # NOUVELLE FONCTIONNALITÉ: Configuration automatique Facebook OAuth
+            log_app("🔧 Configuration automatique Facebook OAuth...", "INFO")
+            oauth_result = auto_configure_facebook_oauth()
+            if oauth_result:
+                log_app("✅ Facebook OAuth configuré automatiquement", "SUCCESS")
+            else:
+                log_app("⚠️ Configuration Facebook OAuth échouée ou partielle", "WARNING")
+            
+            log_app("ℹ️ 🔄 Attente de la synchronisation complète...", "INFO")
+            time.sleep(2)  # Laisser le temps à toutes les configurations de se finaliser
             log_app("✅ Application démarrée avec succès!", "SUCCESS")
         else:
             log_app("⚠️ Ngrok non disponible - mode local uniquement", "WARNING")
