@@ -416,43 +416,18 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
             raise Exception("Configuration Facebook manquante (APP_ID ou APP_SECRET)")
         
-        # CORRECTION CRITIQUE: S'assurer d'utiliser l'URL de base correcte (/)
-        original_redirect_uri = redirect_uri
-        log_app(f"Redirect URI (original): {original_redirect_uri}", "INFO")
+        # CORRECTION CRITIQUE: Utiliser EXACTEMENT l'URI de redirection fournie par le frontend
+        # Ne plus essayer de "corriger" ou modifier l'URI - cela cause des discordances avec Facebook
+        log_app(f"🎯 Redirect URI exacte (depuis frontend): {redirect_uri}", "INFO")
         
-        # Construire dynamiquement l'URI de redirection avec l'URL ngrok active
-        active_ngrok_url = get_active_ngrok_url()
-        if active_ngrok_url:
-            # Utiliser l'URL de base (/) au lieu de /auth/callback
-            correct_redirect_uri = f"{active_ngrok_url}/"
-            log_app(f"✅ Redirect URI corrigée avec ngrok: {correct_redirect_uri}", "SUCCESS")
-        else:
-            # Fallback vers le frontend .env
-            try:
-                frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
-                if os.path.exists(frontend_env_path):
-                    with open(frontend_env_path, "r", encoding='utf-8') as f:
-                        for line in f:
-                            if line.startswith("REACT_APP_BACKEND_URL="):
-                                backend_url = line.split("=", 1)[1].strip()
-                                correct_redirect_uri = f"{backend_url}/"
-                                log_app(f"✅ Redirect URI depuis frontend .env: {correct_redirect_uri}", "SUCCESS")
-                                break
-                else:
-                    correct_redirect_uri = f"http://localhost:{BACKEND_PORT}/"
-            except Exception:
-                correct_redirect_uri = f"http://localhost:{BACKEND_PORT}/"
-        
-        log_app(f"🎯 Redirect URI finale: {correct_redirect_uri}", "INFO")
-        
-        # Faire la requête d'échange de token avec l'URI corrigée
+        # Faire la requête d'échange de token avec l'URI EXACTE fournie
         log_app("Requête d'échange de token...", "INFO")
         
         token_url = f"{FACEBOOK_GRAPH_URL}/oauth/access_token"
         params = {
             "client_id": FACEBOOK_APP_ID,
             "client_secret": FACEBOOK_APP_SECRET,
-            "redirect_uri": correct_redirect_uri,
+            "redirect_uri": redirect_uri,  # Utiliser l'URI exacte du frontend
             "code": code
         }
         
