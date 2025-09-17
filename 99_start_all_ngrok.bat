@@ -91,7 +91,7 @@ if not "%ngrok_url:~0,8%"=="https://" (
 )
 
 echo.
-echo [4/4] Configuration des URLs OAuth...
+echo [4/5] Configuration des URLs OAuth...
 echo ✅ URL Ngrok récupérée: %ngrok_url%
 
 :: Sauvegarder l'URL dans un fichier pour le backend
@@ -103,6 +103,13 @@ if %errorlevel% neq 0 (
     echo ⚠️ Script Python non disponible, mise à jour manuelle du frontend .env...
     call :update_frontend_env "%ngrok_url%"
 )
+
+echo.
+echo [5/5] Mise à jour automatique Facebook OAuth...
+echo 🔄 Configuration des domaines Facebook avec l'URL ngrok...
+
+:: Lancer la mise à jour Facebook en arrière-plan
+start /MIN cmd /c ""%~dp0update_facebook_config.bat" && echo ✅ Facebook OAuth configuré avec succès!"
 
 echo.
 echo ========================================
