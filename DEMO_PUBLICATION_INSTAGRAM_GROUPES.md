@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://social-login-app.preview.emergentagent.com
+🔗 https://instagram-diag.preview.emergentagent.com
