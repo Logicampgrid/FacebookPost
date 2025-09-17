@@ -235,7 +235,7 @@ def build_dynamic_redirect_uri(callback_path="/auth/callback"):
         return f"http://localhost:{BACKEND_PORT}{callback_path}"
 
 def sync_frontend_env_with_ngrok():
-    """Synchronise le .env frontend avec l'URL ngrok active"""
+    """Synchronise le .env frontend avec l'URL ngrok active - VERSION CORRIGÉE"""
     try:
         ngrok_url = get_active_ngrok_url()
         if not ngrok_url:
@@ -249,16 +249,20 @@ def sync_frontend_env_with_ngrok():
         
         # Lire le fichier .env actuel
         with open(frontend_env_path, "r", encoding='utf-8') as f:
-            lines = f.readlines()
+            content = f.read()
+        
+        # Diviser en lignes pour traitement
+        lines = content.splitlines()
         
         # Mettre à jour REACT_APP_BACKEND_URL
         updated_lines = []
         backend_url_updated = False
+        
         for line in lines:
             if line.startswith("REACT_APP_BACKEND_URL="):
-                old_url = line.split("=", 1)[1].strip()
+                old_url = line.split("=", 1)[1] if "=" in line else ""
                 if old_url != ngrok_url:
-                    updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}\n")
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}")
                     log_app(f"✅ REACT_APP_BACKEND_URL mis à jour: {old_url} -> {ngrok_url}", "SUCCESS")
                 else:
                     updated_lines.append(line)
@@ -268,12 +272,14 @@ def sync_frontend_env_with_ngrok():
                 updated_lines.append(line)
         
         if not backend_url_updated:
-            updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}\n")
+            updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}")
             log_app(f"✅ REACT_APP_BACKEND_URL ajouté: {ngrok_url}", "SUCCESS")
         
-        # Réécrire le fichier
+        # Réécrire le fichier avec les nouvelles lignes
         with open(frontend_env_path, "w", encoding='utf-8') as f:
-            f.writelines(updated_lines)
+            f.write("\n".join(updated_lines))
+            if updated_lines and not updated_lines[-1].endswith('\n'):
+                f.write("\n")  # Ajouter une nouvelle ligne à la fin
         
         log_app(f"🎯 Frontend .env synchronisé avec ngrok: {ngrok_url}", "SUCCESS")
         return True
