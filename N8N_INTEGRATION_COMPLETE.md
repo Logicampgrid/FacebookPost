@@ -8,7 +8,7 @@ L'endpoint `/api/publishProduct` est **opérationnel** et prêt pour l'intégrat
 
 ### 1. **Publication de produits (PRINCIPAL)**
 ```
-POST https://token-exchange-5.preview.emergentagent.com/api/publishProduct
+POST https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct
 ```
 
 **Payload JSON requis :**
@@ -45,26 +45,26 @@ POST https://token-exchange-5.preview.emergentagent.com/api/publishProduct
 
 ### 2. **Test de publication (POUR TESTS)**
 ```
-POST https://token-exchange-5.preview.emergentagent.com/api/publishProduct/test
+POST https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct/test
 ```
 Même payload que l'endpoint principal, mais simule la publication sans poster sur Facebook.
 
 ### 3. **Configuration disponible**
 ```
-GET https://token-exchange-5.preview.emergentagent.com/api/publishProduct/config
+GET https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct/config
 ```
 Retourne la liste des utilisateurs et pages Facebook disponibles.
 
 ### 4. **Gestion des utilisateurs de test**
 ```
-POST https://token-exchange-5.preview.emergentagent.com/api/publishProduct/setup-test-user
-DELETE https://token-exchange-5.preview.emergentagent.com/api/publishProduct/cleanup-test-user
+POST https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct/setup-test-user
+DELETE https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct/cleanup-test-user
 ```
 
 ## 🔧 **Configuration N8N**
 
 ### Étape 1 : Créer un webhook HTTP Request
-1. **URL** : `https://token-exchange-5.preview.emergentagent.com/api/publishProduct`
+1. **URL** : `https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct`
 2. **Méthode** : `POST`
 3. **Headers** :
    ```
@@ -83,7 +83,7 @@ DELETE https://token-exchange-5.preview.emergentagent.com/api/publishProduct/cle
 
 ### Étape 3 : Exemple complet avec curl
 ```bash
-curl -X POST "https://token-exchange-5.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://fbpost-tunnel-1.preview.emergentagent.com/api/publishProduct" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Chaise design premium",
