@@ -370,7 +370,41 @@ def update_facebook_oauth_config(ngrok_url):
         log_app(f"❌ Erreur générale mise à jour Facebook OAuth: {e}", "ERROR")
         return False
 
-def update_facebook_endpoints_with_ngrok():
+def auto_configure_facebook_oauth():
+    """Configure automatiquement Facebook OAuth avec l'URL ngrok active"""
+    try:
+        # Récupérer l'URL ngrok active
+        ngrok_url = get_active_ngrok_url()
+        if not ngrok_url:
+            log_app("⚠️ Pas d'URL ngrok active - configuration Facebook OAuth ignorée", "WARNING")
+            return False
+        
+        # Vérifier la configuration Facebook
+        if not FACEBOOK_APP_ID or not FACEBOOK_APP_SECRET:
+            log_app("⚠️ Configuration Facebook manquante - OAuth non configuré", "WARNING")
+            log_app(f"   FACEBOOK_APP_ID: {'✅ Défini' if FACEBOOK_APP_ID else '❌ Manquant'}", "INFO")
+            log_app(f"   FACEBOOK_APP_SECRET: {'✅ Défini' if FACEBOOK_APP_SECRET else '❌ Manquant'}", "INFO")
+            return False
+        
+        log_app(f"🔧 Configuration automatique Facebook OAuth avec: {ngrok_url}", "INFO")
+        
+        # Appliquer la configuration OAuth
+        result = update_facebook_oauth_config(ngrok_url)
+        
+        if result:
+            log_app("✅ Configuration Facebook OAuth mise à jour automatiquement", "SUCCESS")
+            log_app(f"🔐 URLs de redirection configurées:", "SUCCESS")
+            log_app(f"   • {ngrok_url}/", "SUCCESS")
+            log_app(f"   • {ngrok_url}/auth/callback", "SUCCESS")
+            log_app(f"   • {ngrok_url}/auth/callb", "SUCCESS")
+        else:
+            log_app("⚠️ Configuration Facebook OAuth partiellement réussie", "WARNING")
+        
+        return result
+        
+    except Exception as e:
+        log_app(f"❌ Erreur configuration automatique Facebook OAuth: {e}", "ERROR")
+        return False
     """Met à jour automatiquement les endpoints Facebook avec l'URL ngrok active"""
     try:
         active_url = get_active_ngrok_url()
