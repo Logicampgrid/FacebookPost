@@ -691,6 +691,25 @@ async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
         log_app(f"❌ Erreur échange Facebook: {error_msg}", "ERROR")
         raise Exception(error_msg)
 
+# === PYDANTIC MODELS FOR POSTS ===
+class PostBase(BaseModel):
+    content: str
+    platform: str
+    platform_id: str
+    scheduled_time: Optional[str] = None
+    media_urls: Optional[List[str]] = []
+
+class Post(PostBase):
+    id: str
+    user_id: str
+    status: str = "draft"
+    created_at: str
+    published_at: Optional[str] = None
+    platform_post_id: Optional[str] = None
+
+# In-memory storage for posts (you might want to use a proper database)
+posts_storage = {}
+
 # === API ENDPOINTS ===
 
 @app.get("/api/health")
