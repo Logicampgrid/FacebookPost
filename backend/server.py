@@ -2052,6 +2052,20 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             "error": str(e)
         }
 
+@app.get("/api/webhooks/history")
+async def get_webhook_history():
+    """Get recent webhook history"""
+    try:
+        webhooks = await get_recent_webhooks(50)
+        return {
+            "success": True,
+            "webhooks": webhooks,
+            "count": len(webhooks)
+        }
+    except Exception as e:
+        log_app(f"❌ Erreur récupération webhooks: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/webhook")
 @app.get("/api/webhook")
 async def webhook_handler(request: Request):
