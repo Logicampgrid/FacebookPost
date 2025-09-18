@@ -17,6 +17,11 @@ from datetime import datetime
 import webbrowser
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+import shutil
+import tempfile
+import mimetypes
+import ftplib
+from pathlib import Path
 
 # Charger les variables d'environnement
 load_dotenv()
