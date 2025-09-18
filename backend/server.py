@@ -1643,24 +1643,28 @@ async def delete_post_endpoint(post_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/posts/{post_id}/publish")
-async def publish_post(post_id: str):
-    """Publish a post"""
+async def publish_post_endpoint(post_id: str):
+    """Publish a post immediately"""
     try:
-        if post_id not in posts_storage:
+        post = await get_post_by_id(post_id)
+        
+        if not post:
             raise HTTPException(status_code=404, detail="Post non trouvé")
         
-        post = posts_storage[post_id]
+        # Update post status in MongoDB
+        update_data = {
+            "status": "published",
+            "published_at": datetime.now().isoformat()
+        }
         
-        # Update post status
-        post["status"] = "published"
-        post["published_at"] = datetime.now().isoformat()
-        post["platform_post_id"] = f"fake_post_id_{post_id[:8]}"  # Mock platform post ID
+        updated_post = await update_post(post_id, update_data)
         
         log_app(f"✅ Post publié: {post_id}", "SUCCESS")
         
         return {
             "success": True,
-            "post": post
+            "post": updated_post,
+            "message": "Post publié avec succès"
         }
         
     except Exception as e:
