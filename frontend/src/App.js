@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Calendar, Send, Building2, Instagram, MessageSquare, Package } from 'lucide-react';
+import { Users, Calendar, Send, Building2, Instagram, MessageSquare, Package, Video } from 'lucide-react';
 import { handleAxiosError } from './utils/errorHandler';
 import PostCreator from './components/PostCreator';
 import PostList from './components/PostList';
