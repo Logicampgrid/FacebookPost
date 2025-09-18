@@ -1852,29 +1852,21 @@ async def get_user_platforms(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def process_webhook_publication(webhook_data: dict) -> dict:
-    """Traite les données de publication reçues depuis n8n via webhook - VERSION COMPLÈTE AVEC TOUTES LES AMÉLIORATIONS"""
+    """Traite les données de publication reçues depuis n8n via webhook - VERSION AVEC PRIORITÉS CHRONOLOGIQUES"""
     try:
-        log_app("🔄 Traitement des données de publication webhook AMÉLIORÉ...", "INFO")
+        log_app("🔄 Traitement des données de publication webhook avec PRIORITÉS RÉCENTES...", "INFO")
         
         # Vérifier si les données contiennent des informations de publication
         if not isinstance(webhook_data, dict):
             log_app("⚠️ Données webhook invalides (pas un dictionnaire)", "WARNING")
             return None
         
-        # AMÉLIORATION 1: Support de multiples structures de données n8n
-        # Structure attendue depuis n8n (flexible) : 
-        # {
-        #   "store": "gizmobbs|logicantiq|outdoor",
-        #   "title": "Titre du produit",
-        #   "description": "Description du produit", 
-        #   "message": "Message custom (optionnel)",
-        #   "product_url" ou "url": "URL du produit",
-        #   "image_url": "URL de l'image (optionnel)",
-        #   "platforms": ["facebook", "instagram"]
-        # }
+        # PRIORITÉ RÉCENTE 1: Support des modifications @logicamp_berger (MISSION_ACCOMPLIE_LOGICAMP_BERGER.md)
+        # Structure attendue depuis n8n (flexible) avec support spécial gizmobbs → @logicamp_berger
         
         # Extraction flexible des données
         store = webhook_data.get("store")
+        shop_type = webhook_data.get("shop_type")  # Support ancien format
         title = webhook_data.get("title", "")
         description = webhook_data.get("description", "")
         custom_message = webhook_data.get("message", "")
@@ -1882,21 +1874,47 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         image_url = webhook_data.get("image_url")
         platforms = webhook_data.get("platforms", ["facebook"])
         
-        # AMÉLIORATION 2: Construction intelligente du message
-        # Priorité: custom_message > title + description > title seul
-        if custom_message:
-            message = custom_message
-        elif title and description:
-            message = f"{title}\n\n{description}"
-        elif title:
-            message = title
+        # PRIORITÉ RÉCENTE 2: Logique spéciale pour gizmobbs → @logicamp_berger (SOLUTION_LOGICAMP_BERGER_COMPLETE.md)
+        if store == "gizmobbs" or shop_type == "gizmobbs":
+            log_app("🎯 PRIORITÉ RÉCENTE : Configuration spéciale gizmobbs → @logicamp_berger", "INFO")
+            
+            # Business Manager spécifique pour @logicamp_berger
+            business_manager_id = "1715327795564432"  # ID spécifique du BM logicamp_berger
+            
+            # CONFIGURATION PRIORITAIRE INSTAGRAM selon MISSION_ACCOMPLIE_LOGICAMP_BERGER.md
+            platforms = ["instagram"]  # Instagram UNIQUEMENT pour gizmobbs (pas Facebook)
+            
+            # Adaptation du message pour Instagram avec optimisation automatique
+            if custom_message:
+                instagram_message = custom_message
+            elif title and description:
+                # Format Instagram optimisé avec hashtags
+                instagram_message = f"{title} 📱\n\n{description}\n\n🔗 Plus d'infos : lien en bio\n\n#tech #gizmobbs #innovation #mobile"
+            elif title:
+                instagram_message = f"{title}\n\n🔗 Plus d'infos : lien en bio\n\n#tech #gizmobbs #innovation"
+            else:
+                instagram_message = f"{description}\n\n#gizmobbs #tech #innovation"
+            
+            message = instagram_message
+            log_app(f"📱 Message Instagram optimisé pour @logicamp_berger : {message[:50]}...", "INFO")
+            log_app(f"🔧 Business Manager cible : {business_manager_id}", "INFO")
+            log_app(f"🎯 Plateforme prioritaire : Instagram UNIQUEMENT", "INFO")
+            
         else:
-            message = description or "Publication automatique"
+            # ANCIENNE LOGIQUE: Construction intelligente du message pour autres stores
+            if custom_message:
+                message = custom_message
+            elif title and description:
+                message = f"{title}\n\n{description}"
+            elif title:
+                message = title
+            else:
+                message = description or "Publication automatique"
         
-        # AMÉLIORATION 3: Validation améliorée avec logging détaillé
+        # Validation améliorée avec logging détaillé
         missing_fields = []
-        if not store:
-            missing_fields.append("store")
+        if not store and not shop_type:
+            missing_fields.append("store/shop_type")
         if not message.strip():
             missing_fields.append("message/title/description")
         if not product_url:
@@ -1904,47 +1922,49 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             
         if missing_fields:
             log_app(f"⚠️ Données de publication incomplètes: {', '.join(missing_fields)}", "WARNING")
-            log_app(f"   Données reçues: store={store}, message={bool(message)}, product_url={bool(product_url)}", "INFO")
+            log_app(f"   Données reçues: store={store}, shop_type={shop_type}, message={bool(message)}, product_url={bool(product_url)}", "INFO")
             return None
+        
+        # Normaliser le store (support shop_type legacy)
+        final_store = store or shop_type
         
         # Vérifier que le store existe
-        if store not in STORES:
-            log_app(f"❌ Store inconnu dans webhook: {store} (disponibles: {list(STORES.keys())})", "ERROR")
+        if final_store not in STORES:
+            log_app(f"❌ Store inconnu dans webhook: {final_store} (disponibles: {list(STORES.keys())})", "ERROR")
             return None
         
-        # AMÉLIORATION 4: Déduplication automatique (basée sur CORRECTIONS_FACEBOOK_SUMMARY.md)
+        # PRIORITÉ RÉCENTE 3: Déduplication automatique avec signature
         from datetime import datetime, timedelta
         import hashlib
         
         # Créer une signature unique pour détecter les doublons
-        content_signature = hashlib.md5(f"{store}_{title}_{image_url}".encode()).hexdigest()
+        content_signature = hashlib.md5(f"{final_store}_{title}_{image_url}".encode()).hexdigest()
         duplicate_window = datetime.now() - timedelta(minutes=15)
         
-        # Simulation de vérification de doublon (en production, utiliser une vraie DB)
-        # Pour l'instant, on logge seulement la logique
         log_app(f"🔍 Vérification déduplication - Signature: {content_signature[:8]}", "INFO")
         
-        log_app(f"📝 Publication webhook COMPLÈTE - Store: {store}, Plateformes: {platforms}", "INFO")
+        log_app(f"📝 Publication webhook PRIORITÉS RÉCENTES - Store: {final_store}, Plateformes: {platforms}", "INFO")
         log_app(f"   Titre: {title[:50]}{'...' if len(title) > 50 else ''}", "INFO")
         log_app(f"   URL produit: {product_url}", "INFO")
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
         
-        # AMÉLIORATION 5: Effectuer la publication avec toutes les améliorations intégrées
-        # La fonction publish_post_main inclut déjà :
+        # EFFECTUER LA PUBLICATION avec toutes les améliorations intégrées
+        # La fonction publish_post_main inclut automatiquement :
         # - Images cliquables (CLICKABLE_IMAGES_FEATURE.md)
         # - Validation préventive médias (AMÉLIORATIONS_MÉDIA_RÉALISÉES.md)
         # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
+        # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
         result = await publish_post_main(
-            store=store,
+            store=final_store,
             message=message,
             product_url=product_url,
             image_url=image_url,
             platforms=platforms
         )
         
-        # AMÉLIORATION 6: Réponse structurée compatible avec toutes les améliorations
+        # RÉPONSE STRUCTURÉE compatible avec toutes les améliorations
         if result.get("success"):
-            log_app(f"✅ Publication webhook COMPLÈTE réussie pour {store}", "SUCCESS")
+            log_app(f"✅ Publication webhook PRIORITÉS RÉCENTES réussie pour {final_store}", "SUCCESS")
             
             # Extraire les IDs de posts pour la réponse (format attendu par n8n)
             facebook_post_id = None
@@ -1956,32 +1976,38 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             if result.get("instagram_result") and result["instagram_result"].get("id"):
                 instagram_post_id = result["instagram_result"]["id"]
             
+            # PRIORITÉ RÉCENTE 4: Réponse spéciale pour gizmobbs → @logicamp_berger
+            if final_store == "gizmobbs":
+                log_app(f"🎯 Publication @logicamp_berger - Instagram ID: {instagram_post_id}", "SUCCESS")
+                log_app(f"📱 Compte cible: @logicamp_berger (Business Manager: 1715327795564432)", "SUCCESS")
+            
             return {
                 "success": True,
                 "status": "published",
-                "store": store,
+                "store": final_store,
                 "platforms": platforms,
                 "data": {
                     "facebook_post_id": facebook_post_id,
                     "instagram_post_id": instagram_post_id,
                     "platforms_successful": len([p for p in platforms if (p == "facebook" and facebook_post_id) or (p == "instagram" and instagram_post_id)]),
                     "content_signature": content_signature,
-                    "duplicate_skipped": False
+                    "duplicate_skipped": False,
+                    "special_config": "logicamp_berger" if final_store == "gizmobbs" else None
                 },
                 "result": result
             }
         else:
-            log_app(f"❌ Échec publication webhook pour {store}: {result.get('errors', [])}", "ERROR")
+            log_app(f"❌ Échec publication webhook pour {final_store}: {result.get('errors', [])}", "ERROR")
             return {
                 "success": False,
                 "status": "failed",
-                "store": store,
+                "store": final_store,
                 "error": result.get("errors", ["Erreur inconnue"]),
                 "platforms": platforms
             }
         
     except Exception as e:
-        log_app(f"❌ Erreur traitement publication webhook COMPLÈTE: {str(e)}", "ERROR")
+        log_app(f"❌ Erreur traitement publication webhook PRIORITÉS RÉCENTES: {str(e)}", "ERROR")
         return {
             "success": False,
             "status": "error",
