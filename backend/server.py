@@ -2044,8 +2044,10 @@ async def webhook_handler(request: Request):
                         if 'entry' in webhook_data:
                             log_app(f"📦 Webhook entries: {len(webhook_data['entry'])}", "INFO")
                         
-                        # Here you can add specific webhook event processing
-                        # For example, handling Instagram media updates, page changes, etc.
+                        # NOUVELLE LOGIQUE: Traitement des données de publication depuis n8n
+                        publication_result = await process_webhook_publication(webhook_data)
+                        if publication_result:
+                            log_app(f"🚀 Publication webhook réussie: {publication_result}", "SUCCESS")
                         
                     log_app("✅ Webhook data processed successfully", "SUCCESS")
                 else:
