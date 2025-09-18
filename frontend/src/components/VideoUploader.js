@@ -57,18 +57,13 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
     const validation = validateVideoFile(file);
     setValidationResult(validation);
 
-    if (!validation.valid) {
-      onError && onError(validation.error);
-      return;
-    }
-
     setSelectedVideo(file);
     
     // Create video preview
     const videoUrl = URL.createObjectURL(file);
     setVideoPreview(videoUrl);
 
-    // Get video metadata
+    // Get video metadata and check if processing is needed
     const video = document.createElement('video');
     video.src = videoUrl;
     video.onloadedmetadata = () => {
@@ -82,10 +77,32 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
       
       // Enhanced validation with video metadata
       const enhancedValidation = validateVideoMetadata(metadata);
-      setValidationResult({...validation, ...enhancedValidation});
+      const finalValidation = {...validation, ...enhancedValidation, metadata};
+      setValidationResult(finalValidation);
       
-      if (!enhancedValidation.valid) {
-        onError && onError(enhancedValidation.error);
+      // Check if automatic processing is needed
+      const needsInstagram = platforms.includes('instagram');
+      const maxSize = needsInstagram ? 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024;
+      const maxDuration = needsInstagram ? 60 : 15 * 60;
+      
+      const needsConversion = file.type !== 'video/mp4';
+      const needsCompression = file.size > maxSize;
+      const needsTrimming = video.duration > maxDuration;
+      
+      if (needsConversion || needsCompression || needsTrimming) {
+        setNeedsProcessing(true);
+        setValidationResult(prev => ({
+          ...prev,
+          needsProcessing: true,
+          processingSteps: [
+            needsConversion && 'Conversion vers MP4',
+            needsCompression && 'Compression automatique', 
+            needsTrimming && `Découpage à ${maxDuration}s`
+          ].filter(Boolean)
+        }));
+      } else {
+        setNeedsProcessing(false);
+        setProcessedVideo(file);
       }
     };
   };
