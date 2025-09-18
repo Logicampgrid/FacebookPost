@@ -1851,6 +1851,77 @@ async def get_user_platforms(user_id: str):
         log_app(f"❌ Erreur récupération plateformes: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+async def process_webhook_publication(webhook_data: dict) -> dict:
+    """Traite les données de publication reçues depuis n8n via webhook"""
+    try:
+        log_app("🔄 Traitement des données de publication webhook...", "INFO")
+        
+        # Vérifier si les données contiennent des informations de publication
+        if not isinstance(webhook_data, dict):
+            log_app("⚠️ Données webhook invalides (pas un dictionnaire)", "WARNING")
+            return None
+        
+        # Extraire les informations de publication depuis les données webhook
+        # Structure attendue depuis n8n : 
+        # {
+        #   "store": "gizmobbs|logicantiq|outdoor",
+        #   "message": "Texte du post",
+        #   "product_url": "URL du produit",
+        #   "image_url": "URL de l'image (optionnel)",
+        #   "platforms": ["facebook", "instagram"]
+        # }
+        
+        store = webhook_data.get("store")
+        message = webhook_data.get("message")
+        product_url = webhook_data.get("product_url")
+        image_url = webhook_data.get("image_url")
+        platforms = webhook_data.get("platforms", ["facebook"])
+        
+        # Validation des données requises
+        if not store or not message or not product_url:
+            log_app("⚠️ Données de publication incomplètes dans le webhook", "WARNING")
+            log_app(f"   Store: {store}, Message: {bool(message)}, Product URL: {bool(product_url)}", "INFO")
+            return None
+        
+        # Vérifier que le store existe
+        if store not in STORES:
+            log_app(f"❌ Store inconnu dans webhook: {store}", "ERROR")
+            return None
+        
+        log_app(f"📝 Publication webhook - Store: {store}, Plateformes: {platforms}", "INFO")
+        
+        # Effectuer la publication via la fonction existante
+        result = await publish_post_main(
+            store=store,
+            message=message,
+            product_url=product_url,
+            image_url=image_url,
+            platforms=platforms
+        )
+        
+        if result.get("success"):
+            log_app(f"✅ Publication webhook réussie pour {store}", "SUCCESS")
+            return {
+                "success": True,
+                "store": store,
+                "platforms": platforms,
+                "result": result
+            }
+        else:
+            log_app(f"❌ Échec publication webhook pour {store}: {result.get('errors', [])}", "ERROR")
+            return {
+                "success": False,
+                "store": store,
+                "error": result.get("errors", ["Erreur inconnue"])
+            }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur traitement publication webhook: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @app.post("/api/webhook")
 @app.get("/api/webhook")
 async def webhook_handler(request: Request):
