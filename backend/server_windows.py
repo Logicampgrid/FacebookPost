@@ -919,6 +919,29 @@ class TestPublishRequest(BaseModel):
                 raise ValueError(f'Platform must be one of: {valid_platforms}')
         return v
 
+class VideoPublishRequest(BaseModel):
+    store: str
+    message: str
+    product_url: str
+    platforms: List[str] = ["facebook", "instagram"]
+    
+    @field_validator('platforms')
+    @classmethod
+    def validate_platforms(cls, v):
+        valid_platforms = ["facebook", "instagram"]
+        for platform in v:
+            if platform not in valid_platforms:
+                raise ValueError(f'Platform must be one of: {valid_platforms}')
+        return v
+
+class VideoUploadResponse(BaseModel):
+    success: bool
+    video_url: Optional[str] = None
+    filename: Optional[str] = None
+    file_size: Optional[int] = None
+    validation: Optional[dict] = None
+    error: Optional[str] = None
+
 # === PUBLICATION FUNCTIONS ===
 def log_publish(message: str, level: str = "INFO"):
     """Logging spécialisé pour les publications"""
