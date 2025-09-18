@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://oauth-frontend-fix.preview.emergentagent.com"
+BACKEND_URL = "https://frontend-access-1.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""

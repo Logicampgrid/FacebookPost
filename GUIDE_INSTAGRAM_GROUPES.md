@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://oauth-frontend-fix.preview.emergentagent.com
+URL : https://frontend-access-1.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
