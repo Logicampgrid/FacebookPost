@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://dual-boutique.preview.emergentagent.com/api/webhook
+https://social-sync-tool.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

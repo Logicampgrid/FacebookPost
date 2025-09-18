@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://dual-boutique.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-sync-tool.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://dual-boutique.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://dual-boutique.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://dual-boutique.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-sync-tool.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-sync-tool.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-sync-tool.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
