@@ -737,8 +737,7 @@ class Post(PostBase):
     published_at: Optional[str] = None
     platform_post_id: Optional[str] = None
 
-# In-memory storage for posts (you might want to use a proper database)
-posts_storage = {}
+# MongoDB handles post storage now
 
 # === PUBLICATION FUNCTIONS ===
 def log_publish(message: str, level: str = "INFO"):
