@@ -100,6 +100,116 @@ def get_store_config(store: str) -> dict:
     
     return config
 
+# === CONFIGURATION FTP POUR UPLOAD VIDÉOS ===
+FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
+FTP_PORT = int(os.getenv("FTP_PORT", "21"))
+FTP_USER = os.getenv("FTP_USER", "logi")
+FTP_PASSWORD = os.getenv("FTP_PASSWORD", "")
+FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
+FTP_BASE_URL = os.getenv("FTP_BASE_URL", f"https://{FTP_HOST}/wordpress/uploads/")
+
+# === CONFIGURATION VIDÉO ===
+MAX_VIDEO_SIZE_FACEBOOK = 10 * 1024 * 1024 * 1024  # 10 GB
+MAX_VIDEO_SIZE_INSTAGRAM = 1 * 1024 * 1024 * 1024   # 1 GB
+MAX_VIDEO_DURATION_FACEBOOK = 15 * 60  # 15 minutes en secondes
+MAX_VIDEO_DURATION_INSTAGRAM = 60      # 60 secondes
+SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/quicktime"]  # MP4 et MOV
+UPLOAD_DIR = "uploads"
+
+# Créer le dossier uploads s'il n'existe pas
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def log_video(message: str, level: str = "INFO"):
+    """Logging spécialisé pour les vidéos"""
+    icons = {"INFO": "🎥", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "UPLOAD": "📤"}
+    icon = icons.get(level.upper(), "🎬")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{icon} [{timestamp}] [VIDEO] {message}")
+
+def validate_video_file(file_path: str, platform: str = "both") -> dict:
+    """Valide un fichier vidéo selon les contraintes de la plateforme"""
+    try:
+        log_video(f"Validation vidéo pour {platform}: {file_path}", "INFO")
+        
+        # Vérifier l'existence du fichier
+        if not os.path.exists(file_path):
+            return {"valid": False, "error": "Fichier introuvable"}
+        
+        # Vérifier la taille du fichier
+        file_size = os.path.getsize(file_path)
+        log_video(f"Taille fichier: {file_size / (1024*1024):.2f} MB", "INFO")
+        
+        # Vérifier le type MIME
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if mime_type not in SUPPORTED_VIDEO_FORMATS:
+            return {"valid": False, "error": f"Format non supporté: {mime_type}. Formats supportés: {SUPPORTED_VIDEO_FORMATS}"}
+        
+        # Contraintes selon la plateforme
+        if platform == "facebook":
+            if file_size > MAX_VIDEO_SIZE_FACEBOOK:
+                return {"valid": False, "error": f"Taille trop importante pour Facebook (max: {MAX_VIDEO_SIZE_FACEBOOK/(1024**3):.1f} GB)"}
+        elif platform == "instagram":
+            if file_size > MAX_VIDEO_SIZE_INSTAGRAM:
+                return {"valid": False, "error": f"Taille trop importante pour Instagram (max: {MAX_VIDEO_SIZE_INSTAGRAM/(1024**3):.1f} GB)"}
+        else:  # both
+            if file_size > MAX_VIDEO_SIZE_INSTAGRAM:  # Utiliser la limite la plus restrictive
+                return {"valid": False, "error": f"Taille trop importante (max: {MAX_VIDEO_SIZE_INSTAGRAM/(1024**3):.1f} GB pour compatibilité Instagram)"}
+        
+        log_video("Validation réussie", "SUCCESS")
+        return {
+            "valid": True, 
+            "file_size": file_size,
+            "mime_type": mime_type,
+            "size_mb": file_size / (1024*1024)
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur validation: {str(e)}", "ERROR")
+        return {"valid": False, "error": str(e)}
+
+async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
+    """Upload une vidéo vers le serveur FTP"""
+    try:
+        log_video(f"Début upload FTP: {video_path}", "UPLOAD")
+        
+        if not filename:
+            filename = f"video_{uuid.uuid4().hex[:8]}_{os.path.basename(video_path)}"
+        
+        # Validation avant upload
+        validation = validate_video_file(video_path)
+        if not validation["valid"]:
+            return False, None, validation["error"]
+        
+        # Connexion FTP
+        ftp = ftplib.FTP()
+        ftp.connect(FTP_HOST, FTP_PORT, timeout=60)  # Timeout plus long pour les vidéos
+        ftp.login(FTP_USER, FTP_PASSWORD)
+        
+        # Changement de répertoire
+        try:
+            ftp.cwd(FTP_DIRECTORY)
+        except ftplib.error_perm:
+            # Créer le répertoire s'il n'existe pas
+            ftp.mkd(FTP_DIRECTORY)
+            ftp.cwd(FTP_DIRECTORY)
+        
+        # Upload du fichier en mode binaire
+        with open(video_path, 'rb') as video_file:
+            log_video(f"Upload en cours: {filename}", "UPLOAD")
+            ftp.storbinary(f'STOR {filename}', video_file)
+        
+        ftp.quit()
+        
+        # Construire l'URL publique
+        public_url = f"{FTP_BASE_URL}{filename}"
+        log_video(f"Upload réussi: {public_url}", "SUCCESS")
+        
+        return True, public_url, None
+        
+    except Exception as e:
+        log_video(f"Erreur upload FTP: {str(e)}", "ERROR")
+        return False, None, str(e)
+
 def log_app(message: str, level: str = "INFO"):
     """Logging pour l'application"""
     icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "START": "🚀"}
