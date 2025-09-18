@@ -1554,11 +1554,31 @@ async def get_posts(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/posts")
-async def create_post(post_data: dict = None, request: Request = None):
-    """Create a new post"""
+async def create_post_endpoint(request: Request):
+    """Create a new post - Accept both JSON and FormData"""
     try:
-        if request:
+        post_data = {}
+        
+        # Determine content type and parse accordingly
+        content_type = request.headers.get("content-type", "")
+        
+        if "application/json" in content_type:
+            # JSON request
             post_data = await request.json()
+        elif "multipart/form-data" in content_type:
+            # FormData request
+            form = await request.form()
+            for key, value in form.items():
+                if key == 'cross_post_targets':
+                    # Parse JSON string for cross post targets
+                    try:
+                        post_data[key] = json.loads(value)
+                    except:
+                        post_data[key] = []
+                else:
+                    post_data[key] = value
+        else:
+            raise HTTPException(status_code=400, detail="Content-Type non supporté")
         
         if not post_data:
             raise HTTPException(status_code=400, detail="Données de post manquantes")
@@ -1573,22 +1593,29 @@ async def create_post(post_data: dict = None, request: Request = None):
             "content": post_data.get("content", ""),
             "platform": post_data.get("platform", "facebook"),
             "platform_id": post_data.get("platform_id", ""),
+            "target_type": post_data.get("target_type", ""),
+            "target_id": post_data.get("target_id", ""),
+            "target_name": post_data.get("target_name", ""),
+            "business_manager_id": post_data.get("business_manager_id"),
+            "business_manager_name": post_data.get("business_manager_name"),
             "scheduled_time": post_data.get("scheduled_time"),
             "media_urls": post_data.get("media_urls", []),
+            "cross_post_targets": post_data.get("cross_post_targets", []),
+            "comment_text": post_data.get("comment_text", ""),
+            "comment_link": post_data.get("comment_link", ""),
             "status": "draft",
-            "created_at": datetime.now().isoformat(),
             "published_at": None,
             "platform_post_id": None
         }
         
-        # Store post
-        posts_storage[post_id] = new_post
+        # Save to MongoDB
+        created_post = await create_post(new_post)
         
         log_app(f"✅ Post créé: {post_id}", "SUCCESS")
         
         return {
             "success": True,
-            "post": new_post
+            "post": created_post
         }
         
     except Exception as e:
