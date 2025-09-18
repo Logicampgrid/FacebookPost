@@ -1597,6 +1597,26 @@ async def create_video_post_endpoint(
         log_video(f"Erreur création post vidéo: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/posts/video/history")
+async def get_video_history_endpoint(user_id: str):
+    """Récupère l'historique des publications vidéo d'un utilisateur"""
+    try:
+        log_video(f"Chargement historique vidéo pour utilisateur: {user_id}", "INFO")
+        
+        # TODO: Récupérer depuis MongoDB
+        # Pour l'instant, retourner une liste d'exemple
+        videos = []
+        
+        return {
+            "success": True,
+            "videos": videos,
+            "count": len(videos)
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur chargement historique vidéo: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/auth/facebook/exchange-code")
 async def facebook_exchange_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook contre un access token et récupère les données utilisateur"""
