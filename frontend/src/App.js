@@ -765,6 +765,16 @@ function App() {
           <WebhookHistory />
         )}
 
+        {activeTab === 'video' && selectedBusinessManager && (
+          <VideoPostCreator 
+            user={user}
+            selectedPlatform={selectedPlatform}
+            selectedBusinessManager={selectedBusinessManager}
+            allPlatforms={allPlatforms}
+            onPostCreated={handlePostCreated}
+          />
+        )}
+
         {activeTab === 'tunnel' && (
           <InstagramTunnelSetup 
             user={user}
