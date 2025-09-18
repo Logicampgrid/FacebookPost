@@ -18,6 +18,13 @@ import webbrowser
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
+# Import database functions
+from database import (
+    connect_to_mongo, close_mongo_connection, 
+    create_post, get_posts_by_user, update_post, get_post_by_id, delete_post,
+    save_webhook_data, get_recent_webhooks
+)
+
 # Charger les variables d'environnement
 load_dotenv()
 
