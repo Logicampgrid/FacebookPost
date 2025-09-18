@@ -151,16 +151,66 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
     return { valid: true };
   };
 
+  const handleProcessVideo = async () => {
+    if (!selectedVideo || !needsProcessing) return;
+
+    try {
+      setProcessing(true);
+      setProcessingProgress(0);
+      setProcessingStep('Démarrage du traitement...');
+
+      const result = await processVideoForPlatforms(
+        selectedVideo, 
+        platforms,
+        ({ step, progress }) => {
+          setProcessingStep(step);
+          setProcessingProgress(progress);
+        }
+      );
+
+      if (result.success) {
+        setProcessedVideo(result.processedVideo);
+        setNeedsProcessing(false);
+        
+        // Generate new preview for processed video
+        const newVideoUrl = URL.createObjectURL(result.processedVideo);
+        setVideoPreview(newVideoUrl);
+        
+        // Update validation result
+        setValidationResult(prev => ({
+          ...prev,
+          valid: true,
+          processedSize: result.finalSize,
+          compressionRatio: result.compressionRatio,
+          processSteps: result.processSteps,
+          processed: true
+        }));
+        
+        setProcessingStep('Traitement terminé !');
+      } else {
+        throw new Error(result.error);
+      }
+
+    } catch (error) {
+      console.error('Video processing error:', error);
+      onError && onError(`Erreur traitement: ${error.message}`);
+    } finally {
+      setProcessing(false);
+      setProcessingProgress(0);
+    }
+  };
+
   const handleUpload = async () => {
-    if (!selectedVideo || !validationResult?.valid) return;
+    const videoToUpload = processedVideo || selectedVideo;
+    if (!videoToUpload) return;
 
     try {
       setUploading(true);
       setUploadProgress(0);
 
       const formData = new FormData();
-      formData.append('video', selectedVideo);
-      formData.append('filename', selectedVideo.name);
+      formData.append('video', videoToUpload);
+      formData.append('filename', videoToUpload.name || selectedVideo.name);
 
       const response = await axios.post(`${API_BASE}/api/videos/upload`, formData, {
         headers: {
