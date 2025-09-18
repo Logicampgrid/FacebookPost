@@ -83,8 +83,7 @@ TOKENS = {
     "outdoor": {}
 }
 
-# In-memory storage for posts (in production, use a proper database)
-posts_storage = {}
+# MongoDB will now handle storage
 
 def get_store_config(store: str) -> dict:
     """Récupère la configuration d'un store (tokens dynamiques prioritaires sur statiques)"""
