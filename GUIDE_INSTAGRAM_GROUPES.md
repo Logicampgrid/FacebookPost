@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-sync-tool.preview.emergentagent.com
+URL : https://meta-vid-uploader.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
