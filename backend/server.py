@@ -511,6 +511,11 @@ async def lifespan(app: FastAPI):
     log_app(f"🌐 Port backend: {BACKEND_PORT}", "INFO")
     log_app(f"🔧 Mode test: {PUBLICATION_TEST_MODE}", "INFO")
     
+    # Connect to MongoDB
+    mongo_connected = await connect_to_mongo()
+    if not mongo_connected:
+        log_app("⚠️ MongoDB non disponible - fonctionnement en mode limité", "WARNING")
+    
     # Synchroniser avec ngrok si disponible
     enable_setting = os.getenv("ENABLE_NGROK", "detect").lower()
     log_app(f"🔍 Configuration ngrok: {enable_setting}", "INFO")
