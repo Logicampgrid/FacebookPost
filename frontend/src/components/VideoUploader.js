@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Video, Play, Pause, Volume2, VolumeX, X, FileVideo, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import axios from 'axios';
 import { handleAxiosError } from '../utils/errorHandler';
+import { processVideoForPlatforms, generateVideoThumbnail } from '../utils/videoProcessing';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
