@@ -1623,13 +1623,13 @@ async def create_post_endpoint(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/posts/{post_id}")
-async def delete_post(post_id: str):
+async def delete_post_endpoint(post_id: str):
     """Delete a post"""
     try:
-        if post_id not in posts_storage:
-            raise HTTPException(status_code=404, detail="Post non trouvé")
+        success = await delete_post(post_id)
         
-        del posts_storage[post_id]
+        if not success:
+            raise HTTPException(status_code=404, detail="Post non trouvé")
         
         log_app(f"✅ Post supprimé: {post_id}", "SUCCESS")
         
