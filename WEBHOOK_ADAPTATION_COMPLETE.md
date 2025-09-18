@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://instagram-diag.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://offline-lifestyle.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://instagram-diag.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://instagram-diag.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://instagram-diag.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://offline-lifestyle.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://offline-lifestyle.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://offline-lifestyle.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
