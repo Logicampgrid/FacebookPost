@@ -2179,6 +2179,19 @@ async def webhook_handler(request: Request):
                         if publication_result:
                             log_app(f"🚀 Publication webhook réussie: {publication_result}", "SUCCESS")
                         
+                        # Sauvegarder le webhook dans MongoDB
+                        try:
+                            webhook_record = {
+                                "type": "publication",
+                                "data": webhook_data,
+                                "result": publication_result,
+                                "status": "processed" if publication_result else "failed"
+                            }
+                            await save_webhook_data(webhook_record)
+                            log_app("✅ Webhook sauvegardé dans MongoDB", "SUCCESS")
+                        except Exception as save_error:
+                            log_app(f"⚠️ Erreur sauvegarde webhook: {save_error}", "WARNING")
+                        
                     log_app("✅ Webhook data processed successfully", "SUCCESS")
                 else:
                     log_app("⚠️ No webhook data could be extracted", "WARNING")
