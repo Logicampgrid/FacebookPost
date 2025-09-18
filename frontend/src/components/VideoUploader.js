@@ -6,15 +6,20 @@ import { processVideoForPlatforms, generateVideoThumbnail } from '../utils/video
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-const VideoUploader = ({ onVideoUploaded, onError, disabled = false }) => {
+const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms = ['facebook', 'instagram'] }) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [processedVideo, setProcessedVideo] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [validationResult, setValidationResult] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [needsProcessing, setNeedsProcessing] = useState(false);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
 
