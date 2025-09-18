@@ -1542,11 +1542,7 @@ async def get_posts(user_id: str):
     try:
         log_app(f"Récupération des posts pour l'utilisateur: {user_id}", "INFO")
         
-        # Filter posts by user_id
-        user_posts = [post for post in posts_storage.values() if post.get("user_id") == user_id]
-        
-        # Sort by created_at descending
-        user_posts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        user_posts = await get_posts_by_user(user_id)
         
         return {
             "success": True,
