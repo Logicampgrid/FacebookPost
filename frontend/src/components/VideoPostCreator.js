@@ -356,6 +356,10 @@ const VideoPostCreator = ({ user, selectedPlatform, selectedBusinessManager, all
             onError={handleError}
           />
         )}
+
+        {activeTab === 'history' && (
+          <VideoHistoryWidget user={user} />
+        )}
       </div>
 
       {/* Video Post Configuration */}
