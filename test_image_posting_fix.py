@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://meta-vid-uploader.preview.emergentagent.com"
+BASE_URL = "https://blank-page-fix-9.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""

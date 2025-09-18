@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://meta-vid-uploader.preview.emergentagent.com
+🔗 https://blank-page-fix-9.preview.emergentagent.com
