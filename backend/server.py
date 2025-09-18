@@ -1215,6 +1215,73 @@ async def facebook_auth_endpoint(request: Request):
             "error": str(e)
         }
 
+@app.get("/api/auth/token-status/{user_id}")
+async def check_token_status(user_id: str):
+    """Vérifier le statut du token utilisateur"""
+    try:
+        token_record = await get_user_token(user_id)
+        
+        if not token_record:
+            return {
+                "success": False,
+                "has_token": False,
+                "message": "Aucun token trouvé pour cet utilisateur"
+            }
+        
+        is_expired = await is_token_expired(user_id)
+        expires_at = token_record.get("expires_at", 0)
+        current_time = datetime.now().timestamp()
+        remaining_seconds = max(0, expires_at - current_time)
+        
+        return {
+            "success": True,
+            "has_token": True,
+            "is_expired": is_expired,
+            "expires_at": expires_at,
+            "remaining_seconds": remaining_seconds,
+            "remaining_minutes": remaining_seconds / 60,
+            "token_created": token_record.get("created_at"),
+            "token_updated": token_record.get("updated_at")
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur vérification token: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/api/auth/refresh-token/{user_id}")
+async def refresh_user_token(user_id: str):
+    """Rafraîchir le token utilisateur"""
+    try:
+        refreshed_token = await refresh_facebook_token(user_id)
+        
+        if refreshed_token:
+            expires_at = refreshed_token.get("expires_at", 0)
+            current_time = datetime.now().timestamp()
+            remaining_seconds = max(0, expires_at - current_time)
+            
+            return {
+                "success": True,
+                "message": "Token rafraîchi avec succès",
+                "expires_at": expires_at,
+                "remaining_seconds": remaining_seconds,
+                "remaining_minutes": remaining_seconds / 60
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Impossible de rafraîchir le token"
+            }
+            
+    except Exception as e:
+        log_app(f"❌ Erreur rafraîchissement token: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @app.post("/api/sync/ngrok")
 async def sync_ngrok_url(request: Request):
     """Synchronise l'URL ngrok avec le backend"""
