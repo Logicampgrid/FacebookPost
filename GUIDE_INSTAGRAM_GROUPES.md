@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-post-fix-2.preview.emergentagent.com
+URL : https://social-post-fix-3.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
