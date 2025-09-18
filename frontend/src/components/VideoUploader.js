@@ -542,7 +542,7 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
             </div>
           )}
 
-          {/* Upload Button */}
+          {/* Action Buttons */}
           <div className="flex justify-between items-center">
             <button
               onClick={resetForm}
@@ -551,23 +551,38 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
               Choisir une autre vidéo
             </button>
             
-            <button
-              onClick={handleUpload}
-              disabled={!validationResult?.valid || uploading}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? (
-                <>
-                  <Clock className="w-4 h-4 animate-spin" />
-                  <span>Upload {uploadProgress}%</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  <span>Uploader la vidéo</span>
-                </>
+            <div className="flex items-center space-x-3">
+              {/* Process Button */}
+              {needsProcessing && !processing && !validationResult?.processed && (
+                <button
+                  onClick={handleProcessVideo}
+                  disabled={processing}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Optimiser automatiquement</span>
+                </button>
               )}
-            </button>
+              
+              {/* Upload Button */}
+              <button
+                onClick={handleUpload}
+                disabled={uploading || processing || (needsProcessing && !validationResult?.processed)}
+                className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploading ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-spin" />
+                    <span>Upload {uploadProgress}%</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Uploader la vidéo</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Progress Bar */}
