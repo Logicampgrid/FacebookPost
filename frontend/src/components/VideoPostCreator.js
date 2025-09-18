@@ -3,6 +3,7 @@ import { Send, Video, Calendar, Users, Instagram, MessageSquare, Plus, X, Target
 import axios from 'axios';
 import VideoUploader from './VideoUploader';
 import VideoLibrary from './VideoLibrary';
+import VideoHistoryWidget from './VideoHistoryWidget';
 import { handleAxiosError } from '../utils/errorHandler';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
