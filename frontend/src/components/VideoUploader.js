@@ -247,10 +247,15 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
 
   const resetForm = () => {
     setSelectedVideo(null);
+    setProcessedVideo(null);
     setVideoPreview(null);
     setValidationResult(null);
     setIsPlaying(false);
     setUploadProgress(0);
+    setProcessing(false);
+    setProcessingStep('');
+    setProcessingProgress(0);
+    setNeedsProcessing(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
