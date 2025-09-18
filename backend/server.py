@@ -91,6 +91,25 @@ TOKENS = {
 
 # MongoDB will now handle storage
 
+# === CONFIGURATION FTP POUR UPLOAD VIDÉOS ===
+FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
+FTP_PORT = int(os.getenv("FTP_PORT", "21"))
+FTP_USER = os.getenv("FTP_USER", "logi")
+FTP_PASSWORD = os.getenv("FTP_PASSWORD", "")
+FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
+FTP_BASE_URL = os.getenv("FTP_BASE_URL", f"https://{FTP_HOST}/wordpress/uploads/")
+
+# === CONFIGURATION VIDÉO ===
+MAX_VIDEO_SIZE_FACEBOOK = 10 * 1024 * 1024 * 1024  # 10 GB
+MAX_VIDEO_SIZE_INSTAGRAM = 1 * 1024 * 1024 * 1024   # 1 GB
+MAX_VIDEO_DURATION_FACEBOOK = 15 * 60  # 15 minutes en secondes
+MAX_VIDEO_DURATION_INSTAGRAM = 60      # 60 secondes
+SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/quicktime"]  # MP4 et MOV
+UPLOAD_DIR = "uploads"
+
+# Créer le dossier uploads s'il n'existe pas
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 def get_store_config(store: str) -> dict:
     """Récupère la configuration d'un store (tokens dynamiques prioritaires sur statiques)"""
     if store not in STORES:
