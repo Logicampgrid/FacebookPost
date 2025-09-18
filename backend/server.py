@@ -2703,6 +2703,118 @@ async def serve_frontend(request: Request):
             "frontend_build": "non disponible"
         }
 
+# === ENDPOINTS VIDÉO ===
+@app.post("/api/videos/upload", response_model=VideoUploadResponse)
+async def upload_video_endpoint(video: UploadFile = File(...)):
+    """Upload une vidéo et retourne l'URL publique"""
+    try:
+        log_video(f"Upload vidéo reçu: {video.filename} ({video.content_type})", "INFO")
+        
+        # Vérifier le type MIME
+        if video.content_type not in SUPPORTED_VIDEO_FORMATS:
+            return VideoUploadResponse(
+                success=False,
+                error=f"Format non supporté: {video.content_type}. Formats supportés: {SUPPORTED_VIDEO_FORMATS}"
+            )
+        
+        # Créer un nom de fichier unique
+        file_extension = ".mp4" if video.content_type == "video/mp4" else ".mov"
+        unique_filename = f"video_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+        temp_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        # Sauvegarder le fichier temporairement
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(video.file, buffer)
+        
+        # Valider le fichier
+        validation = validate_video_file(temp_path)
+        if not validation["valid"]:
+            os.remove(temp_path)  # Nettoyer le fichier temporaire
+            return VideoUploadResponse(
+                success=False,
+                error=validation["error"],
+                validation=validation
+            )
+        
+        # Upload vers FTP
+        success, public_url, error = await upload_video_to_ftp(temp_path, unique_filename)
+        
+        # Nettoyer le fichier temporaire
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+        
+        if success:
+            return VideoUploadResponse(
+                success=True,
+                video_url=public_url,
+                filename=unique_filename,
+                file_size=validation["file_size"],
+                validation=validation
+            )
+        else:
+            return VideoUploadResponse(
+                success=False,
+                error=error,
+                validation=validation
+            )
+            
+    except Exception as e:
+        log_video(f"Erreur upload vidéo: {str(e)}", "ERROR")
+        return VideoUploadResponse(
+            success=False,
+            error=str(e)
+        )
+
+@app.post("/api/videos/publish")
+async def publish_video_endpoint(request: VideoPublishRequest):
+    """Publie une vidéo sur les plateformes sélectionnées"""
+    try:
+        log_video(f"Demande publication vidéo: {request.store} sur {request.platforms}", "INFO")
+        
+        # Pour cette version, on assume que la vidéo est déjà uploadée
+        # Dans une implémentation complète, on pourrait accepter l'URL de la vidéo
+        # ou l'ID d'upload précédent
+        
+        # Pour le moment, utiliser une URL de test ou demander l'URL en paramètre
+        # TODO: Améliorer pour prendre l'URL depuis une base de données d'uploads
+        
+        return {
+            "success": False,
+            "error": "Fonctionnalité en développement - utilisez l'endpoint d'upload puis l'endpoint de publication séparés"
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur publication vidéo: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/api/videos/publish-url")
+async def publish_video_by_url_endpoint(
+    store: str = Form(...),
+    message: str = Form(...),
+    product_url: str = Form(...),
+    video_url: str = Form(...),
+    platforms: str = Form(default="facebook,instagram")
+):
+    """Publie une vidéo déjà uploadée par son URL"""
+    try:
+        platforms_list = [p.strip() for p in platforms.split(",")]
+        log_video(f"Publication vidéo par URL: {store} sur {platforms_list}", "INFO")
+        
+        result = await publish_video_main(store, message, product_url, video_url, platforms_list)
+        return result
+        
+    except Exception as e:
+        log_video(f"Erreur publication vidéo par URL: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # Catch-all route pour le frontend (doit être à la fin)
 @app.get("/{path:path}")
 async def catch_all_frontend(path: str, request: Request):
