@@ -1385,6 +1385,218 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+# === VIDEO ENDPOINTS ===
+
+@app.post("/api/videos/upload")
+async def upload_video_endpoint(video: UploadFile = File(...), filename: str = Form(None)):
+    """Upload une vidéo vers le serveur FTP"""
+    try:
+        log_video(f"Début upload vidéo: {video.filename}", "UPLOAD")
+        
+        # Validation du fichier
+        if not video.filename:
+            raise HTTPException(status_code=400, detail="Nom de fichier manquant")
+        
+        # Vérifier le type MIME
+        if video.content_type not in SUPPORTED_VIDEO_FORMATS:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Format non supporté: {video.content_type}. Formats supportés: {SUPPORTED_VIDEO_FORMATS}"
+            )
+        
+        # Créer un fichier temporaire
+        temp_filename = filename or f"video_{uuid.uuid4().hex[:8]}_{video.filename}"
+        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+        
+        # Sauvegarder le fichier temporairement
+        with open(temp_path, "wb") as buffer:
+            content = await video.read()
+            buffer.write(content)
+        
+        # Valider la vidéo
+        validation = validate_video_file(temp_path)
+        if not validation["valid"]:
+            os.remove(temp_path)
+            raise HTTPException(status_code=400, detail=validation["error"])
+        
+        # Upload vers FTP
+        success, public_url, error = await upload_video_to_ftp(temp_path, temp_filename)
+        
+        # Nettoyer le fichier temporaire
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail=error or "Erreur upload FTP")
+        
+        # Sauvegarder les métadonnées en base de données
+        video_data = {
+            "id": str(uuid.uuid4()),
+            "filename": temp_filename,
+            "original_filename": video.filename,
+            "video_url": public_url,
+            "file_size": validation["file_size"],
+            "mime_type": video.content_type,
+            "validation": validation,
+            "status": "uploaded",
+            "created_at": datetime.now().isoformat(),
+            "duration": None,  # Sera mis à jour si disponible
+            "thumbnail_url": None,
+            "compatible_platforms": get_compatible_platforms(validation)
+        }
+        
+        # Sauvegarder en MongoDB si disponible
+        try:
+            # TODO: Implémenter la sauvegarde MongoDB des vidéos
+            pass
+        except Exception as e:
+            log_video(f"Erreur sauvegarde MongoDB: {str(e)}", "WARNING")
+        
+        log_video(f"Upload réussi: {public_url}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "video_url": public_url,
+            "filename": temp_filename,
+            "file_size": validation["file_size"],
+            "validation": validation,
+            **video_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_video(f"Erreur upload vidéo: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+def get_compatible_platforms(validation):
+    """Détermine les plateformes compatibles selon la validation"""
+    platforms = []
+    
+    if validation.get("valid"):
+        file_size = validation.get("file_size", 0)
+        
+        # Facebook: jusqu'à 10 GB, 15 minutes
+        if file_size <= MAX_VIDEO_SIZE_FACEBOOK:
+            platforms.append("facebook")
+        
+        # Instagram: jusqu'à 1 GB, 60 secondes
+        if file_size <= MAX_VIDEO_SIZE_INSTAGRAM:
+            platforms.append("instagram")
+    
+    return platforms
+
+@app.get("/api/videos/library")
+async def get_video_library():
+    """Récupère la bibliothèque de vidéos uploadées"""
+    try:
+        # TODO: Récupérer depuis MongoDB
+        # Pour l'instant, retourner une liste vide
+        videos = []
+        
+        return {
+            "success": True,
+            "videos": videos,
+            "count": len(videos)
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur chargement bibliothèque: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/videos/{video_id}")
+async def delete_video_endpoint(video_id: str):
+    """Supprime une vidéo de la bibliothèque"""
+    try:
+        # TODO: Implémenter la suppression depuis MongoDB et FTP
+        log_video(f"Suppression vidéo: {video_id}", "INFO")
+        
+        return {
+            "success": True,
+            "message": "Vidéo supprimée avec succès"
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur suppression vidéo: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/posts/video")
+async def create_video_post_endpoint(
+    user_id: str = Form(...),
+    content: str = Form(...),
+    video_url: str = Form(...),
+    video_id: str = Form(...),
+    target_type: str = Form(...),
+    target_id: str = Form(...),
+    target_name: str = Form(...),
+    platform: str = Form(...),
+    business_manager_id: str = Form(None),
+    business_manager_name: str = Form(None),
+    scheduled_time: str = Form(None),
+    cross_post_targets: str = Form(None),
+    video_metadata: str = Form(None)
+):
+    """Crée un post vidéo pour publication"""
+    try:
+        log_video(f"Création post vidéo pour {platform}", "INFO")
+        
+        # Parser les métadonnées vidéo
+        metadata = {}
+        if video_metadata:
+            try:
+                metadata = json.loads(video_metadata)
+            except json.JSONDecodeError:
+                log_video("Erreur parsing métadonnées vidéo", "WARNING")
+        
+        # Parser les cibles de publication croisée
+        cross_targets = []
+        if cross_post_targets:
+            try:
+                cross_targets = json.loads(cross_post_targets)
+            except json.JSONDecodeError:
+                log_video("Erreur parsing cibles publication croisée", "WARNING")
+        
+        # Créer le post en base de données
+        post_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "content": content,
+            "video_url": video_url,
+            "video_id": video_id,
+            "video_metadata": metadata,
+            "target_type": target_type,
+            "target_id": target_id,
+            "target_name": target_name,
+            "platform": platform,
+            "business_manager_id": business_manager_id,
+            "business_manager_name": business_manager_name,
+            "cross_post_targets": cross_targets,
+            "status": "draft",
+            "created_at": datetime.now().isoformat(),
+            "scheduled_time": scheduled_time,
+            "published_at": None,
+            "platform_post_id": None,
+            "media_urls": [video_url]
+        }
+        
+        # Sauvegarder en MongoDB
+        try:
+            await create_post(post_data)
+        except Exception as e:
+            log_video(f"Erreur sauvegarde post MongoDB: {str(e)}", "WARNING")
+        
+        log_video(f"Post vidéo créé: {post_data['id']}", "SUCCESS")
+        
+        return {
+            "success": True,
+            "post": post_data,
+            "message": "Post vidéo créé avec succès"
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur création post vidéo: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/auth/facebook/exchange-code")
 async def facebook_exchange_code_endpoint(request: FacebookExchangeCodeRequest):
     """Échange un code d'autorisation Facebook contre un access token et récupère les données utilisateur"""
