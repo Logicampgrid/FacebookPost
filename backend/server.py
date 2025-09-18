@@ -1144,6 +1144,18 @@ async def facebook_auth_endpoint(request: Request):
             
             log_app(f"✅ Récupéré: {len(facebook_pages)} pages, {len(instagram_accounts)} comptes Instagram", "SUCCESS")
             
+            # NOUVEAU: Sauvegarder le token utilisateur avec gestion d'expiration
+            try:
+                token_data = {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "expires_in": 5400  # 90 minutes par défaut
+                }
+                await save_user_token(user_data["id"], token_data)
+                log_app(f"✅ Token sauvegardé pour l'utilisateur {user_data.get('name')}", "SUCCESS")
+            except Exception as e:
+                log_app(f"⚠️ Erreur sauvegarde token: {e}", "WARNING")
+            
             return {
                 "success": True,
                 "user": {
