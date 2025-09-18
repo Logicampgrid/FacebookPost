@@ -1057,6 +1057,232 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         log_publish(error_msg, "ERROR")
         raise Exception(error_msg)
 
+async def post_video_to_facebook(store: str, message: str, product_url: str, video_url: str) -> dict:
+    """Publie une vidéo sur la page Facebook correspondante"""
+    try:
+        log_video(f"Publication vidéo Facebook pour {store}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        creds = get_store_config(store)
+        
+        if not creds["fb_page_id"] or not creds["access_token"]:
+            raise ValueError(f"Configuration Facebook manquante pour {store}")
+        
+        # Mode test : simulation
+        if PUBLICATION_TEST_MODE:
+            log_video(f"MODE TEST - Publication vidéo Facebook simulée pour {store}", "TEST")
+            return {
+                "id": f"test_fb_video_{uuid.uuid4().hex[:8]}",
+                "message": message,
+                "source": video_url,
+                "test_mode": True
+            }
+        
+        # Publication réelle
+        url = f"{FACEBOOK_GRAPH_URL}/{creds['fb_page_id']}/videos"
+        payload = {
+            "description": message,
+            "source": video_url,
+            "access_token": creds["access_token"]
+        }
+        
+        log_video(f"Requête Facebook Videos: POST {url}", "INFO")
+        response = requests.post(url, data=payload, timeout=120)  # Timeout plus long pour les vidéos
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if "id" not in data:
+            raise Exception(f"Réponse Facebook invalide: {data}")
+        
+        log_video(f"Publication vidéo Facebook réussie: {data['id']}", "SUCCESS")
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP Facebook Videos: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_video(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur Facebook Videos: {str(e)}"
+        log_video(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+async def post_video_to_instagram(store: str, message: str, product_url: str, video_url: str) -> dict:
+    """Publie une vidéo (Reel) sur Instagram (processus en 2 étapes)"""
+    try:
+        log_video(f"Publication vidéo Instagram pour {store}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        creds = get_store_config(store)
+        
+        if not creds["ig_user_id"] or not creds["access_token"]:
+            raise ValueError(f"Configuration Instagram manquante pour {store}")
+        
+        if not video_url:
+            raise ValueError("URL vidéo requise pour Instagram")
+        
+        # Mode test : simulation
+        if PUBLICATION_TEST_MODE:
+            log_video(f"MODE TEST - Publication vidéo Instagram simulée pour {store}", "TEST")
+            return {
+                "id": f"test_ig_video_{uuid.uuid4().hex[:8]}",
+                "caption": f"{message}\\n\\n{product_url}",
+                "video_url": video_url,
+                "test_mode": True
+            }
+        
+        ig_user_id = creds["ig_user_id"]
+        access_token = creds["access_token"]
+        
+        # Étape 1 : Créer le conteneur média vidéo (Reel)
+        log_video("Étape 1/2 - Création conteneur vidéo Instagram", "INFO")
+        create_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
+        
+        create_payload = {
+            "video_url": video_url,
+            "caption": f"{message}\\n\\n{product_url}",
+            "media_type": "REELS",  # Utiliser REELS pour les vidéos courtes
+            "access_token": access_token
+        }
+        
+        create_response = requests.post(create_url, data=create_payload, timeout=120)
+        create_response.raise_for_status()
+        
+        media_data = create_response.json()
+        
+        if "id" not in media_data:
+            raise Exception(f"Erreur création conteneur vidéo Instagram: {media_data}")
+        
+        creation_id = media_data["id"]
+        log_video(f"Conteneur vidéo créé: {creation_id}", "SUCCESS")
+        
+        # Attendre que la vidéo soit traitée (Instagram nécessite plus de temps pour les vidéos)
+        log_video("Attente traitement vidéo Instagram...", "INFO")
+        await asyncio.sleep(10)  # Attendre 10 secondes
+        
+        # Étape 2 : Publier le média
+        log_video("Étape 2/2 - Publication du média vidéo Instagram", "INFO")
+        publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
+        
+        publish_payload = {
+            "creation_id": creation_id,
+            "access_token": access_token
+        }
+        
+        publish_response = requests.post(publish_url, data=publish_payload, timeout=60)
+        publish_response.raise_for_status()
+        
+        publish_data = publish_response.json()
+        
+        if "id" not in publish_data:
+            raise Exception(f"Erreur publication vidéo Instagram: {publish_data}")
+        
+        log_video(f"Publication vidéo Instagram réussie: {publish_data['id']}", "SUCCESS")
+        
+        # Retourner les données combinées
+        return {
+            "id": publish_data["id"],
+            "creation_id": creation_id,
+            "caption": f"{message}\\n\\n{product_url}",
+            "video_url": video_url
+        }
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP Instagram Videos: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_video(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur Instagram Videos: {str(e)}"
+        log_video(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+async def publish_video_main(store: str, message: str, product_url: str, video_url: str, platforms: List[str] = ["facebook", "instagram"]) -> dict:
+    """Fonction principale pour publier une vidéo sur Facebook et/ou Instagram"""
+    try:
+        log_video(f"Début publication vidéo multi-plateforme pour {store} sur {platforms}", "INFO")
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        results = {
+            "success": False,
+            "store": store,
+            "platforms": platforms,
+            "facebook_result": None,
+            "instagram_result": None,
+            "errors": [],
+            "test_mode": PUBLICATION_TEST_MODE,
+            "video_url": video_url
+        }
+        
+        # Publication Facebook
+        if "facebook" in platforms:
+            try:
+                fb_result = await post_video_to_facebook(store, message, product_url, video_url)
+                results["facebook_result"] = fb_result
+                log_video("Publication vidéo Facebook terminée", "SUCCESS")
+            except Exception as e:
+                error_msg = f"Échec Facebook vidéo: {str(e)}"
+                results["errors"].append(error_msg)
+                log_video(error_msg, "ERROR")
+        
+        # Publication Instagram
+        if "instagram" in platforms:
+            try:
+                ig_result = await post_video_to_instagram(store, message, product_url, video_url)
+                results["instagram_result"] = ig_result
+                log_video("Publication vidéo Instagram terminée", "SUCCESS")
+            except Exception as e:
+                error_msg = f"Échec Instagram vidéo: {str(e)}"
+                results["errors"].append(error_msg)
+                log_video(error_msg, "ERROR")
+        
+        # Déterminer le succès global
+        success_count = 0
+        if "facebook" in platforms and results["facebook_result"]:
+            success_count += 1
+        if "instagram" in platforms and results["instagram_result"]:
+            success_count += 1
+        
+        results["success"] = success_count > 0 and len(results["errors"]) == 0
+        
+        if results["success"]:
+            log_video(f"Publication vidéo multi-plateforme réussie pour {store}", "SUCCESS")
+        else:
+            log_video(f"Publication vidéo partiellement échouée pour {store}: {results['errors']}", "WARNING")
+        
+        return results
+        
+    except Exception as e:
+        error_msg = f"Erreur générale publication vidéo: {str(e)}"
+        log_video(error_msg, "ERROR")
+        return {
+            "success": False,
+            "store": store,
+            "platforms": platforms,
+            "facebook_result": None,
+            "instagram_result": None,
+            "errors": [error_msg],
+            "test_mode": PUBLICATION_TEST_MODE,
+            "video_url": video_url
+        }
+
 async def publish_post_main(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
     """Fonction principale pour publier sur Facebook et/ou Instagram"""
     try:
