@@ -783,6 +783,29 @@ class TestPublishRequest(BaseModel):
                 raise ValueError(f'Platform must be one of: {valid_platforms}')
         return v
 
+class VideoPublishRequest(BaseModel):
+    store: str
+    message: str
+    product_url: str
+    platforms: List[str] = ["facebook", "instagram"]
+    
+    @field_validator('platforms')
+    @classmethod
+    def validate_platforms(cls, v):
+        valid_platforms = ["facebook", "instagram"]
+        for platform in v:
+            if platform not in valid_platforms:
+                raise ValueError(f'Platform must be one of: {valid_platforms}')
+        return v
+
+class VideoUploadResponse(BaseModel):
+    success: bool
+    video_url: Optional[str] = None
+    filename: Optional[str] = None
+    file_size: Optional[int] = None
+    validation: Optional[dict] = None
+    error: Optional[str] = None
+
 # === AUTHENTICATION FUNCTIONS ===
 async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
     """Échange un code d'autorisation Facebook contre un access token - VERSION CORRIGÉE REDIRECT URI"""
