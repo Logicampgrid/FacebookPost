@@ -423,14 +423,22 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
           {/* Validation Status */}
           {validationResult && (
             <div className={`p-4 rounded-lg border ${
-              validationResult.valid
-                ? validationResult.warning
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
+              validationResult.processed
+                ? 'bg-green-50 border-green-200'
+                : validationResult.needsProcessing
+                  ? 'bg-blue-50 border-blue-200'
+                  : validationResult.valid
+                    ? validationResult.warning
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
             }`}>
               <div className="flex items-start space-x-2">
-                {validationResult.valid ? (
+                {validationResult.processed ? (
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                ) : validationResult.needsProcessing ? (
+                  <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                ) : validationResult.valid ? (
                   validationResult.warning ? (
                     <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
                   ) : (
@@ -442,47 +450,93 @@ const VideoUploader = ({ onVideoUploaded, onError, disabled = false, platforms =
                 
                 <div className="flex-1">
                   <p className={`font-medium ${
-                    validationResult.valid
-                      ? validationResult.warning
-                        ? 'text-yellow-800'
-                        : 'text-green-800'
-                      : 'text-red-800'
+                    validationResult.processed
+                      ? 'text-green-800'
+                      : validationResult.needsProcessing
+                        ? 'text-blue-800'
+                        : validationResult.valid
+                          ? validationResult.warning
+                            ? 'text-yellow-800'
+                            : 'text-green-800'
+                          : 'text-red-800'
                   }`}>
-                    {validationResult.valid
-                      ? validationResult.warning
-                        ? 'Avertissement'
-                        : 'Vidéo compatible'
-                      : 'Vidéo non compatible'
+                    {validationResult.processed
+                      ? 'Vidéo traitée et optimisée'
+                      : validationResult.needsProcessing
+                        ? 'Traitement automatique disponible'
+                        : validationResult.valid
+                          ? validationResult.warning
+                            ? 'Avertissement'
+                            : 'Vidéo compatible'
+                          : 'Vidéo non compatible'
                     }
                   </p>
                   
                   <p className={`text-sm mt-1 ${
-                    validationResult.valid
-                      ? validationResult.warning
-                        ? 'text-yellow-700'
-                        : 'text-green-700'
-                      : 'text-red-700'
+                    validationResult.processed
+                      ? 'text-green-700'
+                      : validationResult.needsProcessing
+                        ? 'text-blue-700'
+                        : validationResult.valid
+                          ? validationResult.warning
+                            ? 'text-yellow-700'
+                            : 'text-green-700'
+                          : 'text-red-700'
                   }`}>
-                    {validationResult.error || validationResult.warning || 'Votre vidéo respecte toutes les contraintes Meta'}
+                    {validationResult.processed
+                      ? `Taille réduite: ${formatFileSize(validationResult.processedSize)} (${Math.round((1 - validationResult.compressionRatio) * 100)}% d'économie)`
+                      : validationResult.needsProcessing
+                        ? 'Nous pouvons optimiser automatiquement votre vidéo pour les plateformes Meta'
+                        : validationResult.error || validationResult.warning || 'Votre vidéo respecte toutes les contraintes Meta'
+                    }
                   </p>
                   
-                  {/* Suggestions for improvements */}
-                  {(validationResult.needsConversion || validationResult.needsCompression || validationResult.needsTrimming) && (
-                    <div className="mt-2 text-xs text-gray-600">
-                      <p className="font-medium">Solutions automatiques disponibles :</p>
+                  {/* Processing steps or suggestions */}
+                  {validationResult.needsProcessing && validationResult.processingSteps && (
+                    <div className="mt-2 text-xs text-blue-600">
+                      <p className="font-medium">Optimisations automatiques :</p>
                       <ul className="mt-1 space-y-1">
-                        {validationResult.needsConversion && (
-                          <li>• Conversion automatique vers MP4</li>
-                        )}
-                        {validationResult.needsCompression && (
-                          <li>• Compression pour respecter la limite de taille</li>
-                        )}
-                        {validationResult.needsTrimming && (
-                          <li>• Découpage automatique pour Instagram (60s)</li>
-                        )}
+                        {validationResult.processingSteps.map((step, index) => (
+                          <li key={index}>• {step}</li>
+                        ))}
                       </ul>
                     </div>
                   )}
+
+                  {/* Show processed steps */}
+                  {validationResult.processed && validationResult.processSteps && (
+                    <div className="mt-2 text-xs text-green-600">
+                      <p className="font-medium">Traitements appliqués :</p>
+                      <ul className="mt-1 space-y-1">
+                        {validationResult.processSteps.map((step, index) => (
+                          <li key={index}>• {step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Processing Progress */}
+          {processing && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center space-x-3 mb-3">
+                <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+                <span className="font-medium text-blue-800">Traitement en cours...</span>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-blue-700">
+                  <span>{processingStep}</span>
+                  <span>{Math.round(processingProgress)}%</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${processingProgress}%` }}
+                  />
                 </div>
               </div>
             </div>
