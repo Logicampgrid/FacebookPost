@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Video, Play, Pause, Volume2, VolumeX, X, FileVideo, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Upload, Video, Play, Pause, Volume2, VolumeX, X, FileVideo, AlertTriangle, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import { handleAxiosError } from '../utils/errorHandler';
 import { processVideoForPlatforms, generateVideoThumbnail } from '../utils/videoProcessing';
