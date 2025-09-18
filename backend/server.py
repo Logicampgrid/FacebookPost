@@ -559,6 +559,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     log_app("🛑 Arrêt de l'application...", "INFO")
+    await close_mongo_connection()
     log_app("✅ Application arrêtée proprement!", "SUCCESS")
 
 # === FASTAPI APP INITIALIZATION ===
