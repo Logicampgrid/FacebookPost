@@ -1633,6 +1633,153 @@ async def publish_post(post_id: str):
         log_app(f"❌ Erreur publication post: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/publish")
+async def publish_post_endpoint(request: PublishRequest):
+    """Publier un post sur les plateformes sélectionnées"""
+    try:
+        log_app(f"Demande de publication pour {request.store} sur {request.platforms}", "INFO")
+        
+        if request.store not in STORES:
+            raise HTTPException(status_code=400, detail=f"Store '{request.store}' inconnu")
+        
+        store_config = get_store_config(request.store)
+        
+        # Vérifier la configuration du store
+        missing_config = []
+        if "facebook" in request.platforms:
+            if not store_config.get("fb_page_id"):
+                missing_config.append("fb_page_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+        
+        if "instagram" in request.platforms:
+            if not store_config.get("ig_user_id"):
+                missing_config.append("ig_user_id")
+            if not store_config.get("access_token"):
+                missing_config.append("access_token")
+            if not request.image_url:
+                missing_config.append("image_url (required for Instagram)")
+        
+        if missing_config:
+            return {
+                "success": False,
+                "error": f"Configuration manquante pour {request.store}: {', '.join(missing_config)}",
+                "store_config": {
+                    "fb_page_id": bool(store_config.get("fb_page_id")),
+                    "access_token": bool(store_config.get("access_token")),
+                    "ig_user_id": bool(store_config.get("ig_user_id"))
+                },
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        # Effectuer la publication
+        result = await publish_post_main(
+            request.store,
+            request.message,
+            request.product_url,
+            request.image_url,
+            request.platforms
+        )
+        
+        # Ajouter des informations de debug
+        result.update({
+            "store_config": {
+                "fb_page_id": store_config.get("fb_page_id", "")[:10] + "..." if store_config.get("fb_page_id") else None,
+                "access_token": "PRÉSENT" if store_config.get("access_token") else None,
+                "ig_user_id": store_config.get("ig_user_id", "")[:10] + "..." if store_config.get("ig_user_id") else None
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        log_app(f"Publication terminée pour {request.store}: {'✅ Succès' if result['success'] else '❌ Échec'}", "SUCCESS" if result["success"] else "ERROR")
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"Erreur endpoint publication: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return {
+            "success": False,
+            "error": error_msg,
+            "store": request.store,
+            "platforms": request.platforms,
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/api/test-publish")
+async def test_publish_endpoint(request: TestPublishRequest):
+    """Test publication sur une ou plusieurs boutiques"""
+    try:
+        log_app("🧪 Test de publication demandé", "INFO")
+        
+        # Déterminer les stores à tester
+        stores_to_test = request.stores if request.stores else list(STORES.keys())
+        
+        # Message de test
+        test_message = request.custom_message or os.getenv("TEST_MESSAGE", "Test automatique 🚀")
+        test_url = "https://example.com/product-test"
+        test_image = "https://via.placeholder.com/600x600/0096d6/ffffff?text=Test+Image"
+        
+        results = {
+            "success": False,
+            "test_mode": PUBLICATION_TEST_MODE,
+            "stores_tested": stores_to_test,
+            "platforms_tested": request.platforms,
+            "results": {},
+            "summary": {"total_stores": 0, "successful_stores": 0, "failed_stores": 0},
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        for store in stores_to_test:
+            if store not in STORES:
+                results["results"][store] = {
+                    "success": False,
+                    "error": f"Store '{store}' inconnu"
+                }
+                continue
+            
+            try:
+                # Tester la publication pour ce store
+                store_result = await publish_post_main(
+                    store,
+                    test_message,
+                    test_url,
+                    test_image if "instagram" in request.platforms else None,
+                    request.platforms
+                )
+                
+                results["results"][store] = store_result
+                results["summary"]["total_stores"] += 1
+                
+                if store_result["success"]:
+                    results["summary"]["successful_stores"] += 1
+                else:
+                    results["summary"]["failed_stores"] += 1
+                    
+            except Exception as e:
+                results["results"][store] = {
+                    "success": False,
+                    "error": f"Erreur test {store}: {str(e)}"
+                }
+                results["summary"]["total_stores"] += 1
+                results["summary"]["failed_stores"] += 1
+        
+        # Déterminer le succès global
+        results["success"] = results["summary"]["successful_stores"] > 0
+        
+        log_app(f"🧪 Test terminé: {results['summary']['successful_stores']}/{results['summary']['total_stores']} stores réussis", "SUCCESS" if results["success"] else "WARNING")
+        
+        return results
+        
+    except Exception as e:
+        error_msg = f"Erreur test publication: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.now().isoformat()
+        }
+
 @app.get("/api/users/{user_id}/platforms")
 async def get_user_platforms(user_id: str):
     """Get platforms for a specific user"""
