@@ -10,7 +10,7 @@ import uuid
 import io
 import os
 
-BASE_URL = "https://bbs-video-post.preview.emergentagent.com"
+BASE_URL = "https://tunnel-gram.preview.emergentagent.com"
 
 def test_image_posting_fix():
     """Test the image posting fix specifically"""
