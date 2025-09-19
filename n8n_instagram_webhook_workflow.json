@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://blank-page-fix-9.preview.emergentagent.com/api/webhook",
+        "url": "https://social-autoposter-7.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",

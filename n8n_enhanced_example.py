@@ -199,7 +199,7 @@ return items.map(item => {
 });""")
     
     print("\n2. Configurez le nœud HTTP Request :")
-    print("   • URL: https://blank-page-fix-9.preview.emergentagent.com/api/webhook/enhanced")
+    print("   • URL: https://social-autoposter-7.preview.emergentagent.com/api/webhook/enhanced")
     print("   • Method: POST")
     print("   • Body Type: Multipart-Form Data")
     print("   • Fields:")
