@@ -31,6 +31,9 @@ from database import (
     save_user_token, get_user_token, is_token_expired, refresh_facebook_token
 )
 
+# Import de la nouvelle fonction poster_media_enhanced
+from poster_media_enhanced import poster_media_enhanced, STORES_CONFIG
+
 # Charger les variables d'environnement
 load_dotenv()
 
