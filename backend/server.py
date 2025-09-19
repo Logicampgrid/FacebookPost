@@ -1431,6 +1431,61 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+@app.get("/api/pages")
+async def get_pages_info():
+    """Get pages information and shop mapping for testing"""
+    try:
+        log_app("📄 Endpoint /api/pages appelé", "INFO")
+        
+        # Récupérer les informations utilisateur basiques
+        user_name = "Instagram Tunnel User"
+        
+        # Pages personnelles (simulation - pas d'API disponible pour les pages personnelles)
+        personal_pages = []
+        
+        # Pages Business Manager (simulation basée sur la configuration actuelle)
+        business_manager_pages = []
+        
+        # Ajouter les pages des stores configurés comme pages Business Manager simulées
+        for store_name, config in STORES.items():
+            if config.get("fb_page_id") and config.get("name"):
+                business_manager_pages.append({
+                    "id": config["fb_page_id"],
+                    "name": config["name"],
+                    "store": store_name,
+                    "has_instagram": bool(config.get("ig_user_id")),
+                    "instagram_id": config.get("ig_user_id")
+                })
+        
+        # Shop mapping - mapping des stores vers leurs configurations
+        shop_mapping = {}
+        for store_name, config in STORES.items():
+            shop_mapping[store_name] = {
+                "name": config["name"],
+                "expected_id": config["fb_page_id"],
+                "instagram_id": config.get("ig_user_id"),
+                "configured": bool(config.get("access_token") and config.get("fb_page_id"))
+            }
+        
+        result = {
+            "success": True,
+            "user_name": user_name,
+            "personal_pages": personal_pages,
+            "business_manager_pages": business_manager_pages,
+            "shop_mapping": shop_mapping,
+            "total_stores": len(STORES),
+            "configured_stores": len([s for s in STORES.values() if s.get("access_token") and s.get("fb_page_id")]),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        log_app(f"✅ Informations pages retournées: {len(business_manager_pages)} pages, {len(shop_mapping)} stores", "SUCCESS")
+        return result
+        
+    except Exception as e:
+        error_msg = f"Erreur récupération pages: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 # === VIDEO ENDPOINTS ===
 
 @app.post("/api/videos/upload")
