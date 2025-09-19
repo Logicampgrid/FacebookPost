@@ -2619,31 +2619,138 @@ async def delete_post_endpoint(post_id: str):
 
 @app.post("/api/posts/{post_id}/publish")
 async def publish_post_endpoint(post_id: str):
-    """Publish a post immediately"""
+    """Publish a post immediately - handles both regular posts and video posts"""
     try:
         post = await get_post_by_id(post_id)
         
         if not post:
             raise HTTPException(status_code=404, detail="Post non trouvé")
         
+        log_publish(f"Publication du post {post_id}", "INFO")
+        
+        # Déterminer si c'est un post vidéo ou un post classique
+        is_video_post = bool(post.get("video_url") or post.get("video_id"))
+        
+        if is_video_post:
+            log_video(f"Publication vidéo détectée pour post {post_id}", "INFO")
+            
+            # Extraire les informations nécessaires pour la publication vidéo
+            video_url = post.get("video_url")
+            content = post.get("content", "")
+            
+            if not video_url:
+                raise HTTPException(status_code=400, detail="URL vidéo manquante pour la publication")
+            
+            # Publication vidéo avec gestion des plateformes croisées
+            if post.get("cross_post_targets"):
+                log_video("Publication vidéo croisée détectée", "INFO")
+                cross_targets = post.get("cross_post_targets", [])
+                
+                results = {
+                    "success": True,
+                    "publication_results": [],
+                    "errors": []
+                }
+                
+                # Publier sur chaque plateforme ciblée
+                for target in cross_targets:
+                    try:
+                        # Mapper le target vers un store pour publication
+                        store = None
+                        if target.get("platform") == "facebook":
+                            # Trouver le store correspondant par le nom
+                            if "Berger Blanc Suisse" in target.get("name", ""):
+                                store = "gizmobbs"
+                            elif "LogicAntiq" in target.get("name", ""):
+                                store = "logicantiq"
+                            elif "Logicamp" in target.get("name", ""):
+                                store = "outdoor"
+                        elif target.get("platform") == "instagram":
+                            # Pour Instagram, identifier le store par le nom
+                            if "gizmo" in target.get("name", "").lower():
+                                store = "gizmobbs"
+                            elif "logicantiq" in target.get("name", "").lower():
+                                store = "logicantiq"
+                            elif "logicamp" in target.get("name", "").lower() or "outdoor" in target.get("name", "").lower():
+                                store = "outdoor"
+                        
+                        if store:
+                            platform_list = [target.get("platform", "facebook")]
+                            result = await publish_video_main(store, content, "", video_url, platform_list)
+                            results["publication_results"].append({
+                                "target": target.get("name"),
+                                "platform": target.get("platform"),
+                                "store": store,
+                                "result": result
+                            })
+                            
+                            if not result.get("success"):
+                                results["errors"].extend(result.get("errors", []))
+                        else:
+                            error_msg = f"Store non identifié pour {target.get('name')} ({target.get('platform')})"
+                            results["errors"].append(error_msg)
+                            log_video(error_msg, "WARNING")
+                    
+                    except Exception as e:
+                        error_msg = f"Erreur publication {target.get('name')}: {str(e)}"
+                        results["errors"].append(error_msg)
+                        log_video(error_msg, "ERROR")
+                
+                # Déterminer le succès global
+                results["success"] = len(results["errors"]) == 0
+                
+            else:
+                # Publication vidéo sur une seule plateforme
+                platform = post.get("platform", "facebook")
+                target_name = post.get("target_name", "")
+                
+                # Mapper vers un store
+                store = None
+                if "Berger Blanc Suisse" in target_name or "gizmo" in target_name.lower():
+                    store = "gizmobbs"
+                elif "LogicAntiq" in target_name or "logicantiq" in target_name.lower():
+                    store = "logicantiq"
+                elif "Logicamp" in target_name or "outdoor" in target_name.lower():
+                    store = "outdoor"
+                else:
+                    # Par défaut, utiliser gizmobbs pour les tests
+                    store = "gizmobbs"
+                    log_video(f"Store non identifié pour '{target_name}', utilisation de gizmobbs par défaut", "WARNING")
+                
+                platform_list = [platform] if platform in ["facebook", "instagram"] else ["facebook"]
+                results = await publish_video_main(store, content, "", video_url, platform_list)
+        
+        else:
+            # Publication post classique (TODO: implémenter si nécessaire)
+            log_publish(f"Publication post classique non implémentée pour {post_id}", "WARNING")
+            results = {
+                "success": False,
+                "error": "Publication de posts classiques non implémentée dans cette version"
+            }
+        
         # Update post status in MongoDB
         update_data = {
-            "status": "published",
-            "published_at": datetime.now().isoformat()
+            "status": "published" if results.get("success") else "failed",
+            "published_at": datetime.now().isoformat(),
+            "publication_results": results
         }
         
         updated_post = await update_post(post_id, update_data)
         
-        log_app(f"✅ Post publié: {post_id}", "SUCCESS")
+        if results.get("success"):
+            log_publish(f"✅ Post publié avec succès: {post_id}", "SUCCESS")
+        else:
+            log_publish(f"❌ Échec publication post: {post_id} - {results.get('error', 'Erreurs multiples')}", "ERROR")
         
         return {
-            "success": True,
+            "success": results.get("success", False),
             "post": updated_post,
-            "message": "Post publié avec succès"
+            "publication_results": results,
+            "message": "Publication terminée" if results.get("success") else "Échec de publication"
         }
         
     except Exception as e:
-        log_app(f"❌ Erreur publication post: {str(e)}", "ERROR")
+        log_publish(f"❌ Erreur publication post {post_id}: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/publish")
