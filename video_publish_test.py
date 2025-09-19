@@ -43,7 +43,7 @@ class VideoPublishTester:
     def test_health_check(self):
         """Test de santé de l'API"""
         try:
-            response = requests.get(f"{self.base_url}/api/health", timeout=10)
+            response = requests.get(f"{self.base_url}/api/health", headers=self.headers, timeout=10)
             success = response.status_code == 200
             details = f"Status: {response.status_code}"
             if success:
