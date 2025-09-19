@@ -3239,7 +3239,7 @@ async def process_webhook_publication(webhook_data: dict) -> Optional[dict]:
         log_app(f"🔗 Traitement publication webhook pour {store}", "INFO")
         
         # Publier sur les plateformes demandées
-        result = await publish_post(store, message, product_url, None, platforms)
+        result = await publish_post_main(store, message, product_url, None, platforms)
         
         return result
         
