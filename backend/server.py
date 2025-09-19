@@ -33,6 +33,7 @@ from database import (
 
 # Import de la nouvelle fonction poster_media_enhanced
 from poster_media_enhanced import poster_media_enhanced, STORES_CONFIG
+from folder_watcher import start_folder_watcher_background, stop_folder_watcher, get_watcher_status
 
 # Charger les variables d'environnement
 load_dotenv()
