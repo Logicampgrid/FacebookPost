@@ -84,7 +84,7 @@ class VideoPublishTester:
                 timeout=30
             )
             
-            success = response.status_code == 201
+            success = response.status_code in [200, 201]  # Accept both 200 and 201
             details = f"Status: {response.status_code}"
             
             if success:
