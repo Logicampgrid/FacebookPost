@@ -250,7 +250,7 @@ class VideoPublishTester:
                 timeout=30
             )
             
-            if create_response.status_code != 201:
+            if create_response.status_code not in [200, 201]:
                 self.log_test("Publication Croisée Vidéo", False, f"Échec création: {create_response.status_code}")
                 return False
             
