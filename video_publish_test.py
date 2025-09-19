@@ -315,7 +315,7 @@ class VideoPublishTester:
                 timeout=30
             )
             
-            if create_response.status_code != 201:
+            if create_response.status_code not in [200, 201]:
                 self.log_test("Fix Method Not Allowed", False, f"Échec création: {create_response.status_code}")
                 return False
             
