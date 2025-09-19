@@ -130,6 +130,8 @@ class VideoPublishTester:
                     pub_results = data['publication_results']
                     details += f" - Facebook: {pub_results.get('facebook_result', {}).get('test_mode', 'N/A')}"
                     details += f" - Instagram: {pub_results.get('instagram_result', {}).get('test_mode', 'N/A')}"
+                elif data.get('test_mode') is not None:
+                    details += f" - Mode test: {data.get('test_mode')}"
             else:
                 try:
                     error_data = response.json()
