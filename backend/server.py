@@ -1776,6 +1776,83 @@ async def trigger_poster_media_store(store_name: str):
         error_msg = f"Erreur poster-media store {store_name}: {str(e)}"
         log_app(error_msg, "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
+
+# ============================================================================
+# ENDPOINTS SURVEILLANCE AUTOMATIQUE DES DOSSIERS
+# ============================================================================
+
+@app.post("/api/folder-watcher/start")
+async def start_folder_watcher():
+    """
+    Démarre la surveillance automatique des dossiers de téléchargement
+    """
+    try:
+        success = start_folder_watcher_background()
+        
+        if success:
+            log_app("Surveillance automatique des dossiers démarrée", "SUCCESS")
+            return {
+                "success": True,
+                "message": "Surveillance automatique démarrée",
+                "info": "Les fichiers ajoutés aux dossiers de téléchargement seront automatiquement traités",
+                "watched_stores": list(STORES_CONFIG.keys())
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Surveillance déjà active",
+                "status": get_watcher_status()
+            }
+            
+    except Exception as e:
+        error_msg = f"Erreur démarrage surveillance: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.post("/api/folder-watcher/stop")
+async def stop_folder_watcher_endpoint():
+    """
+    Arrête la surveillance automatique des dossiers
+    """
+    try:
+        stop_folder_watcher()
+        log_app("Surveillance automatique des dossiers arrêtée", "INFO")
+        
+        return {
+            "success": True,
+            "message": "Surveillance automatique arrêtée"
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur arrêt surveillance: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.get("/api/folder-watcher/status")
+async def get_folder_watcher_status():
+    """
+    Retourne le statut de la surveillance des dossiers
+    """
+    try:
+        status = get_watcher_status()
+        
+        return {
+            "success": True,
+            "status": status,
+            "stores_config": {
+                name: {
+                    "name": config["name"],
+                    "download_dir": config["download_dir"],
+                    "processed_dir": config["processed_dir"]
+                }
+                for name, config in STORES_CONFIG.items()
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur status surveillance: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
 async def get_video_history_endpoint(user_id: str):
     """Récupère l'historique des publications vidéo d'un utilisateur"""
     try:
