@@ -116,6 +116,7 @@ class VideoPublishTester:
         try:
             response = requests.post(
                 f"{self.base_url}/api/posts/{self.test_post_id}/publish",
+                headers=self.headers,
                 timeout=60  # Timeout plus long pour la publication
             )
             
