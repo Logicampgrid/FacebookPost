@@ -3247,9 +3247,6 @@ async def process_webhook_publication(webhook_data: dict) -> Optional[dict]:
         log_app(f"❌ Erreur traitement publication webhook: {str(e)}", "ERROR")
         return None
 
-async def publish_post(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
-    """Alias pour publish_post_main pour compatibilité"""
-    return await publish_post_main(store, message, product_url, image_url, platforms)
 
 @app.post("/api/webhook/n8n", response_model=WebhookResponse)
 async def webhook_n8n_handler(
