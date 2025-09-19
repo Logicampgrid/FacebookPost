@@ -3197,6 +3197,228 @@ async def webhook_handler(request: Request):
         # Return success even on errors to avoid Facebook retries
         return {"status": "received", "error": str(e)}
 
+# === NOUVELLES FONCTIONS WEBHOOK ===
+async def process_webhook_publication(webhook_data: dict) -> Optional[dict]:
+    """Traite les données de publication depuis le webhook N8N"""
+    try:
+        # Vérifier si c'est une publication N8N (avec les champs attendus)
+        if not isinstance(webhook_data, dict):
+            return None
+            
+        # Rechercher les données de publication dans différents formats
+        publication_data = None
+        
+        # Format direct
+        if "store" in webhook_data and "message" in webhook_data:
+            publication_data = webhook_data
+        # Format imbriqué dans 'data'
+        elif "data" in webhook_data and isinstance(webhook_data["data"], dict):
+            if "store" in webhook_data["data"]:
+                publication_data = webhook_data["data"]
+        
+        if not publication_data:
+            log_app("⚠️ Webhook ne contient pas de données de publication", "WARNING")
+            return None
+        
+        # Extraire les informations nécessaires
+        store = publication_data.get("store", "").lower()
+        message = publication_data.get("message", "")
+        product_url = publication_data.get("product_url", "")
+        platforms = publication_data.get("platforms", ["facebook", "instagram"])
+        
+        if not store or not message:
+            log_app("⚠️ Données de publication incomplètes (store ou message manquant)", "WARNING")
+            return None
+        
+        # Valider le store
+        valid_stores = ["gizmobbs", "logicantiq", "outdoor"]
+        if store not in valid_stores:
+            log_app(f"⚠️ Store invalide: {store}. Stores valides: {valid_stores}", "WARNING")
+            return None
+        
+        log_app(f"🔗 Traitement publication webhook pour {store}", "INFO")
+        
+        # Publier sur les plateformes demandées
+        result = await publish_post(store, message, product_url, None, platforms)
+        
+        return result
+        
+    except Exception as e:
+        log_app(f"❌ Erreur traitement publication webhook: {str(e)}", "ERROR")
+        return None
+
+async def publish_post(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
+    """Alias pour publish_post_main pour compatibilité"""
+    return await publish_post_main(store, message, product_url, image_url, platforms)
+
+@app.post("/api/webhook/n8n", response_model=WebhookResponse)
+async def webhook_n8n_handler(
+    json_data: str = Form(...),
+    file: Optional[UploadFile] = File(None)
+):
+    """Endpoint webhook optimisé pour N8N avec support multipart/form-data"""
+    try:
+        log_app("🔗 Réception webhook N8N", "INFO")
+        
+        # Traiter les données avec le webhook handler
+        webhook_data = await webhook_handler.process_webhook_data(json_data, file)
+        
+        # Préparer les données de publication
+        publication_data = await webhook_handler.prepare_publication_data(webhook_data)
+        
+        publication_results = {}
+        
+        # Publier selon le type de contenu
+        if publication_data["publication_type"] == "image_post":
+            # Pour les images, utiliser le chemin local d'abord
+            image_url = publication_data.get("image_url")
+            if not image_url and publication_data.get("image_path"):
+                # Optionnel: uploader l'image sur FTP pour une URL publique
+                # Pour l'instant, utilisons le chemin local
+                image_url = publication_data["image_path"]
+            
+            result = await publish_post(
+                publication_data["store"],
+                publication_data["message"],
+                publication_data["product_url"],
+                image_url,
+                publication_data["platforms"]
+            )
+            publication_results["publication"] = result
+            
+        elif publication_data["publication_type"] == "video_post":
+            # Pour les vidéos, uploader sur FTP d'abord
+            video_path = publication_data["video_path"]
+            upload_success, video_url, upload_error = await upload_video_to_ftp(video_path)
+            
+            if upload_success and video_url:
+                result = await publish_video_main(
+                    publication_data["store"],
+                    publication_data["message"],
+                    publication_data["product_url"],
+                    video_url,
+                    publication_data["platforms"]
+                )
+                publication_results["publication"] = result
+                publication_results["video_upload"] = {
+                    "success": True,
+                    "video_url": video_url
+                }
+            else:
+                raise Exception(f"Échec upload vidéo: {upload_error}")
+                
+        elif publication_data["publication_type"] == "text_only":
+            # Publication texte seulement
+            result = await publish_post(
+                publication_data["store"],
+                publication_data["message"],
+                publication_data["product_url"],
+                None,
+                ["facebook"]  # Instagram nécessite une image
+            )
+            publication_results["publication"] = result
+        else:
+            raise Exception(f"Type de publication non supporté: {publication_data['publication_type']}")
+        
+        # Sauvegarder dans MongoDB
+        webhook_data["publication_results"] = publication_results
+        webhook_data["processing_status"] = "completed"
+        
+        try:
+            await save_webhook_data(webhook_data)
+            log_app("✅ Webhook N8N sauvegardé dans MongoDB", "SUCCESS")
+        except Exception as save_error:
+            log_app(f"⚠️ Erreur sauvegarde webhook N8N: {save_error}", "WARNING")
+        
+        return WebhookResponse(
+            success=True,
+            webhook_id=webhook_data["webhook_id"],
+            message="Publication réussie",
+            publication_results=publication_results
+        )
+        
+    except Exception as e:
+        log_app(f"❌ Erreur webhook N8N: {str(e)}", "ERROR")
+        return WebhookResponse(
+            success=False,
+            message=f"Erreur: {str(e)}",
+            error=str(e)
+        )
+
+@app.post("/api/tokens/refresh")
+async def refresh_tokens():
+    """Récupère automatiquement tous les tokens depuis le token Facebook utilisateur"""
+    try:
+        log_app("🔄 Démarrage rafraîchissement automatique des tokens", "INFO")
+        
+        # Vérifier que le token direct est configuré
+        if not token_manager.facebook_direct_token:
+            raise HTTPException(
+                status_code=400, 
+                detail="FACEBOOK_DIRECT_TOKEN non configuré dans .env"
+            )
+        
+        # Rafraîchir tous les tokens
+        store_configs = await token_manager.refresh_all_tokens()
+        
+        if not store_configs:
+            raise HTTPException(
+                status_code=500,
+                detail="Aucune configuration de store récupérée"
+            )
+        
+        # Mettre à jour les stores globaux
+        global STORES, TOKENS
+        for store_key, config in store_configs.items():
+            if store_key in STORES:
+                STORES[store_key].update(config)
+            TOKENS[store_key] = config
+        
+        return {
+            "success": True,
+            "message": f"{len(store_configs)} stores configurés",
+            "stores": list(store_configs.keys()),
+            "details": {
+                store: {
+                    "name": config["name"],
+                    "fb_page_id": config["fb_page_id"],
+                    "has_access_token": bool(config.get("access_token")),
+                    "has_instagram": bool(config.get("ig_user_id"))
+                }
+                for store, config in store_configs.items()
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_app(f"❌ Erreur rafraîchissement tokens: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tokens/status")
+async def get_tokens_status():
+    """Affiche le statut actuel des tokens"""
+    try:
+        status = {
+            "facebook_direct_token": bool(token_manager.facebook_direct_token),
+            "stores": {}
+        }
+        
+        for store_key, store_config in STORES.items():
+            status["stores"][store_key] = {
+                "name": store_config["name"],
+                "fb_page_id": store_config.get("fb_page_id"),
+                "has_access_token": bool(store_config.get("access_token")),
+                "ig_user_id": store_config.get("ig_user_id"),
+                "has_instagram": bool(store_config.get("ig_user_id"))
+            }
+        
+        return status
+        
+    except Exception as e:
+        log_app(f"❌ Erreur statut tokens: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # === ROUTES FRONTEND ===
 @app.get("/")
 async def serve_frontend(request: Request):
