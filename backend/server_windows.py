@@ -952,6 +952,13 @@ class VideoUploadResponse(BaseModel):
     validation: Optional[dict] = None
     error: Optional[str] = None
 
+class WebhookResponse(BaseModel):
+    success: bool
+    webhook_id: Optional[str] = None
+    message: str
+    publication_results: Optional[dict] = None
+    error: Optional[str] = None
+
 # === PUBLICATION FUNCTIONS ===
 def log_publish(message: str, level: str = "INFO"):
     """Logging spécialisé pour les publications"""
