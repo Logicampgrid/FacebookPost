@@ -1601,6 +1601,180 @@ async def create_video_post_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/posts/video/history")
+async def get_video_post_history(user_id: str):
+    """Récupère l'historique des posts vidéo d'un utilisateur"""
+    try:
+        posts = await get_posts_by_user(user_id)
+        video_posts = [post for post in posts if post.get("media_urls") and any(url.endswith(('.mp4', '.mov')) for url in post["media_urls"])]
+        
+        return {
+            "success": True,
+            "posts": video_posts,
+            "count": len(video_posts)
+        }
+        
+    except Exception as e:
+        log_video(f"Erreur chargement historique vidéo: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# ENDPOINTS POSTER MEDIA ENHANCED - RESTAURÉS ET AMÉLIORÉS
+# ============================================================================
+
+@app.post("/api/poster-media")
+async def trigger_poster_media_enhanced(store: Optional[str] = None):
+    """
+    Endpoint pour déclencher la publication automatique améliorée
+    avec retry Instagram et fallback Facebook
+    """
+    try:
+        log_app("Déclenchement poster_media_enhanced via API", "INFO")
+        
+        # Exécuter la fonction améliorée
+        result = await poster_media_enhanced(store)
+        
+        return {
+            "success": result["success"],
+            "timestamp": result.get("timestamp", datetime.now().isoformat()),
+            "result": result,
+            "endpoint_info": {
+                "description": "Publication automatique multi-stores avec retry Instagram et fallback Facebook",
+                "stores_supported": list(STORES_CONFIG.keys()),
+                "features": [
+                    "🔄 Retry automatique Instagram (3 tentatives)",
+                    "📘 Fallback Facebook si Instagram échoue",
+                    "🎨 Conversion WebP → JPEG automatique",
+                    "📤 Upload FTP multi-stores",
+                    "📁 Archivage automatique dans dossier processed",
+                    "📊 Statistiques détaillées par store"
+                ]
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur endpoint poster-media enhanced: {str(e)}"
+        log_app(error_msg, "ERROR")
+        
+        return {
+            "success": False,
+            "error": error_msg,
+            "timestamp": datetime.now().isoformat(),
+            "troubleshooting": [
+                "Vérifiez les dossiers de téléchargement des stores",
+                "Vérifiez les tokens Facebook/Instagram dans .env",
+                "Vérifiez la configuration FTP",
+                "Consultez les logs pour plus de détails"
+            ]
+        }
+
+@app.get("/api/poster-media/status")
+async def get_poster_media_status_enhanced():
+    """
+    Endpoint pour vérifier le statut multi-stores de poster_media_enhanced
+    """
+    try:
+        status_data = {
+            "stores": {},
+            "ftp_config": {
+                "host": FTP_HOST,
+                "port": FTP_PORT,
+                "user": FTP_USER,
+                "base_url": FTP_BASE_URL,
+                "configured": bool(FTP_HOST and FTP_USER and FTP_PASSWORD)
+            },
+            "ready_stores": [],
+            "total_files_ready": 0
+        }
+        
+        # Analyser chaque store
+        for store_name, store_config in STORES_CONFIG.items():
+            store_status = {
+                "name": store_config["name"],
+                "download_dir": store_config["download_dir"],
+                "processed_dir": store_config["processed_dir"],
+                "download_dir_exists": os.path.exists(store_config["download_dir"]),
+                "access_token_configured": bool(store_config.get("access_token")),
+                "ig_user_id_configured": bool(store_config.get("ig_user_id")),
+                "fb_page_id_configured": bool(store_config.get("fb_page_id")),
+                "files_count": 0,
+                "files_ready": [],
+                "ready_to_process": False
+            }
+            
+            # Compter les fichiers si le dossier existe
+            if store_status["download_dir_exists"]:
+                try:
+                    for filename in os.listdir(store_config["download_dir"]):
+                        file_path = os.path.join(store_config["download_dir"], filename)
+                        if os.path.isfile(file_path):
+                            file_ext = Path(filename).suffix.lower()
+                            if file_ext in {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov"}:
+                                store_status["files_count"] += 1
+                                store_status["files_ready"].append({
+                                    "filename": filename,
+                                    "extension": file_ext,
+                                    "size_mb": round(os.path.getsize(file_path) / (1024*1024), 2)
+                                })
+                except Exception as e:
+                    log_app(f"Erreur lecture dossier {store_name}: {e}", "WARNING")
+            
+            # Déterminer si le store est prêt
+            store_status["ready_to_process"] = (
+                store_status["download_dir_exists"] and
+                store_status["access_token_configured"] and
+                store_status["ig_user_id_configured"] and
+                store_status["files_count"] > 0
+            )
+            
+            if store_status["ready_to_process"]:
+                status_data["ready_stores"].append(store_name)
+                status_data["total_files_ready"] += store_status["files_count"]
+            
+            status_data["stores"][store_name] = store_status
+        
+        return {
+            "success": True,
+            "status": status_data,
+            "summary": {
+                "total_stores": len(STORES_CONFIG),
+                "ready_stores": len(status_data["ready_stores"]),
+                "total_files_ready": status_data["total_files_ready"],
+                "ftp_configured": status_data["ftp_config"]["configured"]
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Erreur status poster-media: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@app.post("/api/poster-media/{store_name}")
+async def trigger_poster_media_store(store_name: str):
+    """
+    Endpoint pour déclencher la publication pour un store spécifique
+    """
+    try:
+        if store_name not in STORES_CONFIG:
+            raise HTTPException(status_code=404, detail=f"Store inconnu: {store_name}")
+        
+        log_app(f"Déclenchement poster_media pour store: {store_name}", "INFO")
+        
+        result = await poster_media_enhanced(store_name)
+        
+        return {
+            "success": result["success"],
+            "store": store_name,
+            "store_name": STORES_CONFIG[store_name]["name"],
+            "timestamp": result.get("timestamp", datetime.now().isoformat()),
+            "result": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = f"Erreur poster-media store {store_name}: {str(e)}"
+        log_app(error_msg, "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
 async def get_video_history_endpoint(user_id: str):
     """Récupère l'historique des publications vidéo d'un utilisateur"""
     try:
