@@ -3277,7 +3277,7 @@ async def webhook_n8n_handler(
                 # Pour l'instant, utilisons le chemin local
                 image_url = publication_data["image_path"]
             
-            result = await publish_post(
+            result = await publish_post_main(
                 publication_data["store"],
                 publication_data["message"],
                 publication_data["product_url"],
