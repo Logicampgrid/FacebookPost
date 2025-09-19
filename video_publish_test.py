@@ -80,6 +80,7 @@ class VideoPublishTester:
             response = requests.post(
                 f"{self.base_url}/api/posts/video",
                 data=post_data,
+                headers=self.headers,
                 timeout=30
             )
             
