@@ -3309,7 +3309,7 @@ async def webhook_n8n_handler(
                 
         elif publication_data["publication_type"] == "text_only":
             # Publication texte seulement
-            result = await publish_post(
+            result = await publish_post_main(
                 publication_data["store"],
                 publication_data["message"],
                 publication_data["product_url"],
