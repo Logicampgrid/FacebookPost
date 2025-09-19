@@ -26,6 +26,16 @@ from pathlib import Path
 # Charger les variables d'environnement
 load_dotenv()
 
+# Import new modules
+try:
+    from token_manager import token_manager
+    from webhook_handler import webhook_handler
+    TOKEN_MANAGEMENT_AVAILABLE = True
+    print("✅ [IMPORT] Modules de gestion des tokens disponibles")
+except ImportError as e:
+    print(f"⚠️ [IMPORT] Modules de gestion des tokens non disponibles: {e}")
+    TOKEN_MANAGEMENT_AVAILABLE = False
+
 # === CONFIGURATION WINDOWS ===
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8001"))
 FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3000"))
