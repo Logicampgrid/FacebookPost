@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://connection-failed.preview.emergentagent.com
+URL : https://bbs-video-post.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

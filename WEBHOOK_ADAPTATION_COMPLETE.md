@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://connection-failed.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://bbs-video-post.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://connection-failed.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://connection-failed.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://connection-failed.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://bbs-video-post.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://bbs-video-post.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://bbs-video-post.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

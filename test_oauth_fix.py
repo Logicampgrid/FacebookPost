@@ -5,7 +5,7 @@ Script de test pour vérifier la correction OAuth Facebook
 import requests
 import json
 
-BACKEND_URL = "https://connection-failed.preview.emergentagent.com"
+BACKEND_URL = "https://bbs-video-post.preview.emergentagent.com"
 
 def test_redirect_uri():
     """Test de la construction de l'URI de redirection"""
