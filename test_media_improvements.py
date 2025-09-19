@@ -54,7 +54,7 @@ def test_media_processing():
     print("📸 Test de traitement des médias...")
     
     # Simuler une URL de média
-    test_media_url = "https://social-autoposter-7.preview.emergentagent.com/uploads/test-image.jpg"
+    test_media_url = "https://social-commerce-hub-1.preview.emergentagent.com/uploads/test-image.jpg"
     
     print(f"   - URL de test: {test_media_url}")
     
