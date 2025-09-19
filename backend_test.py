@@ -588,7 +588,7 @@ def main():
     """Main test execution"""
     # Get backend URL from environment - UPDATED FOR OAUTH REDIRECT URI FIX
     import os
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://dfc6604f0995.ngrok-free.app')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://34d34f066475.ngrok-free.app')
     
     print(f"🚀 Meta Publishing Platform - Backend API Tests")
     print(f"📡 Backend URL: {backend_url}")
