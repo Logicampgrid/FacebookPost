@@ -686,6 +686,21 @@ async def lifespan(app: FastAPI):
             log_app("ℹ️ 🔄 Attente de la synchronisation complète...", "INFO")
             time.sleep(2)  # Laisser le temps à toutes les configurations de se finaliser
             log_app("✅ Application démarrée avec succès!", "SUCCESS")
+            
+            # NOUVELLE FONCTIONNALITÉ: Auto-démarrage de la surveillance des dossiers (si disponible)
+            if ENHANCED_FEATURES_AVAILABLE:
+                log_app("🔍 Activation automatique de la surveillance des dossiers...", "INFO")
+                try:
+                    watcher_started = start_folder_watcher_background()
+                    if watcher_started:
+                        log_app("✅ Surveillance automatique des dossiers activée", "SUCCESS")
+                        log_app("📁 Les fichiers ajoutés aux dossiers seront automatiquement traités", "INFO")
+                    else:
+                        log_app("⚠️ Surveillance déjà active ou impossible à démarrer", "WARNING")
+                except Exception as e:
+                    log_app(f"⚠️ Erreur activation surveillance automatique: {e}", "WARNING")
+            else:
+                log_app("ℹ️ Surveillance automatique non disponible (fonctionnalités améliorées manquantes)", "INFO")
         else:
             log_app("⚠️ Ngrok non disponible - mode local uniquement", "WARNING")
             log_app(f"🌐 Application accessible sur: http://localhost:{BACKEND_PORT}", "INFO")
