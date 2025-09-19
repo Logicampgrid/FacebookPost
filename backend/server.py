@@ -31,9 +31,25 @@ from database import (
     save_user_token, get_user_token, is_token_expired, refresh_facebook_token
 )
 
-# Import de la nouvelle fonction poster_media_enhanced
-from poster_media_enhanced import poster_media_enhanced, STORES_CONFIG
-from folder_watcher import start_folder_watcher_background, stop_folder_watcher, get_watcher_status
+# Import de la nouvelle fonction poster_media_enhanced (compatible avec ancienne version)
+try:
+    from poster_media_enhanced import poster_media_enhanced, STORES_CONFIG
+    from folder_watcher import start_folder_watcher_background, stop_folder_watcher, get_watcher_status
+    ENHANCED_FEATURES_AVAILABLE = True
+    print("✅ [IMPORT] Fonctionnalités améliorées disponibles")
+except ImportError as e:
+    print(f"⚠️ [IMPORT] Fonctionnalités améliorées non disponibles: {e}")
+    ENHANCED_FEATURES_AVAILABLE = False
+    # Fallback pour compatibilité
+    def poster_media_enhanced(*args, **kwargs):
+        return {"success": False, "error": "Fonctionnalités améliorées non disponibles"}
+    def start_folder_watcher_background():
+        return False
+    def stop_folder_watcher():
+        pass
+    def get_watcher_status():
+        return {"running": False, "error": "Non disponible"}
+    STORES_CONFIG = {}
 
 # Charger les variables d'environnement
 load_dotenv()
