@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 # Configuration
-API_BASE = "https://34d34f066475.ngrok-free.app"  # URL ngrok active
+API_BASE = "http://localhost:8001"  # Test local
 TEST_USER_ID = "test_user_video_fix"
 
 def log_test(message, level="INFO"):
