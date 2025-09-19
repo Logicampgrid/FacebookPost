@@ -11,11 +11,16 @@ import time
 from datetime import datetime
 
 class VideoPublishTester:
-    def __init__(self, base_url="https://34d34f066475.ngrok-free.app"):
+    def __init__(self, base_url="http://localhost:8001"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
+        # Headers pour ngrok si nécessaire
+        self.headers = {
+            'ngrok-skip-browser-warning': 'true',
+            'User-Agent': 'VideoPublishTester/1.0'
+        }
 
     def log_test(self, name, success, details=""):
         """Log un résultat de test"""
