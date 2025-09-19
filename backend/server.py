@@ -845,6 +845,13 @@ class VideoUploadResponse(BaseModel):
     validation: Optional[dict] = None
     error: Optional[str] = None
 
+class WebhookResponse(BaseModel):
+    success: bool
+    webhook_id: Optional[str] = None
+    message: str
+    publication_results: Optional[dict] = None
+    error: Optional[str] = None
+
 # === AUTHENTICATION FUNCTIONS ===
 async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
     """Échange un code d'autorisation Facebook contre un access token - VERSION CORRIGÉE REDIRECT URI"""
