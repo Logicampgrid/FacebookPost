@@ -3109,7 +3109,11 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             message = instagram_message
             log_app(f"📱 Message Instagram optimisé pour @logicamp_berger : {message[:50]}...", "INFO")
             log_app(f"🔧 Business Manager cible : {business_manager_id}", "INFO")
-            log_app(f"🎯 Plateforme prioritaire : Instagram UNIQUEMENT", "INFO")
+            
+            if len(platforms) == 2:
+                log_app(f"🎯 Plateformes cibles : Facebook + Instagram (média détecté)", "INFO")
+            else:
+                log_app(f"🎯 Plateforme cible : Facebook uniquement (pas de média)", "INFO")
             
         else:
             # ANCIENNE LOGIQUE: Construction intelligente du message pour autres stores
