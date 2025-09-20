@@ -99,10 +99,13 @@ C:\FacebookPost\
 - `frontend\.env` : Variables interface  
 - `data\` : Base de données MongoDB locale
 
-### URLs Importantes
-- **Application** : http://localhost:8001
-- **API Health** : http://localhost:8001/api/health
+### URLs Importantes (Configuration Unifiée)
+- **Application & API** : https://e4de51969ba9.ngrok-free.app
+- **API Health** : https://e4de51969ba9.ngrok-free.app/api/health
+- **Interface Web** : https://e4de51969ba9.ngrok-free.app
 - **Documentation** : Intégrée dans l'interface
+
+> **✨ NOUVELLE ARCHITECTURE** : Une seule URL ngrok pour tous les services
 
 ---
 
