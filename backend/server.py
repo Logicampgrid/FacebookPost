@@ -3084,10 +3084,13 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # ANCIENNE LOGIQUE: Construction intelligente du message pour autres stores
             if custom_message:
                 message = custom_message
-            elif title and description:
-                message = f"{title}\n\n{description}"
+            elif title and product_url:
+                # Format simple : titre + URL comme demandé par l'utilisateur
+                message = f"{title}\n\n{product_url}"
             elif title:
                 message = title
+            elif description and product_url:
+                message = f"{description}\n\n{product_url}"
             else:
                 message = description or "Publication automatique"
         
