@@ -3316,6 +3316,58 @@ async def webhook_handler(request: Request):
                                 json_str = json_str.decode('utf-8')
                             webhook_data = json.loads(json_str)
                             log_app(f"📦 Parsed JSON from {json_data_field}: {json.dumps(webhook_data, indent=2)[:500]}...", "INFO")
+                            
+                            # NOUVELLE CORRECTION: Traiter les fichiers médias séparément
+                            media_files = {}
+                            for key, value in form_data.items():
+                                if hasattr(value, 'read') and hasattr(value, 'filename') and key != json_data_field:
+                                    # C'est un fichier uploadé
+                                    file_content = await value.read()
+                                    content_type = getattr(value, 'content_type', '')
+                                    filename = getattr(value, 'filename', f'file_{key}')
+                                    
+                                    log_app(f"📦 CORRECTION: Fichier détecté - {key}: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
+                                    
+                                    # Sauvegarder le fichier temporairement
+                                    if content_type.startswith('video/') or 'video' in key.lower():
+                                        # C'est une vidéo
+                                        file_extension = ".mp4" if "mp4" in content_type else ".mov"
+                                        temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+                                        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+                                        
+                                        with open(temp_path, 'wb') as f:
+                                            f.write(file_content)
+                                        
+                                        log_app(f"📦 CORRECTION: Vidéo sauvegardée temporairement: {temp_path}", "INFO")
+                                        
+                                        # Ajouter les infos de la vidéo aux données webhook
+                                        webhook_data['video_file'] = {
+                                            'path': temp_path,
+                                            'filename': temp_filename,
+                                            'original_filename': filename,
+                                            'content_type': content_type,
+                                            'size': len(file_content)
+                                        }
+                                        
+                                    elif content_type.startswith('image/') or 'image' in key.lower():
+                                        # C'est une image
+                                        file_extension = ".jpg" if "jpeg" in content_type else ".png"
+                                        temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+                                        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+                                        
+                                        with open(temp_path, 'wb') as f:
+                                            f.write(file_content)
+                                        
+                                        log_app(f"📦 CORRECTION: Image sauvegardée: {temp_path}", "INFO")
+                                        
+                                        # Ajouter les infos de l'image aux données webhook
+                                        webhook_data['image_file'] = {
+                                            'path': temp_path,
+                                            'filename': temp_filename,
+                                            'original_filename': filename,
+                                            'content_type': content_type,
+                                            'size': len(file_content)
+                                        }
                         else:
                             # Process all form fields
                             webhook_data = {}
