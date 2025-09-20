@@ -116,15 +116,17 @@ Pour que la sélection automatique fonctionne parfaitement, vous devez :
 
 ## 📊 **ACCÈS À L'HISTORIQUE WEBHOOK**
 
-### **Interface Web**
-1. Connectez-vous à https://blank-ngrok.preview.emergentagent.com
+### **Interface Web (AMÉLIORÉE)**
+1. Connectez-vous à https://e4de51969ba9.ngrok-free.app
 2. Authentifiez-vous avec Facebook
 3. Sélectionnez votre Business Manager
 4. Cliquez sur l'onglet **"Historique Webhook"**
 
+> **🚀 NOUVEAU** : Interface et API accessibles via la même URL ngrok unique
+
 ### **API Directe**
 ```bash
-GET https://blank-ngrok.preview.emergentagent.com/api/webhook-history?limit=100
+GET https://e4de51969ba9.ngrok-free.app/api/webhook-history?limit=100
 ```
 
 L'historique affiche :
