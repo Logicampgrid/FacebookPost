@@ -74,11 +74,11 @@ GET https://e4de51969ba9.ngrok-free.app/api/config/oauth-status-complete
 }
 ```
 
-### Configuration OAuth Forcée
+### Configuration OAuth Forcée (URL Unifiée)
 ```bash
-POST /api/config/force-oauth-setup
+POST https://e4de51969ba9.ngrok-free.app/api/config/force-oauth-setup
 ```
-Force la reconfiguration OAuth avec l'URL du frontend `.env`
+Configure automatiquement OAuth avec l'URL ngrok unifiée active
 
 ## 🔧 Script Utilitaire
 
