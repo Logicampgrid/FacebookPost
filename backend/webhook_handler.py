@@ -71,21 +71,43 @@ class WebhookHandler:
             else:
                 data = json_data
             
+            # Extraction des champs de base
+            store = data.get("store", "").lower()
+            title = data.get("title", "")
+            product_url = data.get("product_url", "") or data.get("url", "")
+            description = data.get("description", "")
+            
+            # Création automatique du message si pas fourni
+            message = data.get("message", "")
+            if not message and title:
+                message = f"{title}\n\n{product_url}" if product_url else title
+            elif not message and description:
+                message = f"{description}\n\n{product_url}" if product_url else description
+            
             # Validation des champs requis
-            required_fields = ["store", "message"]
-            missing_fields = [field for field in required_fields if field not in data]
+            required_fields = ["store"]
+            missing_fields = []
+            
+            if not store:
+                missing_fields.append("store")
+            if not message:
+                missing_fields.append("message/title/description")
             
             if missing_fields:
                 raise ValueError(f"Champs manquants: {missing_fields}")
             
             # Normaliser les données
             normalized_data = {
-                "store": data.get("store", "").lower(),
-                "message": data.get("message", ""),
-                "product_url": data.get("product_url", ""),
+                "store": store,
+                "message": message,
+                "product_url": product_url,
                 "platforms": data.get("platforms", ["facebook", "instagram"]),
                 "publish_immediately": data.get("publish_immediately", True),
-                "metadata": data.get("metadata", {})
+                "metadata": {
+                    "title": title,
+                    "description": description,
+                    **data.get("metadata", {})
+                }
             }
             
             # Valider le store
