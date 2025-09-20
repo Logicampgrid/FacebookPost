@@ -3051,8 +3051,25 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         image_url = webhook_data.get("image_url")
         platforms = webhook_data.get("platforms", ["facebook", "instagram"])  # Default both platforms
         
-        # CORRECTION MULTIPART: Si image est binaire (vos webhooks réels), on la gère plus tard
-        # Pour l'instant on traite juste les données JSON
+        # NOUVELLE CORRECTION: Détecter les fichiers médias uploadés (image/vidéo)
+        has_media_file = False
+        media_type = None
+        
+        # Vérifier les champs de fichiers dans les données webhook
+        for key, value in webhook_data.items():
+            if key in ["image", "video", "file", "media"] or "file" in key.lower():
+                if isinstance(value, dict) and value.get("type") == "binary":
+                    has_media_file = True
+                    media_type = "video" if "video" in key.lower() else "image"
+                    log_app(f"📦 CORRECTION: Fichier {media_type} détecté dans le champ '{key}'", "INFO")
+                    break
+                elif hasattr(value, 'filename') or hasattr(value, 'content_type'):
+                    has_media_file = True
+                    media_type = "video" if hasattr(value, 'content_type') and "video" in value.content_type else "image"
+                    log_app(f"📦 CORRECTION: Fichier {media_type} détecté dans le champ '{key}'", "INFO")
+                    break
+        
+        log_app(f"🔍 DEBUG - has_media_file: {has_media_file}, media_type: {media_type}, image_url: {bool(image_url)}", "INFO")
         
         # CORRECTION: Si pas de message personnalisé, créer le message à partir du title + URL
         if not custom_message and title:
