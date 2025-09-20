@@ -47,9 +47,9 @@
 
 ## 🛠️ API Endpoints Disponibles
 
-### Status OAuth Complet
+### Status OAuth Complet (URL Unifiée)
 ```bash
-GET /api/config/oauth-status-complete
+GET https://e4de51969ba9.ngrok-free.app/api/config/oauth-status-complete
 ```
 **Réponse:**
 ```json
