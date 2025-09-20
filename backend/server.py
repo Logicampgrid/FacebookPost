@@ -3104,6 +3104,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 message = f"{description}\n\n{product_url}"
             else:
                 message = description or "Publication automatique"
+            
+            # CORRECTION: Pour les autres stores, adapter les plateformes selon la disponibilité d'image
+            if image_url:
+                platforms = ["facebook", "instagram"]  # Les deux si image disponible
+            else:
+                platforms = ["facebook"]  # Facebook seulement si pas d'image
         
         log_app(f"🔍 DEBUG - Final message: '{message[:50]}...', length: {len(message)}", "INFO")
         
