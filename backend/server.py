@@ -3085,12 +3085,15 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # Business Manager spécifique pour @logicamp_berger
             business_manager_id = "1715327795564432"  # ID spécifique du BM logicamp_berger
             
-            # CONFIGURATION PRIORITAIRE selon les données reçues
-            # Si pas d'image, publier sur Facebook ; si image, Instagram + Facebook
-            if image_url:
-                platforms = ["facebook", "instagram"]  # Les deux si image disponible
+            # CORRECTION: Configuration prioritaire selon les données reçues
+            # Si média (image ou vidéo) disponible, publier sur Instagram + Facebook
+            # Si pas de média, publier sur Facebook seulement
+            if image_url or has_media_file:
+                platforms = ["facebook", "instagram"]  # Les deux si média disponible
+                log_app(f"📦 CORRECTION: Média détecté → Publication Facebook + Instagram", "INFO")
             else:
-                platforms = ["facebook"]  # Facebook seulement si pas d'image
+                platforms = ["facebook"]  # Facebook seulement si pas de média
+                log_app(f"📦 CORRECTION: Pas de média → Publication Facebook uniquement", "INFO")
             
             # Adaptation du message pour Instagram avec optimisation automatique
             if custom_message:
