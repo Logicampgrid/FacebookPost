@@ -3036,6 +3036,8 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             log_app("⚠️ Données webhook invalides (pas un dictionnaire)", "WARNING")
             return None
         
+        log_app(f"🔍 DEBUG webhook_data keys: {list(webhook_data.keys())}", "INFO")
+        
         # PRIORITÉ RÉCENTE 1: Support des modifications @logicamp_berger (MISSION_ACCOMPLIE_LOGICAMP_BERGER.md)
         # Structure attendue depuis n8n (flexible) avec support spécial gizmobbs → @logicamp_berger
         
