@@ -3189,20 +3189,82 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         log_app(f"   Titre: {title[:50]}{'...' if len(title) > 50 else ''}", "INFO")
         log_app(f"   URL produit: {product_url}", "INFO")
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
+        log_app(f"   Média: {'Oui' if has_media_file else 'Non'} ({media_type if media_type else 'N/A'})", "INFO")
         
-        # EFFECTUER LA PUBLICATION avec toutes les améliorations intégrées
-        # La fonction publish_post_main inclut automatiquement :
-        # - Images cliquables (CLICKABLE_IMAGES_FEATURE.md)
-        # - Validation préventive médias (AMÉLIORATIONS_MÉDIA_RÉALISÉES.md)
-        # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
-        # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
-        result = await publish_post_main(
-            store=final_store,
-            message=message,
-            product_url=product_url,
-            image_url=image_url,
-            platforms=platforms
-        )
+        # NOUVELLE CORRECTION: Traiter les vidéos uploadées
+        video_url = None
+        if media_type == "video" and media_file_info:
+            log_app(f"🎥 CORRECTION: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
+            try:
+                # Upload de la vidéo vers FTP pour obtenir une URL publique
+                video_path = media_file_info['path']
+                upload_success, video_url, upload_error = await upload_video_to_ftp(video_path, media_file_info['filename'])
+                
+                if upload_success and video_url:
+                    log_app(f"✅ CORRECTION: Vidéo uploadée avec succès - {video_url}", "SUCCESS")
+                    # Pour les vidéos, utiliser la fonction de publication vidéo
+                    result = await publish_video_main(
+                        store=final_store,
+                        message=message,
+                        product_url=product_url,
+                        video_url=video_url,
+                        platforms=platforms
+                    )
+                else:
+                    log_app(f"❌ CORRECTION: Échec upload vidéo - {upload_error}", "ERROR")
+                    # Fallback vers publication texte
+                    result = await publish_post_main(
+                        store=final_store,
+                        message=message,
+                        product_url=product_url,
+                        image_url=image_url,
+                        platforms=platforms
+                    )
+                
+                # Nettoyer le fichier temporaire
+                try:
+                    if os.path.exists(video_path):
+                        os.remove(video_path)
+                        log_app(f"🧹 CORRECTION: Fichier temporaire supprimé - {video_path}", "INFO")
+                except Exception as cleanup_error:
+                    log_app(f"⚠️ CORRECTION: Erreur nettoyage fichier temporaire - {cleanup_error}", "WARNING")
+                    
+            except Exception as video_error:
+                log_app(f"❌ CORRECTION: Erreur traitement vidéo - {video_error}", "ERROR")
+                # Fallback vers publication texte
+                result = await publish_post_main(
+                    store=final_store,
+                    message=message,
+                    product_url=product_url,
+                    image_url=image_url,
+                    platforms=platforms
+                )
+                
+        elif media_type == "image" and media_file_info:
+            log_app(f"🖼️ CORRECTION: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
+            # Pour les images, utiliser le chemin local comme image_url
+            image_path = media_file_info['path']
+            result = await publish_post_main(
+                store=final_store,
+                message=message,
+                product_url=product_url,
+                image_url=image_path,  # Utiliser le chemin local
+                platforms=platforms
+            )
+        else:
+            # EFFECTUER LA PUBLICATION NORMALE avec toutes les améliorations intégrées
+            # La fonction publish_post_main inclut automatiquement :
+            # - Images cliquables (CLICKABLE_IMAGES_FEATURE.md)
+            # - Validation préventive médias (AMÉLIORATIONS_MÉDIA_RÉALISÉES.md)
+            # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
+            # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
+            result = await publish_post_main(
+                store=final_store,
+                message=message,
+                product_url=product_url,
+                image_url=image_url,
+                platforms=platforms
+            )
         
         # RÉPONSE STRUCTURÉE compatible avec toutes les améliorations
         if result.get("success"):
