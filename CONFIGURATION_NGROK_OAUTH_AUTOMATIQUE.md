@@ -1,4 +1,12 @@
-# Configuration Automatique Ngrok et Facebook OAuth
+# Configuration Automatique Ngrok Unifiée et Facebook OAuth
+
+## 🎯 AMÉLIORATION : Architecture Ngrok Unifiée
+
+### ✅ URL Ngrok Unique
+- **URL Active** : `https://e4de51969ba9.ngrok-free.app`
+- **Frontend & Backend** : Servis par la même URL
+- **Architecture Simplifiée** : Un seul tunnel ngrok (port 8001)
+- **Performance Optimisée** : Pas de CORS, appels API directs
 
 ## 🎯 Fonctionnalités Implementées
 
