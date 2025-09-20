@@ -3375,54 +3375,7 @@ async def webhook_handler(request: Request):
         return {"status": "received", "error": str(e)}
 
 # === NOUVELLES FONCTIONS WEBHOOK ===
-async def process_webhook_publication(webhook_data: dict) -> Optional[dict]:
-    """Traite les données de publication depuis le webhook N8N"""
-    try:
-        # Vérifier si c'est une publication N8N (avec les champs attendus)
-        if not isinstance(webhook_data, dict):
-            return None
-            
-        # Rechercher les données de publication dans différents formats
-        publication_data = None
-        
-        # Format direct
-        if "store" in webhook_data and "message" in webhook_data:
-            publication_data = webhook_data
-        # Format imbriqué dans 'data'
-        elif "data" in webhook_data and isinstance(webhook_data["data"], dict):
-            if "store" in webhook_data["data"]:
-                publication_data = webhook_data["data"]
-        
-        if not publication_data:
-            log_app("⚠️ Webhook ne contient pas de données de publication", "WARNING")
-            return None
-        
-        # Extraire les informations nécessaires
-        store = publication_data.get("store", "").lower()
-        message = publication_data.get("message", "")
-        product_url = publication_data.get("product_url", "")
-        platforms = publication_data.get("platforms", ["facebook", "instagram"])
-        
-        if not store or not message:
-            log_app("⚠️ Données de publication incomplètes (store ou message manquant)", "WARNING")
-            return None
-        
-        # Valider le store
-        valid_stores = ["gizmobbs", "logicantiq", "outdoor"]
-        if store not in valid_stores:
-            log_app(f"⚠️ Store invalide: {store}. Stores valides: {valid_stores}", "WARNING")
-            return None
-        
-        log_app(f"🔗 Traitement publication webhook pour {store}", "INFO")
-        
-        # Publier sur les plateformes demandées
-        result = await publish_post_main(store, message, product_url, None, platforms)
-        
-        return result
-        
-    except Exception as e:
-        log_app(f"❌ Erreur traitement publication webhook: {str(e)}", "ERROR")
-        return None
+# Fonction process_webhook_publication supprimée - utilise celle corrigée plus haut
 
 
 @app.post("/api/webhook/n8n", response_model=WebhookResponse)
