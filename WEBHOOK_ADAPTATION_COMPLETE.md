@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://social-media-fix-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://ngrok-debugger.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://social-media-fix-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://social-media-fix-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://social-media-fix-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://ngrok-debugger.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://ngrok-debugger.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://ngrok-debugger.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
