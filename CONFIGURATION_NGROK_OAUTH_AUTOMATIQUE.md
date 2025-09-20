@@ -30,18 +30,17 @@
 ## 🚀 Séquence de Démarrage
 
 ```
-🚀 Meta Publishing Platform - Version Windows CORRIGÉE
-🔍 Configuration ngrok: detect
-🔄 Démarrage avec tunnel ngrok (accès internet)...
-🔍 Détection de l'URL ngrok active...
-✅ URL ngrok trouvée dans frontend .env: https://xxx.ngrok-free.app
-✅ Frontend .env synchronisé avec ngrok
+🚀 Meta Publishing Platform - Architecture Ngrok Unifiée
+🔍 Configuration ngrok: URL unique
+🌐 Application accessible via : https://e4de51969ba9.ngrok-free.app
+🔄 Frontend intégré au backend FastAPI
+✅ URL ngrok unifiée configurée
 🔧 Configuration automatique Facebook OAuth...
 ✅ Configuration Facebook OAuth mise à jour complètement (4/4)
 🔐 URIs de redirection configurées:
-   • https://xxx.ngrok-free.app/
-   • https://xxx.ngrok-free.app/auth/callback
-   • https://xxx.ngrok-free.app/auth/callb
+   • https://e4de51969ba9.ngrok-free.app/
+   • https://e4de51969ba9.ngrok-free.app/auth/callback
+   • https://e4de51969ba9.ngrok-free.app/auth/callb
 ✅ Facebook OAuth configuré automatiquement
 ✅ Application démarrée avec succès!
 ```
