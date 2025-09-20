@@ -24,10 +24,12 @@ Votre application FacebookPost a été **AMÉLIORÉE AVEC SUCCÈS** avec toutes 
 
 ## 🚀 **UTILISATION N8N - NOUVEAU FORMAT**
 
-### **Endpoint Principal (INCHANGÉ)**
+### **Endpoint Principal (AMÉLIORÉ)**
 ```
-POST https://blank-ngrok.preview.emergentagent.com/api/publishProduct
+POST https://e4de51969ba9.ngrok-free.app/api/publishProduct
 ```
+
+> **🎯 AMÉLIORATION NGROK UNIQUE** : Une seule URL ngrok sert maintenant le frontend et le backend
 
 ### **🆕 NOUVEAU : Sélection Automatique de Page**
 Ajoutez le paramètre `shop_type` pour publier sur la bonne page :
