@@ -10,10 +10,13 @@
 3. **Démarrage** : `start\99_start_all.bat` 
 4. **Ouverture** : http://localhost:8001
 
-### Première Utilisation
-1. Connecter votre Business Manager Facebook
-2. Sélectionner vos pages/groupes/Instagram  
-3. Créer et publier vos premiers posts
+### Première Utilisation (URL Ngrok Unifiée)
+1. Accéder à https://e4de51969ba9.ngrok-free.app
+2. Connecter votre Business Manager Facebook
+3. Sélectionner vos pages/groupes/Instagram  
+4. Créer et publier vos premiers posts
+
+> **🚀 AMÉLIORATION** : Une seule URL ngrok pour frontend et backend
 
 ---
 
