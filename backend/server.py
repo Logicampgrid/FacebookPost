@@ -3068,8 +3068,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # Business Manager spécifique pour @logicamp_berger
             business_manager_id = "1715327795564432"  # ID spécifique du BM logicamp_berger
             
-            # CONFIGURATION PRIORITAIRE INSTAGRAM selon MISSION_ACCOMPLIE_LOGICAMP_BERGER.md
-            platforms = ["instagram"]  # Instagram UNIQUEMENT pour gizmobbs (pas Facebook)
+            # CONFIGURATION PRIORITAIRE selon les données reçues
+            # Si pas d'image, publier sur Facebook ; si image, Instagram + Facebook
+            if image_url:
+                platforms = ["facebook", "instagram"]  # Les deux si image disponible
+            else:
+                platforms = ["facebook"]  # Facebook seulement si pas d'image
             
             # Adaptation du message pour Instagram avec optimisation automatique
             if custom_message:
