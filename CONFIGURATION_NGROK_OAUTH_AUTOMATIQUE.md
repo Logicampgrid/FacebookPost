@@ -67,9 +67,9 @@ GET https://e4de51969ba9.ngrok-free.app/api/config/oauth-status-complete
   "oauth_ready": true,
   "auto_config_completed": true,
   "redirect_uris_configured": [
-    "https://xxx.ngrok-free.app/",
-    "https://xxx.ngrok-free.app/auth/callback",
-    "https://xxx.ngrok-free.app/auth/callb"
+    "https://e4de51969ba9.ngrok-free.app/",
+    "https://e4de51969ba9.ngrok-free.app/auth/callback",
+    "https://e4de51969ba9.ngrok-free.app/auth/callb"
   ]
 }
 ```
