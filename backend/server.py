@@ -3096,6 +3096,8 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             else:
                 message = description or "Publication automatique"
         
+        log_app(f"🔍 DEBUG - Final message: '{message[:50]}...', length: {len(message)}", "INFO")
+        
         # Validation améliorée avec logging détaillé
         missing_fields = []
         if not store and not shop_type:
