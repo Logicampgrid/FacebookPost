@@ -3,17 +3,17 @@
 ## 🎯 PROBLÈMES RÉSOLUS
 
 ### 1. ✅ WEBHOOK ACCESSIBLE
-- **URL**: `https://social-media-fix-1.preview.emergentagent.com/api/webhook`
+- **URL**: `https://blank-ngrok.preview.emergentagent.com/api/webhook`
 - **Status**: ✅ Fonctionnel (retourne erreur 400 normale en l'absence de paramètres Facebook)
-- **Test**: `curl https://social-media-fix-1.preview.emergentagent.com/api/webhook`
+- **Test**: `curl https://blank-ngrok.preview.emergentagent.com/api/webhook`
 
 ### 2. ✅ REDIRECT_URI CORRIGÉ  
 - **Problème initial**: Le code utilisait des URLs ngrok obsolètes ou incorrectes
 - **Solution appliquée**: Modification de `build_dynamic_redirect_uri()` pour utiliser l'URL du proxy Emergent
-- **Résultat**: URI correcte générée automatiquement : `https://social-media-fix-1.preview.emergentagent.com/auth/callback`
+- **Résultat**: URI correcte générée automatiquement : `https://blank-ngrok.preview.emergentagent.com/auth/callback`
 
 ### 3. ✅ BACKEND FONCTIONNEL
-- **URL Backend**: `https://social-media-fix-1.preview.emergentagent.com`
+- **URL Backend**: `https://blank-ngrok.preview.emergentagent.com`
 - **Health Check**: ✅ OK - 3 stores configurés
 - **API Endpoints**: ✅ Tous fonctionnels
 
@@ -23,7 +23,7 @@
 1. **Fonction `build_dynamic_redirect_uri()`** - **LIGNE 303-359**
    - ✅ Priorité #1 donnée au `.env` du frontend au lieu de ngrok
    - ✅ Accepte toutes les URLs HTTPS valides (pas seulement ngrok)
-   - ✅ Utilise `https://social-media-fix-1.preview.emergentagent.com`
+   - ✅ Utilise `https://blank-ngrok.preview.emergentagent.com`
 
 2. **Endpoint OAuth** - **LIGNE 1467**
    - ✅ Corrigé : `build_dynamic_redirect_uri("/auth/callback")` au lieu de `("/")` 
@@ -40,8 +40,8 @@
 **Vous devez maintenant mettre à jour votre Facebook App avec ces paramètres :**
 
 1. **App Domains** ➡️ `social-post-proxy.preview.emergentagent.com`
-2. **OAuth Redirect URIs** ➡️ `https://social-media-fix-1.preview.emergentagent.com/auth/callback`
-3. **Webhook URL** ➡️ `https://social-media-fix-1.preview.emergentagent.com/api/webhook`
+2. **OAuth Redirect URIs** ➡️ `https://blank-ngrok.preview.emergentagent.com/auth/callback`
+3. **Webhook URL** ➡️ `https://blank-ngrok.preview.emergentagent.com/api/webhook`
 
 ### ÉTAPES CONFIGURATION
 ```
@@ -91,10 +91,10 @@ Une fois la configuration Facebook mise à jour, testez :
 python3 /app/test_oauth_fix.py
 
 # Test webhook spécifique  
-curl "https://social-media-fix-1.preview.emergentagent.com/api/webhook?hub.mode=subscribe&hub.verify_token=your_token&hub.challenge=test123"
+curl "https://blank-ngrok.preview.emergentagent.com/api/webhook?hub.mode=subscribe&hub.verify_token=your_token&hub.challenge=test123"
 
 # Test authentification (depuis navigateur)
-https://social-media-fix-1.preview.emergentagent.com/auth/facebook
+https://blank-ngrok.preview.emergentagent.com/auth/facebook
 ```
 
 ---

@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-media-fix-1.preview.emergentagent.com
+URL : https://blank-ngrok.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
