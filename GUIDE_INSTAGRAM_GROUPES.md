@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://tunnel-gram.preview.emergentagent.com
+URL : https://social-post-logger.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

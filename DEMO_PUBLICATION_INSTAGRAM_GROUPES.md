@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://tunnel-gram.preview.emergentagent.com
+🔗 https://social-post-logger.preview.emergentagent.com
