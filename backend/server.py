@@ -3054,6 +3054,8 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             custom_message = f"{title}\n\n{product_url}" if product_url else title
             log_app(f"📝 Message auto-généré à partir du titre: {custom_message[:50]}...", "INFO")
         
+        log_app(f"🔍 DEBUG - custom_message: '{custom_message[:50]}...', title: '{title[:30]}...', product_url: '{product_url[:50]}...'", "INFO")
+        
         # PRIORITÉ RÉCENTE 2: Logique spéciale pour gizmobbs → @logicamp_berger (SOLUTION_LOGICAMP_BERGER_COMPLETE.md)
         if store == "gizmobbs" or shop_type == "gizmobbs":
             log_app("🎯 PRIORITÉ RÉCENTE : Configuration spéciale gizmobbs → @logicamp_berger", "INFO")
