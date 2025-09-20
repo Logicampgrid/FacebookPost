@@ -55,8 +55,8 @@ GET https://e4de51969ba9.ngrok-free.app/api/config/oauth-status-complete
 ```json
 {
   "ngrok_active": true,
-  "ngrok_url": "https://xxx.ngrok-free.app",
-  "redirect_uri": "https://xxx.ngrok-free.app/",
+  "ngrok_url": "https://e4de51969ba9.ngrok-free.app",
+  "redirect_uri": "https://e4de51969ba9.ngrok-free.app/",
   "facebook_config": {
     "app_id_configured": true,
     "app_secret_configured": true,
