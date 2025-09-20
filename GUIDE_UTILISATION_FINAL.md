@@ -159,9 +159,9 @@ L'historique affiche :
 
 ## 🧪 **TESTS ET VALIDATION**
 
-### **Test Simple**
+### **Test Simple (URL UNIFIÉE)**
 ```bash
-curl -X POST "https://blank-ngrok.preview.emergentagent.com/api/publishProduct/test" \
+curl -X POST "https://e4de51969ba9.ngrok-free.app/api/publishProduct/test" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Test Produit",
@@ -172,9 +172,9 @@ curl -X POST "https://blank-ngrok.preview.emergentagent.com/api/publishProduct/t
   }'
 ```
 
-### **Vérification Configuration**
+### **Vérification Configuration (URL UNIFIÉE)**
 ```bash
-curl -s "https://blank-ngrok.preview.emergentagent.com/api/publishProduct/config" | jq '.shop_types'
+curl -s "https://e4de51969ba9.ngrok-free.app/api/publishProduct/config" | jq '.shop_types'
 ```
 
 ---
