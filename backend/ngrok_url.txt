@@ -1,1 +1,1 @@
-https://fair-pans-taste.loca.lt
+http://localhost:8001
