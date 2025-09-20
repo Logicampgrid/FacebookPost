@@ -3051,6 +3051,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         image_url = webhook_data.get("image_url")
         platforms = webhook_data.get("platforms", ["facebook", "instagram"])  # Default both platforms
         
+        # CORRECTION MULTIPART: Si image est binaire (vos webhooks réels), on la gère plus tard
+        # Pour l'instant on traite juste les données JSON
+        
         # CORRECTION: Si pas de message personnalisé, créer le message à partir du title + URL
         if not custom_message and title:
             custom_message = f"{title}\n\n{product_url}" if product_url else title
