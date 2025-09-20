@@ -3047,7 +3047,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         custom_message = webhook_data.get("message", "")
         product_url = webhook_data.get("product_url") or webhook_data.get("url")
         image_url = webhook_data.get("image_url")
-        platforms = webhook_data.get("platforms", ["facebook"])
+        platforms = webhook_data.get("platforms", ["facebook", "instagram"])  # Default both platforms
+        
+        # CORRECTION: Si pas de message personnalisé, créer le message à partir du title + URL
+        if not custom_message and title:
+            custom_message = f"{title}\n\n{product_url}" if product_url else title
+            log_app(f"📝 Message auto-généré à partir du titre: {custom_message[:50]}...", "INFO")
         
         # PRIORITÉ RÉCENTE 2: Logique spéciale pour gizmobbs → @logicamp_berger (SOLUTION_LOGICAMP_BERGER_COMPLETE.md)
         if store == "gizmobbs" or shop_type == "gizmobbs":
