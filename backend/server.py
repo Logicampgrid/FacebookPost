@@ -470,6 +470,60 @@ def sync_frontend_env_with_ngrok():
         log_app(f"❌ Erreur synchronisation frontend .env: {e}", "ERROR")
         return False
 
+def sync_webhook_url_with_ngrok():
+    """Synchronise WEBHOOK_URL dans le .env principal avec l'URL ngrok active"""
+    try:
+        ngrok_url = get_active_ngrok_url()
+        if not ngrok_url:
+            log_app("⚠️ Aucune URL ngrok active - synchronisation WEBHOOK_URL ignorée", "WARNING")
+            return False
+        
+        main_env_path = os.path.join(WINDOWS_PATHS["project_root"], ".env")
+        if not os.path.exists(main_env_path):
+            log_app(f"⚠️ Fichier .env principal non trouvé: {main_env_path}", "WARNING")
+            return False
+        
+        # Lire le fichier .env actuel
+        with open(main_env_path, "r", encoding='utf-8') as f:
+            content = f.read()
+        
+        # Diviser en lignes pour traitement
+        lines = content.splitlines()
+        
+        # Mettre à jour WEBHOOK_URL
+        updated_lines = []
+        webhook_url_updated = False
+        
+        for line in lines:
+            if line.startswith("WEBHOOK_URL="):
+                old_url = line.split("=", 1)[1] if "=" in line else ""
+                if old_url != ngrok_url:
+                    updated_lines.append(f"WEBHOOK_URL={ngrok_url}")
+                    log_app(f"✅ WEBHOOK_URL mis à jour: {old_url} -> {ngrok_url}", "SUCCESS")
+                else:
+                    updated_lines.append(line)
+                    log_app(f"✅ WEBHOOK_URL déjà à jour: {ngrok_url}", "SUCCESS")
+                webhook_url_updated = True
+            else:
+                updated_lines.append(line)
+        
+        if not webhook_url_updated:
+            updated_lines.append(f"WEBHOOK_URL={ngrok_url}")
+            log_app(f"✅ WEBHOOK_URL ajouté: {ngrok_url}", "SUCCESS")
+        
+        # Réécrire le fichier avec les nouvelles lignes
+        with open(main_env_path, "w", encoding='utf-8') as f:
+            f.write("\n".join(updated_lines))
+            if updated_lines and not updated_lines[-1].endswith('\n'):
+                f.write("\n")  # Ajouter une nouvelle ligne à la fin
+        
+        log_app(f"🎯 WEBHOOK_URL synchronisé avec ngrok: {ngrok_url}", "SUCCESS")
+        return True
+        
+    except Exception as e:
+        log_app(f"❌ Erreur synchronisation WEBHOOK_URL: {e}", "ERROR")
+        return False
+
 def update_facebook_oauth_config(ngrok_url):
     """Met à jour automatiquement la configuration Facebook OAuth avec l'URL ngrok active"""
     try:
