@@ -217,23 +217,44 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
         if not validation["valid"]:
             return False, None, validation["error"]
         
-        # Connexion FTP
+        # Connexion FTP avec configuration optimisée
         ftp = ftplib.FTP()
-        ftp.connect(FTP_HOST, FTP_PORT, timeout=60)  # Timeout plus long pour les vidéos
+        ftp.set_pasv(True)  # Mode passif explicite
+        ftp.connect(FTP_HOST, FTP_PORT, timeout=120)  # Timeout plus long pour les vidéos
         ftp.login(FTP_USER, FTP_PASSWORD)
         
-        # Changement de répertoire
+        log_video("Connexion FTP réussie", "SUCCESS")
+        
+        # Changement de répertoire vers WordPress uploads
         try:
             ftp.cwd(FTP_DIRECTORY)
+            log_video(f"Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
         except ftplib.error_perm:
-            # Créer le répertoire s'il n'existe pas
-            ftp.mkd(FTP_DIRECTORY)
-            ftp.cwd(FTP_DIRECTORY)
+            log_video(f"Création du répertoire: {FTP_DIRECTORY}", "INFO")
+            try:
+                ftp.mkd(FTP_DIRECTORY)
+                ftp.cwd(FTP_DIRECTORY)
+                log_video("Répertoire créé et accessible", "SUCCESS")
+            except Exception as mkdir_error:
+                log_video(f"Erreur création répertoire: {mkdir_error}", "ERROR")
+                return False, None, f"Impossible de créer le répertoire: {mkdir_error}"
         
-        # Upload du fichier en mode binaire
-        with open(video_path, 'rb') as video_file:
-            log_video(f"Upload en cours: {filename}", "UPLOAD")
-            ftp.storbinary(f'STOR {filename}', video_file)
+        # Upload du fichier en mode binaire avec blocs plus petits
+        try:
+            with open(video_path, 'rb') as video_file:
+                log_video(f"Upload en cours: {filename}", "UPLOAD")
+                ftp.storbinary(f'STOR {filename}', video_file, blocksize=8192)
+            
+            # Vérifier que le fichier existe sur le serveur
+            try:
+                file_size = ftp.size(filename)
+                log_video(f"Upload confirmé - Taille: {file_size} bytes", "SUCCESS")
+            except:
+                log_video("Upload semble réussi (vérification taille échouée)", "WARNING")
+                
+        except Exception as upload_error:
+            ftp.quit()
+            return False, None, f"Erreur durant l'upload: {upload_error}"
         
         ftp.quit()
         
