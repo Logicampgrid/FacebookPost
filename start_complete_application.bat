@@ -61,17 +61,15 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo [2/5] Sélection du mode de fonctionnement...
+echo [2/5] Sélection du mode de fonctionnement automatique...
 
 if "%NGROK_AVAILABLE%"=="true" (
-    echo 🤔 Ngrok est disponible. Quel mode souhaitez-vous ?
+    echo 🚀 Mode TUNNEL automatiquement sélectionné (ngrok disponible)
+    echo    ✅ Accès depuis Internet via ngrok
+    echo    ✅ Mise à jour automatique des URLs
+    echo    ✅ Configuration Facebook OAuth automatique
     echo.
-    echo    1. Mode TUNNEL (ngrok) - Accès depuis Internet
-    echo    2. Mode LOCAL - Accès depuis cet ordinateur uniquement
-    echo.
-    choice /c 12 /m "Votre choix"
-    if errorlevel 2 goto local_mode
-    if errorlevel 1 goto tunnel_mode
+    goto tunnel_mode
 ) else (
     echo ℹ️ Mode LOCAL automatiquement sélectionné (ngrok non disponible)
     goto local_mode
