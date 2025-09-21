@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://meta-publish-app.preview.emergentagent.com
+URL : https://berger-media-bug.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
