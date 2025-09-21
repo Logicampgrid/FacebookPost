@@ -141,7 +141,7 @@ async def upload_to_ftp_enhanced(local_file_path: str, store_config: dict, origi
         if not os.path.exists(local_file_path):
             return {"success": False, "error": f"Fichier local non trouvé: {local_file_path}"}
         
-        # Générer nom de fichier unique
+        # Construire le nom de fichier et les URLs
         if not original_filename:
             original_filename = os.path.basename(local_file_path)
         
@@ -150,12 +150,11 @@ async def upload_to_ftp_enhanced(local_file_path: str, store_config: dict, origi
         filename_parts = os.path.splitext(original_filename)
         ftp_filename = f"{store_config['ftp_subdir']}_{timestamp}_{unique_id}{filename_parts[1]}"
         
-        # Construire le chemin FTP
-        ftp_dir = f"{FTP_BASE_DIR}{store_config['ftp_subdir']}/"
-        ftp_path = ftp_dir + ftp_filename
+        # URL publique (fichier sera dans le sous-dossier store ou à la racine selon le succès de création)
         public_url = f"{FTP_BASE_URL}{store_config['ftp_subdir']}/{ftp_filename}"
+        fallback_url = f"{FTP_BASE_URL}{ftp_filename}"  # En cas d'échec création dossier
         
-        log_poster(f"Upload FTP vers: {ftp_path}", "INFO")
+        log_poster(f"Upload FTP: {ftp_filename}", "INFO")
         
         # Connexion FTP avec retry et configuration optimisée
         max_attempts = 3
