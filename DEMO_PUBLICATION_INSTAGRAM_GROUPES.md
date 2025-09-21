@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://berger-media-bug.preview.emergentagent.com
+🔗 https://facebook-poster.preview.emergentagent.com
