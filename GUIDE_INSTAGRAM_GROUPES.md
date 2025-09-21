@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://facebook-poster.preview.emergentagent.com
+URL : https://content-sync-app.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
