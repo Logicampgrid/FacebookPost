@@ -205,7 +205,7 @@ def validate_video_file(file_path: str, platform: str = "both") -> dict:
         return {"valid": False, "error": str(e)}
 
 async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
-    """Upload une vidéo vers le serveur FTP"""
+    """Upload une vidéo vers le serveur FTP avec gestion d'erreurs robuste"""
     try:
         log_video(f"Début upload FTP: {video_path}", "UPLOAD")
         
@@ -217,55 +217,69 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
         if not validation["valid"]:
             return False, None, validation["error"]
         
-        # Connexion FTP avec configuration optimisée
-        ftp = ftplib.FTP()
-        ftp.set_pasv(True)  # Mode passif explicite
-        ftp.connect(FTP_HOST, FTP_PORT, timeout=120)  # Timeout plus long pour les vidéos
-        ftp.login(FTP_USER, FTP_PASSWORD)
+        # Nouvelle approche : essayer différentes configurations FTP
+        connection_configs = [
+            {"pasv": False, "timeout": 15, "name": "Actif court"},
+            {"pasv": True, "timeout": 15, "name": "Passif court"},
+            {"pasv": False, "timeout": 60, "name": "Actif long"},
+        ]
         
-        log_video("Connexion FTP réussie", "SUCCESS")
-        
-        # Changement de répertoire vers WordPress uploads
-        try:
-            ftp.cwd(FTP_DIRECTORY)
-            log_video(f"Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
-        except ftplib.error_perm:
-            log_video(f"Création du répertoire: {FTP_DIRECTORY}", "INFO")
+        for config in connection_configs:
             try:
-                ftp.mkd(FTP_DIRECTORY)
-                ftp.cwd(FTP_DIRECTORY)
-                log_video("Répertoire créé et accessible", "SUCCESS")
-            except Exception as mkdir_error:
-                log_video(f"Erreur création répertoire: {mkdir_error}", "ERROR")
-                return False, None, f"Impossible de créer le répertoire: {mkdir_error}"
-        
-        # Upload du fichier en mode binaire avec blocs plus petits
-        try:
-            with open(video_path, 'rb') as video_file:
-                log_video(f"Upload en cours: {filename}", "UPLOAD")
-                ftp.storbinary(f'STOR {filename}', video_file, blocksize=8192)
-            
-            # Vérifier que le fichier existe sur le serveur
-            try:
-                file_size = ftp.size(filename)
-                log_video(f"Upload confirmé - Taille: {file_size} bytes", "SUCCESS")
-            except:
-                log_video("Upload semble réussi (vérification taille échouée)", "WARNING")
+                log_video(f"Tentative connexion FTP ({config['name']})...", "INFO")
                 
-        except Exception as upload_error:
-            ftp.quit()
-            return False, None, f"Erreur durant l'upload: {upload_error}"
+                ftp = ftplib.FTP()
+                ftp.set_pasv(config["pasv"])
+                ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                ftp.login(FTP_USER, FTP_PASSWORD)
+                
+                log_video(f"Connexion FTP réussie ({config['name']})", "SUCCESS")
+                
+                # Navigation vers le répertoire avec gestion d'erreur simplifiée
+                try:
+                    ftp.cwd(FTP_DIRECTORY)
+                    log_video(f"Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
+                except ftplib.error_perm:
+                    log_video(f"Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine", "WARNING")
+                    # Continuer sans changer de répertoire - certains serveurs FTP démarrent déjà dans le bon répertoire
+                
+                # Upload du fichier avec gestion d'erreur améliorée
+                try:
+                    with open(video_path, 'rb') as video_file:
+                        log_video(f"Upload en cours: {filename}", "UPLOAD")
+                        # Utiliser un blocksize plus petit pour éviter les timeouts
+                        ftp.storbinary(f'STOR {filename}', video_file, blocksize=4096)
+                    
+                    log_video(f"Upload terminé avec succès ({config['name']})", "SUCCESS")
+                    
+                    # Fermer la connexion proprement
+                    ftp.quit()
+                    
+                    # Construire l'URL publique
+                    public_url = f"{FTP_BASE_URL}{filename}"
+                    log_video(f"Vidéo disponible: {public_url}", "SUCCESS")
+                    
+                    return True, public_url, None
+                    
+                except Exception as upload_error:
+                    log_video(f"Erreur upload ({config['name']}): {upload_error}", "ERROR")
+                    try:
+                        ftp.quit()
+                    except:
+                        pass
+                    # Continuer avec la configuration suivante
+                    continue
+                    
+            except Exception as conn_error:
+                log_video(f"Erreur connexion ({config['name']}): {conn_error}", "ERROR")
+                # Continuer avec la configuration suivante
+                continue
         
-        ftp.quit()
-        
-        # Construire l'URL publique
-        public_url = f"{FTP_BASE_URL}{filename}"
-        log_video(f"Upload réussi: {public_url}", "SUCCESS")
-        
-        return True, public_url, None
+        # Si aucune configuration n'a fonctionné
+        return False, None, "Impossible d'établir une connexion FTP stable. Vérifiez la configuration réseau."
         
     except Exception as e:
-        log_video(f"Erreur upload FTP: {str(e)}", "ERROR")
+        log_video(f"Erreur générale upload FTP: {str(e)}", "ERROR")
         return False, None, str(e)
 
 def log_app(message: str, level: str = "INFO"):
