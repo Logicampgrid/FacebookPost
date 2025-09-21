@@ -198,10 +198,18 @@ async def upload_to_ftp_enhanced(local_file_path: str, store_config: dict, origi
                 
                 ftp.quit()
                 
-                log_poster(f"Upload FTP réussi: {public_url}", "SUCCESS")
+                # Déterminer l'URL publique correcte
+                current_dir = ftp.pwd()
+                if store_config['ftp_subdir'] in current_dir:
+                    final_url = public_url
+                else:
+                    final_url = fallback_url
+                    log_poster(f"Utilisation URL fallback: {final_url}", "WARNING")
+                
+                log_poster(f"Upload FTP réussi: {final_url}", "SUCCESS")
                 return {
                     "success": True,
-                    "ftp_url": public_url,
+                    "ftp_url": final_url,
                     "filename": ftp_filename,
                     "attempt": attempt + 1
                 }
