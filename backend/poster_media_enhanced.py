@@ -157,29 +157,45 @@ async def upload_to_ftp_enhanced(local_file_path: str, store_config: dict, origi
         
         log_poster(f"Upload FTP vers: {ftp_path}", "INFO")
         
-        # Connexion FTP avec retry
+        # Connexion FTP avec retry et configuration optimisée
         max_attempts = 3
         for attempt in range(max_attempts):
             try:
                 ftp = ftplib.FTP()
-                ftp.connect(FTP_HOST, FTP_PORT, timeout=30)
+                ftp.set_pasv(True)  # Mode passif par défaut
+                ftp.connect(FTP_HOST, FTP_PORT, timeout=60)  # Timeout plus long
                 ftp.login(FTP_USER, FTP_PASSWORD)
+                
+                log_poster(f"Connexion FTP réussie (tentative {attempt + 1})", "INFO")
+                
+                # Navigation vers le dossier WordPress uploads
+                ftp.cwd(FTP_BASE_DIR)
+                log_poster(f"Navigation vers {FTP_BASE_DIR}", "INFO")
                 
                 # Créer le dossier du store s'il n'existe pas
                 try:
-                    ftp.cwd(ftp_dir)
+                    ftp.cwd(store_config['ftp_subdir'])
+                    log_poster(f"Dossier store trouvé: {store_config['ftp_subdir']}", "INFO")
                 except ftplib.error_perm:
                     try:
-                        ftp.mkd(ftp_dir)
-                        ftp.cwd(ftp_dir)
-                        log_poster(f"Dossier FTP créé: {ftp_dir}", "INFO")
+                        ftp.mkd(store_config['ftp_subdir'])
+                        ftp.cwd(store_config['ftp_subdir'])
+                        log_poster(f"Dossier store créé: {store_config['ftp_subdir']}", "SUCCESS")
                     except Exception as mkdir_error:
-                        log_poster(f"Erreur création dossier FTP: {mkdir_error}", "WARNING")
-                        ftp.cwd(FTP_BASE_DIR)  # Fallback vers le dossier principal
+                        log_poster(f"Erreur création dossier store: {mkdir_error}", "WARNING")
+                        # Rester dans le dossier parent
                 
-                # Upload du fichier
+                # Upload du fichier avec timeout plus court pour l'opération
+                log_poster(f"Début upload: {ftp_filename}", "INFO")
                 with open(local_file_path, 'rb') as file:
-                    ftp.storbinary(f'STOR {ftp_filename}', file)
+                    ftp.storbinary(f'STOR {ftp_filename}', file, blocksize=8192)
+                
+                # Vérification que le fichier existe
+                try:
+                    ftp.size(ftp_filename)  # Test existence
+                    log_poster("Upload confirmé sur le serveur", "SUCCESS")
+                except:
+                    log_poster("Fichier non confirmé, mais upload semble réussi", "WARNING")
                 
                 ftp.quit()
                 
