@@ -3524,10 +3524,74 @@ async def webhook_handler(request: Request):
                                             'size': len(file_content)
                                         }
                         else:
-                            # Process all form fields
+                            # Process all form fields - CORRECTION POUR LES FICHIERS SANS JSON
                             webhook_data = {}
                             for key, value in form_data.items():
-                                if hasattr(value, 'read'):  # File upload
+                                if hasattr(value, 'read') and hasattr(value, 'filename'):  # File upload
+                                    file_content = await value.read()
+                                    content_type = getattr(value, 'content_type', '')
+                                    filename = getattr(value, 'filename', f'file_{key}')
+                                    
+                                    log_app(f"📦 CORRECTION: Fichier détecté - {key}: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
+                                    
+                                    # Traitement spécialisé selon le type de fichier
+                                    if content_type.startswith('video/') or filename.lower().endswith(('.mp4', '.mov', '.avi')):
+                                        # C'est une vidéo
+                                        file_extension = ".mp4" if "mp4" in content_type or filename.lower().endswith('.mp4') else ".mov"
+                                        temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+                                        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+                                        
+                                        with open(temp_path, 'wb') as f:
+                                            f.write(file_content)
+                                        
+                                        log_app(f"📦 CORRECTION: Vidéo sauvegardée temporairement: {temp_path}", "INFO")
+                                        
+                                        # Ajouter les infos de la vidéo aux données webhook
+                                        webhook_data['video_file'] = {
+                                            'path': temp_path,
+                                            'filename': temp_filename,
+                                            'original_filename': filename,
+                                            'content_type': content_type,
+                                            'size': len(file_content)
+                                        }
+                                        
+                                    elif content_type.startswith('image/') or filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                                        # C'est une image
+                                        file_extension = ".jpg" if "jpeg" in content_type or filename.lower().endswith(('.jpg', '.jpeg')) else ".png"
+                                        temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+                                        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+                                        
+                                        with open(temp_path, 'wb') as f:
+                                            f.write(file_content)
+                                        
+                                        log_app(f"📦 CORRECTION: Image sauvegardée: {temp_path}", "INFO")
+                                        
+                                        # Ajouter les infos de l'image aux données webhook
+                                        webhook_data['image_file'] = {
+                                            'path': temp_path,
+                                            'filename': temp_filename,
+                                            'original_filename': filename,
+                                            'content_type': content_type,
+                                            'size': len(file_content)
+                                        }
+                                    else:
+                                        # Fichier non reconnu, essayer de le traiter comme texte
+                                        try:
+                                            text_content = file_content.decode('utf-8')
+                                            # Try to parse as JSON
+                                            try:
+                                                webhook_data[key] = json.loads(text_content)
+                                            except json.JSONDecodeError:
+                                                webhook_data[key] = text_content
+                                        except UnicodeDecodeError:
+                                            # Binary content, store as base64
+                                            import base64
+                                            webhook_data[key] = {
+                                                "type": "binary",
+                                                "size": len(file_content),
+                                                "base64": base64.b64encode(file_content[:1000]).decode('ascii')  # First 1KB only
+                                            }
+                                elif hasattr(value, 'read'): # File upload without filename
                                     content = await value.read()
                                     # Try to decode as text first
                                     try:
