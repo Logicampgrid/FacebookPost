@@ -39,6 +39,7 @@ def test_ftp_connection():
         log_test("Test 1: Connexion au serveur FTP...", "TEST")
         ftp = ftplib.FTP()
         ftp.set_debuglevel(2)  # Mode debug pour voir les détails
+        ftp.set_pasv(False)  # Utiliser mode actif au lieu de passif
         ftp.connect(FTP_HOST, FTP_PORT, timeout=30)
         log_test("✅ Connexion au serveur réussie", "SUCCESS")
         
