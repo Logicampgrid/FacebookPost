@@ -89,6 +89,12 @@ if exist ".env" (
 )
 cd ..
 
+REM Mettre à jour WEBHOOK_URL dans le .env principal
+if exist ".env" (
+    powershell -Command "(Get-Content .env) -replace 'WEBHOOK_URL=.*', 'WEBHOOK_URL=%ngrok_url%' | Set-Content .env" >NUL 2>&1
+    echo ✅ WEBHOOK_URL mis à jour: %ngrok_url%
+)
+
 echo.
 echo [4/4] Démarrage des services...
 
