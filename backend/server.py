@@ -733,6 +733,11 @@ async def lifespan(app: FastAPI):
             if sync_result:
                 log_app("✅ Frontend .env synchronisé avec succès", "SUCCESS")
             
+            # Synchroniser WEBHOOK_URL dans le .env principal
+            webhook_sync_result = sync_webhook_url_with_ngrok()
+            if webhook_sync_result:
+                log_app("✅ WEBHOOK_URL synchronisé avec succès", "SUCCESS")
+            
             # NOUVELLE FONCTIONNALITÉ: Configuration automatique Facebook OAuth
             log_app("🔧 Configuration automatique Facebook OAuth...", "INFO")
             oauth_result = auto_configure_facebook_oauth()
