@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://content-sync-app.preview.emergentagent.com
+🔗 https://autopost-4.preview.emergentagent.com

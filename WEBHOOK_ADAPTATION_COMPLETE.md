@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://content-sync-app.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://autopost-4.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://content-sync-app.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://content-sync-app.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://content-sync-app.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://autopost-4.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://autopost-4.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://autopost-4.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
