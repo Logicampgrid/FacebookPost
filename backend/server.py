@@ -319,11 +319,28 @@ def kill_existing_ngrok():
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
 def get_active_ngrok_url():
-    """Récupère l'URL ngrok active via l'API locale ou depuis le frontend .env - VERSION AMÉLIORÉE"""
+    """Récupère l'URL backend active - PRIORITÉ AU FRONTEND .env"""
     try:
-        log_app("🔍 Détection de l'URL ngrok active...", "INFO")
+        log_app("🔍 Détection de l'URL backend active...", "INFO")
         
-        # PRIORITÉ 1: Interroger l'API ngrok locale si disponible
+        # PRIORITÉ 1: Lire depuis le frontend .env (toute URL valide)
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        backend_url = line.split("=", 1)[1].strip()
+                        # Accepter toute URL valide (pas seulement ngrok)
+                        if backend_url and (backend_url.startswith("http://") or backend_url.startswith("https://")):
+                            log_app(f"✅ URL backend trouvée dans frontend .env: {backend_url}", "SUCCESS")
+                            return backend_url
+        except Exception as e:
+            log_app(f"⚠️ Erreur lecture frontend .env: {e}", "WARNING")
+        
+        # PRIORITÉ 2: Interroger l'API ngrok locale si disponible
         try:
             response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
             
@@ -354,24 +371,6 @@ def get_active_ngrok_url():
         except Exception as e:
             log_app(f"⚠️ Erreur API ngrok: {e}", "WARNING")
         
-        # PRIORITÉ 2: Lire depuis le frontend .env si l'URL est de type ngrok
-        try:
-            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
-            if os.path.exists(frontend_env_path):
-                with open(frontend_env_path, "r", encoding='utf-8') as f:
-                    lines = f.readlines()
-                
-                for line in lines:
-                    if line.startswith("REACT_APP_BACKEND_URL="):
-                        backend_url = line.split("=", 1)[1].strip()
-                        # Vérifier si c'est une URL ngrok valide
-                        if backend_url and (backend_url.startswith("https://") and 
-                                          ("ngrok" in backend_url or "ngrok-free.app" in backend_url)):
-                            log_app(f"✅ URL ngrok trouvée dans frontend .env: {backend_url}", "SUCCESS")
-                            return backend_url
-        except Exception as e:
-            log_app(f"⚠️ Erreur lecture frontend .env: {e}", "WARNING")
-        
         # PRIORITÉ 3: Lire depuis le fichier ngrok_url.txt si disponible
         try:
             ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
@@ -379,16 +378,16 @@ def get_active_ngrok_url():
                 with open(ngrok_file_path, "r", encoding='utf-8') as f:
                     file_url = f.read().strip()
                     if file_url and file_url.startswith("https://"):
-                        log_app(f"✅ URL ngrok trouvée dans fichier: {file_url}", "SUCCESS")
+                        log_app(f"✅ URL trouvée dans fichier: {file_url}", "SUCCESS")
                         return file_url
         except Exception as e:
             log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
         
-        log_app("⚠️ Aucune URL ngrok active trouvée", "WARNING")
+        log_app("⚠️ Aucune URL backend active trouvée", "WARNING")
         return None
             
     except Exception as e:
-        log_app(f"❌ Erreur détection ngrok: {e}", "ERROR")
+        log_app(f"❌ Erreur détection URL backend: {e}", "ERROR")
         return None
 
 def build_dynamic_redirect_uri(callback_path="/auth/callback"):
