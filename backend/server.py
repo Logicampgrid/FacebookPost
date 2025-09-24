@@ -119,7 +119,7 @@ TOKENS = {
 FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
 FTP_PORT = int(os.getenv("FTP_PORT", "21"))
 FTP_USER = os.getenv("FTP_USER", "logi")
-FTP_PASSWORD = os.getenv("FTP_PASSWORD", "")
+FTP_PASSWORD = os.getenv("FTP_PASSWORD", "logi")
 FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
 FTP_BASE_URL = os.getenv("FTP_BASE_URL", f"https://{FTP_HOST}/wordpress/uploads/")
 
