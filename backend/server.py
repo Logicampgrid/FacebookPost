@@ -1014,6 +1014,71 @@ def log_publish(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [PUBLISH] {message}")
 
+def convert_local_path_to_ngrok_url(image_url: str) -> str:
+    """
+    Convertit les chemins locaux uploads/ en URLs ngrok publiques pour Instagram
+    
+    Args:
+        image_url: URL d'image potentiellement locale (ex: "uploads/nom_image.png")
+    
+    Returns:
+        str: URL ngrok publique (ex: "https://abe16f7ffd54.ngrok-free.app/uploads/nom_image.png")
+             ou l'URL originale si ce n'est pas un chemin local
+    """
+    try:
+        # Vérifier si c'est un chemin local uploads/
+        if not image_url.startswith("uploads/"):
+            log_publish(f"🔗 URL déjà publique, pas de conversion nécessaire: {image_url}", "INFO")
+            return image_url
+        
+        log_publish(f"🔄 Conversion chemin local détectée: {image_url}", "INFO")
+        
+        # Récupérer l'URL ngrok active
+        ngrok_url = get_active_ngrok_url()
+        if not ngrok_url:
+            error_msg = "Aucune URL ngrok active trouvée - impossible de convertir le chemin local"
+            log_publish(f"❌ {error_msg}", "ERROR")
+            raise ValueError(error_msg)
+        
+        # Construire l'URL publique
+        public_url = f"{ngrok_url}/{image_url}"
+        log_publish(f"✅ Chemin converti: {image_url} -> {public_url}", "SUCCESS")
+        
+        return public_url
+        
+    except Exception as e:
+        error_msg = f"Erreur conversion chemin vers URL ngrok: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+def verify_url_accessibility(url: str) -> bool:
+    """
+    Vérifie qu'une URL est accessible (HTTP 200)
+    
+    Args:
+        url: URL à vérifier
+    
+    Returns:
+        bool: True si accessible, False sinon
+    """
+    try:
+        log_publish(f"🔍 Vérification accessibilité URL: {url}", "INFO")
+        response = requests.head(url, timeout=10, allow_redirects=True)
+        
+        if response.status_code == 200:
+            log_publish(f"✅ URL accessible: {url} (HTTP {response.status_code})", "SUCCESS")
+            return True
+        else:
+            log_publish(f"⚠️ URL non accessible: {url} (HTTP {response.status_code})", "WARNING")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        log_publish(f"❌ Erreur vérification URL {url}: {str(e)}", "ERROR")
+        return False
+    except Exception as e:
+        log_publish(f"❌ Erreur générale vérification URL {url}: {str(e)}", "ERROR")
+        return False
+
 async def update_instagram_ids():
     """Mettre à jour automatiquement les IDs Instagram via l'API Graph"""
     try:
