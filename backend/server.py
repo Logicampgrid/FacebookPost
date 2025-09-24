@@ -1189,6 +1189,23 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         if not image_url:
             raise ValueError("Image URL requise pour Instagram")
         
+        # NOUVELLE FONCTIONNALITÉ: Conversion automatique des chemins locaux en URLs ngrok pour Instagram
+        try:
+            converted_image_url = convert_local_path_to_ngrok_url(image_url)
+            
+            # Vérification optionnelle de l'accessibilité de l'URL
+            if converted_image_url != image_url:  # Si conversion a eu lieu
+                if not verify_url_accessibility(converted_image_url):
+                    log_publish(f"⚠️ URL convertie non accessible, tentative avec URL originale", "WARNING")
+                    # En cas d'échec de vérification, on garde l'URL convertie mais on log un avertissement
+                    # L'API Instagram Graph donnera un message d'erreur plus précis si l'URL n'est pas accessible
+                    
+            image_url = converted_image_url  # Utiliser l'URL convertie pour la publication
+            
+        except Exception as conversion_error:
+            log_publish(f"❌ Erreur conversion URL: {str(conversion_error)}", "ERROR")
+            raise Exception(f"Impossible de convertir l'URL d'image pour Instagram: {str(conversion_error)}")
+        
         # Mode test : simulation
         if PUBLICATION_TEST_MODE:
             log_publish(f"MODE TEST - Publication Instagram simulée pour {store}", "TEST")
