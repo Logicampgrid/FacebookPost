@@ -3768,6 +3768,255 @@ async def get_tokens_status():
         log_app(f"❌ Erreur statut tokens: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+# === BULK INSTAGRAM PUBLISHER ===
+@app.post("/api/instagram/bulk-publish")
+async def bulk_publish_instagram(
+    store: str = Form(...),
+    caption: str = Form(default="Découvrez notre boutique !"),
+    access_token: Optional[str] = Form(None)
+):
+    """
+    Publie en masse tous les fichiers du dossier uploads/ sur Instagram
+    """
+    try:
+        log_app(f"🔄 Début publication en masse Instagram pour {store}", "INFO")
+        
+        # Vérifier la configuration du store
+        if store not in STORES:
+            raise HTTPException(status_code=400, detail=f"Store inconnu: {store}")
+        
+        store_config = get_store_config(store)
+        
+        # Utiliser le token fourni ou celui du store
+        instagram_token = access_token or store_config.get("access_token")
+        if not instagram_token:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Token d'accès Instagram manquant pour {store}"
+            )
+        
+        # Vérifier l'ID Instagram
+        ig_user_id = store_config.get("ig_user_id")
+        if not ig_user_id:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"ID Instagram manquant pour {store}"
+            )
+        
+        # Obtenir l'URL backend actuelle
+        backend_url = get_active_ngrok_url()
+        if not backend_url:
+            raise HTTPException(
+                status_code=400, 
+                detail="URL backend non accessible - vérifiez la configuration ngrok"
+            )
+        
+        # Vérifier le dossier uploads
+        uploads_path = os.path.join(os.getcwd(), UPLOAD_DIR)
+        if not os.path.exists(uploads_path):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Dossier {UPLOAD_DIR} introuvable"
+            )
+        
+        # Récupérer tous les fichiers image
+        supported_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        image_files = []
+        
+        for filename in os.listdir(uploads_path):
+            file_path = os.path.join(uploads_path, filename)
+            if os.path.isfile(file_path):
+                _, ext = os.path.splitext(filename.lower())
+                if ext in supported_extensions:
+                    image_files.append((filename, file_path))
+        
+        if not image_files:
+            return {
+                "success": False,
+                "error": f"Aucun fichier image trouvé dans {UPLOAD_DIR}",
+                "supported_extensions": supported_extensions
+            }
+        
+        log_app(f"📸 {len(image_files)} fichiers image trouvés", "INFO")
+        
+        # Publier chaque image
+        results = []
+        success_count = 0
+        
+        for filename, file_path in image_files:
+            try:
+                # Construire l'URL publique
+                public_url = f"{backend_url}/{UPLOAD_DIR}/{filename}"
+                
+                log_app(f"📤 Publication: {filename} -> {public_url}", "INFO")
+                
+                # Mode test : simulation
+                if PUBLICATION_TEST_MODE:
+                    log_app(f"MODE TEST - Publication Instagram simulée: {filename}", "TEST")
+                    results.append({
+                        "filename": filename,
+                        "success": True,
+                        "public_url": public_url,
+                        "instagram_id": f"test_ig_bulk_{uuid.uuid4().hex[:8]}",
+                        "test_mode": True
+                    })
+                    success_count += 1
+                    continue
+                
+                # Publication réelle sur Instagram
+                # Étape 1: Créer le conteneur média
+                create_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
+                create_payload = {
+                    "image_url": public_url,
+                    "caption": caption,
+                    "access_token": instagram_token
+                }
+                
+                create_response = requests.post(create_url, data=create_payload, timeout=30)
+                
+                if create_response.status_code == 200:
+                    media_data = create_response.json()
+                    creation_id = media_data.get("id")
+                    
+                    if creation_id:
+                        # Étape 2: Publier le média
+                        publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
+                        publish_payload = {
+                            "creation_id": creation_id,
+                            "access_token": instagram_token
+                        }
+                        
+                        publish_response = requests.post(publish_url, data=publish_payload, timeout=30)
+                        
+                        if publish_response.status_code == 200:
+                            publish_data = publish_response.json()
+                            instagram_id = publish_data.get("id")
+                            
+                            results.append({
+                                "filename": filename,
+                                "success": True,
+                                "public_url": public_url,
+                                "instagram_id": instagram_id,
+                                "creation_id": creation_id
+                            })
+                            success_count += 1
+                            log_app(f"✅ {filename} publié avec succès: {instagram_id}", "SUCCESS")
+                        else:
+                            error_msg = f"Erreur publication: {publish_response.text}"
+                            results.append({
+                                "filename": filename,
+                                "success": False,
+                                "public_url": public_url,
+                                "error": error_msg
+                            })
+                            log_app(f"❌ {filename} - {error_msg}", "ERROR")
+                    else:
+                        error_msg = "ID de création manquant dans la réponse"
+                        results.append({
+                            "filename": filename,
+                            "success": False,
+                            "public_url": public_url,
+                            "error": error_msg
+                        })
+                        log_app(f"❌ {filename} - {error_msg}", "ERROR")
+                else:
+                    error_msg = f"Erreur création média: {create_response.text}"
+                    results.append({
+                        "filename": filename,
+                        "success": False,
+                        "public_url": public_url,
+                        "error": error_msg
+                    })
+                    log_app(f"❌ {filename} - {error_msg}", "ERROR")
+                
+                # Pause entre publications pour éviter les limites de taux
+                await asyncio.sleep(2)
+                
+            except Exception as e:
+                error_msg = f"Erreur publication {filename}: {str(e)}"
+                results.append({
+                    "filename": filename,
+                    "success": False,
+                    "public_url": f"{backend_url}/{UPLOAD_DIR}/{filename}",
+                    "error": error_msg
+                })
+                log_app(f"❌ {error_msg}", "ERROR")
+        
+        # Résumé final
+        total_files = len(image_files)
+        failed_count = total_files - success_count
+        
+        log_app(f"📊 Publication terminée: {success_count}/{total_files} réussies", "SUCCESS")
+        
+        return {
+            "success": success_count > 0,
+            "total_files": total_files,
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "store": store,
+            "caption": caption,
+            "backend_url": backend_url,
+            "test_mode": PUBLICATION_TEST_MODE,
+            "results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_app(f"❌ Erreur publication en masse Instagram: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/instagram/bulk-status")
+async def bulk_status():
+    """
+    Affiche le statut du dossier uploads/ pour la publication en masse
+    """
+    try:
+        uploads_path = os.path.join(os.getcwd(), UPLOAD_DIR)
+        backend_url = get_active_ngrok_url()
+        
+        status = {
+            "upload_folder": UPLOAD_DIR,
+            "upload_path": uploads_path,
+            "folder_exists": os.path.exists(uploads_path),
+            "backend_url": backend_url,
+            "files": []
+        }
+        
+        if os.path.exists(uploads_path):
+            supported_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+            
+            for filename in os.listdir(uploads_path):
+                file_path = os.path.join(uploads_path, filename)
+                if os.path.isfile(file_path):
+                    _, ext = os.path.splitext(filename.lower())
+                    is_image = ext in supported_extensions
+                    file_size = os.path.getsize(file_path)
+                    
+                    status["files"].append({
+                        "filename": filename,
+                        "extension": ext,
+                        "is_image": is_image,
+                        "size_bytes": file_size,
+                        "size_mb": round(file_size / (1024*1024), 2),
+                        "public_url": f"{backend_url}/{UPLOAD_DIR}/{filename}" if backend_url else None
+                    })
+            
+            # Statistiques
+            image_files = [f for f in status["files"] if f["is_image"]]
+            status["stats"] = {
+                "total_files": len(status["files"]),
+                "image_files": len(image_files),
+                "total_size_mb": round(sum(f["size_bytes"] for f in status["files"]) / (1024*1024), 2),
+                "supported_extensions": supported_extensions
+            }
+        
+        return status
+        
+    except Exception as e:
+        log_app(f"❌ Erreur statut bulk: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # === ROUTES FRONTEND ===
 @app.get("/")
 async def serve_frontend(request: Request):
