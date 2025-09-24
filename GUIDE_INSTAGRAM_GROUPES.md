@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://ngrok-webhook-bridge.preview.emergentagent.com
+URL : https://photo-path-converter.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

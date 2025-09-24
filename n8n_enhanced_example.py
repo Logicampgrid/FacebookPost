@@ -199,7 +199,7 @@ return items.map(item => {
 });""")
     
     print("\n2. Configurez le nœud HTTP Request :")
-    print("   • URL: https://ngrok-webhook-bridge.preview.emergentagent.com/api/webhook/enhanced")
+    print("   • URL: https://photo-path-converter.preview.emergentagent.com/api/webhook/enhanced")
     print("   • Method: POST")
     print("   • Body Type: Multipart-Form Data")
     print("   • Fields:")
