@@ -831,6 +831,17 @@ if frontend_available:
     except Exception as e:
         log_app(f"⚠️ Erreur montage fichiers statiques: {e}", "WARNING")
 
+# Monter le dossier uploads pour servir les images via ngrok
+try:
+    uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
+    if os.path.exists(uploads_path):
+        app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+        log_app("✅ Dossier uploads monté sur /uploads pour ngrok", "SUCCESS")
+    else:
+        log_app(f"⚠️ Dossier uploads non trouvé: {uploads_path}", "WARNING")
+except Exception as e:
+    log_app(f"⚠️ Erreur montage dossier uploads: {e}", "WARNING")
+
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """Handle OPTIONS requests for CORS"""
