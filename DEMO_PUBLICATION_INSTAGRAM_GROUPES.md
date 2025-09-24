@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://social-media-sync-1.preview.emergentagent.com
+🔗 https://ngrok-webhook-bridge.preview.emergentagent.com

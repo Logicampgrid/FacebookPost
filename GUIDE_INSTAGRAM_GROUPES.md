@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-media-sync-1.preview.emergentagent.com
+URL : https://ngrok-webhook-bridge.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -12,7 +12,7 @@ import tempfile
 import os
 
 # Configuration
-API_BASE = "https://social-media-sync-1.preview.emergentagent.com"
+API_BASE = "https://ngrok-webhook-bridge.preview.emergentagent.com"
 WEBHOOK_URL = f"{API_BASE}/api/webhook"
 
 def create_test_image():
