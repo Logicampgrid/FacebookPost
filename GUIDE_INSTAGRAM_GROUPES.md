@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://webpub-debug.preview.emergentagent.com
+URL : https://ngrokdetector.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
