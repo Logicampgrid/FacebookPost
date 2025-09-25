@@ -1522,18 +1522,19 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         try:
             log_publish(f"🔍 CORRECTION: URL image reçue pour Instagram: '{image_url}'", "INFO")
             
-            # Étape 1: Vérifier si c'est un chemin local qui nécessite upload FTP
+            # Étape 1: Vérifier si c'est un chemin local qui nécessite conversion
             converted_image_url = image_url
-            needs_ftp_upload = False
+            needs_conversion = False
             
             # Détecter les chemins locaux (uploads\, uploads/, ./uploads/, etc.)
             normalized_path = image_url.replace("\\", "/")
-            if ("uploads/" in normalized_path) or normalized_path.startswith("uploads"):
-                needs_ftp_upload = True
-                log_publish(f"🔄 CORRECTION: Chemin local détecté, upload FTP requis", "INFO")
+            # CORRECTION CRITIQUE: Détecter tout chemin contenant "uploads" SANS URL HTTP(S)
+            if not image_url.startswith(("http://", "https://")) and (("uploads" in normalized_path) or normalized_path.startswith("uploads")):
+                needs_conversion = True
+                log_publish(f"🔄 CORRECTION: Chemin local détecté, conversion URL publique requise: '{image_url}'", "INFO")
             
             # Étape 2: STRATÉGIE ADAPTATIVE - FTP en Windows, ngrok en conteneur
-            if needs_ftp_upload:
+            if needs_conversion:
                 # Extraire le nom de fichier et construire le chemin complet
                 if "/" in normalized_path:
                     filename = normalized_path.split("/")[-1]
