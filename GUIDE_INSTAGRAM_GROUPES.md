@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://meta-publisher.preview.emergentagent.com
+URL : https://meta-publisher-1.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
