@@ -1613,80 +1613,18 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         if not image_url:
             raise ValueError("Image URL requise pour Instagram")
         
-        # CORRECTION CRITIQUE: Conversion obligatoire des chemins locaux vers URLs publiques pour Instagram
+        # CORRECTION MAJEURE: Conversion intelligente des chemins locaux vers URLs publiques
         try:
-            log_publish(f"🔍 CORRECTION: URL image reçue pour Instagram: '{image_url}'", "INFO")
+            log_publish(f"🔍 CORRECTION: Traitement image pour Instagram: '{image_url}'", "INFO")
             
-            # Étape 1: Vérifier si c'est un chemin local qui nécessite conversion
-            converted_image_url = image_url
-            needs_conversion = False
-            
-            # Détecter les chemins locaux (uploads\, uploads/, ./uploads/, etc.)
-            normalized_path = image_url.replace("\\", "/")
-            # CORRECTION CRITIQUE: Détecter tout chemin contenant "uploads" SANS URL HTTP(S)
-            if not image_url.startswith(("http://", "https://")) and (("uploads" in normalized_path) or normalized_path.startswith("uploads")):
-                needs_conversion = True
-                log_publish(f"🔄 CORRECTION: Chemin local détecté, conversion URL publique requise: '{image_url}'", "INFO")
-            
-            # Étape 2: STRATÉGIE ADAPTATIVE - FTP en Windows, ngrok en conteneur
-            if needs_conversion:
-                # Extraire le nom de fichier et construire le chemin complet
-                if "/" in normalized_path:
-                    filename = normalized_path.split("/")[-1]
-                else:
-                    filename = normalized_path
-                
-                local_file_path = os.path.join("uploads", filename)
-                # Correction: Si chemin relatif, utiliser le chemin complet depuis backend
-                if not os.path.isabs(local_file_path):
-                    local_file_path = os.path.join(os.path.dirname(__file__), local_file_path)
-                
-                if os.path.exists(local_file_path):
-                    # STRATÉGIE UNIVERSELLE: Essayer FTP d'abord, puis ngrok comme fallback
-                    log_publish(f"🔄 CORRECTION: Tentative upload FTP pour accessibilité maximale", "INFO")
-                    ftp_success = False
-                    try:
-                        # Tentative FTP rapide (timeout 10s)
-                        ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
-                            upload_image_to_ftp(local_file_path, filename), 
-                            timeout=10
-                        )
-                        
-                        if ftp_success and ftp_url:
-                            converted_image_url = ftp_url
-                            log_publish(f"✅ CORRECTION: Upload FTP réussi - {converted_image_url}", "SUCCESS")
-                        else:
-                            raise Exception(f"FTP échoué: {ftp_error}")
-                            
-                    except (asyncio.TimeoutError, Exception) as ftp_issue:
-                        log_publish(f"⚡ CORRECTION: FTP indisponible/lent, fallback ngrok - {ftp_issue}", "WARNING")
-                        try:
-                            converted_image_url = convert_local_path_to_ngrok_url(image_url)
-                            log_publish(f"✅ CORRECTION: Fallback ngrok réussi - {converted_image_url}", "SUCCESS")
-                        except Exception as ngrok_error:
-                            log_publish(f"❌ CORRECTION: Fallback ngrok échoué - {ngrok_error}", "ERROR")
-                            raise Exception(f"Impossible de créer URL publique: FTP échoué ({ftp_issue}), ngrok échoué ({ngrok_error})")
-                else:
-                    log_publish(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
-                    raise Exception(f"Fichier image introuvable pour Instagram: {local_file_path}")
-            
-            # Étape 3: Si ce n'est pas un chemin local, vérifier si c'est déjà une URL publique
-            elif image_url.startswith(("http://", "https://")):
-                log_publish(f"✅ CORRECTION: URL déjà publique pour Instagram: {image_url}", "SUCCESS")
-                converted_image_url = image_url
-            else:
-                # Chemin inconnu, essayer la conversion ngrok
-                try:
-                    converted_image_url = convert_local_path_to_ngrok_url(image_url)
-                    log_publish(f"🔄 CORRECTION: Conversion ngrok appliquée: {image_url} -> {converted_image_url}", "INFO")
-                except:
-                    log_publish(f"⚠️ CORRECTION: Aucune conversion possible, utilisation URL telle quelle", "WARNING")
-                    converted_image_url = image_url
+            # Utiliser la nouvelle fonction de conversion intelligente
+            converted_image_url = await convert_local_path_to_public_url(image_url)
             
             # Vérification finale de l'URL pour Instagram
             if not converted_image_url.startswith(("http://", "https://")):
                 raise Exception(f"URL finale invalide pour Instagram: {converted_image_url}")
-                    
+            
+            # Mise à jour du payload avec l'URL publique
             image_url = converted_image_url
             log_publish(f"📤 CORRECTION: URL finale confirmée pour Instagram API: {image_url}", "SUCCESS")
             
