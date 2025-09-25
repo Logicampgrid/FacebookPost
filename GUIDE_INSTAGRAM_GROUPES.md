@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://photo-path-converter.preview.emergentagent.com
+URL : https://automedia-1.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

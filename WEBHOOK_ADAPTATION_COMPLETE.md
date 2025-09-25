@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://photo-path-converter.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://automedia-1.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://photo-path-converter.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://photo-path-converter.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://photo-path-converter.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://automedia-1.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://automedia-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://automedia-1.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

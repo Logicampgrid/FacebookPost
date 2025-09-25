@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://photo-path-converter.preview.emergentagent.com/api/webhook
+https://automedia-1.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
