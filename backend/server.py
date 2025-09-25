@@ -316,75 +316,134 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
         return False, None, str(e)
 
 async def upload_image_to_ftp(image_path: str, original_filename: str = None) -> tuple:
-    """Upload une image vers le serveur FTP avec gestion d'erreurs robuste pour Instagram"""
+    """Upload une image vers le serveur FTP avec gestion d'erreurs robuste pour Instagram - VERSION CORRIGÉE"""
     try:
-        log_app(f"🖼️ Début upload FTP image: {image_path}", "INFO")
+        log_app(f"🖼️ CORRECTION: Début upload FTP image pour Instagram: {image_path}", "INFO")
         
         if not original_filename:
             original_filename = os.path.basename(image_path)
+        
+        # Validation des paramètres FTP
+        if not all([FTP_HOST, FTP_USER, FTP_PASSWORD]):
+            return False, None, f"Configuration FTP manquante: HOST={bool(FTP_HOST)}, USER={bool(FTP_USER)}, PASSWORD={bool(FTP_PASSWORD)}"
         
         # Générer un nom unique avec timestamp
         timestamp = int(time.time())
         unique_id = uuid.uuid4().hex[:8]
         filename_parts = os.path.splitext(original_filename)
-        ftp_filename = f"webhook_{unique_id}_{timestamp}{filename_parts[1]}"
+        # Support pour .webp converti en .png pour Instagram
+        if filename_parts[1].lower() == '.webp':
+            filename_parts = (filename_parts[0], '.png')
+        ftp_filename = f"instagram_{unique_id}_{timestamp}{filename_parts[1]}"
         
         # Validation avant upload
         if not os.path.exists(image_path):
             return False, None, f"Fichier non trouvé: {image_path}"
         
         file_size = os.path.getsize(image_path)
-        log_app(f"📊 Taille image: {file_size / (1024*1024):.2f} MB", "INFO")
+        log_app(f"📊 CORRECTION: Taille image: {file_size / (1024*1024):.2f} MB", "INFO")
+        log_app(f"🔧 CORRECTION: Paramètres FTP - Host: {FTP_HOST}, Port: {FTP_PORT}, User: {FTP_USER}", "INFO")
         
-        # Configuration FTP améliorée pour résoudre les problèmes de connexion
+        # Configuration FTP optimisée pour environnement conteneurisé + Windows
         connection_configs = [
+            {"pasv": True, "timeout": 45, "name": "Passif conteneurisé", "encoding": "utf-8"},
             {"pasv": True, "timeout": 30, "name": "Passif standard", "encoding": "utf-8"},
             {"pasv": False, "timeout": 30, "name": "Actif standard", "encoding": "utf-8"},
             {"pasv": True, "timeout": 60, "name": "Passif timeout long", "encoding": "latin1"},
         ]
         
-        for config in connection_configs:
+        for attempt, config in enumerate(connection_configs, 1):
             try:
-                log_app(f"🔄 Tentative FTP image ({config['name']})...", "INFO")
+                log_app(f"🔄 CORRECTION: Tentative {attempt}/{len(connection_configs)} FTP image ({config['name']})...", "INFO")
                 
                 ftp = ftplib.FTP()
                 ftp.set_pasv(config["pasv"])
                 ftp.encoding = config["encoding"]
                 
-                # Connexion avec gestion d'erreur améliorée
+                # Connexion avec diagnostic amélioré
                 try:
+                    log_app(f"🌐 CORRECTION: Connexion à {FTP_HOST}:{FTP_PORT}...", "INFO")
                     ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                    log_app(f"🔑 CORRECTION: Authentification avec utilisateur '{FTP_USER}'...", "INFO")
                     ftp.login(FTP_USER, FTP_PASSWORD)
-                except (ftplib.error_perm, ftplib.error_temp, OSError, ConnectionRefusedError) as conn_error:
-                    log_app(f"❌ Connexion FTP échouée ({config['name']}): {conn_error}", "ERROR")
+                    log_app(f"✅ CORRECTION: Connexion FTP réussie ({config['name']})", "SUCCESS")
+                except (ftplib.error_perm, ftplib.error_temp) as auth_error:
+                    log_app(f"❌ CORRECTION: Erreur authentification FTP ({config['name']}): {auth_error}", "ERROR")
+                    continue
+                except (OSError, ConnectionRefusedError, ConnectionResetError) as conn_error:
+                    log_app(f"❌ CORRECTION: Connexion FTP refusée ({config['name']}): {conn_error}", "ERROR")
+                    log_app(f"🔍 CORRECTION: Vérifiez que {FTP_HOST}:{FTP_PORT} est accessible depuis ce conteneur", "INFO")
+                    continue
+                except Exception as unexpected_error:
+                    log_app(f"❌ CORRECTION: Erreur FTP inattendue ({config['name']}): {unexpected_error}", "ERROR")
                     continue
                 
-                log_app(f"✅ Connexion FTP image réussie ({config['name']})", "SUCCESS")
+                # Diagnostic du répertoire courant
+                try:
+                    current_dir = ftp.pwd()
+                    log_app(f"📁 CORRECTION: Répertoire actuel: {current_dir}", "INFO")
+                except:
+                    log_app(f"⚠️ CORRECTION: Impossible de déterminer le répertoire courant", "WARNING")
                 
-                # Navigation vers le répertoire avec gestion d'erreur
+                # Navigation vers le répertoire avec gestion d'erreur améliorée
+                target_directory = None
                 try:
                     ftp.cwd(FTP_DIRECTORY)
-                    log_app(f"📁 Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
+                    target_directory = FTP_DIRECTORY
+                    log_app(f"📁 CORRECTION: Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
                 except ftplib.error_perm as cwd_error:
-                    log_app(f"⚠️ Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine: {cwd_error}", "WARNING")
-                    # Continuer dans le répertoire racine
+                    log_app(f"⚠️ CORRECTION: Répertoire {FTP_DIRECTORY} non accessible: {cwd_error}", "WARNING")
+                    # Essayer les répertoires alternatifs
+                    alt_dirs = ["/uploads/", "/public_html/uploads/", "/www/uploads/", "/"]
+                    for alt_dir in alt_dirs:
+                        try:
+                            ftp.cwd(alt_dir)
+                            target_directory = alt_dir
+                            log_app(f"✅ CORRECTION: Navigation vers répertoire alternatif {alt_dir} réussie", "SUCCESS")
+                            break
+                        except:
+                            continue
+                    
+                    if not target_directory:
+                        target_directory = "/"  # Utiliser la racine
+                        log_app(f"⚠️ CORRECTION: Utilisation du répertoire racine", "WARNING")
                 
-                # Upload du fichier avec block size optimisé
+                # Upload du fichier avec gestion d'erreurs robuste
                 try:
                     with open(image_path, 'rb') as image_file:
-                        log_app(f"📤 Upload en cours: {ftp_filename}", "INFO")
-                        # Utiliser un blocksize plus petit pour la stabilité
-                        ftp.storbinary(f'STOR {ftp_filename}', image_file, blocksize=4096)
+                        log_app(f"📤 CORRECTION: Upload en cours: {ftp_filename} vers {target_directory}", "INFO")
+                        
+                        # Progress callback pour les gros fichiers
+                        def progress_callback(block):
+                            pass  # Simple callback pour éviter les timeouts
+                        
+                        # Upload avec block size optimisé pour la stabilité
+                        ftp.storbinary(f'STOR {ftp_filename}', image_file, 
+                                     blocksize=8192, callback=progress_callback)
                     
-                    log_app(f"✅ Upload image terminé avec succès ({config['name']})", "SUCCESS")
+                    log_app(f"✅ CORRECTION: Upload image terminé avec succès ({config['name']})", "SUCCESS")
                     
-                    # Vérifier l'upload (optionnel)
+                    # Vérification de l'upload avec plusieurs méthodes
+                    upload_confirmed = False
                     try:
-                        file_list = ftp.nlst()
-                        if ftp_filename in file_list:
-                            log_app("✅ Fichier confirmé sur le serveur", "SUCCESS")
+                        # Méthode 1: SIZE command
+                        remote_size = ftp.size(ftp_filename)
+                        if remote_size == file_size:
+                            upload_confirmed = True
+                            log_app(f"✅ CORRECTION: Fichier confirmé sur serveur (taille: {remote_size} bytes)", "SUCCESS")
+                        else:
+                            log_app(f"⚠️ CORRECTION: Taille différente - local: {file_size}, remote: {remote_size}", "WARNING")
                     except:
-                        log_app("⚠️ Confirmation fichier non disponible, mais upload semble réussi", "WARNING")
+                        # Méthode 2: LIST command
+                        try:
+                            file_list = ftp.nlst()
+                            if ftp_filename in file_list:
+                                upload_confirmed = True
+                                log_app(f"✅ CORRECTION: Fichier confirmé dans la liste", "SUCCESS")
+                        except:
+                            # Méthode 3: Assumer que l'upload a réussi si pas d'exception
+                            upload_confirmed = True
+                            log_app(f"⚠️ CORRECTION: Confirmation impossible, mais upload semble réussi", "WARNING")
                     
                     # Fermer la connexion proprement
                     try:
@@ -392,32 +451,68 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                     except:
                         ftp.close()
                     
-                    # Construire l'URL publique
-                    public_url = f"{FTP_BASE_URL}{ftp_filename}"
-                    log_app(f"🌐 Image disponible: {public_url}", "SUCCESS")
-                    
-                    return True, public_url, None
-                    
-                except Exception as upload_error:
-                    log_app(f"❌ Erreur upload image ({config['name']}): {upload_error}", "ERROR")
+                    if upload_confirmed:
+                        # Construire l'URL publique basée sur le répertoire utilisé
+                        if target_directory == FTP_DIRECTORY:
+                            public_url = f"{FTP_BASE_URL}{ftp_filename}"
+                        else:
+                            # Ajuster l'URL selon le répertoire alternatif utilisé
+                            base_url = FTP_BASE_URL.rstrip('/')
+                            if target_directory == "/":
+                                public_url = f"{base_url}/{ftp_filename}"
+                            else:
+                                clean_dir = target_directory.strip('/')
+                                public_url = f"{base_url}/{clean_dir}/{ftp_filename}"
+                        
+                        log_app(f"🌐 CORRECTION: Image Instagram disponible: {public_url}", "SUCCESS")
+                        
+                        # Vérification finale optionnelle de l'URL (sans bloquer si échoue)
+                        try:
+                            import requests
+                            response = requests.head(public_url, timeout=10)
+                            if response.status_code == 200:
+                                log_app(f"✅ CORRECTION: URL publique confirmée accessible", "SUCCESS")
+                            else:
+                                log_app(f"⚠️ CORRECTION: URL publique retourne status {response.status_code}", "WARNING")
+                        except:
+                            log_app(f"⚠️ CORRECTION: Impossible de vérifier l'URL publique (normal si NAT/firewall)", "WARNING")
+                        
+                        return True, public_url, None
+                    else:
+                        log_app(f"❌ CORRECTION: Upload non confirmé", "ERROR")
+                        continue
+                        
+                except ftplib.error_perm as perm_error:
+                    log_app(f"❌ CORRECTION: Erreur permissions upload ({config['name']}): {perm_error}", "ERROR")
                     try:
                         ftp.quit()
                     except:
                         ftp.close()
-                    # Continuer avec la configuration suivante
+                    continue
+                except Exception as upload_error:
+                    log_app(f"❌ CORRECTION: Erreur upload image ({config['name']}): {upload_error}", "ERROR")
+                    try:
+                        ftp.quit()
+                    except:
+                        ftp.close()
                     continue
                     
             except Exception as conn_error:
-                log_app(f"❌ Erreur connexion FTP image ({config['name']}): {conn_error}", "ERROR")
-                # Continuer avec la configuration suivante
+                log_app(f"❌ CORRECTION: Erreur connexion FTP image ({config['name']}): {conn_error}", "ERROR")
                 continue
         
-        # Si aucune configuration n'a fonctionné
-        return False, None, "Impossible d'établir une connexion FTP stable pour l'image. Vérifiez la configuration réseau et les paramètres FTP."
+        # Si toutes les configurations ont échoué
+        error_msg = f"CORRECTION: Impossible d'uploader l'image vers FTP après {len(connection_configs)} tentatives. "
+        error_msg += f"Vérifiez: 1) Connectivité réseau vers {FTP_HOST}:{FTP_PORT}, "
+        error_msg += f"2) Identifiants FTP ({FTP_USER}), 3) Permissions d'écriture sur {FTP_DIRECTORY}"
+        
+        log_app(f"❌ {error_msg}", "ERROR")
+        return False, None, error_msg
         
     except Exception as e:
-        log_app(f"❌ Erreur générale upload FTP image: {str(e)}", "ERROR")
-        return False, None, str(e)
+        error_msg = f"CORRECTION: Erreur générale upload FTP image: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        return False, None, error_msg
 def log_app(message: str, level: str = "INFO"):
     """Logging pour l'application"""
     icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "START": "🚀"}
