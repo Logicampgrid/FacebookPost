@@ -3636,25 +3636,57 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
             # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
             
-            # CORRECTION: Normaliser image_url si présente pour éviter les chemins Windows
-            normalized_image_url = image_url
+            # CORRECTION: Normaliser et forcer upload FTP pour image_url si c'est un chemin local
+            final_image_url = image_url
             if image_url:
                 # Normaliser les backslashes Windows en slashes Unix
                 normalized_path = image_url.replace("\\", "/")
                 
-                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), extraire juste le nom de fichier
+                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), forcer l'upload FTP
                 if "uploads/" in normalized_path:
                     filename = normalized_path.split("/")[-1]  # Prendre juste le nom de fichier
-                    normalized_image_url = f"uploads/{filename}"
-                    log_app(f"🔄 CORRECTION: Image URL normalisée - {image_url} -> {normalized_image_url}", "INFO")
+                    local_file_path = os.path.join("uploads", filename)
+                    
+                    if os.path.exists(local_file_path):
+                        log_app(f"🔄 CORRECTION: Upload FTP forcé pour chemin local - {local_file_path}", "INFO")
+                        try:
+                            # Upload FTP automatique pour convertir le chemin local en URL publique
+                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
+                            if ftp_success and ftp_url:
+                                final_image_url = ftp_url
+                                log_app(f"✅ CORRECTION: Conversion réussie chemin local -> URL publique: {final_image_url}", "SUCCESS")
+                            else:
+                                log_app(f"❌ CORRECTION: Échec upload FTP - {ftp_error}", "ERROR")
+                                # Fallback ngrok pour Instagram si FTP échoue
+                                ngrok_url = get_active_ngrok_url()
+                                if ngrok_url:
+                                    final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
+                                    log_app(f"🔄 CORRECTION: Fallback URL ngrok - {final_image_url}", "INFO")
+                                else:
+                                    final_image_url = f"uploads/{filename}"
+                                    log_app(f"⚠️ CORRECTION: Fallback chemin local normalisé - {final_image_url}", "WARNING")
+                        except Exception as upload_error:
+                            log_app(f"❌ CORRECTION: Erreur upload FTP - {upload_error}", "ERROR")
+                            # Fallback ngrok
+                            ngrok_url = get_active_ngrok_url()
+                            if ngrok_url:
+                                final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
+                                log_app(f"🔄 CORRECTION: Fallback URL ngrok après erreur - {final_image_url}", "INFO")
+                            else:
+                                final_image_url = f"uploads/{filename}"
+                                log_app(f"⚠️ CORRECTION: Fallback final chemin local - {final_image_url}", "WARNING")
+                    else:
+                        final_image_url = f"uploads/{filename}"
+                        log_app(f"⚠️ CORRECTION: Fichier local introuvable, utilisation chemin normalisé - {final_image_url}", "WARNING")
                 else:
-                    normalized_image_url = normalized_path
+                    final_image_url = normalized_path
+                    log_app(f"🔗 CORRECTION: URL déjà publique ou chemin non-local - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=normalized_image_url,  # Utiliser l'URL normalisée
+                image_url=final_image_url,  # Utiliser l'URL finale (FTP ou fallback)
                 platforms=platforms
             )
         
