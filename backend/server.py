@@ -3738,13 +3738,18 @@ async def webhook_handler(request: Request):
                                         
                                         log_app(f"📦 CORRECTION: Image sauvegardée: {temp_path}", "INFO")
                                         
+                                        # NOUVELLE FONCTIONNALITÉ: Upload automatique vers FTP pour Instagram
+                                        ftp_success, ftp_public_url, ftp_error = await upload_image_to_ftp(temp_path, filename)
+                                        
                                         # Ajouter les infos de l'image aux données webhook
                                         webhook_data['image_file'] = {
                                             'path': temp_path,
                                             'filename': temp_filename,
                                             'original_filename': filename,
                                             'content_type': content_type,
-                                            'size': len(file_content)
+                                            'size': len(file_content),
+                                            'ftp_url': ftp_public_url if ftp_success else None,
+                                            'ftp_error': ftp_error if not ftp_success else None
                                         }
                         else:
                             # Process all form fields - CORRECTION POUR LES FICHIERS SANS JSON
