@@ -346,10 +346,10 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
         
         # Configuration FTP optimisée pour environnement conteneurisé + Windows
         connection_configs = [
-            {"pasv": True, "timeout": 45, "name": "Passif conteneurisé", "encoding": "utf-8"},
-            {"pasv": True, "timeout": 30, "name": "Passif standard", "encoding": "utf-8"},
-            {"pasv": False, "timeout": 30, "name": "Actif standard", "encoding": "utf-8"},
-            {"pasv": True, "timeout": 60, "name": "Passif timeout long", "encoding": "latin1"},
+            {"pasv": False, "timeout": 30, "name": "Actif rapide", "encoding": "utf-8", "blocksize": 32768},
+            {"pasv": True, "timeout": 20, "name": "Passif rapide", "encoding": "utf-8", "blocksize": 16384},
+            {"pasv": False, "timeout": 45, "name": "Actif standard", "encoding": "utf-8", "blocksize": 8192},
+            {"pasv": True, "timeout": 45, "name": "Passif standard", "encoding": "utf-8", "blocksize": 8192},
         ]
         
         for attempt, config in enumerate(connection_configs, 1):
