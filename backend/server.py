@@ -1541,6 +1541,9 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
                     filename = normalized_path
                 
                 local_file_path = os.path.join("uploads", filename)
+                # Correction: Si chemin relatif, utiliser le chemin complet depuis backend
+                if not os.path.isabs(local_file_path):
+                    local_file_path = os.path.join(os.path.dirname(__file__), local_file_path)
                 
                 if os.path.exists(local_file_path):
                     # Détecter l'environnement d'exécution
