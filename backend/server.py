@@ -3386,15 +3386,35 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                         platforms=platforms
                     )
                 else:
-                    log_app(f"❌ CORRECTION: Échec upload vidéo - {upload_error}", "ERROR")
-                    # Fallback vers publication texte
-                    result = await publish_post_main(
-                        store=final_store,
-                        message=message,
-                        product_url=product_url,
-                        image_url=image_url,
-                        platforms=platforms
-                    )
+                    log_app(f"❌ CORRECTION: Échec upload vidéo FTP - {upload_error}", "ERROR")
+                    
+                    # NOUVEAU FALLBACK: Utiliser l'URL ngrok locale pour la vidéo
+                    try:
+                        # Générer l'URL ngrok pour la vidéo locale
+                        filename = media_file_info['filename'] 
+                        ngrok_video_url = convert_local_path_to_ngrok_url(f"uploads/{filename}")
+                        log_app(f"🔄 CORRECTION: Fallback ngrok pour vidéo - {ngrok_video_url}", "INFO")
+                        
+                        # Tenter la publication avec l'URL ngrok
+                        result = await publish_video_main(
+                            store=final_store,
+                            message=message,
+                            product_url=product_url,
+                            video_url=ngrok_video_url,
+                            platforms=platforms
+                        )
+                        log_app(f"✅ CORRECTION: Vidéo publiée via ngrok fallback", "SUCCESS")
+                        
+                    except Exception as ngrok_error:
+                        log_app(f"❌ CORRECTION: Échec fallback ngrok vidéo - {ngrok_error}", "ERROR")
+                        # Dernier fallback vers publication texte seulement
+                        result = await publish_post_main(
+                            store=final_store,
+                            message=message,
+                            product_url=product_url,
+                            image_url=image_url,
+                            platforms=platforms
+                        )
                 
                 # Nettoyer le fichier temporaire
                 try:
