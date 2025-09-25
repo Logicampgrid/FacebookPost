@@ -1615,7 +1615,7 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
         # Publication Facebook
         if "facebook" in platforms:
             try:
-                fb_result = await post_to_facebook(store, message, product_url)
+                fb_result = await post_to_facebook(store, message, product_url, image_url)
                 results["facebook_result"] = fb_result
                 log_publish("Publication Facebook terminée", "SUCCESS")
             except Exception as e:
