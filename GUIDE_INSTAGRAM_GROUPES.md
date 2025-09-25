@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://automedia-1.preview.emergentagent.com
+URL : https://meta-publish-server.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
