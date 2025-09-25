@@ -1649,6 +1649,29 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+@app.post("/api/test-image-conversion")
+async def test_image_conversion(request: Request):
+    """Test endpoint pour tester la conversion d'URL d'image"""
+    try:
+        data = await request.json()
+        image_url = data.get("image_url")
+        
+        if not image_url:
+            raise HTTPException(status_code=400, detail="image_url manquant")
+        
+        log_publish(f"🧪 Test conversion image URL: {image_url}", "INFO")
+        converted_url = convert_local_path_to_ngrok_url(image_url)
+        
+        return {
+            "original_url": image_url,
+            "converted_url": converted_url,
+            "conversion_applied": converted_url != image_url,
+            "ngrok_url": get_active_ngrok_url()
+        }
+    except Exception as e:
+        log_app(f"❌ Erreur test conversion: {e}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/pages")
 async def get_pages_info():
     """Get pages information and shop mapping for testing"""
