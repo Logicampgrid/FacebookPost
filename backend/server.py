@@ -3636,7 +3636,10 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                             final_image_url = local_file_path  # Facebook peut utiliser les chemins relatifs
                 else:
                     log_app(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
-                    final_image_url = f"uploads/{filename}"
+                    # Si fichier introuvable, publier sans image
+                    final_image_url = None
+                    platforms = ["facebook"] if "instagram" in platforms else platforms
+                    log_app(f"⚠️ CORRECTION: Publication sans image, Facebook uniquement", "WARNING")
                     
                 if media_file_info.get('ftp_error'):
                     log_app(f"ℹ️ CORRECTION: Erreur FTP précédente - {media_file_info['ftp_error']}", "INFO")
