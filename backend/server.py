@@ -1062,16 +1062,63 @@ if frontend_available:
     except Exception as e:
         log_app(f"⚠️ Erreur montage fichiers statiques: {e}", "WARNING")
 
-# Monter le dossier uploads pour servir les images via ngrok
-try:
-    uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
-    if os.path.exists(uploads_path):
-        app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
-        log_app("✅ Dossier uploads monté sur /uploads pour ngrok", "SUCCESS")
-    else:
-        log_app(f"⚠️ Dossier uploads non trouvé: {uploads_path}", "WARNING")
-except Exception as e:
-    log_app(f"⚠️ Erreur montage dossier uploads: {e}", "WARNING")
+# CORRECTION MAJEURE: Monter le dossier uploads pour servir les images via ngrok
+def setup_uploads_static_mount():
+    """Configure le montage static pour les uploads avec vérifications renforcées"""
+    try:
+        uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
+        
+        # Vérifications détaillées
+        log_app(f"🔍 CORRECTION: Chemin uploads calculé: {uploads_path}", "INFO")
+        log_app(f"🔍 CORRECTION: Backend dir: {WINDOWS_PATHS['backend_dir']}", "INFO")
+        
+        if os.path.exists(uploads_path):
+            # Compter les fichiers pour diagnostic
+            try:
+                file_count = len([f for f in os.listdir(uploads_path) if os.path.isfile(os.path.join(uploads_path, f))])
+                log_app(f"📁 CORRECTION: Dossier uploads trouvé avec {file_count} fichiers", "INFO")
+                
+                # Montage avec gestion d'erreur détaillée
+                app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+                log_app("✅ CORRECTION: Dossier uploads monté sur /uploads pour ngrok", "SUCCESS")
+                
+                # Test de quelques fichiers existants
+                sample_files = [f for f in os.listdir(uploads_path) if f.endswith(('.jpg', '.png', '.gif'))][:3]
+                if sample_files:
+                    log_app(f"📋 CORRECTION: Exemples de fichiers accessibles:", "INFO")
+                    for sample_file in sample_files:
+                        log_app(f"   • /uploads/{sample_file}", "INFO")
+                        
+                return True
+                
+            except Exception as list_error:
+                log_app(f"⚠️ CORRECTION: Erreur listage uploads: {list_error}", "WARNING")
+                # Essayer quand même le montage
+                app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+                log_app("✅ CORRECTION: Montage uploads forcé malgré l'erreur de listage", "SUCCESS")
+                return True
+                
+        else:
+            # Créer le dossier s'il n'existe pas
+            log_app(f"📁 CORRECTION: Création du dossier uploads: {uploads_path}", "INFO")
+            os.makedirs(uploads_path, exist_ok=True)
+            
+            # Créer un fichier de test
+            test_file_path = os.path.join(uploads_path, "test_access.txt")
+            with open(test_file_path, "w") as f:
+                f.write(f"Test d'accessibilité uploads - {datetime.now()}")
+            
+            app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+            log_app("✅ CORRECTION: Dossier uploads créé et monté", "SUCCESS")
+            return True
+            
+    except Exception as e:
+        log_app(f"❌ CORRECTION: Erreur montage uploads: {e}", "ERROR")
+        log_app(f"🔍 CORRECTION: Type erreur: {type(e).__name__}", "ERROR")
+        return False
+
+# Effectuer le montage avec diagnostic
+uploads_mounted = setup_uploads_static_mount()
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
