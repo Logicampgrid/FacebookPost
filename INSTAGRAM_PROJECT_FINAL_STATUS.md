@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://meta-publish-server.preview.emergentagent.com/api/webhook
+https://tunnel-detect.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

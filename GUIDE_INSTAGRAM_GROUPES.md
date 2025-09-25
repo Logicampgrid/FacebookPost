@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://meta-publish-server.preview.emergentagent.com
+URL : https://tunnel-detect.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

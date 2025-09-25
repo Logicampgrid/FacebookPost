@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://meta-publish-server.preview.emergentagent.com"
+    base_url = "https://tunnel-detect.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     
