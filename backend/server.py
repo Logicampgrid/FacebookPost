@@ -243,19 +243,31 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                     # Analyser l'erreur pour diagnostics
                     if "10061" in str(conn_error):
                         log_video(f"Erreur 10061 détectée - Vérifiez que le serveur FTP {FTP_HOST}:{FTP_PORT} est accessible", "ERROR")
+                        log_video(f"Solutions possibles: 1) Vérifiez la connectivité réseau, 2) Vérifiez les credentials FTP, 3) Serveur FTP en maintenance", "INFO")
                     elif "timed out" in str(conn_error).lower():
                         log_video(f"Timeout de connexion - Le serveur FTP peut être surchargé", "WARNING")
                     continue
                 
                 log_video(f"Connexion FTP réussie ({config['name']})", "SUCCESS")
                 
-                # Navigation vers le répertoire avec gestion d'erreur simplifiée
+                # CORRECTION: Navigation vers le répertoire initial puis le répertoire cible
                 try:
+                    # D'abord aller au répertoire initial si spécifié
+                    if FTP_INITIAL_DIRECTORY and FTP_INITIAL_DIRECTORY != ftp.pwd():
+                        ftp.cwd(FTP_INITIAL_DIRECTORY)
+                        log_video(f"Navigation vers répertoire initial {FTP_INITIAL_DIRECTORY} réussie", "SUCCESS")
+                    
+                    # Ensuite naviguer vers le répertoire de destination
                     ftp.cwd(FTP_DIRECTORY)
                     log_video(f"Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
                 except ftplib.error_perm as cwd_error:
                     log_video(f"Répertoire {FTP_DIRECTORY} non accessible: {cwd_error}", "WARNING")
-                    # Continuer sans changer de répertoire - certains serveurs FTP démarrent déjà dans le bon répertoire
+                    # Essayer sans le répertoire initial
+                    try:
+                        ftp.cwd(FTP_DIRECTORY.replace("/wordpress", ""))
+                        log_video(f"Navigation vers répertoire alternatif réussie", "SUCCESS")
+                    except:
+                        log_video(f"Utilisation du répertoire courant par défaut", "WARNING")
                 
                 # Upload du fichier avec gestion d'erreur améliorée et progress
                 try:
