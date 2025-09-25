@@ -1532,7 +1532,7 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
                 needs_ftp_upload = True
                 log_publish(f"🔄 CORRECTION: Chemin local détecté, upload FTP requis", "INFO")
             
-            # Étape 2: Si upload FTP requis, l'effectuer maintenant
+            # Étape 2: Si upload FTP requis, l'effectuer maintenant avec timeout rapide
             if needs_ftp_upload:
                 # Extraire le nom de fichier et construire le chemin complet
                 if "/" in normalized_path:
@@ -1543,37 +1543,40 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
                 local_file_path = os.path.join("uploads", filename)
                 
                 if os.path.exists(local_file_path):
-                    log_publish(f"📤 CORRECTION: Upload FTP obligatoire pour Instagram - {local_file_path}", "INFO")
+                    log_publish(f"📤 CORRECTION: Tentative upload FTP prioritaire pour Instagram - {local_file_path}", "INFO")
                     
-                    # Essayer l'upload FTP avec plusieurs tentatives
+                    # NOUVELLE STRATÉGIE: FTP rapide puis fallback ngrok immédiat
                     ftp_success = False
-                    for attempt in range(3):
-                        try:
-                            log_publish(f"🔄 CORRECTION: Tentative FTP {attempt + 1}/3 pour Instagram", "INFO")
-                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
+                    try:
+                        # Une seule tentative FTP rapide (timeout court)
+                        log_publish(f"⚡ CORRECTION: Upload FTP rapide (1 tentative, timeout 15s)", "INFO")
+                        ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
+                            upload_image_to_ftp(local_file_path, filename), 
+                            timeout=15
+                        )
+                        
+                        if ftp_success and ftp_url:
+                            converted_image_url = ftp_url
+                            log_publish(f"✅ CORRECTION: Upload FTP rapide réussi - {converted_image_url}", "SUCCESS")
+                        else:
+                            raise Exception(f"FTP échoué: {ftp_error}")
                             
-                            if ftp_success and ftp_url:
-                                converted_image_url = ftp_url
-                                log_publish(f"✅ CORRECTION: Upload FTP Instagram réussi - {converted_image_url}", "SUCCESS")
-                                break
-                            else:
-                                log_publish(f"❌ CORRECTION: Tentative FTP {attempt + 1} échouée - {ftp_error}", "ERROR")
-                                if attempt < 2:  # Pas la dernière tentative
-                                    await asyncio.sleep(3)  # Attendre 3 secondes
-                        except Exception as upload_error:
-                            log_publish(f"❌ CORRECTION: Erreur upload FTP tentative {attempt + 1} - {upload_error}", "ERROR")
-                            if attempt < 2:
-                                await asyncio.sleep(3)
+                    except asyncio.TimeoutError:
+                        log_publish(f"⏰ CORRECTION: FTP timeout (15s), fallback ngrok immédiat", "WARNING")
+                        ftp_success = False
+                    except Exception as upload_error:
+                        log_publish(f"❌ CORRECTION: FTP échoué, fallback ngrok immédiat - {upload_error}", "WARNING")
+                        ftp_success = False
                     
-                    # Si FTP échoue complètement, utiliser fallback ngrok
+                    # Si FTP échoue ou timeout, utiliser ngrok immédiatement
                     if not ftp_success:
                         try:
-                            log_publish(f"🔄 CORRECTION: FTP échoué, fallback vers ngrok pour Instagram", "WARNING")
+                            log_publish(f"🔄 CORRECTION: Fallback ngrok pour Instagram (FTP indisponible)", "INFO")
                             converted_image_url = convert_local_path_to_ngrok_url(image_url)
-                            log_publish(f"🔄 CORRECTION: Fallback ngrok pour Instagram - {converted_image_url}", "INFO")
+                            log_publish(f"✅ CORRECTION: URL ngrok générée pour Instagram - {converted_image_url}", "SUCCESS")
                         except Exception as ngrok_error:
                             log_publish(f"❌ CORRECTION: Fallback ngrok échoué - {ngrok_error}", "ERROR")
-                            raise Exception(f"Impossible de convertir l'image pour Instagram: FTP échoué ({ftp_error}), ngrok échoué ({ngrok_error})")
+                            raise Exception(f"Impossible de créer URL publique pour Instagram: FTP indisponible, ngrok échoué ({ngrok_error})")
                 else:
                     log_publish(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
                     raise Exception(f"Fichier image introuvable pour Instagram: {local_file_path}")
