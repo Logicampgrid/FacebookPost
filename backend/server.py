@@ -217,11 +217,12 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
         if not validation["valid"]:
             return False, None, validation["error"]
         
-        # Nouvelle approche : essayer différentes configurations FTP
+        # Configuration FTP robuste avec gestion des timeouts et erreurs réseau
         connection_configs = [
-            {"pasv": False, "timeout": 15, "name": "Actif court"},
-            {"pasv": True, "timeout": 15, "name": "Passif court"},
-            {"pasv": False, "timeout": 60, "name": "Actif long"},
+            {"pasv": True, "timeout": 120, "name": "Passif long timeout", "encoding": "utf-8"},
+            {"pasv": False, "timeout": 120, "name": "Actif long timeout", "encoding": "utf-8"},
+            {"pasv": True, "timeout": 60, "name": "Passif standard", "encoding": "latin1"},
+            {"pasv": False, "timeout": 60, "name": "Actif standard", "encoding": "latin1"}
         ]
         
         for config in connection_configs:
@@ -230,8 +231,20 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                 
                 ftp = ftplib.FTP()
                 ftp.set_pasv(config["pasv"])
-                ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
-                ftp.login(FTP_USER, FTP_PASSWORD)
+                ftp.encoding = config["encoding"]
+                
+                # Connexion avec gestion d'erreur spécifique
+                try:
+                    ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                    ftp.login(FTP_USER, FTP_PASSWORD)
+                except (ftplib.error_perm, ftplib.error_temp, OSError, ConnectionRefusedError) as conn_error:
+                    log_video(f"Connexion échouée ({config['name']}): {conn_error}", "ERROR")
+                    # Analyser l'erreur pour diagnostics
+                    if "10061" in str(conn_error):
+                        log_video(f"Erreur 10061 détectée - Vérifiez que le serveur FTP {FTP_HOST}:{FTP_PORT} est accessible", "ERROR")
+                    elif "timed out" in str(conn_error).lower():
+                        log_video(f"Timeout de connexion - Le serveur FTP peut être surchargé", "WARNING")
+                    continue
                 
                 log_video(f"Connexion FTP réussie ({config['name']})", "SUCCESS")
                 
@@ -239,21 +252,36 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                 try:
                     ftp.cwd(FTP_DIRECTORY)
                     log_video(f"Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
-                except ftplib.error_perm:
-                    log_video(f"Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine", "WARNING")
+                except ftplib.error_perm as cwd_error:
+                    log_video(f"Répertoire {FTP_DIRECTORY} non accessible: {cwd_error}", "WARNING")
                     # Continuer sans changer de répertoire - certains serveurs FTP démarrent déjà dans le bon répertoire
                 
-                # Upload du fichier avec gestion d'erreur améliorée
+                # Upload du fichier avec gestion d'erreur améliorée et progress
                 try:
+                    file_size = os.path.getsize(video_path)
                     with open(video_path, 'rb') as video_file:
-                        log_video(f"Upload en cours: {filename}", "UPLOAD")
-                        # Utiliser un blocksize plus petit pour éviter les timeouts
-                        ftp.storbinary(f'STOR {filename}', video_file, blocksize=4096)
+                        log_video(f"Upload en cours: {filename} ({file_size / (1024*1024):.1f} MB)", "UPLOAD")
+                        # Utiliser un blocksize plus petit pour les vidéos lourdes et éviter les timeouts
+                        block_size = 2048 if file_size > 50 * 1024 * 1024 else 4096  # 2KB pour fichiers > 50MB
+                        ftp.storbinary(f'STOR {filename}', video_file, blocksize=block_size)
                     
                     log_video(f"Upload terminé avec succès ({config['name']})", "SUCCESS")
                     
+                    # Vérification optionnelle de l'upload
+                    try:
+                        remote_size = ftp.size(filename)
+                        if remote_size == file_size:
+                            log_video(f"Taille confirmée: {remote_size} bytes", "SUCCESS")
+                        else:
+                            log_video(f"Taille différente: local {file_size} vs remote {remote_size}", "WARNING")
+                    except:
+                        log_video("Vérification taille non disponible, mais upload semble réussi", "INFO")
+                    
                     # Fermer la connexion proprement
-                    ftp.quit()
+                    try:
+                        ftp.quit()
+                    except:
+                        ftp.close()
                     
                     # Construire l'URL publique
                     public_url = f"{FTP_BASE_URL}{filename}"
@@ -266,7 +294,7 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                     try:
                         ftp.quit()
                     except:
-                        pass
+                        ftp.close()
                     # Continuer avec la configuration suivante
                     continue
                     
@@ -276,7 +304,12 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                 continue
         
         # Si aucune configuration n'a fonctionné
-        return False, None, "Impossible d'établir une connexion FTP stable. Vérifiez la configuration réseau."
+        error_msg = "Impossible d'établir une connexion FTP stable. Causes possibles:\n"
+        error_msg += f"- Serveur FTP {FTP_HOST}:{FTP_PORT} inaccessible\n"
+        error_msg += "- Firewall bloquant les connexions FTP\n"
+        error_msg += "- Problème de résolution DNS\n"
+        error_msg += "- Serveur FTP temporairement surchargé"
+        return False, None, error_msg
         
     except Exception as e:
         log_video(f"Erreur générale upload FTP: {str(e)}", "ERROR")
