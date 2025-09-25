@@ -3582,38 +3582,58 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 final_image_url = media_file_info['ftp_url']
                 log_app(f"🌐 CORRECTION: Utilisation URL FTP publique - {final_image_url}", "SUCCESS")
             else:
-                # CORRECTION: Toujours tenter l'upload FTP d'abord pour Instagram
+                # NOUVELLE CORRECTION: Upload FTP obligatoire pour Instagram - pas de fallback local
                 filename = media_file_info['filename']
-                local_file_path = os.path.join("uploads", filename)
+                local_file_path = media_file_info['path']  # Utiliser le chemin complet au lieu de reconstruire
                 
                 if os.path.exists(local_file_path):
-                    log_app(f"🔄 CORRECTION: Tentative upload FTP forcé pour Instagram - {local_file_path}", "INFO")
-                    try:
-                        # Upload FTP forcé pour Instagram
-                        ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
-                        if ftp_success and ftp_url:
-                            final_image_url = ftp_url
-                            log_app(f"✅ CORRECTION: Upload FTP réussi - {final_image_url}", "SUCCESS")
-                        else:
-                            log_app(f"❌ CORRECTION: Échec upload FTP - {ftp_error}", "ERROR")
-                            # Fallback ngrok seulement si FTP échoue
-                            ngrok_url = get_active_ngrok_url()
-                            if ngrok_url:
-                                final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                                log_app(f"🔄 CORRECTION: Fallback URL ngrok - {final_image_url}", "INFO")
+                    log_app(f"🔄 CORRECTION: Upload FTP obligatoire pour Instagram - {local_file_path}", "INFO")
+                    
+                    # Essayer plusieurs tentatives d'upload FTP
+                    ftp_success = False
+                    ftp_url = None
+                    ftp_error = None
+                    
+                    for attempt in range(3):  # 3 tentatives max
+                        try:
+                            log_app(f"🔄 CORRECTION: Tentative {attempt + 1}/3 upload FTP pour {filename}", "INFO")
+                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
+                            
+                            if ftp_success and ftp_url:
+                                final_image_url = ftp_url
+                                log_app(f"✅ CORRECTION: Upload FTP réussi (tentative {attempt + 1}) - {final_image_url}", "SUCCESS")
+                                break
                             else:
-                                final_image_url = f"uploads/{filename}"
-                                log_app(f"⚠️ CORRECTION: Fallback chemin local - {final_image_url}", "WARNING")
-                    except Exception as upload_error:
-                        log_app(f"❌ CORRECTION: Erreur upload FTP - {upload_error}", "ERROR")
-                        # Fallback ngrok
+                                log_app(f"❌ CORRECTION: Échec upload FTP (tentative {attempt + 1}) - {ftp_error}", "ERROR")
+                                if attempt < 2:  # Pas la dernière tentative
+                                    await asyncio.sleep(2)  # Attendre 2 secondes avant de réessayer
+                        except Exception as upload_error:
+                            log_app(f"❌ CORRECTION: Erreur upload FTP (tentative {attempt + 1}) - {upload_error}", "ERROR")
+                            ftp_error = str(upload_error)
+                            if attempt < 2:  # Pas la dernière tentative
+                                await asyncio.sleep(2)  # Attendre 2 secondes avant de réessayer
+                    
+                    if not ftp_success:
+                        # Si toutes les tentatives FTP échouent, utiliser UNIQUEMENT ngrok pour Instagram
                         ngrok_url = get_active_ngrok_url()
                         if ngrok_url:
+                            # CORRECTION CRITIQUE: Construire l'URL ngrok correctement
                             final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                            log_app(f"🔄 CORRECTION: Fallback URL ngrok après erreur - {final_image_url}", "INFO")
+                            log_app(f"⚠️ CORRECTION: FTP impossible, utilisation URL ngrok pour Instagram - {final_image_url}", "WARNING")
+                            
+                            # NOUVELLE VÉRIFICATION: S'assurer que l'image est accessible via ngrok
+                            if not verify_url_accessibility(final_image_url):
+                                log_app(f"❌ CORRECTION: URL ngrok non accessible, réduction des plateformes à Facebook seulement", "ERROR")
+                                # Si ngrok ne fonctionne pas non plus, publier uniquement sur Facebook
+                                platforms = ["facebook"] if "instagram" in platforms else platforms
+                                final_image_url = local_file_path  # Facebook peut utiliser les chemins relatifs
+                            else:
+                                log_app(f"✅ CORRECTION: URL ngrok accessible pour Instagram", "SUCCESS")
                         else:
-                            final_image_url = f"uploads/{filename}"
-                            log_app(f"⚠️ CORRECTION: Fallback final chemin local - {final_image_url}", "WARNING")
+                            log_app(f"❌ CORRECTION: Aucun FTP ni ngrok disponible, publication Facebook uniquement", "ERROR")
+                            # Aucune URL publique disponible, publier uniquement sur Facebook
+                            platforms = ["facebook"] if "instagram" in platforms else platforms
+                            final_image_url = local_file_path  # Facebook peut utiliser les chemins relatifs
                 else:
                     log_app(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
                     final_image_url = f"uploads/{filename}"
