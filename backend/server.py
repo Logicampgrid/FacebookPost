@@ -1426,9 +1426,9 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         if not os.path.exists(local_file_path):
             log_publish(f"⚠️ CORRECTION: Fichier local non trouvé, continuant: {filename}", "WARNING")
         
-        # STRATÉGIE RAPIDE: Priorité à PUBLIC_BASE_URL, puis FTP si disponible
+        # STRATÉGIE INTELLIGENTE: Priorité à ngrok, puis FTP si disponible
         
-        # 1. Essayer PUBLIC_BASE_URL (ngrok) en premier
+        # 1. Essayer PUBLIC_BASE_URL (ngrok) en premier - CORRECTION
         public_base_url = os.getenv("PUBLIC_BASE_URL")
         if not public_base_url:
             public_base_url = get_active_ngrok_url()
@@ -1436,32 +1436,51 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         if public_base_url:
             public_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
             log_publish(f"✅ CORRECTION: URL ngrok générée: {public_url}", "SUCCESS")
-            return public_url
-        
-        # 2. Fallback FTP (si ngrok non disponible)
-        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://") and os.path.exists(local_file_path):
-            log_publish(f"🔄 CORRECTION: Fallback FTP car ngrok indisponible", "INFO")
+            
+            # Vérification rapide de l'existence du fichier pour éviter les 404
             try:
-                # Upload FTP rapide (sans attendre le test d'accessibilité)
-                ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
-                    upload_image_to_ftp(local_file_path, filename), 
-                    timeout=8.0
-                )
-                
-                if ftp_success and ftp_url:
-                    log_publish(f"✅ CORRECTION: FTP/HTTP généré: {ftp_url}", "SUCCESS")
-                    return ftp_url
+                if os.path.exists(local_file_path):
+                    return public_url
                 else:
-                    log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
+                    log_publish(f"⚠️ CORRECTION: Fichier local introuvable, essayer FTP", "WARNING")
+            except:
+                return public_url  # En cas d'erreur, utiliser l'URL quand même
+        
+        # 2. Fallback FTP intelligent (si ngrok non disponible ou fichier manquant)
+        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://"):
+            log_publish(f"🔄 CORRECTION: Tentative FTP pour fichier manquant ou ngrok indisponible", "INFO")
+            try:
+                # Si le fichier local existe, l'uploader
+                if os.path.exists(local_file_path):
+                    ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
+                        upload_image_to_ftp(local_file_path, filename), 
+                        timeout=12.0  # Plus de temps pour FTP
+                    )
+                    
+                    if ftp_success and ftp_url:
+                        log_publish(f"✅ CORRECTION: FTP/HTTP généré: {ftp_url}", "SUCCESS")
+                        return ftp_url
+                    else:
+                        log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
+                else:
+                    # Essayer de construire l'URL FTP directement
+                    ftp_direct_url = f"{FTP_BASE_URL.rstrip('/')}/{filename}"
+                    log_publish(f"🔄 CORRECTION: URL FTP directe (fichier peut exister): {ftp_direct_url}", "INFO")
+                    return ftp_direct_url
                     
             except asyncio.TimeoutError:
-                log_publish(f"⏰ CORRECTION: FTP timeout", "WARNING")
+                log_publish(f"⏰ CORRECTION: FTP timeout après 12s", "WARNING")
             except Exception as ftp_error:
                 log_publish(f"⚠️ CORRECTION: Erreur FTP: {ftp_error}", "WARNING")
         
-        # 3. Dernière chance: construire une URL locale
-        log_publish(f"🔄 CORRECTION: Dernière chance - URL locale", "WARNING")
-        fallback_url = f"http://localhost:8001/uploads/{filename}"
+        # 3. Dernière chance: construire une URL basée sur ngrok ou localhost
+        if public_base_url:
+            fallback_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
+            log_publish(f"🔄 CORRECTION: Fallback ngrok malgré erreurs: {fallback_url}", "WARNING")
+        else:
+            fallback_url = f"http://localhost:8001/uploads/{filename}"
+            log_publish(f"🔄 CORRECTION: Fallback localhost final: {fallback_url}", "WARNING")
+        
         return fallback_url
         
     except Exception as e:
