@@ -3557,22 +3557,33 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         elif media_type == "image" and media_file_info:
             log_app(f"🖼️ CORRECTION: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
             
-            # NOUVELLE LOGIQUE: Utiliser l'URL FTP publique si disponible, sinon chemin local
+            # NOUVELLE LOGIQUE: Essayer FTP d'abord, puis URL ngrok comme fallback
             final_image_url = None
             
             if media_file_info.get('ftp_url'):
-                # L'upload FTP a réussi, utiliser l'URL publique
+                # L'upload FTP a réussi, utiliser l'URL publique FTP
                 final_image_url = media_file_info['ftp_url']
                 log_app(f"🌐 CORRECTION: Utilisation URL FTP publique - {final_image_url}", "SUCCESS")
             else:
-                # Fallback vers le chemin local normalisé (pour compatibilité)
-                raw_image_path = media_file_info['path']
-                if raw_image_path:
-                    filename = media_file_info['filename']
+                # Fallback : essayer de construire une URL ngrok publique
+                filename = media_file_info['filename']
+                try:
+                    # Tenter la conversion vers URL ngrok
+                    ngrok_url = get_active_ngrok_url()
+                    if ngrok_url:
+                        final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
+                        log_app(f"🔄 CORRECTION: Utilisation URL ngrok - {final_image_url}", "INFO")
+                    else:
+                        # Dernier fallback vers chemin local normalisé
+                        final_image_url = f"uploads/{filename}"
+                        log_app(f"⚠️ CORRECTION: Fallback chemin local - {final_image_url}", "WARNING")
+                except Exception as ngrok_error:
+                    # Dernier fallback vers chemin local normalisé
                     final_image_url = f"uploads/{filename}"
-                    log_app(f"🔄 CORRECTION: Fallback chemin local - {raw_image_path} -> {final_image_url}", "WARNING")
-                    if media_file_info.get('ftp_error'):
-                        log_app(f"⚠️ CORRECTION: Erreur FTP précédente - {media_file_info['ftp_error']}", "WARNING")
+                    log_app(f"❌ CORRECTION: Erreur ngrok, fallback local - {ngrok_error}", "WARNING")
+                    
+                if media_file_info.get('ftp_error'):
+                    log_app(f"ℹ️ CORRECTION: Erreur FTP précédente - {media_file_info['ftp_error']}", "INFO")
                         
             result = await publish_post_main(
                 store=final_store,
