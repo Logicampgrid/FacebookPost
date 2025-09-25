@@ -303,11 +303,11 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
         file_size = os.path.getsize(image_path)
         log_app(f"📊 Taille image: {file_size / (1024*1024):.2f} MB", "INFO")
         
-        # Essayer différentes configurations FTP (similaire à upload_video_to_ftp)
+        # Configuration FTP améliorée pour résoudre les problèmes de connexion
         connection_configs = [
-            {"pasv": False, "timeout": 15, "name": "Actif court"},
-            {"pasv": True, "timeout": 15, "name": "Passif court"},
-            {"pasv": False, "timeout": 60, "name": "Actif long"},
+            {"pasv": True, "timeout": 30, "name": "Passif standard", "encoding": "utf-8"},
+            {"pasv": False, "timeout": 30, "name": "Actif standard", "encoding": "utf-8"},
+            {"pasv": True, "timeout": 60, "name": "Passif timeout long", "encoding": "latin1"},
         ]
         
         for config in connection_configs:
@@ -316,28 +316,48 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                 
                 ftp = ftplib.FTP()
                 ftp.set_pasv(config["pasv"])
-                ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
-                ftp.login(FTP_USER, FTP_PASSWORD)
+                ftp.encoding = config["encoding"]
+                
+                # Connexion avec gestion d'erreur améliorée
+                try:
+                    ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                    ftp.login(FTP_USER, FTP_PASSWORD)
+                except (ftplib.error_perm, ftplib.error_temp, OSError, ConnectionRefusedError) as conn_error:
+                    log_app(f"❌ Connexion FTP échouée ({config['name']}): {conn_error}", "ERROR")
+                    continue
                 
                 log_app(f"✅ Connexion FTP image réussie ({config['name']})", "SUCCESS")
                 
-                # Navigation vers le répertoire
+                # Navigation vers le répertoire avec gestion d'erreur
                 try:
                     ftp.cwd(FTP_DIRECTORY)
                     log_app(f"📁 Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
-                except ftplib.error_perm:
-                    log_app(f"⚠️ Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine", "WARNING")
+                except ftplib.error_perm as cwd_error:
+                    log_app(f"⚠️ Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine: {cwd_error}", "WARNING")
+                    # Continuer dans le répertoire racine
                 
-                # Upload du fichier
+                # Upload du fichier avec block size optimisé
                 try:
                     with open(image_path, 'rb') as image_file:
                         log_app(f"📤 Upload en cours: {ftp_filename}", "INFO")
-                        ftp.storbinary(f'STOR {ftp_filename}', image_file, blocksize=8192)
+                        # Utiliser un blocksize plus petit pour la stabilité
+                        ftp.storbinary(f'STOR {ftp_filename}', image_file, blocksize=4096)
                     
                     log_app(f"✅ Upload image terminé avec succès ({config['name']})", "SUCCESS")
                     
+                    # Vérifier l'upload (optionnel)
+                    try:
+                        file_list = ftp.nlst()
+                        if ftp_filename in file_list:
+                            log_app("✅ Fichier confirmé sur le serveur", "SUCCESS")
+                    except:
+                        log_app("⚠️ Confirmation fichier non disponible, mais upload semble réussi", "WARNING")
+                    
                     # Fermer la connexion proprement
-                    ftp.quit()
+                    try:
+                        ftp.quit()
+                    except:
+                        ftp.close()
                     
                     # Construire l'URL publique
                     public_url = f"{FTP_BASE_URL}{ftp_filename}"
@@ -350,7 +370,7 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                     try:
                         ftp.quit()
                     except:
-                        pass
+                        ftp.close()
                     # Continuer avec la configuration suivante
                     continue
                     
@@ -360,7 +380,7 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                 continue
         
         # Si aucune configuration n'a fonctionné
-        return False, None, "Impossible d'établir une connexion FTP stable pour l'image"
+        return False, None, "Impossible d'établir une connexion FTP stable pour l'image. Vérifiez la configuration réseau et les paramètres FTP."
         
     except Exception as e:
         log_app(f"❌ Erreur générale upload FTP image: {str(e)}", "ERROR")
