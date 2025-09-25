@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://private-webhook.preview.emergentagent.com"
+BACKEND_URL = "https://logicamp-ftp.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""

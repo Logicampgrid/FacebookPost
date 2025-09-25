@@ -12,7 +12,7 @@ from PIL import Image
 from datetime import datetime
 
 API_BASE = "http://localhost:8001"
-WEBHOOK_URL = "https://private-webhook.preview.emergentagent.com/api/webhook"
+WEBHOOK_URL = "https://logicamp-ftp.preview.emergentagent.com/api/webhook"
 
 def create_demo_image():
     """Crée une image de démonstration pour le test"""
