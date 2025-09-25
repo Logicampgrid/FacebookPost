@@ -1040,17 +1040,35 @@ def convert_local_path_to_ngrok_url(image_url: str) -> str:
         # Normaliser le chemin pour Windows (remplacer backslashes par slashes)
         normalized_path = image_url.replace("\\", "/")
         
-        # Vérifier si c'est un chemin local uploads/ (après normalisation)
-        if not normalized_path.startswith("uploads/"):
-            # Vérifier si c'est déjà une URL complète
-            if normalized_path.startswith("http://") or normalized_path.startswith("https://"):
-                log_publish(f"🔗 URL déjà complète, pas de conversion nécessaire: {image_url}", "INFO")
-                return image_url
-            else:
-                log_publish(f"🔗 Chemin non reconnu comme uploads/, pas de conversion: {image_url}", "INFO")
-                return image_url
+        log_publish(f"🔍 Analyse du chemin d'image: '{image_url}' -> normalisé: '{normalized_path}'", "INFO")
         
-        log_publish(f"🔄 Conversion chemin local détectée: {image_url} -> {normalized_path}", "INFO")
+        # Vérifier si c'est déjà une URL complète
+        if normalized_path.startswith("http://") or normalized_path.startswith("https://"):
+            log_publish(f"🔗 URL déjà complète, pas de conversion nécessaire: {image_url}", "INFO")
+            return image_url
+        
+        # Vérifier si c'est un chemin local uploads/ OU contient uploads
+        is_uploads_path = False
+        final_path = normalized_path
+        
+        if normalized_path.startswith("uploads/"):
+            is_uploads_path = True
+            final_path = normalized_path
+        elif "uploads/" in normalized_path:
+            # Cas où le chemin contient uploads mais avec un préfixe (ex: "./uploads/", "backend/uploads/")
+            uploads_index = normalized_path.find("uploads/")
+            final_path = normalized_path[uploads_index:]
+            is_uploads_path = True
+        elif normalized_path.startswith("uploads"):
+            # Cas où ça commence par uploads mais sans slash
+            final_path = normalized_path
+            is_uploads_path = True
+        
+        if not is_uploads_path:
+            log_publish(f"🔗 Chemin non reconnu comme uploads, pas de conversion: {image_url}", "INFO")
+            return image_url
+        
+        log_publish(f"🔄 Conversion chemin local détectée: {image_url} -> chemin final: {final_path}", "INFO")
         
         # Récupérer l'URL ngrok active
         ngrok_url = get_active_ngrok_url()
@@ -1059,8 +1077,15 @@ def convert_local_path_to_ngrok_url(image_url: str) -> str:
             log_publish(f"❌ {error_msg}", "ERROR")
             raise ValueError(error_msg)
         
+        # S'assurer que le chemin commence par uploads/
+        if not final_path.startswith("uploads/"):
+            if final_path.startswith("uploads"):
+                final_path = "uploads/" + final_path[7:]  # Enlever "uploads" et ajouter "uploads/"
+            else:
+                final_path = "uploads/" + final_path
+        
         # Construire l'URL publique avec le chemin normalisé
-        public_url = f"{ngrok_url}/{normalized_path}"
+        public_url = f"{ngrok_url}/{final_path}"
         log_publish(f"✅ Chemin converti: {image_url} -> {public_url}", "SUCCESS")
         
         return public_url
