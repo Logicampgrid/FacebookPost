@@ -1120,6 +1120,60 @@ def setup_uploads_static_mount():
 # Effectuer le montage avec diagnostic
 uploads_mounted = setup_uploads_static_mount()
 
+@app.get("/api/test-uploads")
+async def test_uploads_accessibility():
+    """Test l'accessibilité du dossier uploads et la conversion d'URLs"""
+    try:
+        uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
+        
+        # Informations sur le dossier
+        if not os.path.exists(uploads_path):
+            return {"status": "error", "message": "Dossier uploads inexistant"}
+        
+        # Lister quelques fichiers de test
+        test_files = []
+        try:
+            all_files = os.listdir(uploads_path)
+            image_files = [f for f in all_files if f.lower().endswith(('.jpg', '.png', '.gif', '.jpeg'))][:5]
+            
+            for img_file in image_files:
+                file_path = f"uploads/{img_file}"
+                try:
+                    # Test de conversion URL
+                    public_url = await convert_local_path_to_public_url(file_path)
+                    test_files.append({
+                        "local_path": file_path,
+                        "public_url": public_url,
+                        "direct_access": f"/uploads/{img_file}"
+                    })
+                except Exception as conv_error:
+                    test_files.append({
+                        "local_path": file_path,
+                        "error": str(conv_error),
+                        "direct_access": f"/uploads/{img_file}"
+                    })
+        except Exception as e:
+            return {"status": "error", "message": f"Erreur listage: {e}"}
+        
+        # Informations sur ngrok
+        ngrok_url = get_active_ngrok_url()
+        public_base = os.getenv("PUBLIC_BASE_URL")
+        
+        return {
+            "status": "success",
+            "uploads_path": uploads_path,
+            "uploads_mounted": uploads_mounted,
+            "file_count": len(all_files),
+            "test_files": test_files,
+            "ngrok_url": ngrok_url,
+            "public_base_url": public_base,
+            "ftp_base_url": FTP_BASE_URL,
+            "message": "Test d'accessibilité des uploads terminé"
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur test uploads: {e}"}
+
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """Handle OPTIONS requests for CORS"""
