@@ -1225,6 +1225,26 @@ def setup_uploads_static_mount():
 # Effectuer le montage avec diagnostic
 uploads_mounted = setup_uploads_static_mount()
 
+@app.get("/api/test-ftp")
+async def test_ftp_diagnostic():
+    """Diagnostique la connexion FTP et propose des solutions"""
+    try:
+        result = await test_ftp_connection()
+        return {
+            "status": "success" if result["success"] else "error",
+            "ftp_config": {
+                "host": FTP_HOST,
+                "port": FTP_PORT,
+                "user": FTP_USER,
+                "directory": FTP_DIRECTORY,
+                "initial_directory": FTP_INITIAL_DIRECTORY,
+                "base_url": FTP_BASE_URL
+            },
+            "diagnostic": result
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur diagnostic FTP: {e}"}
+
 @app.get("/api/test-uploads")
 async def test_uploads_accessibility():
     """Test l'accessibilité du dossier uploads et la conversion d'URLs - Version simplifiée"""
