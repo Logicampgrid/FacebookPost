@@ -1518,25 +1518,89 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         if not image_url:
             raise ValueError("Image URL requise pour Instagram")
         
-        # NOUVELLE FONCTIONNALITÉ: Conversion automatique des chemins locaux en URLs ngrok pour Instagram
+        # CORRECTION CRITIQUE: Conversion obligatoire des chemins locaux vers URLs publiques pour Instagram
         try:
-            log_publish(f"🔍 URL image reçue: '{image_url}'", "INFO")
-            converted_image_url = convert_local_path_to_ngrok_url(image_url)
+            log_publish(f"🔍 CORRECTION: URL image reçue pour Instagram: '{image_url}'", "INFO")
             
-            # On fait confiance à la conversion sans vérifier l'accessibilité depuis le serveur interne
-            # car il peut y avoir des problèmes de "NAT loopback" où le serveur ne peut pas accéder 
-            # à sa propre URL ngrok externe, même si celle-ci est accessible depuis Internet
-            if converted_image_url != image_url:  # Si conversion a eu lieu
-                log_publish(f"🔄 Conversion réussie: {image_url} -> {converted_image_url}", "SUCCESS")
-            else:
-                log_publish(f"🔗 URL déjà au bon format: {image_url}", "INFO")
+            # Étape 1: Vérifier si c'est un chemin local qui nécessite upload FTP
+            converted_image_url = image_url
+            needs_ftp_upload = False
+            
+            # Détecter les chemins locaux (uploads\, uploads/, ./uploads/, etc.)
+            normalized_path = image_url.replace("\\", "/")
+            if ("uploads/" in normalized_path) or normalized_path.startswith("uploads"):
+                needs_ftp_upload = True
+                log_publish(f"🔄 CORRECTION: Chemin local détecté, upload FTP requis", "INFO")
+            
+            # Étape 2: Si upload FTP requis, l'effectuer maintenant
+            if needs_ftp_upload:
+                # Extraire le nom de fichier et construire le chemin complet
+                if "/" in normalized_path:
+                    filename = normalized_path.split("/")[-1]
+                else:
+                    filename = normalized_path
+                
+                local_file_path = os.path.join("uploads", filename)
+                
+                if os.path.exists(local_file_path):
+                    log_publish(f"📤 CORRECTION: Upload FTP obligatoire pour Instagram - {local_file_path}", "INFO")
                     
-            image_url = converted_image_url  # Utiliser l'URL convertie pour la publication
-            log_publish(f"📤 URL finale pour Instagram API: {image_url}", "INFO")
+                    # Essayer l'upload FTP avec plusieurs tentatives
+                    ftp_success = False
+                    for attempt in range(3):
+                        try:
+                            log_publish(f"🔄 CORRECTION: Tentative FTP {attempt + 1}/3 pour Instagram", "INFO")
+                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
+                            
+                            if ftp_success and ftp_url:
+                                converted_image_url = ftp_url
+                                log_publish(f"✅ CORRECTION: Upload FTP Instagram réussi - {converted_image_url}", "SUCCESS")
+                                break
+                            else:
+                                log_publish(f"❌ CORRECTION: Tentative FTP {attempt + 1} échouée - {ftp_error}", "ERROR")
+                                if attempt < 2:  # Pas la dernière tentative
+                                    await asyncio.sleep(3)  # Attendre 3 secondes
+                        except Exception as upload_error:
+                            log_publish(f"❌ CORRECTION: Erreur upload FTP tentative {attempt + 1} - {upload_error}", "ERROR")
+                            if attempt < 2:
+                                await asyncio.sleep(3)
+                    
+                    # Si FTP échoue complètement, utiliser fallback ngrok
+                    if not ftp_success:
+                        try:
+                            log_publish(f"🔄 CORRECTION: FTP échoué, fallback vers ngrok pour Instagram", "WARNING")
+                            converted_image_url = convert_local_path_to_ngrok_url(image_url)
+                            log_publish(f"🔄 CORRECTION: Fallback ngrok pour Instagram - {converted_image_url}", "INFO")
+                        except Exception as ngrok_error:
+                            log_publish(f"❌ CORRECTION: Fallback ngrok échoué - {ngrok_error}", "ERROR")
+                            raise Exception(f"Impossible de convertir l'image pour Instagram: FTP échoué ({ftp_error}), ngrok échoué ({ngrok_error})")
+                else:
+                    log_publish(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
+                    raise Exception(f"Fichier image introuvable pour Instagram: {local_file_path}")
+            
+            # Étape 3: Si ce n'est pas un chemin local, vérifier si c'est déjà une URL publique
+            elif image_url.startswith(("http://", "https://")):
+                log_publish(f"✅ CORRECTION: URL déjà publique pour Instagram: {image_url}", "SUCCESS")
+                converted_image_url = image_url
+            else:
+                # Chemin inconnu, essayer la conversion ngrok
+                try:
+                    converted_image_url = convert_local_path_to_ngrok_url(image_url)
+                    log_publish(f"🔄 CORRECTION: Conversion ngrok appliquée: {image_url} -> {converted_image_url}", "INFO")
+                except:
+                    log_publish(f"⚠️ CORRECTION: Aucune conversion possible, utilisation URL telle quelle", "WARNING")
+                    converted_image_url = image_url
+            
+            # Vérification finale de l'URL pour Instagram
+            if not converted_image_url.startswith(("http://", "https://")):
+                raise Exception(f"URL finale invalide pour Instagram: {converted_image_url}")
+                    
+            image_url = converted_image_url
+            log_publish(f"📤 CORRECTION: URL finale confirmée pour Instagram API: {image_url}", "SUCCESS")
             
         except Exception as conversion_error:
-            log_publish(f"❌ Erreur conversion URL: {str(conversion_error)}", "ERROR")
-            raise Exception(f"Impossible de convertir l'URL d'image pour Instagram: {str(conversion_error)}")
+            log_publish(f"❌ CORRECTION: Erreur conversion URL Instagram: {str(conversion_error)}", "ERROR")
+            raise Exception(f"Impossible de préparer l'image pour Instagram: {str(conversion_error)}")
         
         # Mode test : simulation
         if PUBLICATION_TEST_MODE:
