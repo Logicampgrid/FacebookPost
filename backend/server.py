@@ -1255,6 +1255,21 @@ async def post_to_facebook(store: str, message: str, product_url: str, image_url
         error_msg = f"Erreur Facebook: {str(e)}"
         log_publish(error_msg, "ERROR")
         raise Exception(error_msg)
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Erreur HTTP Facebook: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_data = e.response.json()
+                error_msg += f" - {error_data}"
+            except:
+                error_msg += f" - Status: {e.response.status_code}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"Erreur Facebook: {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
 
 async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
     """Publie une image avec légende sur Instagram (processus en 2 étapes)"""
