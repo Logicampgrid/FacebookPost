@@ -1082,14 +1082,27 @@ def verify_url_accessibility(url: str) -> bool:
     """
     try:
         log_publish(f"🔍 Vérification accessibilité URL: {url}", "INFO")
-        response = requests.head(url, timeout=10, allow_redirects=True)
         
-        if response.status_code == 200:
-            log_publish(f"✅ URL accessible: {url} (HTTP {response.status_code})", "SUCCESS")
-            return True
-        else:
-            log_publish(f"⚠️ URL non accessible: {url} (HTTP {response.status_code})", "WARNING")
-            return False
+        # Essayer d'abord HEAD, puis GET si HEAD échoue (certains serveurs n'autorisent pas HEAD)
+        try:
+            response = requests.head(url, timeout=10, allow_redirects=True)
+            if response.status_code == 200:
+                log_publish(f"✅ URL accessible: {url} (HTTP {response.status_code})", "SUCCESS")
+                return True
+            elif response.status_code == 405:  # Method Not Allowed - essayer GET
+                response = requests.get(url, timeout=10, allow_redirects=True, stream=True)
+                if response.status_code == 200:
+                    log_publish(f"✅ URL accessible: {url} (HTTP {response.status_code} via GET)", "SUCCESS")
+                    return True
+        except requests.exceptions.RequestException:
+            # Si HEAD échoue, essayer directement GET
+            response = requests.get(url, timeout=10, allow_redirects=True, stream=True)
+            if response.status_code == 200:
+                log_publish(f"✅ URL accessible: {url} (HTTP {response.status_code} via GET fallback)", "SUCCESS")
+                return True
+        
+        log_publish(f"⚠️ URL non accessible: {url} (HTTP {response.status_code})", "WARNING")
+        return False
             
     except requests.exceptions.RequestException as e:
         log_publish(f"❌ Erreur vérification URL {url}: {str(e)}", "ERROR")
