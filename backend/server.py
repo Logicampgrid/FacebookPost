@@ -1250,15 +1250,19 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         
         # NOUVELLE FONCTIONNALITÉ: Conversion automatique des chemins locaux en URLs ngrok pour Instagram
         try:
+            log_publish(f"🔍 URL image reçue: '{image_url}'", "INFO")
             converted_image_url = convert_local_path_to_ngrok_url(image_url)
             
             # On fait confiance à la conversion sans vérifier l'accessibilité depuis le serveur interne
             # car il peut y avoir des problèmes de "NAT loopback" où le serveur ne peut pas accéder 
             # à sa propre URL ngrok externe, même si celle-ci est accessible depuis Internet
             if converted_image_url != image_url:  # Si conversion a eu lieu
-                log_publish(f"🔄 Utilisation URL convertie pour Instagram: {converted_image_url}", "INFO")
+                log_publish(f"🔄 Conversion réussie: {image_url} -> {converted_image_url}", "SUCCESS")
+            else:
+                log_publish(f"🔗 URL déjà au bon format: {image_url}", "INFO")
                     
             image_url = converted_image_url  # Utiliser l'URL convertie pour la publication
+            log_publish(f"📤 URL finale pour Instagram API: {image_url}", "INFO")
             
         except Exception as conversion_error:
             log_publish(f"❌ Erreur conversion URL: {str(conversion_error)}", "ERROR")
