@@ -1084,8 +1084,10 @@ def convert_local_path_to_ngrok_url(image_url: str) -> str:
             else:
                 final_path = "uploads/" + final_path
         
-        # Construire l'URL publique avec le chemin normalisé
-        public_url = f"{ngrok_url}/{final_path}"
+        # CORRECTION CRITIQUE: Construire l'URL publique avec le chemin normalisé
+        # Supprimer le slash final de ngrok_url s'il existe pour éviter double slash
+        ngrok_url_clean = ngrok_url.rstrip('/')
+        public_url = f"{ngrok_url_clean}/{final_path}"
         log_publish(f"✅ Chemin converti: {image_url} -> {public_url}", "SUCCESS")
         
         return public_url
