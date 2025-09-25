@@ -135,6 +135,89 @@ UPLOAD_DIR = "uploads"
 # Créer le dossier uploads s'il n'existe pas
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+async def test_ftp_connection() -> dict:
+    """Teste la connexion FTP et diagnostique les problèmes"""
+    try:
+        log_app("🔍 DIAGNOSTIC: Test de connexion FTP", "INFO")
+        log_app(f"🔍 DIAGNOSTIC: Host={FTP_HOST}, Port={FTP_PORT}, User={FTP_USER}", "INFO")
+        
+        test_result = {
+            "success": False,
+            "host_reachable": False,
+            "login_success": False,
+            "directory_accessible": False,
+            "error": None,
+            "suggestions": []
+        }
+        
+        # Test de connectivité réseau
+        try:
+            import socket
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(10)
+                result = s.connect_ex((FTP_HOST, FTP_PORT))
+                if result == 0:
+                    test_result["host_reachable"] = True
+                    log_app("✅ DIAGNOSTIC: Host FTP accessible", "SUCCESS")
+                else:
+                    log_app(f"❌ DIAGNOSTIC: Host FTP non accessible (code: {result})", "ERROR")
+                    test_result["suggestions"].append(f"Vérifiez la connectivité réseau vers {FTP_HOST}:{FTP_PORT}")
+                    return test_result
+        except Exception as e:
+            log_app(f"❌ DIAGNOSTIC: Erreur test réseau: {e}", "ERROR")
+            test_result["suggestions"].append("Vérifiez votre connexion internet")
+            return test_result
+        
+        # Test de connexion FTP
+        try:
+            ftp = ftplib.FTP()
+            ftp.connect(FTP_HOST, FTP_PORT, timeout=15)
+            ftp.login(FTP_USER, FTP_PASSWORD)
+            test_result["login_success"] = True
+            log_app("✅ DIAGNOSTIC: Authentification FTP réussie", "SUCCESS")
+            
+            # Test navigation répertoires
+            try:
+                if FTP_INITIAL_DIRECTORY:
+                    ftp.cwd(FTP_INITIAL_DIRECTORY)
+                    log_app(f"✅ DIAGNOSTIC: Répertoire initial {FTP_INITIAL_DIRECTORY} accessible", "SUCCESS")
+                
+                ftp.cwd(FTP_DIRECTORY)
+                test_result["directory_accessible"] = True
+                log_app(f"✅ DIAGNOSTIC: Répertoire cible {FTP_DIRECTORY} accessible", "SUCCESS")
+                
+                # Lister les fichiers pour vérifier les permissions
+                files = ftp.nlst()
+                log_app(f"✅ DIAGNOSTIC: {len(files)} fichiers trouvés dans le répertoire", "SUCCESS")
+                
+                test_result["success"] = True
+                
+            except Exception as dir_error:
+                log_app(f"⚠️ DIAGNOSTIC: Erreur navigation répertoires: {dir_error}", "WARNING")
+                test_result["suggestions"].append(f"Vérifiez que le répertoire {FTP_DIRECTORY} existe et est accessible")
+                
+            ftp.quit()
+            
+        except ftplib.error_perm as perm_error:
+            log_app(f"❌ DIAGNOSTIC: Erreur permissions FTP: {perm_error}", "ERROR")
+            test_result["suggestions"].append("Vérifiez les identifiants FTP (utilisateur/mot de passe)")
+            test_result["error"] = str(perm_error)
+            
+        except Exception as ftp_error:
+            log_app(f"❌ DIAGNOSTIC: Erreur connexion FTP: {ftp_error}", "ERROR")
+            test_result["suggestions"].append("Problème de connexion FTP générique")
+            test_result["error"] = str(ftp_error)
+        
+        return test_result
+        
+    except Exception as e:
+        log_app(f"❌ DIAGNOSTIC: Erreur générale test FTP: {e}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e),
+            "suggestions": ["Erreur interne du test de diagnostic"]
+        }
+
 def get_store_config(store: str) -> dict:
     """Récupère la configuration d'un store (tokens dynamiques prioritaires sur statiques)"""
     if store not in STORES:
