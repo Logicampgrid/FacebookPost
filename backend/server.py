@@ -401,9 +401,15 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                 except:
                     log_app(f"⚠️ CORRECTION: Impossible de déterminer le répertoire courant", "WARNING")
                 
-                # Navigation vers le répertoire avec gestion d'erreur améliorée
+                # CORRECTION: Navigation vers le répertoire initial puis le répertoire cible
                 target_directory = None
                 try:
+                    # D'abord aller au répertoire initial si spécifié
+                    if FTP_INITIAL_DIRECTORY and FTP_INITIAL_DIRECTORY != ftp.pwd():
+                        ftp.cwd(FTP_INITIAL_DIRECTORY)
+                        log_app(f"📁 CORRECTION: Navigation vers répertoire initial {FTP_INITIAL_DIRECTORY} réussie", "SUCCESS")
+                    
+                    # Ensuite naviguer vers le répertoire de destination
                     ftp.cwd(FTP_DIRECTORY)
                     target_directory = FTP_DIRECTORY
                     log_app(f"📁 CORRECTION: Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
