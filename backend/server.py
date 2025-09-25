@@ -1858,6 +1858,25 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
         if not video_url:
             raise ValueError("URL vidéo requise pour Instagram")
         
+        # CORRECTION MAJEURE: Conversion intelligente des chemins locaux vers URLs publiques pour VIDÉOS
+        try:
+            log_video(f"🔍 CORRECTION: Traitement vidéo pour Instagram: '{video_url}'", "INFO")
+            
+            # Utiliser la nouvelle fonction de conversion intelligente pour vidéos aussi
+            converted_video_url = await convert_local_path_to_public_url(video_url)
+            
+            # Vérification finale de l'URL pour Instagram
+            if not converted_video_url.startswith(("http://", "https://")):
+                raise Exception(f"URL vidéo finale invalide pour Instagram: {converted_video_url}")
+            
+            # Mise à jour du payload avec l'URL publique
+            video_url = converted_video_url
+            log_video(f"📤 CORRECTION: URL vidéo finale confirmée pour Instagram API: {video_url}", "SUCCESS")
+            
+        except Exception as conversion_error:
+            log_video(f"❌ CORRECTION: Erreur conversion URL vidéo Instagram: {str(conversion_error)}", "ERROR")
+            raise Exception(f"Impossible de préparer la vidéo pour Instagram: {str(conversion_error)}")
+        
         # Mode test : simulation
         if PUBLICATION_TEST_MODE:
             log_video(f"MODE TEST - Publication vidéo Instagram simulée pour {store}", "TEST")
