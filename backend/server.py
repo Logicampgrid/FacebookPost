@@ -3956,7 +3956,7 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                     try:
                         # Générer l'URL ngrok pour la vidéo locale
                         filename = media_file_info['filename'] 
-                        ngrok_video_url = convert_local_path_to_ngrok_url(f"uploads/{filename}")
+                        ngrok_video_url = await convert_local_path_to_public_url(f"uploads/{filename}")
                         log_app(f"🔄 CORRECTION: Fallback ngrok pour vidéo - {ngrok_video_url}", "INFO")
                         
                         # Tenter la publication avec l'URL ngrok
