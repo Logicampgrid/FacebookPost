@@ -3374,11 +3374,26 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # - Validation préventive médias (AMÉLIORATIONS_MÉDIA_RÉALISÉES.md)
             # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
             # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
+            
+            # CORRECTION: Normaliser image_url si présente pour éviter les chemins Windows
+            normalized_image_url = image_url
+            if image_url:
+                # Normaliser les backslashes Windows en slashes Unix
+                normalized_path = image_url.replace("\\", "/")
+                
+                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), extraire juste le nom de fichier
+                if "uploads/" in normalized_path:
+                    filename = normalized_path.split("/")[-1]  # Prendre juste le nom de fichier
+                    normalized_image_url = f"uploads/{filename}"
+                    log_app(f"🔄 CORRECTION: Image URL normalisée - {image_url} -> {normalized_image_url}", "INFO")
+                else:
+                    normalized_image_url = normalized_path
+            
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=image_url,
+                image_url=normalized_image_url,  # Utiliser l'URL normalisée
                 platforms=platforms
             )
         
