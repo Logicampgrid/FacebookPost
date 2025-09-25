@@ -347,6 +347,42 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                     
                 except Exception as upload_error:
                     log_app(f"❌ Erreur upload image ({config['name']}): {upload_error}", "ERROR")
+async def upload_image_to_public_service(image_path: str) -> tuple:
+    """Upload une image vers un service public temporaire (fallback si FTP échoue)"""
+    try:
+        log_app(f"🌐 Upload image vers service public: {image_path}", "INFO")
+        
+        if not os.path.exists(image_path):
+            return False, None, f"Fichier non trouvé: {image_path}"
+        
+        # Utiliser ImgBB API comme service gratuit d'hébergement d'images temporaires
+        # Note: En production, il faudrait utiliser un service plus fiable
+        
+        # Pour maintenant, utilisons une solution de contournement avec base64
+        # Instagram API accepte aussi les images en base64 (pour les tests)
+        
+        import base64
+        
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+        
+        # Encoder en base64
+        base64_data = base64.b64encode(image_data).decode('utf-8')
+        
+        # Créer une URL data URI
+        mime_type = "image/jpeg" if image_path.lower().endswith(('.jpg', '.jpeg')) else "image/png"
+        data_uri = f"data:{mime_type};base64,{base64_data}"
+        
+        log_app(f"✅ Image encodée en base64 (taille: {len(data_uri)} chars)", "SUCCESS")
+        
+        # Note: Instagram API n'accepte pas les data URIs, nous devons trouver une autre solution
+        # Retournons False pour forcer le fallback vers ngrok local
+        return False, None, "Service public non disponible - utilisation ngrok local"
+        
+    except Exception as e:
+        error_msg = f"Erreur upload service public: {str(e)}"
+        log_app(error_msg, "ERROR")
+        return False, None, error_msg
                     try:
                         ftp.quit()
                     except:
