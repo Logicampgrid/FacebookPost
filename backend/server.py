@@ -1122,57 +1122,56 @@ uploads_mounted = setup_uploads_static_mount()
 
 @app.get("/api/test-uploads")
 async def test_uploads_accessibility():
-    """Test l'accessibilité du dossier uploads et la conversion d'URLs"""
+    """Test l'accessibilité du dossier uploads et la conversion d'URLs - Version simplifiée"""
     try:
         uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
         
-        # Informations sur le dossier
+        # Informations de base
         if not os.path.exists(uploads_path):
             return {"status": "error", "message": "Dossier uploads inexistant"}
         
-        # Lister quelques fichiers de test
-        test_files = []
+        # Compter les fichiers rapidement
         try:
             all_files = os.listdir(uploads_path)
-            image_files = [f for f in all_files if f.lower().endswith(('.jpg', '.png', '.gif', '.jpeg'))][:5]
-            
-            for img_file in image_files:
-                file_path = f"uploads/{img_file}"
-                try:
-                    # Test de conversion URL
-                    public_url = await convert_local_path_to_public_url(file_path)
-                    test_files.append({
-                        "local_path": file_path,
-                        "public_url": public_url,
-                        "direct_access": f"/uploads/{img_file}"
-                    })
-                except Exception as conv_error:
-                    test_files.append({
-                        "local_path": file_path,
-                        "error": str(conv_error),
-                        "direct_access": f"/uploads/{img_file}"
-                    })
+            file_count = len(all_files)
+            image_files = [f for f in all_files if f.lower().endswith(('.jpg', '.png', '.gif', '.jpeg'))][:3]
         except Exception as e:
             return {"status": "error", "message": f"Erreur listage: {e}"}
         
-        # Informations sur ngrok
+        # Test simple de conversion pour 1 fichier
+        test_result = {}
+        if image_files:
+            test_file = image_files[0]
+            try:
+                public_url = await convert_local_path_to_public_url(f"uploads/{test_file}")
+                test_result = {
+                    "test_file": test_file,
+                    "local_path": f"uploads/{test_file}",
+                    "public_url": public_url,
+                    "direct_access": f"/uploads/{test_file}"
+                }
+            except Exception as conv_error:
+                test_result = {"test_file": test_file, "error": str(conv_error)}
+        
+        # URLs disponibles
         ngrok_url = get_active_ngrok_url()
         public_base = os.getenv("PUBLIC_BASE_URL")
         
         return {
             "status": "success",
             "uploads_path": uploads_path,
-            "uploads_mounted": uploads_mounted,
-            "file_count": len(all_files),
-            "test_files": test_files,
+            "uploads_mounted": globals().get('uploads_mounted', False),
+            "file_count": file_count,
+            "image_count": len(image_files),
+            "test_conversion": test_result,
             "ngrok_url": ngrok_url,
             "public_base_url": public_base,
             "ftp_base_url": FTP_BASE_URL,
-            "message": "Test d'accessibilité des uploads terminé"
+            "message": "Test uploads terminé"
         }
         
     except Exception as e:
-        return {"status": "error", "message": f"Erreur test uploads: {e}"}
+        return {"status": "error", "message": f"Erreur: {e}"}
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
