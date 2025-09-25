@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://ngrok-backend.preview.emergentagent.com/api/webhook
+https://private-webhook.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
