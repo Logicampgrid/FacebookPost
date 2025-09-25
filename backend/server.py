@@ -3837,6 +3837,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 if "uploads/" in normalized_path:
                     filename = normalized_path.split("/")[-1]  # Prendre juste le nom de fichier
                     local_file_path = os.path.join("uploads", filename)
+                    # Correction: Si chemin relatif, utiliser le chemin complet depuis backend
+                    if not os.path.isabs(local_file_path):
+                        local_file_path = os.path.join(os.path.dirname(__file__), local_file_path)
                     
                     if os.path.exists(local_file_path):
                         log_app(f"🔄 CORRECTION: Upload FTP forcé pour chemin local - {local_file_path}", "INFO")
