@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://meta-publisher-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://webpub-debug.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://meta-publisher-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://meta-publisher-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://meta-publisher-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://webpub-debug.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://webpub-debug.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://webpub-debug.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
