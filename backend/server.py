@@ -1250,12 +1250,11 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         try:
             converted_image_url = convert_local_path_to_ngrok_url(image_url)
             
-            # Vérification optionnelle de l'accessibilité de l'URL
+            # On fait confiance à la conversion sans vérifier l'accessibilité depuis le serveur interne
+            # car il peut y avoir des problèmes de "NAT loopback" où le serveur ne peut pas accéder 
+            # à sa propre URL ngrok externe, même si celle-ci est accessible depuis Internet
             if converted_image_url != image_url:  # Si conversion a eu lieu
-                if not verify_url_accessibility(converted_image_url):
-                    log_publish(f"⚠️ URL convertie non accessible, tentative avec URL originale", "WARNING")
-                    # En cas d'échec de vérification, on garde l'URL convertie mais on log un avertissement
-                    # L'API Instagram Graph donnera un message d'erreur plus précis si l'URL n'est pas accessible
+                log_publish(f"🔄 Utilisation URL convertie pour Instagram: {converted_image_url}", "INFO")
                     
             image_url = converted_image_url  # Utiliser l'URL convertie pour la publication
             
