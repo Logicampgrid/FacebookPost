@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://ngrokdetector.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://ngrok-detect.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://ngrokdetector.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://ngrokdetector.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://ngrokdetector.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://ngrok-detect.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://ngrok-detect.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://ngrok-detect.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
