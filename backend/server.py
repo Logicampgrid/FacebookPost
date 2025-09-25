@@ -186,9 +186,22 @@ async def test_ftp_connection() -> dict:
                 test_result["directory_accessible"] = True
                 log_app(f"✅ DIAGNOSTIC: Répertoire cible {FTP_DIRECTORY} accessible", "SUCCESS")
                 
-                # Lister les fichiers pour vérifier les permissions
-                files = ftp.nlst()
-                log_app(f"✅ DIAGNOSTIC: {len(files)} fichiers trouvés dans le répertoire", "SUCCESS")
+                # Lister les fichiers pour vérifier les permissions (avec timeout court)
+                try:
+                    import signal
+                    def timeout_handler(signum, frame):
+                        raise TimeoutError("Timeout listage fichiers")
+                    
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(5)  # 5 secondes max pour lister
+                    
+                    files = ftp.nlst()
+                    signal.alarm(0)  # Annuler le timeout
+                    log_app(f"✅ DIAGNOSTIC: {len(files)} fichiers trouvés dans le répertoire", "SUCCESS")
+                except (TimeoutError, Exception) as list_error:
+                    signal.alarm(0)  # S'assurer d'annuler le timeout
+                    log_app(f"⚠️ DIAGNOSTIC: Timeout/erreur listage fichiers: {list_error}", "WARNING")
+                    # Mais ce n'est pas critique pour le diagnostic
                 
                 test_result["success"] = True
                 
