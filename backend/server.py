@@ -3529,22 +3529,41 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 final_image_url = media_file_info['ftp_url']
                 log_app(f"🌐 CORRECTION: Utilisation URL FTP publique - {final_image_url}", "SUCCESS")
             else:
-                # Fallback : essayer de construire une URL ngrok publique
+                # CORRECTION: Toujours tenter l'upload FTP d'abord pour Instagram
                 filename = media_file_info['filename']
-                try:
-                    # Tenter la conversion vers URL ngrok
-                    ngrok_url = get_active_ngrok_url()
-                    if ngrok_url:
-                        final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                        log_app(f"🔄 CORRECTION: Utilisation URL ngrok - {final_image_url}", "INFO")
-                    else:
-                        # Dernier fallback vers chemin local normalisé
-                        final_image_url = f"uploads/{filename}"
-                        log_app(f"⚠️ CORRECTION: Fallback chemin local - {final_image_url}", "WARNING")
-                except Exception as ngrok_error:
-                    # Dernier fallback vers chemin local normalisé
+                local_file_path = os.path.join("uploads", filename)
+                
+                if os.path.exists(local_file_path):
+                    log_app(f"🔄 CORRECTION: Tentative upload FTP forcé pour Instagram - {local_file_path}", "INFO")
+                    try:
+                        # Upload FTP forcé pour Instagram
+                        ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
+                        if ftp_success and ftp_url:
+                            final_image_url = ftp_url
+                            log_app(f"✅ CORRECTION: Upload FTP réussi - {final_image_url}", "SUCCESS")
+                        else:
+                            log_app(f"❌ CORRECTION: Échec upload FTP - {ftp_error}", "ERROR")
+                            # Fallback ngrok seulement si FTP échoue
+                            ngrok_url = get_active_ngrok_url()
+                            if ngrok_url:
+                                final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
+                                log_app(f"🔄 CORRECTION: Fallback URL ngrok - {final_image_url}", "INFO")
+                            else:
+                                final_image_url = f"uploads/{filename}"
+                                log_app(f"⚠️ CORRECTION: Fallback chemin local - {final_image_url}", "WARNING")
+                    except Exception as upload_error:
+                        log_app(f"❌ CORRECTION: Erreur upload FTP - {upload_error}", "ERROR")
+                        # Fallback ngrok
+                        ngrok_url = get_active_ngrok_url()
+                        if ngrok_url:
+                            final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
+                            log_app(f"🔄 CORRECTION: Fallback URL ngrok après erreur - {final_image_url}", "INFO")
+                        else:
+                            final_image_url = f"uploads/{filename}"
+                            log_app(f"⚠️ CORRECTION: Fallback final chemin local - {final_image_url}", "WARNING")
+                else:
+                    log_app(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
                     final_image_url = f"uploads/{filename}"
-                    log_app(f"❌ CORRECTION: Erreur ngrok, fallback local - {ngrok_error}", "WARNING")
                     
                 if media_file_info.get('ftp_error'):
                     log_app(f"ℹ️ CORRECTION: Erreur FTP précédente - {media_file_info['ftp_error']}", "INFO")
