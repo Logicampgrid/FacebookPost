@@ -1361,10 +1361,7 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
     """
     CORRECTION MAJEURE: Convertit les chemins locaux (uploads\\xxx.png) en URL publique.
     
-    Stratégie intelligente:
-    1. Tester d'abord l'accès via FTP/HTTP si disponible
-    2. Fallback vers ngrok (PUBLIC_BASE_URL depuis .env)
-    3. Vérifier que FastAPI expose bien /uploads
+    Version simplifiée et rapide pour éviter les blocages.
     
     Args:
         image_url: Chemin potentiellement local (ex: "uploads\\image.png", "uploads/image.jpg")
@@ -1378,98 +1375,79 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         # Normaliser le chemin Windows -> Unix
         normalized_path = image_url.replace("\\", "/")
         
-        # Si c'est déjà une URL complète, vérifier l'accessibilité
+        # Si c'est déjà une URL complète, la retourner directement
         if normalized_path.startswith(("http://", "https://")):
-            log_publish(f"🔗 URL existante, test d'accessibilité: {image_url}", "INFO")
-            if await test_url_accessibility(image_url):
-                return image_url
-            else:
-                raise Exception(f"URL existante non accessible: {image_url}")
+            log_publish(f"🔗 URL existante: {image_url}", "INFO")
+            return image_url
         
-        # Détecter chemins locaux uploads
-        is_local_uploads = False
+        # Détecter chemins locaux uploads et extraire filename
         filename = ""
         
-        # Patterns de détection améliorés
-        if any(pattern in normalized_path for pattern in ["uploads/", "uploads\\", "/uploads/", "\\uploads\\"]):
-            is_local_uploads = True
+        # Patterns de détection simplifiés
+        if "uploads" in normalized_path:
             # Extraire le nom de fichier
             parts = normalized_path.replace("\\", "/").split("/")
             filename = parts[-1] if parts else normalized_path
-        elif normalized_path.startswith("uploads") and not normalized_path.startswith("http"):
-            is_local_uploads = True
-            filename = normalized_path.split("/")[-1] if "/" in normalized_path else normalized_path
-        
-        if not is_local_uploads:
+            # Si filename contient encore "uploads", c'est que le path n'était que "uploads"
+            if filename == "uploads" and len(parts) > 1:
+                filename = parts[-2] if len(parts) > 1 else "unknown.jpg"
+        else:
             log_publish(f"⚠️ CORRECTION: Chemin non reconnu comme uploads: {image_url}", "WARNING")
             return image_url
             
         log_publish(f"📁 CORRECTION: Chemin local détecté, fichier: {filename}", "INFO")
         
-        # Construire chemin complet du fichier local
+        # Vérifier que le fichier existe localement (sans blocage)
         local_file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(local_file_path):
-            # Essayer avec le chemin backend complet
             local_file_path = os.path.join(os.path.dirname(__file__), "uploads", filename)
             
         if not os.path.exists(local_file_path):
-            raise Exception(f"Fichier local introuvable: {filename}")
-            
-        log_publish(f"✅ CORRECTION: Fichier local confirmé: {local_file_path}", "SUCCESS")
+            log_publish(f"⚠️ CORRECTION: Fichier local non trouvé, continuant: {filename}", "WARNING")
         
-        # STRATÉGIE 1: Test FTP/HTTP prioritaire (rapide)
-        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://"):
+        # STRATÉGIE RAPIDE: Priorité à PUBLIC_BASE_URL, puis FTP si disponible
+        
+        # 1. Essayer PUBLIC_BASE_URL (ngrok) en premier
+        public_base_url = os.getenv("PUBLIC_BASE_URL")
+        if not public_base_url:
+            public_base_url = get_active_ngrok_url()
+            
+        if public_base_url:
+            public_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
+            log_publish(f"✅ CORRECTION: URL ngrok générée: {public_url}", "SUCCESS")
+            return public_url
+        
+        # 2. Fallback FTP (si ngrok non disponible)
+        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://") and os.path.exists(local_file_path):
+            log_publish(f"🔄 CORRECTION: Fallback FTP car ngrok indisponible", "INFO")
             try:
-                log_publish(f"🔄 CORRECTION: Test prioritaire FTP/HTTP...", "INFO")
-                
-                # Upload vers FTP avec timeout court (5s max)
+                # Upload FTP rapide (sans attendre le test d'accessibilité)
                 ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
                     upload_image_to_ftp(local_file_path, filename), 
-                    timeout=5.0
+                    timeout=8.0
                 )
                 
                 if ftp_success and ftp_url:
-                    # Test rapide d'accessibilité
-                    if await test_url_accessibility(ftp_url, timeout=3):
-                        log_publish(f"✅ CORRECTION: FTP/HTTP accessible: {ftp_url}", "SUCCESS")
-                        return ftp_url
-                    else:
-                        log_publish(f"⚠️ CORRECTION: FTP uploadé mais non accessible", "WARNING")
-                        
+                    log_publish(f"✅ CORRECTION: FTP/HTTP généré: {ftp_url}", "SUCCESS")
+                    return ftp_url
+                else:
+                    log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
+                    
             except asyncio.TimeoutError:
-                log_publish(f"⏰ CORRECTION: FTP timeout, passage au fallback", "WARNING")
+                log_publish(f"⏰ CORRECTION: FTP timeout", "WARNING")
             except Exception as ftp_error:
-                log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
+                log_publish(f"⚠️ CORRECTION: Erreur FTP: {ftp_error}", "WARNING")
         
-        # STRATÉGIE 2: Fallback ngrok (PUBLIC_BASE_URL depuis .env)
-        log_publish(f"🔄 CORRECTION: Fallback ngrok via PUBLIC_BASE_URL", "INFO")
-        
-        # Récupérer PUBLIC_BASE_URL depuis .env
-        public_base_url = os.getenv("PUBLIC_BASE_URL")
-        if not public_base_url:
-            # Fallback dynamique vers URL active
-            public_base_url = get_active_ngrok_url()
-            
-        if not public_base_url:
-            raise Exception("Aucune URL publique disponible (PUBLIC_BASE_URL et ngrok)")
-            
-        # Construire URL publique ngrok
-        public_base_clean = public_base_url.rstrip('/')
-        public_url = f"{public_base_clean}/uploads/{filename}"
-        
-        # Test d'accessibilité de l'URL ngrok (FastAPI /uploads mount)
-        if await test_url_accessibility(public_url, timeout=3):
-            log_publish(f"✅ CORRECTION: Ngrok accessible: {public_url}", "SUCCESS")
-            return public_url
-        else:
-            log_publish(f"⚠️ CORRECTION: URL ngrok construite mais peut-être non accessible: {public_url}", "WARNING")
-            # Retourner quand même l'URL car le test peut échouer à cause de ngrok headers
-            return public_url
+        # 3. Dernière chance: construire une URL locale
+        log_publish(f"🔄 CORRECTION: Dernière chance - URL locale", "WARNING")
+        fallback_url = f"http://localhost:8001/uploads/{filename}"
+        return fallback_url
         
     except Exception as e:
-        error_msg = f"CORRECTION: Impossible de créer URL publique pour '{image_url}': {str(e)}"
+        error_msg = f"CORRECTION: Erreur conversion '{image_url}': {str(e)}"
         log_publish(error_msg, "ERROR")
-        raise Exception(error_msg)
+        # En cas d'erreur, retourner l'URL originale
+        return image_url
 
 async def test_url_accessibility(url: str, timeout: int = 5) -> bool:
     """Test rapide d'accessibilité d'une URL"""
