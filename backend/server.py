@@ -419,7 +419,7 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                         
                         # Upload avec block size optimisé pour la stabilité
                         ftp.storbinary(f'STOR {ftp_filename}', image_file, 
-                                     blocksize=8192, callback=progress_callback)
+                                     blocksize=config["blocksize"], callback=progress_callback)
                     
                     log_app(f"✅ CORRECTION: Upload image terminé avec succès ({config['name']})", "SUCCESS")
                     
