@@ -234,10 +234,13 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                 ftp.set_pasv(config["pasv"])
                 ftp.encoding = config["encoding"]
                 
-                # Connexion avec gestion d'erreur spécifique
+                # Connexion avec diagnostic amélioré
                 try:
+                    log_video(f"🌐 CORRECTION: Connexion à {FTP_HOST}:{FTP_PORT}...", "INFO")
                     ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                    log_video(f"🔑 CORRECTION: Authentification avec utilisateur '{FTP_USER}'...", "INFO")
                     ftp.login(FTP_USER, FTP_PASSWORD)
+                    log_video(f"✅ CORRECTION: Connexion FTP réussie ({config['name']})", "SUCCESS")
                 except (ftplib.error_perm, ftplib.error_temp, OSError, ConnectionRefusedError) as conn_error:
                     log_video(f"Connexion échouée ({config['name']}): {conn_error}", "ERROR")
                     # Analyser l'erreur pour diagnostics
