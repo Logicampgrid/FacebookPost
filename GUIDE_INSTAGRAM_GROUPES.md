@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://logicamp-ftp.preview.emergentagent.com
+URL : https://image-upload-fix-5.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

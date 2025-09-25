@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://logicamp-ftp.preview.emergentagent.com
+🔗 https://image-upload-fix-5.preview.emergentagent.com
