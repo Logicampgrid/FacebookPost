@@ -1474,18 +1474,28 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
 async def test_url_accessibility(url: str, timeout: int = 5) -> bool:
     """Test rapide d'accessibilité d'une URL"""
     try:
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.head(url, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
-                return response.status == 200
-    except:
-        # Fallback synchrone
-        try:
-            import requests
-            response = requests.head(url, timeout=timeout)
-            return response.status_code == 200
-        except:
-            return False
+        # Utilisation synchrone avec requests dans un thread
+        def sync_test():
+            try:
+                import requests
+                response = requests.head(url, timeout=timeout, allow_redirects=True)
+                return response.status_code == 200
+            except:
+                # Fallback avec GET si HEAD ne fonctionne pas
+                try:
+                    response = requests.get(url, timeout=timeout, stream=True, allow_redirects=True)
+                    return response.status_code == 200
+                except:
+                    return False
+        
+        # Exécuter dans un thread pour éviter de bloquer
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, sync_test)
+        return result
+        
+    except Exception:
+        return False
 
 def convert_local_path_to_ngrok_url(image_url: str) -> str:
     """
