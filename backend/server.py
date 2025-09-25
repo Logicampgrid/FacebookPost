@@ -3348,13 +3348,23 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 
         elif media_type == "image" and media_file_info:
             log_app(f"🖼️ CORRECTION: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
-            # Pour les images, utiliser le chemin local comme image_url
-            image_path = media_file_info['path']
+            # Pour les images, normaliser le chemin pour s'assurer qu'il est au format uploads/
+            raw_image_path = media_file_info['path']
+            
+            # Correction : normaliser le chemin Windows vers le format uploads/filename
+            if raw_image_path:
+                # Extraire juste le nom du fichier et construire le chemin relatif
+                filename = media_file_info['filename']
+                normalized_image_path = f"uploads/{filename}"
+                log_app(f"🔄 CORRECTION: Chemin normalisé - {raw_image_path} -> {normalized_image_path}", "INFO")
+            else:
+                normalized_image_path = raw_image_path
+                
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=image_path,  # Utiliser le chemin local
+                image_url=normalized_image_path,  # Utiliser le chemin normalisé
                 platforms=platforms
             )
         else:
