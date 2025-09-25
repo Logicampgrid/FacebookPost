@@ -282,6 +282,89 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
         log_video(f"Erreur générale upload FTP: {str(e)}", "ERROR")
         return False, None, str(e)
 
+async def upload_image_to_ftp(image_path: str, original_filename: str = None) -> tuple:
+    """Upload une image vers le serveur FTP avec gestion d'erreurs robuste pour Instagram"""
+    try:
+        log_app(f"🖼️ Début upload FTP image: {image_path}", "INFO")
+        
+        if not original_filename:
+            original_filename = os.path.basename(image_path)
+        
+        # Générer un nom unique avec timestamp
+        timestamp = int(time.time())
+        unique_id = uuid.uuid4().hex[:8]
+        filename_parts = os.path.splitext(original_filename)
+        ftp_filename = f"webhook_{unique_id}_{timestamp}{filename_parts[1]}"
+        
+        # Validation avant upload
+        if not os.path.exists(image_path):
+            return False, None, f"Fichier non trouvé: {image_path}"
+        
+        file_size = os.path.getsize(image_path)
+        log_app(f"📊 Taille image: {file_size / (1024*1024):.2f} MB", "INFO")
+        
+        # Essayer différentes configurations FTP (similaire à upload_video_to_ftp)
+        connection_configs = [
+            {"pasv": False, "timeout": 15, "name": "Actif court"},
+            {"pasv": True, "timeout": 15, "name": "Passif court"},
+            {"pasv": False, "timeout": 60, "name": "Actif long"},
+        ]
+        
+        for config in connection_configs:
+            try:
+                log_app(f"🔄 Tentative FTP image ({config['name']})...", "INFO")
+                
+                ftp = ftplib.FTP()
+                ftp.set_pasv(config["pasv"])
+                ftp.connect(FTP_HOST, FTP_PORT, timeout=config["timeout"])
+                ftp.login(FTP_USER, FTP_PASSWORD)
+                
+                log_app(f"✅ Connexion FTP image réussie ({config['name']})", "SUCCESS")
+                
+                # Navigation vers le répertoire
+                try:
+                    ftp.cwd(FTP_DIRECTORY)
+                    log_app(f"📁 Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
+                except ftplib.error_perm:
+                    log_app(f"⚠️ Répertoire {FTP_DIRECTORY} non accessible, utilisation du répertoire racine", "WARNING")
+                
+                # Upload du fichier
+                try:
+                    with open(image_path, 'rb') as image_file:
+                        log_app(f"📤 Upload en cours: {ftp_filename}", "INFO")
+                        ftp.storbinary(f'STOR {ftp_filename}', image_file, blocksize=8192)
+                    
+                    log_app(f"✅ Upload image terminé avec succès ({config['name']})", "SUCCESS")
+                    
+                    # Fermer la connexion proprement
+                    ftp.quit()
+                    
+                    # Construire l'URL publique
+                    public_url = f"{FTP_BASE_URL}{ftp_filename}"
+                    log_app(f"🌐 Image disponible: {public_url}", "SUCCESS")
+                    
+                    return True, public_url, None
+                    
+                except Exception as upload_error:
+                    log_app(f"❌ Erreur upload image ({config['name']}): {upload_error}", "ERROR")
+                    try:
+                        ftp.quit()
+                    except:
+                        pass
+                    # Continuer avec la configuration suivante
+                    continue
+                    
+            except Exception as conn_error:
+                log_app(f"❌ Erreur connexion FTP image ({config['name']}): {conn_error}", "ERROR")
+                # Continuer avec la configuration suivante
+                continue
+        
+        # Si aucune configuration n'a fonctionné
+        return False, None, "Impossible d'établir une connexion FTP stable pour l'image"
+        
+    except Exception as e:
+        log_app(f"❌ Erreur générale upload FTP image: {str(e)}", "ERROR")
+        return False, None, str(e)
 def log_app(message: str, level: str = "INFO"):
     """Logging pour l'application"""
     icons = {"INFO": "ℹ️", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "START": "🚀"}
