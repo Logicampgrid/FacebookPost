@@ -1030,19 +1030,27 @@ def convert_local_path_to_ngrok_url(image_url: str) -> str:
     Convertit les chemins locaux uploads/ en URLs ngrok publiques pour Instagram
     
     Args:
-        image_url: URL d'image potentiellement locale (ex: "uploads/nom_image.png")
+        image_url: URL d'image potentiellement locale (ex: "uploads/nom_image.png" ou "uploads\\nom_image.png")
     
     Returns:
         str: URL ngrok publique (ex: "https://abe16f7ffd54.ngrok-free.app/uploads/nom_image.png")
              ou l'URL originale si ce n'est pas un chemin local
     """
     try:
-        # Vérifier si c'est un chemin local uploads/
-        if not image_url.startswith("uploads/"):
-            log_publish(f"🔗 URL déjà publique, pas de conversion nécessaire: {image_url}", "INFO")
-            return image_url
+        # Normaliser le chemin pour Windows (remplacer backslashes par slashes)
+        normalized_path = image_url.replace("\\", "/")
         
-        log_publish(f"🔄 Conversion chemin local détectée: {image_url}", "INFO")
+        # Vérifier si c'est un chemin local uploads/ (après normalisation)
+        if not normalized_path.startswith("uploads/"):
+            # Vérifier si c'est déjà une URL complète
+            if normalized_path.startswith("http://") or normalized_path.startswith("https://"):
+                log_publish(f"🔗 URL déjà complète, pas de conversion nécessaire: {image_url}", "INFO")
+                return image_url
+            else:
+                log_publish(f"🔗 Chemin non reconnu comme uploads/, pas de conversion: {image_url}", "INFO")
+                return image_url
+        
+        log_publish(f"🔄 Conversion chemin local détectée: {image_url} -> {normalized_path}", "INFO")
         
         # Récupérer l'URL ngrok active
         ngrok_url = get_active_ngrok_url()
@@ -1051,8 +1059,8 @@ def convert_local_path_to_ngrok_url(image_url: str) -> str:
             log_publish(f"❌ {error_msg}", "ERROR")
             raise ValueError(error_msg)
         
-        # Construire l'URL publique
-        public_url = f"{ngrok_url}/{image_url}"
+        # Construire l'URL publique avec le chemin normalisé
+        public_url = f"{ngrok_url}/{normalized_path}"
         log_publish(f"✅ Chemin converti: {image_url} -> {public_url}", "SUCCESS")
         
         return public_url
