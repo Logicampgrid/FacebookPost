@@ -1174,8 +1174,8 @@ async def update_instagram_ids():
     except Exception as e:
         log_app(f"❌ Erreur générale mise à jour Instagram: {str(e)}", "ERROR")
 
-async def post_to_facebook(store: str, message: str, product_url: str) -> dict:
-    """Publie un post sur la page Facebook correspondante"""
+async def post_to_facebook(store: str, message: str, product_url: str, image_url: Optional[str] = None) -> dict:
+    """Publie un post avec ou sans image sur la page Facebook correspondante"""
     try:
         log_publish(f"Publication Facebook pour {store}", "INFO")
         
@@ -1194,16 +1194,40 @@ async def post_to_facebook(store: str, message: str, product_url: str) -> dict:
                 "id": f"test_fb_post_{uuid.uuid4().hex[:8]}",
                 "message": message,
                 "link": product_url,
+                "image_url": image_url,
                 "test_mode": True
             }
         
-        # Publication réelle
-        url = f"{FACEBOOK_GRAPH_URL}/{creds['fb_page_id']}/feed"
-        payload = {
-            "message": message,
-            "link": product_url,
-            "access_token": creds["access_token"]
-        }
+        # Publication réelle - différencier avec ou sans image
+        if image_url:
+            # CORRECTION: Publication avec image via /photos endpoint
+            log_publish(f"Publication Facebook avec image: {image_url}", "INFO")
+            
+            # Convertir l'URL locale en URL ngrok si nécessaire
+            try:
+                converted_image_url = convert_local_path_to_ngrok_url(image_url)
+                if converted_image_url != image_url:
+                    log_publish(f"🔄 Image URL convertie: {image_url} -> {converted_image_url}", "SUCCESS")
+                    image_url = converted_image_url
+            except Exception as conversion_error:
+                log_publish(f"⚠️ Erreur conversion URL image: {conversion_error}", "WARNING")
+                # Continuer avec l'URL originale
+            
+            url = f"{FACEBOOK_GRAPH_URL}/{creds['fb_page_id']}/photos"
+            payload = {
+                "url": image_url,
+                "caption": f"{message}\n\n{product_url}" if product_url else message,
+                "access_token": creds["access_token"]
+            }
+        else:
+            # Publication sans image via /feed endpoint
+            log_publish("Publication Facebook sans image", "INFO")
+            url = f"{FACEBOOK_GRAPH_URL}/{creds['fb_page_id']}/feed"
+            payload = {
+                "message": message,
+                "link": product_url,
+                "access_token": creds["access_token"]
+            }
         
         log_publish(f"Requête Facebook: POST {url}", "INFO")
         response = requests.post(url, data=payload, timeout=30)
