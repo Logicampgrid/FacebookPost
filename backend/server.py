@@ -3625,7 +3625,7 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=final_image_url,  # Utiliser l'URL publique ou le chemin local
+                image_url=final_image_url,  # Utiliser l'URL finale (FTP ou fallback)
                 platforms=platforms
             )
         else:
