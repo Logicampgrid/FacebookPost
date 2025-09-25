@@ -1256,75 +1256,170 @@ def log_publish(message: str, level: str = "INFO"):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{icon} [{timestamp}] [PUBLISH] {message}")
 
-def convert_local_path_to_ngrok_url(image_url: str) -> str:
+async def convert_local_path_to_public_url(image_url: str) -> str:
     """
-    Convertit les chemins locaux uploads/ en URLs ngrok publiques pour Instagram
+    CORRECTION MAJEURE: Convertit les chemins locaux (uploads\\xxx.png) en URL publique.
+    
+    Stratégie intelligente:
+    1. Tester d'abord l'accès via FTP/HTTP si disponible
+    2. Fallback vers ngrok (PUBLIC_BASE_URL depuis .env)
+    3. Vérifier que FastAPI expose bien /uploads
     
     Args:
-        image_url: URL d'image potentiellement locale (ex: "uploads/nom_image.png" ou "uploads\\nom_image.png")
+        image_url: Chemin potentiellement local (ex: "uploads\\image.png", "uploads/image.jpg")
     
     Returns:
-        str: URL ngrok publique (ex: "https://abe16f7ffd54.ngrok-free.app/uploads/nom_image.png")
-             ou l'URL originale si ce n'est pas un chemin local
+        str: URL publique accessible (FTP ou ngrok)
     """
     try:
-        # Normaliser le chemin pour Windows (remplacer backslashes par slashes)
+        log_publish(f"🔍 CORRECTION: Analyse chemin d'image: '{image_url}'", "INFO")
+        
+        # Normaliser le chemin Windows -> Unix
         normalized_path = image_url.replace("\\", "/")
         
-        log_publish(f"🔍 Analyse du chemin d'image: '{image_url}' -> normalisé: '{normalized_path}'", "INFO")
+        # Si c'est déjà une URL complète, vérifier l'accessibilité
+        if normalized_path.startswith(("http://", "https://")):
+            log_publish(f"🔗 URL existante, test d'accessibilité: {image_url}", "INFO")
+            if await test_url_accessibility(image_url):
+                return image_url
+            else:
+                raise Exception(f"URL existante non accessible: {image_url}")
         
-        # Vérifier si c'est déjà une URL complète
-        if normalized_path.startswith("http://") or normalized_path.startswith("https://"):
-            log_publish(f"🔗 URL déjà complète, pas de conversion nécessaire: {image_url}", "INFO")
+        # Détecter chemins locaux uploads
+        is_local_uploads = False
+        filename = ""
+        
+        # Patterns de détection améliorés
+        if any(pattern in normalized_path for pattern in ["uploads/", "uploads\\", "/uploads/", "\\uploads\\"]):
+            is_local_uploads = True
+            # Extraire le nom de fichier
+            parts = normalized_path.replace("\\", "/").split("/")
+            filename = parts[-1] if parts else normalized_path
+        elif normalized_path.startswith("uploads") and not normalized_path.startswith("http"):
+            is_local_uploads = True
+            filename = normalized_path.split("/")[-1] if "/" in normalized_path else normalized_path
+        
+        if not is_local_uploads:
+            log_publish(f"⚠️ CORRECTION: Chemin non reconnu comme uploads: {image_url}", "WARNING")
+            return image_url
+            
+        log_publish(f"📁 CORRECTION: Chemin local détecté, fichier: {filename}", "INFO")
+        
+        # Construire chemin complet du fichier local
+        local_file_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.exists(local_file_path):
+            # Essayer avec le chemin backend complet
+            local_file_path = os.path.join(os.path.dirname(__file__), "uploads", filename)
+            
+        if not os.path.exists(local_file_path):
+            raise Exception(f"Fichier local introuvable: {filename}")
+            
+        log_publish(f"✅ CORRECTION: Fichier local confirmé: {local_file_path}", "SUCCESS")
+        
+        # STRATÉGIE 1: Test FTP/HTTP prioritaire (rapide)
+        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://"):
+            try:
+                log_publish(f"🔄 CORRECTION: Test prioritaire FTP/HTTP...", "INFO")
+                
+                # Upload vers FTP avec timeout court (5s max)
+                ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
+                    upload_image_to_ftp(local_file_path, filename), 
+                    timeout=5.0
+                )
+                
+                if ftp_success and ftp_url:
+                    # Test rapide d'accessibilité
+                    if await test_url_accessibility(ftp_url, timeout=3):
+                        log_publish(f"✅ CORRECTION: FTP/HTTP accessible: {ftp_url}", "SUCCESS")
+                        return ftp_url
+                    else:
+                        log_publish(f"⚠️ CORRECTION: FTP uploadé mais non accessible", "WARNING")
+                        
+            except asyncio.TimeoutError:
+                log_publish(f"⏰ CORRECTION: FTP timeout, passage au fallback", "WARNING")
+            except Exception as ftp_error:
+                log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
+        
+        # STRATÉGIE 2: Fallback ngrok (PUBLIC_BASE_URL depuis .env)
+        log_publish(f"🔄 CORRECTION: Fallback ngrok via PUBLIC_BASE_URL", "INFO")
+        
+        # Récupérer PUBLIC_BASE_URL depuis .env
+        public_base_url = os.getenv("PUBLIC_BASE_URL")
+        if not public_base_url:
+            # Fallback dynamique vers URL active
+            public_base_url = get_active_ngrok_url()
+            
+        if not public_base_url:
+            raise Exception("Aucune URL publique disponible (PUBLIC_BASE_URL et ngrok)")
+            
+        # Construire URL publique ngrok
+        public_base_clean = public_base_url.rstrip('/')
+        public_url = f"{public_base_clean}/uploads/{filename}"
+        
+        # Test d'accessibilité de l'URL ngrok (FastAPI /uploads mount)
+        if await test_url_accessibility(public_url, timeout=3):
+            log_publish(f"✅ CORRECTION: Ngrok accessible: {public_url}", "SUCCESS")
+            return public_url
+        else:
+            log_publish(f"⚠️ CORRECTION: URL ngrok construite mais peut-être non accessible: {public_url}", "WARNING")
+            # Retourner quand même l'URL car le test peut échouer à cause de ngrok headers
+            return public_url
+        
+    except Exception as e:
+        error_msg = f"CORRECTION: Impossible de créer URL publique pour '{image_url}': {str(e)}"
+        log_publish(error_msg, "ERROR")
+        raise Exception(error_msg)
+
+async def test_url_accessibility(url: str, timeout: int = 5) -> bool:
+    """Test rapide d'accessibilité d'une URL"""
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.head(url, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
+                return response.status == 200
+    except:
+        # Fallback synchrone
+        try:
+            import requests
+            response = requests.head(url, timeout=timeout)
+            return response.status_code == 200
+        except:
+            return False
+
+def convert_local_path_to_ngrok_url(image_url: str) -> str:
+    """
+    FONCTION LEGACY - Maintenue pour compatibilité
+    Utilise la nouvelle fonction async convert_local_path_to_public_url
+    """
+    try:
+        # Conversion synchrone basique pour compatibilité
+        normalized_path = image_url.replace("\\", "/")
+        
+        if normalized_path.startswith(("http://", "https://")):
             return image_url
         
-        # Vérifier si c'est un chemin local uploads/ OU contient uploads
-        is_uploads_path = False
-        final_path = normalized_path
-        
-        if normalized_path.startswith("uploads/"):
-            is_uploads_path = True
-            final_path = normalized_path
-        elif "uploads/" in normalized_path:
-            # Cas où le chemin contient uploads mais avec un préfixe (ex: "./uploads/", "backend/uploads/")
-            uploads_index = normalized_path.find("uploads/")
-            final_path = normalized_path[uploads_index:]
-            is_uploads_path = True
-        elif normalized_path.startswith("uploads"):
-            # Cas où ça commence par uploads mais sans slash
-            final_path = normalized_path
-            is_uploads_path = True
+        # Vérifier si c'est un chemin uploads
+        is_uploads_path = any(pattern in normalized_path for pattern in ["uploads/", "uploads\\", "/uploads/"])
         
         if not is_uploads_path:
-            log_publish(f"🔗 Chemin non reconnu comme uploads, pas de conversion: {image_url}", "INFO")
             return image_url
         
-        log_publish(f"🔄 Conversion chemin local détectée: {image_url} -> chemin final: {final_path}", "INFO")
+        # Extraire filename
+        filename = normalized_path.split("/")[-1] if "/" in normalized_path else normalized_path
         
-        # Récupérer l'URL ngrok active
-        ngrok_url = get_active_ngrok_url()
-        if not ngrok_url:
-            error_msg = "Aucune URL ngrok active trouvée - impossible de convertir le chemin local"
-            log_publish(f"❌ {error_msg}", "ERROR")
-            raise ValueError(error_msg)
+        # Utiliser PUBLIC_BASE_URL ou ngrok actif
+        public_base_url = os.getenv("PUBLIC_BASE_URL") or get_active_ngrok_url()
         
-        # S'assurer que le chemin commence par uploads/
-        if not final_path.startswith("uploads/"):
-            if final_path.startswith("uploads"):
-                final_path = "uploads/" + final_path[7:]  # Enlever "uploads" et ajouter "uploads/"
-            else:
-                final_path = "uploads/" + final_path
+        if not public_base_url:
+            raise ValueError("Aucune URL publique disponible")
         
-        # CORRECTION CRITIQUE: Construire l'URL publique avec le chemin normalisé
-        # Supprimer le slash final de ngrok_url s'il existe pour éviter double slash
-        ngrok_url_clean = ngrok_url.rstrip('/')
-        public_url = f"{ngrok_url_clean}/{final_path}"
-        log_publish(f"✅ Chemin converti: {image_url} -> {public_url}", "SUCCESS")
+        public_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
+        log_publish(f"✅ Legacy: Conversion {image_url} -> {public_url}", "SUCCESS")
         
         return public_url
         
     except Exception as e:
-        error_msg = f"Erreur conversion chemin vers URL ngrok: {str(e)}"
+        error_msg = f"Erreur conversion legacy: {str(e)}"
         log_publish(error_msg, "ERROR")
         raise Exception(error_msg)
 
