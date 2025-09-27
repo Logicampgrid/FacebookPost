@@ -2211,12 +2211,30 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
             "test_mode": PUBLICATION_TEST_MODE
         }
         
-        # Publication Facebook
+        # CORRECTION VIDÉO: Détection automatique du type de média pour Facebook
+        is_video_media = False
+        if image_url:
+            # Détecter si c'est une vidéo par l'extension ou le type MIME
+            if any(image_url.lower().endswith(ext) for ext in ['.mp4', '.mov', '.avi', '.wmv']):
+                is_video_media = True
+                log_publish("🎥 CORRECTION: Média vidéo détecté - routage vers endpoint /videos", "INFO")
+            elif 'video' in image_url.lower():
+                is_video_media = True
+                log_publish("🎥 CORRECTION: Média vidéo détecté par nom - routage vers endpoint /videos", "INFO")
+        
+        # Publication Facebook avec routage correct
         if "facebook" in platforms:
             try:
-                fb_result = await post_to_facebook(store, message, product_url, image_url)
+                if is_video_media:
+                    # CORRECTION: Utiliser la fonction vidéo pour les vidéos (endpoint /videos)
+                    fb_result = await post_video_to_facebook(store, message, product_url, image_url)
+                else:
+                    # Utiliser la fonction normale pour les images/textes (endpoint /photos ou /feed)
+                    fb_result = await post_to_facebook(store, message, product_url, image_url)
+                
                 results["facebook_result"] = fb_result
-                log_publish("Publication Facebook terminée", "SUCCESS")
+                media_type = "vidéo" if is_video_media else "image/texte" 
+                log_publish(f"Publication Facebook {media_type} terminée", "SUCCESS")
             except Exception as e:
                 error_msg = f"Échec Facebook: {str(e)}"
                 results["errors"].append(error_msg)
