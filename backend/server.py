@@ -2240,15 +2240,22 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
                 results["errors"].append(error_msg)
                 log_publish(error_msg, "ERROR")
         
-        # Publication Instagram
+        # Publication Instagram avec routage correct
         if "instagram" in platforms:
             try:
                 if not image_url:
-                    raise Exception("Image requise pour Instagram")
+                    raise Exception("Média requis pour Instagram")
                 
-                ig_result = await post_to_instagram(store, message, product_url, image_url)
+                if is_video_media:
+                    # CORRECTION: Utiliser la fonction vidéo pour Instagram (Reels)
+                    ig_result = await post_video_to_instagram(store, message, product_url, image_url)
+                else:
+                    # Utiliser la fonction normale pour les images
+                    ig_result = await post_to_instagram(store, message, product_url, image_url)
+                
                 results["instagram_result"] = ig_result
-                log_publish("Publication Instagram terminée", "SUCCESS")
+                media_type = "vidéo/Reel" if is_video_media else "image"
+                log_publish(f"Publication Instagram {media_type} terminée", "SUCCESS")
             except Exception as e:
                 error_msg = f"Échec Instagram: {str(e)}"
                 results["errors"].append(error_msg)
