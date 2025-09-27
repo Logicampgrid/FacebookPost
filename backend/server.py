@@ -848,8 +848,8 @@ def sync_webhook_url_with_ngrok():
             log_app(f"⚠️ Fichier .env backend non trouvé: {backend_env_path}", "WARNING")
             return False
         
-        # Lire le fichier .env actuel
-        with open(main_env_path, "r", encoding='utf-8') as f:
+        # Lire le fichier .env backend actuel
+        with open(backend_env_path, "r", encoding='utf-8') as f:
             content = f.read()
         
         # Diviser en lignes pour traitement
