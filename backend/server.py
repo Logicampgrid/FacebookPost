@@ -876,8 +876,8 @@ def sync_webhook_url_with_ngrok():
             updated_lines.append(f"WEBHOOK_URL={ngrok_url}")
             log_app(f"✅ WEBHOOK_URL ajouté: {ngrok_url}", "SUCCESS")
         
-        # Réécrire le fichier avec les nouvelles lignes
-        with open(main_env_path, "w", encoding='utf-8') as f:
+        # Réécrire le fichier backend .env avec les nouvelles lignes
+        with open(backend_env_path, "w", encoding='utf-8') as f:
             f.write("\n".join(updated_lines))
             if updated_lines and not updated_lines[-1].endswith('\n'):
                 f.write("\n")  # Ajouter une nouvelle ligne à la fin
