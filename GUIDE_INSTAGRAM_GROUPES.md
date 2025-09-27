@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-autopub.preview.emergentagent.com
+URL : https://instapost-update.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

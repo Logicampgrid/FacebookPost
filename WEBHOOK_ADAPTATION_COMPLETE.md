@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://instapost-update.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://social-autopub.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://instapost-update.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://instapost-update.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://instapost-update.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
