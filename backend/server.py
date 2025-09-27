@@ -733,6 +733,9 @@ def get_active_ngrok_url():
             log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
         
         log_app("⚠️ Aucune URL backend active trouvée", "WARNING")
+        log_app("💡 CONSEIL: Pour activer ngrok automatiquement:", "INFO")
+        log_app("   1. Lancez: ngrok http 8001", "INFO")
+        log_app("   2. Relancez l'application pour détecter l'URL", "INFO")
         return None
             
     except Exception as e:
