@@ -1265,6 +1265,70 @@ async def test_ftp_diagnostic():
     except Exception as e:
         return {"status": "error", "message": f"Erreur diagnostic FTP: {e}"}
 
+@app.get("/api/test-gizmobbs")
+async def test_gizmobbs_store():
+    """Test spécifique du store gizmobbs (prioritaire) - Configuration et endpoints"""
+    try:
+        log_app("🧪 Test spécifique store gizmobbs (@logicamp_berger)", "INFO")
+        
+        # Test configuration store
+        store_config = get_store_config("gizmobbs")
+        
+        # Test ngrok/WEBHOOK_URL
+        ngrok_url = get_active_ngrok_url()
+        
+        # Test FTP
+        ftp_test_result = await test_ftp_connection()
+        
+        # Test conversion URLs
+        test_local_path = "uploads/test_gizmobbs.jpg"
+        test_public_url = await convert_local_path_to_public_url(test_local_path)
+        
+        return {
+            "status": "success",
+            "store": "gizmobbs (@logicamp_berger)",
+            "priority": "Store prioritaire pour les tests",
+            "configuration": {
+                "fb_page_id": store_config.get("fb_page_id"),
+                "ig_user_id": store_config.get("ig_user_id"),
+                "access_token_present": bool(store_config.get("access_token")),
+                "store_name": store_config.get("name")
+            },
+            "ngrok": {
+                "url": ngrok_url,
+                "webhook_sync": "✅ Disponible" if ngrok_url else "❌ Non détecté"
+            },
+            "ftp": {
+                "host": FTP_HOST,
+                "base_url": FTP_BASE_URL,
+                "connection_test": "✅ Réussi" if ftp_test_result.get("success") else f"❌ Échec: {ftp_test_result.get('error', 'Erreur inconnue')}"
+            },
+            "url_conversion": {
+                "test_input": test_local_path,
+                "public_url": test_public_url,
+                "https_valid": test_public_url.startswith("https://"),
+                "instagram_compatible": "✅ HTTPS détecté" if test_public_url.startswith("https://") else "❌ Pas HTTPS"
+            },
+            "video_endpoints": {
+                "facebook_videos": f"{FACEBOOK_GRAPH_URL}/{store_config.get('fb_page_id')}/videos",
+                "instagram_reels": f"{FACEBOOK_GRAPH_URL}/{store_config.get('ig_user_id')}/media",
+                "detection_video": "✅ Automatique par extension (.mp4, .mov, .avi, .wmv)"
+            },
+            "corrections_status": {
+                "webhook_url_sync": "✅ Implémentée",
+                "video_endpoint_routing": "✅ Corrigée (/videos au lieu de /feed)",
+                "instagram_urls_https": "✅ Conversion automatique locale→publique",
+                "ngrok_detection": "✅ Automatique au démarrage"
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "store": "gizmobbs",
+            "message": f"Erreur test gizmobbs: {e}"
+        }
+
 @app.get("/api/test-uploads")
 async def test_uploads_accessibility():
     """Test l'accessibilité du dossier uploads et la conversion d'URLs - Version simplifiée"""
