@@ -835,16 +835,17 @@ def sync_frontend_env_with_ngrok():
         return False
 
 def sync_webhook_url_with_ngrok():
-    """Synchronise WEBHOOK_URL dans le .env principal avec l'URL ngrok active"""
+    """Synchronise WEBHOOK_URL dans le .env backend avec l'URL ngrok active - CORRECTION"""
     try:
         ngrok_url = get_active_ngrok_url()
         if not ngrok_url:
             log_app("⚠️ Aucune URL ngrok active - synchronisation WEBHOOK_URL ignorée", "WARNING")
             return False
         
-        main_env_path = os.path.join(WINDOWS_PATHS["project_root"], ".env")
-        if not os.path.exists(main_env_path):
-            log_app(f"⚠️ Fichier .env principal non trouvé: {main_env_path}", "WARNING")
+        # CORRECTION: Utilise le .env backend au lieu du .env principal
+        backend_env_path = os.path.join(WINDOWS_PATHS["backend_dir"], ".env")
+        if not os.path.exists(backend_env_path):
+            log_app(f"⚠️ Fichier .env backend non trouvé: {backend_env_path}", "WARNING")
             return False
         
         # Lire le fichier .env actuel
