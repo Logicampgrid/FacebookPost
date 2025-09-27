@@ -1514,7 +1514,7 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         str: URL publique accessible (FTP ou ngrok)
     """
     try:
-        log_publish(f"🔍 CORRECTION: Analyse chemin d'image: '{image_url}'", "INFO")
+        log_publish(f"🔍 CORRECTION: Analyse chemin média (Instagram nécessite HTTPS): '{image_url}'", "INFO")
         
         # Normaliser le chemin Windows -> Unix
         normalized_path = image_url.replace("\\", "/")
