@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://image-upload-fix-5.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://image-upload-fix-5.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://image-upload-fix-5.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://image-upload-fix-5.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-autopub.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-autopub.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

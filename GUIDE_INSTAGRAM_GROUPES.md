@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://image-upload-fix-5.preview.emergentagent.com
+URL : https://social-autopub.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

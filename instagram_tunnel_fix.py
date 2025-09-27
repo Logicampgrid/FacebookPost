@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://image-upload-fix-5.preview.emergentagent.com"
+BACKEND_URL = "https://social-autopub.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""
