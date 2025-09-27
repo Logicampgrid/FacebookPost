@@ -1536,7 +1536,7 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
             if filename == "uploads" and len(parts) > 1:
                 filename = parts[-2] if len(parts) > 1 else "unknown.jpg"
         else:
-            log_publish(f"⚠️ CORRECTION: Chemin non reconnu comme uploads: {image_url}", "WARNING")
+            log_publish(f"⚠️ CORRECTION: Chemin non reconnu - Instagram exige HTTPS. Tentative d'utilisation directe: {image_url}", "WARNING")
             return image_url
             
         log_publish(f"📁 CORRECTION: Chemin local détecté, fichier: {filename}", "INFO")
