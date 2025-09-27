@@ -19,6 +19,7 @@ def test_video_publication_gizmobbs():
         "store": "gizmobbs",
         "message": "Test vidéo - Le Berger Blanc Suisse 🐕 #test #BergerBlancSuisse",
         "video_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1MB.mp4",
+        "product_url": "https://example.com/berger-blanc-suisse",
         "platforms": ["facebook"]  # Test Facebook d'abord
     }
     
