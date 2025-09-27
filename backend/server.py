@@ -1521,7 +1521,7 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         
         # Si c'est déjà une URL complète, la retourner directement
         if normalized_path.startswith(("http://", "https://")):
-            log_publish(f"🔗 URL existante: {image_url}", "INFO")
+            log_publish(f"✅ URL publique valide détectée: {image_url}", "SUCCESS")
             return image_url
         
         # Détecter chemins locaux uploads et extraire filename
