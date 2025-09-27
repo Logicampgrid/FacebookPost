@@ -3096,6 +3096,35 @@ async def oauth_status_complete():
             "timestamp": datetime.now().isoformat()
         }
 
+@app.get("/api/stores/config")
+async def get_stores_config():
+    """Retourne la configuration de tous les stores pour les tests"""
+    try:
+        stores_info = {}
+        for store_name, store_config in STORES.items():
+            stores_info[store_name] = {
+                "name": store_config.get("name", store_name),
+                "fb_page_id": store_config.get("fb_page_id"),
+                "ig_user_id": store_config.get("ig_user_id"),
+                "has_access_token": bool(store_config.get("access_token")),
+                "configured": bool(store_config.get("fb_page_id") and store_config.get("access_token"))
+            }
+        
+        return {
+            "success": True,
+            "stores": stores_info,
+            "total_stores": len(stores_info),
+            "configured_stores": len([s for s in stores_info.values() if s["configured"]]),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur récupération config stores: {str(e)}", "ERROR")
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 @app.post("/api/config/force-oauth-setup")
 async def force_oauth_setup():
     """Force la configuration OAuth avec l'URL ngrok du frontend .env"""
