@@ -1570,9 +1570,12 @@ def log_publish(message: str, level: str = "INFO"):
 
 async def convert_local_path_to_public_url(image_url: str) -> str:
     """
-    CORRECTION MAJEURE: Convertit les chemins locaux (uploads\\xxx.png) en URL publique.
+    NOUVELLE VERSION: Convertit les chemins locaux en URL publique avec système FTP → ngrok fallback
     
-    Version simplifiée et rapide pour éviter les blocages.
+    Stratégie :
+    1. Si FTP upload réussit → utiliser FTP URL (plus stable)
+    2. Si FTP échoue → basculer automatiquement sur ngrok URL 
+    3. Toujours retourner une URL HTTPS accessible par Instagram/Facebook
     
     Args:
         image_url: Chemin potentiellement local (ex: "uploads\\image.png", "uploads/image.jpg")
@@ -1581,7 +1584,7 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
         str: URL publique accessible (FTP ou ngrok)
     """
     try:
-        log_publish(f"🔍 CORRECTION: Analyse chemin média (Instagram nécessite HTTPS): '{image_url}'", "INFO")
+        log_publish(f"🔍 NOUVELLE VERSION: Analyse chemin média pour Instagram: '{image_url}'", "INFO")
         
         # Normaliser le chemin Windows -> Unix
         normalized_path = image_url.replace("\\", "/")
@@ -1591,90 +1594,73 @@ async def convert_local_path_to_public_url(image_url: str) -> str:
             log_publish(f"✅ URL publique valide détectée: {image_url}", "SUCCESS")
             return image_url
         
-        # Détecter chemins locaux uploads et extraire filename
+        # Extraire le nom de fichier depuis le chemin local
         filename = ""
-        
-        # Patterns de détection simplifiés
         if "uploads" in normalized_path:
-            # Extraire le nom de fichier
             parts = normalized_path.replace("\\", "/").split("/")
             filename = parts[-1] if parts else normalized_path
-            # Si filename contient encore "uploads", c'est que le path n'était que "uploads"
             if filename == "uploads" and len(parts) > 1:
                 filename = parts[-2] if len(parts) > 1 else "unknown.jpg"
         else:
-            log_publish(f"⚠️ CORRECTION: Chemin non reconnu - Instagram exige HTTPS. Tentative d'utilisation directe: {image_url}", "WARNING")
-            return image_url
+            filename = os.path.basename(normalized_path) or "unknown.jpg"
             
-        log_publish(f"📁 CORRECTION: Chemin local détecté, fichier: {filename}", "INFO")
+        log_publish(f"📁 Fichier détecté: {filename}", "INFO")
         
-        # Vérifier que le fichier existe localement (sans blocage)
+        # Vérifier que le fichier existe localement
         local_file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(local_file_path):
             local_file_path = os.path.join(os.path.dirname(__file__), "uploads", filename)
             
         if not os.path.exists(local_file_path):
-            log_publish(f"⚠️ CORRECTION: Fichier local non trouvé, continuant: {filename}", "WARNING")
+            log_publish(f"⚠️ Fichier local non trouvé: {filename}", "WARNING")
+            # Essayer quand même les URLs publiques possibles
         
-        # STRATÉGIE INTELLIGENTE: Priorité à ngrok, puis FTP si disponible
+        # STRATÉGIE PRIORITAIRE: FTP → NGROK FALLBACK
         
-        # 1. Essayer PUBLIC_BASE_URL (ngrok) en premier - CORRECTION
-        public_base_url = os.getenv("PUBLIC_BASE_URL")
-        if not public_base_url:
-            public_base_url = get_active_ngrok_url()
-            
-        if public_base_url:
-            public_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
-            log_publish(f"✅ CORRECTION: URL ngrok générée: {public_url}", "SUCCESS")
-            
-            # Vérification rapide de l'existence du fichier pour éviter les 404
-            try:
-                if os.path.exists(local_file_path):
-                    return public_url
-                else:
-                    log_publish(f"⚠️ CORRECTION: Fichier local introuvable, essayer FTP", "WARNING")
-            except:
-                return public_url  # En cas d'erreur, utiliser l'URL quand même
+        # 1. PRIORITÉ FTP: Essayer upload FTP d'abord (plus stable)
+        log_publish(f"🚀 PRIORITÉ FTP: Tentative upload via FTP", "INFO")
+        try:
+            if os.path.exists(local_file_path):
+                # Utiliser le nouveau système FTP amélioré
+                webhook_base = get_active_ngrok_url() or os.getenv("WEBHOOK_URL")
+                
+                # Créer nom de fichier unique pour éviter collisions
+                import time
+                import uuid
+                timestamp = int(time.time())
+                unique_id = uuid.uuid4().hex[:8]
+                file_ext = os.path.splitext(filename)[1]
+                remote_name = f"instagram_{timestamp}_{unique_id}{file_ext}"
+                
+                # Utiliser notre nouvelle fonction get_public_media_url
+                public_url = get_public_media_url(local_file_path, remote_name, webhook_base)
+                log_publish(f"✅ FTP/NGROK URL générée: {public_url}", "SUCCESS")
+                return public_url
+                
+            else:
+                log_publish(f"⚠️ Fichier local manquant, skip FTP upload", "WARNING")
+                
+        except RuntimeError as e:
+            log_publish(f"❌ FTP et ngrok fallback ont échoué: {e}", "ERROR")
+        except Exception as e:
+            log_publish(f"❌ Erreur système FTP: {e}", "ERROR")
         
-        # 2. Fallback FTP intelligent (si ngrok non disponible ou fichier manquant)
-        if FTP_BASE_URL and FTP_BASE_URL.startswith("https://"):
-            log_publish(f"🔄 CORRECTION: Tentative FTP pour fichier manquant ou ngrok indisponible", "INFO")
-            try:
-                # Si le fichier local existe, l'uploader
-                if os.path.exists(local_file_path):
-                    ftp_success, ftp_url, ftp_error = await asyncio.wait_for(
-                        upload_image_to_ftp(local_file_path, filename), 
-                        timeout=12.0  # Plus de temps pour FTP
-                    )
-                    
-                    if ftp_success and ftp_url:
-                        log_publish(f"✅ CORRECTION: FTP/HTTP généré: {ftp_url}", "SUCCESS")
-                        return ftp_url
-                    else:
-                        log_publish(f"⚠️ CORRECTION: FTP échoué: {ftp_error}", "WARNING")
-                else:
-                    # Essayer de construire l'URL FTP directement
-                    ftp_direct_url = f"{FTP_BASE_URL.rstrip('/')}/{filename}"
-                    log_publish(f"🔄 CORRECTION: URL FTP directe (fichier peut exister): {ftp_direct_url}", "INFO")
-                    return ftp_direct_url
-                    
-            except asyncio.TimeoutError:
-                log_publish(f"⏰ CORRECTION: FTP timeout après 12s", "WARNING")
-            except Exception as ftp_error:
-                log_publish(f"⚠️ CORRECTION: Erreur FTP: {ftp_error}", "WARNING")
+        # 2. FALLBACK NGROK UNIQUEMENT: Si FTP impossible
+        log_publish(f"🔄 FALLBACK: Utilisation ngrok uniquement", "INFO")
+        webhook_base = get_active_ngrok_url() or os.getenv("WEBHOOK_URL")
+        if webhook_base:
+            ngrok_url = f"{webhook_base.rstrip('/')}/uploads/{filename}"
+            log_publish(f"✅ NGROK URL fallback: {ngrok_url}", "SUCCESS")
+            return ngrok_url
         
-        # 3. Dernière chance: construire une URL basée sur ngrok ou localhost
-        if public_base_url:
-            fallback_url = f"{public_base_url.rstrip('/')}/uploads/{filename}"
-            log_publish(f"🔄 CORRECTION: Fallback ngrok malgré erreurs: {fallback_url}", "WARNING")
-        else:
-            fallback_url = f"http://localhost:8001/uploads/{filename}"
-            log_publish(f"🔄 CORRECTION: Fallback localhost final: {fallback_url}", "WARNING")
-        
+        # 3. DERNIER RECOURS: URL locale (ne marchera qu'en dev local)
+        fallback_url = f"http://localhost:8001/uploads/{filename}"
+        log_publish(f"⚠️ URL localhost (dev uniquement): {fallback_url}", "WARNING")
+        log_publish(f"💡 ATTENTION: Instagram exige HTTPS publique, cette URL ne marchera pas en production!", "WARNING")
         return fallback_url
         
     except Exception as e:
-        error_msg = f"CORRECTION: Erreur conversion '{image_url}': {str(e)}"
+        error_msg = f"ERREUR: Conversion '{image_url}': {str(e)}"
         log_publish(error_msg, "ERROR")
         # En cas d'erreur, retourner l'URL originale
         return image_url
