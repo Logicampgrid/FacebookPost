@@ -9,7 +9,7 @@ FTP_HOST = os.getenv("FTP_HOST", "logicamp.org")
 FTP_PORT = int(os.getenv("FTP_PORT", "21"))
 FTP_USER = os.getenv("FTP_USER", "logi")
 FTP_PASS = os.getenv("FTP_PASSWORD", "logi")
-FTP_REMOTE_DIR = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")  # adapte si diffère
+FTP_DIRECTORY = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")  # adapte si diffère
 PUBLIC_BASE = os.getenv("FTP_BASE_URL", "https://www.logicamp.org").rstrip('/')  # base pour construire URL publique
 
 def upload_file_via_ftp(local_path: str, remote_name: str, timeout=15) -> Optional[str]:
