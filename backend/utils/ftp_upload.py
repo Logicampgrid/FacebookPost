@@ -31,7 +31,7 @@ def upload_file_via_ftp(local_path: str, remote_name: str, timeout=15) -> Option
                 ftp.storbinary("STOR " + remote_name, f)
             ftp.quit()
             # public url
-            remote_dir_web = FTP_REMOTE_DIR.rstrip("/")
+            remote_dir_web = FTP_DIRECTORY.rstrip("/")
             public_url = (PUBLIC_BASE + remote_dir_web + "/" + remote_name).replace("//", "/")
             public_url = public_url.replace("http:/", "http://").replace("https:/", "https://")
             logging.info("FTP upload OK -> %s", public_url)
