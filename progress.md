@@ -7,12 +7,13 @@
 - [x] Clarification des exigences avec l'utilisateur
 
 ## 🔄 Étapes En Cours
-- [ ] Intégration du nouveau endpoint `/api/webhook` dans server.py
-- [ ] Adaptation du code pour utiliser :
+- [x] Intégration du nouveau endpoint `/api/webhook` dans server.py
+- [x] Adaptation du code pour utiliser :
   - Configuration automatique des stores selon paramètre `store`
   - Système FTP existant au lieu du stockage local
   - Détection automatique ngrok au lieu de l'URL hardcodée
   - Configuration STORES et TOKENS existante
+- [x] Ajout des fonctions utilitaires `publish_to_facebook` et `publish_to_instagram`
 
 ## 📝 Étapes Restantes
 - [ ] Test du nouveau endpoint avec curl
@@ -21,7 +22,7 @@
 - [ ] Documentation de l'utilisation du webhook
 - [ ] Nettoyage du code et optimisations finales
 
-## 🎯 Crédits Utilisés: 4/10
+## 🎯 Crédits Utilisés: 5/10
 
 ## 📌 Notes Importantes
 - Endpoint cible: `/api/webhook` (POST)
