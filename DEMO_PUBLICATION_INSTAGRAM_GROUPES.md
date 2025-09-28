@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://facebookpost-app-1.preview.emergentagent.com
+🔗 https://insta-upload.preview.emergentagent.com

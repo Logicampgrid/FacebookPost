@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://facebookpost-app-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://insta-upload.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://facebookpost-app-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://facebookpost-app-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://facebookpost-app-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://insta-upload.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://insta-upload.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://insta-upload.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
