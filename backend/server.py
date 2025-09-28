@@ -1385,6 +1385,139 @@ async def test_uploads_accessibility():
     except Exception as e:
         return {"status": "error", "message": f"Erreur: {e}"}
 
+@app.get("/api/test-ftp-ngrok-fallback")
+async def test_ftp_ngrok_fallback():
+    """
+    Test complet du système FTP → ngrok fallback pour Instagram
+    """
+    try:
+        log_app("🧪 Test système FTP → ngrok fallback", "INFO")
+        
+        # Créer un fichier de test s'il n'existe pas
+        uploads_path = os.path.join(WINDOWS_PATHS["backend_dir"], "uploads")
+        os.makedirs(uploads_path, exist_ok=True)
+        
+        test_filename = "test_instagram_upload.jpg"
+        test_file_path = os.path.join(uploads_path, test_filename)
+        
+        # Créer une image de test simple si elle n'existe pas
+        if not os.path.exists(test_file_path):
+            from PIL import Image
+            test_img = Image.new('RGB', (100, 100), color='red')
+            test_img.save(test_file_path, 'JPEG')
+            log_app(f"✅ Fichier de test créé: {test_filename}", "SUCCESS")
+        
+        # Test conversion avec notre nouvelle fonction
+        result = {
+            "test_file": test_filename,
+            "local_path": f"uploads/{test_filename}",
+            "systems_tested": {},
+            "final_result": {},
+            "ngrok_config": {},
+            "ftp_config": {}
+        }
+        
+        # Informations sur ngrok
+        ngrok_url = get_active_ngrok_url()
+        webhook_url = os.getenv("WEBHOOK_URL")
+        result["ngrok_config"] = {
+            "active_ngrok_url": ngrok_url,
+            "webhook_url_env": webhook_url,
+            "ngrok_available": bool(ngrok_url)
+        }
+        
+        # Informations FTP
+        result["ftp_config"] = {
+            "ftp_host": FTP_HOST,
+            "ftp_user": FTP_USER,
+            "ftp_base_url": FTP_BASE_URL,
+            "ftp_directory": FTP_REMOTE_DIR
+        }
+        
+        # Test de notre fonction principale
+        try:
+            public_url = await convert_local_path_to_public_url(f"uploads/{test_filename}")
+            
+            result["final_result"] = {
+                "success": True,
+                "public_url": public_url,
+                "url_type": "https" if public_url.startswith("https://") else "http",
+                "instagram_compatible": public_url.startswith("https://"),
+                "contains_ftp": "logicamp.org" in public_url,
+                "contains_ngrok": "ngrok" in public_url or "emergentagent.com" in public_url
+            }
+            
+            log_app(f"✅ Test réussi: {public_url}", "SUCCESS")
+            
+        except Exception as e:
+            result["final_result"] = {
+                "success": False,
+                "error": str(e)
+            }
+            log_app(f"❌ Test échoué: {e}", "ERROR")
+        
+        # Test direct FTP
+        try:
+            from utils.ftp_upload import upload_file_via_ftp
+            import time
+            import uuid
+            
+            timestamp = int(time.time())
+            unique_id = uuid.uuid4().hex[:8]
+            remote_name = f"test_direct_{timestamp}_{unique_id}.jpg"
+            
+            ftp_url = upload_file_via_ftp(test_file_path, remote_name)
+            
+            result["systems_tested"]["ftp_direct"] = {
+                "success": bool(ftp_url),
+                "url": ftp_url,
+                "remote_name": remote_name
+            }
+            
+        except Exception as e:
+            result["systems_tested"]["ftp_direct"] = {
+                "success": False,
+                "error": str(e)
+            }
+        
+        # Test ngrok direct
+        if ngrok_url:
+            ngrok_test_url = f"{ngrok_url}/uploads/{test_filename}"
+            try:
+                import requests
+                response = requests.head(ngrok_test_url, timeout=5)
+                result["systems_tested"]["ngrok_direct"] = {
+                    "success": response.status_code == 200,
+                    "status_code": response.status_code,
+                    "url": ngrok_test_url,
+                    "content_type": response.headers.get("Content-Type", "unknown")
+                }
+            except Exception as e:
+                result["systems_tested"]["ngrok_direct"] = {
+                    "success": False,
+                    "error": str(e),
+                    "url": ngrok_test_url
+                }
+        
+        return {
+            "status": "success",
+            "message": "Test FTP → ngrok fallback terminé",
+            "details": result,
+            "recommendations": [
+                "✅ Si 'contains_ftp' = true → FTP upload a réussi (stable)",
+                "🔄 Si 'contains_ngrok' = true → Fallback ngrok utilisé (temporaire)", 
+                "⚠️ Si 'instagram_compatible' = false → URL non HTTPS, Instagram refusera",
+                "💡 Pour Instagram: HTTPS obligatoire, serveurs FB doivent pouvoir accéder à l'URL"
+            ]
+        }
+        
+    except Exception as e:
+        log_app(f"❌ Erreur test FTP-ngrok: {e}", "ERROR")
+        return {
+            "status": "error",
+            "message": f"Erreur test système: {e}"
+        }
+
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """Handle OPTIONS requests for CORS"""
