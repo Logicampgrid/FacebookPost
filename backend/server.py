@@ -35,6 +35,9 @@ from database import (
 from token_manager import token_manager
 from webhook_handler import webhook_handler
 
+# Import the new FTP upload utilities
+from utils.ftp_upload import upload_file_via_ftp, get_public_media_url
+
 # Import de la nouvelle fonction poster_media_enhanced (compatible avec ancienne version)
 try:
     from poster_media_enhanced import poster_media_enhanced, STORES_CONFIG
