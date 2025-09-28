@@ -5456,7 +5456,7 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         log_app(f"❌ {error_msg}", "ERROR")
         return {"success": False, "error": error_msg}
 
-@app.post("/api/webhook")
+@app.post("/api/webhook/publish")
 async def webhook_publication(
     store: str = Form(...),
     title: str = Form(...),
