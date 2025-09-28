@@ -1431,7 +1431,7 @@ async def test_ftp_ngrok_fallback():
             "ftp_host": FTP_HOST,
             "ftp_user": FTP_USER,
             "ftp_base_url": FTP_BASE_URL,
-            "ftp_directory": FTP_REMOTE_DIR
+            "ftp_directory": FTP_DIRECTORY
         }
         
         # Test de notre fonction principale
