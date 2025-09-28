@@ -25,7 +25,7 @@ def upload_file_via_ftp(local_path: str, remote_name: str, timeout=15) -> Option
             ftp.set_pasv(pasv)
             logging.info("Connected to FTP %s (pasv=%s)", FTP_HOST, pasv)
             # navigation
-            ftp.cwd(FTP_REMOTE_DIR)
+            ftp.cwd(FTP_DIRECTORY)
             with open(local_path, "rb") as f:
                 # use binary stor
                 ftp.storbinary("STOR " + remote_name, f)
