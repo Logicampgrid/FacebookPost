@@ -5335,6 +5335,254 @@ async def catch_all_frontend(path: str, request: Request):
     else:
         return {"message": f"Route {path} non trouvée - Frontend non disponible"}
 
+# === NOUVEAU ENDPOINT WEBHOOK PUBLICATION ===
+
+async def publish_to_facebook(store_config: dict, title: str, url: str, description: str, media_url: str = None, is_video: bool = False) -> dict:
+    """Publication sur Facebook en utilisant la configuration du store"""
+    try:
+        fb_page_id = store_config.get("fb_page_id")
+        access_token = store_config.get("access_token")
+        
+        if not fb_page_id or not access_token:
+            return {"success": False, "error": "Configuration Facebook manquante"}
+        
+        # Construction du message
+        message = f"{title}\n{url}\n{description}"
+        
+        # URL de l'API selon le type de contenu
+        if is_video:
+            fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/videos"
+            data = {
+                "description": message,
+                "access_token": access_token
+            }
+            if media_url:
+                data["file_url"] = media_url
+        else:
+            # Pour les images, utiliser l'endpoint photos
+            fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"
+            data = {
+                "message": message,
+                "access_token": access_token
+            }
+            if media_url:
+                data["url"] = media_url
+        
+        log_app(f"📱 Publication Facebook vers {fb_page_id}: {message[:100]}...", "INFO")
+        
+        response = requests.post(fb_url, data=data, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            log_app(f"✅ Publication Facebook réussie: ID {result.get('id', 'N/A')}", "SUCCESS")
+            return {"success": True, "response": result}
+        else:
+            error_msg = f"Erreur Facebook HTTP {response.status_code}: {response.text}"
+            log_app(f"❌ {error_msg}", "ERROR")
+            return {"success": False, "error": error_msg}
+            
+    except Exception as e:
+        error_msg = f"Erreur publication Facebook: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        return {"success": False, "error": error_msg}
+
+async def publish_to_instagram(store_config: dict, title: str, url: str, description: str, media_url: str, is_video: bool = False) -> dict:
+    """Publication sur Instagram en utilisant la configuration du store"""
+    try:
+        ig_user_id = store_config.get("ig_user_id")
+        access_token = store_config.get("access_token")
+        
+        if not ig_user_id or not access_token:
+            return {"success": False, "error": "Configuration Instagram manquante"}
+        
+        if not media_url:
+            return {"success": False, "error": "URL média obligatoire pour Instagram"}
+        
+        # Construction du caption
+        caption = f"{title}\n{url}\n{description}"
+        
+        # URL de l'API selon le type de contenu
+        ig_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
+        
+        data = {
+            "caption": caption,
+            "access_token": access_token
+        }
+        
+        if is_video:
+            data["media_type"] = "REELS"
+            data["video_url"] = media_url
+        else:
+            data["image_url"] = media_url
+        
+        log_app(f"📸 Publication Instagram vers {ig_user_id}: {caption[:100]}...", "INFO")
+        
+        # Étape 1: Créer le conteneur média
+        response = requests.post(ig_url, data=data, timeout=30)
+        
+        if response.status_code == 200:
+            container_result = response.json()
+            container_id = container_result.get("id")
+            
+            if container_id:
+                # Étape 2: Publier le conteneur
+                publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
+                publish_data = {
+                    "creation_id": container_id,
+                    "access_token": access_token
+                }
+                
+                publish_response = requests.post(publish_url, data=publish_data, timeout=30)
+                
+                if publish_response.status_code == 200:
+                    publish_result = publish_response.json()
+                    log_app(f"✅ Publication Instagram réussie: ID {publish_result.get('id', 'N/A')}", "SUCCESS")
+                    return {"success": True, "response": publish_result}
+                else:
+                    error_msg = f"Erreur publication Instagram HTTP {publish_response.status_code}: {publish_response.text}"
+                    log_app(f"❌ {error_msg}", "ERROR")
+                    return {"success": False, "error": error_msg}
+            else:
+                error_msg = f"Pas de container_id reçu: {container_result}"
+                log_app(f"❌ {error_msg}", "ERROR")
+                return {"success": False, "error": error_msg}
+        else:
+            error_msg = f"Erreur création conteneur Instagram HTTP {response.status_code}: {response.text}"
+            log_app(f"❌ {error_msg}", "ERROR")
+            return {"success": False, "error": error_msg}
+            
+    except Exception as e:
+        error_msg = f"Erreur publication Instagram: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        return {"success": False, "error": error_msg}
+
+@app.post("/api/webhook")
+async def webhook_publication(
+    store: str = Form(...),
+    title: str = Form(...),
+    url: str = Form(...),
+    description: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """
+    Endpoint webhook pour publication automatique sur Facebook et Instagram
+    Intégré avec l'infrastructure existante (stores, FTP, ngrok)
+    """
+    try:
+        log_app(f"📥 Nouveau webhook reçu - Store: {store}, Titre: {title[:50]}...", "INFO")
+        
+        # Vérification du store
+        if store not in STORES:
+            available_stores = ", ".join(STORES.keys())
+            raise HTTPException(status_code=400, detail=f"Store '{store}' inconnu. Stores disponibles: {available_stores}")
+        
+        # Récupération de la configuration du store
+        store_config = get_store_config(store)
+        log_app(f"📋 Configuration store '{store}' chargée: {store_config.get('name')}", "INFO")
+        
+        # Vérification des tokens
+        if not store_config.get("access_token"):
+            raise HTTPException(status_code=400, detail=f"Token d'accès manquant pour le store '{store}'")
+        
+        # Création du dossier uploads s'il n'existe pas
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        
+        # Sauvegarde du fichier
+        file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+        unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        # Sauvegarder le fichier
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        log_app(f"💾 Fichier sauvegardé: {file_path} ({os.path.getsize(file_path)} bytes)", "SUCCESS")
+        
+        # Déterminer le type de fichier
+        content_type = file.content_type or ""
+        is_video = content_type.startswith("video/") or file_extension.lower() in ['.mp4', '.mov', '.avi', '.wmv']
+        
+        # Upload vers FTP pour obtenir l'URL publique
+        media_url = None
+        if is_video:
+            log_app("🎥 Détection vidéo - Upload FTP...", "INFO")
+            ftp_success, ftp_url, ftp_error = await upload_video_to_ftp(file_path, unique_filename)
+        else:
+            log_app("🖼️ Détection image - Upload FTP...", "INFO")
+            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(file_path, file.filename)
+        
+        if ftp_success:
+            media_url = ftp_url
+            log_app(f"✅ Upload FTP réussi: {media_url}", "SUCCESS")
+        else:
+            # Fallback vers l'URL ngrok locale si disponible
+            ngrok_url = get_active_ngrok_url()
+            if ngrok_url:
+                media_url = f"{ngrok_url}/uploads/{unique_filename}"
+                log_app(f"⚠️ FTP échoué, utilisation ngrok: {media_url}", "WARNING")
+            else:
+                log_app(f"❌ Pas d'URL publique disponible: {ftp_error}", "ERROR")
+                raise HTTPException(status_code=500, detail=f"Impossible de générer une URL publique: {ftp_error}")
+        
+        # Initialiser les résultats
+        results = {
+            "success": True,
+            "store": store,
+            "store_name": store_config.get("name"),
+            "file_info": {
+                "filename": unique_filename,
+                "original_filename": file.filename,
+                "content_type": content_type,
+                "size": os.path.getsize(file_path),
+                "is_video": is_video,
+                "media_url": media_url
+            },
+            "publications": {}
+        }
+        
+        # Publication Facebook
+        log_app("📱 Publication Facebook...", "INFO")
+        fb_result = await publish_to_facebook(store_config, title, url, description, media_url, is_video)
+        results["publications"]["facebook"] = fb_result
+        
+        # Publication Instagram
+        log_app("📸 Publication Instagram...", "INFO")
+        ig_result = await publish_to_instagram(store_config, title, url, description, media_url, is_video)
+        results["publications"]["instagram"] = ig_result
+        
+        # Déterminer le succès global
+        fb_success = fb_result.get("success", False)
+        ig_success = ig_result.get("success", False)
+        
+        if fb_success and ig_success:
+            log_app("✅ Publications Facebook et Instagram réussies", "SUCCESS")
+            results["message"] = "Publications réussies sur Facebook et Instagram"
+        elif fb_success or ig_success:
+            platform = "Facebook" if fb_success else "Instagram"
+            log_app(f"⚠️ Publication réussie sur {platform} uniquement", "WARNING")
+            results["message"] = f"Publication réussie sur {platform} uniquement"
+            results["success"] = True  # Succès partiel
+        else:
+            log_app("❌ Échec des publications Facebook et Instagram", "ERROR")
+            results["message"] = "Échec des publications sur les deux plateformes"
+            results["success"] = False
+        
+        # Nettoyage du fichier temporaire (optionnel)
+        try:
+            os.remove(file_path)
+            log_app(f"🗑️ Fichier temporaire supprimé: {file_path}", "INFO")
+        except:
+            log_app(f"⚠️ Impossible de supprimer le fichier temporaire: {file_path}", "WARNING")
+        
+        return results
+        
+    except HTTPException:
+        raise  # Re-lancer les erreurs HTTP
+    except Exception as e:
+        error_msg = f"Erreur webhook: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=BACKEND_PORT)
