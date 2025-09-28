@@ -9,11 +9,11 @@ from pathlib import Path
 
 def test_webhook_endpoint():
     """Test simple du nouveau endpoint webhook"""
-    print("🧪 Test du nouvel endpoint webhook /api/webhook")
+    print("🧪 Test du nouvel endpoint webhook /api/webhook/publish")
     
     # URL du serveur (localhost pour test)
     base_url = "http://localhost:8001"
-    webhook_url = f"{base_url}/api/webhook"
+    webhook_url = f"{base_url}/api/webhook/publish"
     
     # Données de test
     test_data = {
