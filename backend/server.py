@@ -4478,13 +4478,21 @@ async def detect_webhook_publication_request(request: Request) -> dict:
             form_data = await request.form()
             form_keys = set(form_data.keys())
             
-            # Champs requis pour une publication
-            required_fields = {"store", "title", "url", "description", "file"}
+            # Format n8n : jsonData + file
+            if "jsonData" in form_keys and "file" in form_keys:
+                return {
+                    "is_publication": True,
+                    "form_data": form_data,
+                    "format": "n8n"
+                }
             
+            # Format direct : store, title, url, description, file (pour compatibilité)
+            required_fields = {"store", "title", "url", "description", "file"}
             if required_fields.issubset(form_keys):
                 return {
                     "is_publication": True,
-                    "form_data": form_data
+                    "form_data": form_data,
+                    "format": "direct"
                 }
         
         return {"is_publication": False}
