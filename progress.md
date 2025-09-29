@@ -74,9 +74,10 @@ curl -X POST -F "store=gizmobbs" -F "title=Test" -F "url=https://example.com" -F
 curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]}' http://localhost:8001/api/webhook
 ```
 
-### Fichiers modifiés - Patch 1
-- ✅ `/app/backend/server.py` : Endpoint unifié implémenté  
+### Fichiers modifiés - Patch 1 & 2
+- ✅ `/app/backend/server.py` : Endpoint unifié + format n8n corrigé
 - ✅ `/app/progress.md` : Documentation mise à jour
+- ✅ `/app/test_n8n_webhook_formats.py` : Tests format n8n validés
 
 ### Fonctionnalités unifiées
 - ✅ Endpoint unique `/api/webhook` (POST) pour n8n
