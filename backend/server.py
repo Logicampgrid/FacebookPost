@@ -4491,6 +4491,133 @@ async def detect_webhook_publication_request(request: Request) -> dict:
     except:
         return {"is_publication": False}
 
+async def handle_n8n_publication(form_data) -> dict:
+    """
+    Gère les publications n8n avec logique complète (ex /api/webhook/publish)
+    Intégré avec l'infrastructure existante (stores, FTP, ngrok)
+    """
+    try:
+        # Extraire les paramètres de la form-data
+        store = form_data.get("store")
+        title = form_data.get("title")
+        url = form_data.get("url")
+        description = form_data.get("description")
+        file = form_data.get("file")
+        
+        log_app(f"📥 Nouveau webhook n8n reçu - Store: {store}, Titre: {title[:50] if title else 'N/A'}...", "INFO")
+        
+        # Vérification du store
+        if store not in STORES:
+            available_stores = ", ".join(STORES.keys())
+            raise HTTPException(status_code=400, detail=f"Store '{store}' inconnu. Stores disponibles: {available_stores}")
+        
+        # Récupération de la configuration du store
+        store_config = get_store_config(store)
+        log_app(f"📋 Configuration store '{store}' chargée: {store_config.get('name')}", "INFO")
+        
+        # Vérification des tokens
+        if not store_config.get("access_token"):
+            raise HTTPException(status_code=400, detail=f"Token d'accès manquant pour le store '{store}'")
+        
+        # Création du dossier uploads s'il n'existe pas
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        
+        # Sauvegarde du fichier
+        file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+        unique_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        # Sauvegarder le fichier
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        log_app(f"💾 Fichier sauvegardé: {file_path} ({os.path.getsize(file_path)} bytes)", "SUCCESS")
+        
+        # Déterminer le type de fichier
+        content_type = file.content_type or ""
+        is_video = content_type.startswith("video/") or file_extension.lower() in ['.mp4', '.mov', '.avi', '.wmv']
+        
+        # Upload vers FTP pour obtenir l'URL publique
+        media_url = None
+        if is_video:
+            log_app("🎥 Détection vidéo - Upload FTP...", "INFO")
+            ftp_success, ftp_url, ftp_error = await upload_video_to_ftp(file_path, unique_filename)
+        else:
+            log_app("🖼️ Détection image - Upload FTP...", "INFO")
+            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(file_path, file.filename)
+        
+        if ftp_success:
+            media_url = ftp_url
+            log_app(f"✅ Upload FTP réussi: {media_url}", "SUCCESS")
+        else:
+            # Fallback vers l'URL ngrok locale si disponible
+            ngrok_url = get_active_ngrok_url()
+            if ngrok_url:
+                media_url = f"{ngrok_url}/uploads/{unique_filename}"
+                log_app(f"⚠️ FTP échoué, utilisation ngrok: {media_url}", "WARNING")
+            else:
+                log_app(f"❌ Pas d'URL publique disponible: {ftp_error}", "ERROR")
+                raise HTTPException(status_code=500, detail=f"Impossible de générer une URL publique: {ftp_error}")
+        
+        # Initialiser les résultats
+        results = {
+            "success": True,
+            "store": store,
+            "store_name": store_config.get("name"),
+            "file_info": {
+                "filename": unique_filename,
+                "original_filename": file.filename,
+                "content_type": content_type,
+                "size": os.path.getsize(file_path),
+                "is_video": is_video,
+                "media_url": media_url
+            },
+            "publications": {}
+        }
+        
+        # Publication Facebook
+        log_app("📱 Publication Facebook...", "INFO")
+        fb_result = await publish_to_facebook(store_config, title, url, description, media_url, is_video)
+        results["publications"]["facebook"] = fb_result
+        
+        # Publication Instagram
+        log_app("📸 Publication Instagram...", "INFO")
+        ig_result = await publish_to_instagram(store_config, title, url, description, media_url, is_video)
+        results["publications"]["instagram"] = ig_result
+        
+        # Déterminer le succès global
+        fb_success = fb_result.get("success", False)
+        ig_success = ig_result.get("success", False)
+        
+        if fb_success and ig_success:
+            log_app("✅ Publications Facebook et Instagram réussies", "SUCCESS")
+            results["message"] = "Publications réussies sur Facebook et Instagram"
+        elif fb_success or ig_success:
+            platform = "Facebook" if fb_success else "Instagram"
+            log_app(f"⚠️ Publication réussie sur {platform} uniquement", "WARNING")
+            results["message"] = f"Publication réussie sur {platform} uniquement"
+            results["success"] = True  # Succès partiel
+        else:
+            log_app("❌ Échec des publications Facebook et Instagram", "ERROR")
+            results["message"] = "Échec des publications sur les deux plateformes"
+            results["success"] = False
+        
+        # Nettoyage du fichier temporaire (optionnel)
+        try:
+            os.remove(file_path)
+            log_app(f"🗑️ Fichier temporaire supprimé: {file_path}", "INFO")
+        except:
+            log_app(f"⚠️ Impossible de supprimer le fichier temporaire: {file_path}", "WARNING")
+        
+        return results
+        
+    except HTTPException:
+        raise  # Re-lancer les erreurs HTTP
+    except Exception as e:
+        error_msg = f"Erreur publication n8n: {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @app.post("/api/webhook")
 @app.get("/api/webhook")
 async def webhook_handler(request: Request):
