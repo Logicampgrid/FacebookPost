@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://social-integrator.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://webhook-consolidate.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://social-integrator.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://social-integrator.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://social-integrator.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://webhook-consolidate.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://webhook-consolidate.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://webhook-consolidate.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
