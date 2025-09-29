@@ -4505,12 +4505,31 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
     Intégré avec l'infrastructure existante (stores, FTP, ngrok)
     """
     try:
-        # Extraire les paramètres de la form-data
-        store = form_data.get("store")
-        title = form_data.get("title")
-        url = form_data.get("url")
-        description = form_data.get("description")
-        file = form_data.get("file")
+        # Extraire les paramètres selon le format
+        if format_type == "n8n":
+            # Format n8n : jsonData + file
+            json_data_str = form_data.get("jsonData")
+            if isinstance(json_data_str, str):
+                json_data = json.loads(json_data_str)
+            else:
+                # Si c'est un objet UploadFile, lire le contenu
+                json_content = await json_data_str.read()
+                json_data = json.loads(json_content.decode('utf-8'))
+            
+            store = json_data.get("store")
+            title = json_data.get("title")
+            url = json_data.get("url")
+            description = json_data.get("description")
+            file = form_data.get("file")
+            
+            log_app(f"📦 Format n8n détecté - JSON: {json_data}", "INFO")
+        else:
+            # Format direct : champs individuels
+            store = form_data.get("store")
+            title = form_data.get("title")
+            url = form_data.get("url")
+            description = form_data.get("description")
+            file = form_data.get("file")
         
         log_app(f"📥 Nouveau webhook n8n reçu - Store: {store}, Titre: {title[:50] if title else 'N/A'}...", "INFO")
         
