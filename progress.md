@@ -81,8 +81,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]
 
 ### Fonctionnalités unifiées
 - ✅ Endpoint unique `/api/webhook` (POST) pour n8n
+- ✅ **Format n8n natif** : `jsonData` + `file` supporté
+- ✅ Format direct maintenu pour compatibilité
 - ✅ Détection automatique requête publication vs événement
-- ✅ Configuration automatique des stores
+- ✅ Configuration automatique des stores (gizmobbs, logicantiq, outdoor)
 - ✅ Upload FTP intégré avec fallback ngrok
 - ✅ Publication Facebook et Instagram
 - ✅ Gestion d'erreurs robuste
