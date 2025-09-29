@@ -52,6 +52,13 @@
 - [x] Suppression de l'ancien endpoint `/api/webhook/publish`
 - [x] Tests réussis des deux types de requêtes
 
+### ✅ Correction format n8n - Patch 2 (1 crédit)
+- [x] **Problème résolu** : Format n8n avec `jsonData` + `file`
+- [x] Détection améliorée pour format n8n spécifique
+- [x] Parsing correct du JSON dans `jsonData`
+- [x] Compatibilité maintenue avec format direct
+- [x] Tests validés : 3/3 formats fonctionnels
+
 ### Test de l'endpoint unifié
 ```bash
 # Publication n8n (form-data)
