@@ -4647,6 +4647,8 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
 
 @app.post("/api/webhook")
 @app.get("/api/webhook")
+@app.post("/api/webhook/")
+@app.get("/api/webhook/")
 async def webhook_handler(request: Request):
     """Handle webhook requests from Facebook/Instagram and n8n publications"""
     try:
