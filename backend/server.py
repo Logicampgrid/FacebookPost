@@ -4499,7 +4499,7 @@ async def detect_webhook_publication_request(request: Request) -> dict:
     except:
         return {"is_publication": False}
 
-async def handle_n8n_publication(form_data) -> dict:
+async def handle_n8n_publication(form_data, format_type="direct") -> dict:
     """
     Gère les publications n8n avec logique complète (ex /api/webhook/publish)
     Intégré avec l'infrastructure existante (stores, FTP, ngrok)
