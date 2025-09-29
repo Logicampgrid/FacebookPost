@@ -32,30 +32,44 @@
 ## 🎯 Crédits Utilisés: 6/10
 
 ## 📌 Notes Importantes
-- Endpoint cible: `/api/webhook` (POST)
+- ✅ **UNIFICATION TERMINÉE**: Endpoint unique `/api/webhook` (POST)
 - Paramètres: store, title, url, description, file
 - Intégration cohérente avec l'infrastructure existante
 - Utilisation du système FTP pour les uploads Instagram
 - Configuration automatique des stores selon le paramètre reçu
+- Compatible avec les 3 stores (gizmobbs, logicantiq, outdoor)
 
 ## 🔧 Instructions de Reprise
-✅ **INTÉGRATION TERMINÉE AVEC SUCCÈS !**
+✅ **UNIFICATION WEBHOOK TERMINÉE AVEC SUCCÈS !**
 
-### Test de l'endpoint
+### ✅ Unification réalisée - Patch 1 (6 crédits)
+- [x] Endpoint `/api/webhook` unifié pour:
+  - GET: Vérification webhook Facebook
+  - POST JSON: Événements webhook Facebook/Instagram  
+  - POST form-data: Publications n8n automatiques
+- [x] Détection automatique du type de requête
+- [x] Intégration complète de la logique `/api/webhook/publish`
+- [x] Suppression de l'ancien endpoint `/api/webhook/publish`
+- [x] Tests réussis des deux types de requêtes
+
+### Test de l'endpoint unifié
 ```bash
-curl -X POST -F "store=gizmobbs" -F "title=Test" -F "url=https://example.com" -F "description=Test desc" -F "file=@image.jpg" http://localhost:8001/api/webhook/publish
+# Publication n8n (form-data)
+curl -X POST -F "store=gizmobbs" -F "title=Test" -F "url=https://example.com" -F "description=Test desc" -F "file=@image.jpg" http://localhost:8001/api/webhook
+
+# Événement webhook Facebook (JSON)
+curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]}' http://localhost:8001/api/webhook
 ```
 
-### Fichiers créés/modifiés
-- ✅ `/app/backend/server.py` : Nouvel endpoint intégré  
-- ✅ `/app/progress.md` : Suivi de l'avancement
-- ✅ `/app/WEBHOOK_DOCUMENTATION.md` : Documentation complète
-- ✅ `/app/test_webhook.py` : Script de test
+### Fichiers modifiés - Patch 1
+- ✅ `/app/backend/server.py` : Endpoint unifié implémenté  
+- ✅ `/app/progress.md` : Documentation mise à jour
 
-### Fonctionnalités implémentées
-- ✅ Endpoint `/api/webhook/publish` (POST)
+### Fonctionnalités unifiées
+- ✅ Endpoint unique `/api/webhook` (POST) pour n8n
+- ✅ Détection automatique requête publication vs événement
 - ✅ Configuration automatique des stores
 - ✅ Upload FTP intégré avec fallback ngrok
 - ✅ Publication Facebook et Instagram
 - ✅ Gestion d'erreurs robuste
-- ✅ Documentation complète
+- ✅ Compatibilité totale maintenue
