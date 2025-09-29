@@ -59,6 +59,13 @@
 - [x] Compatibilité maintenue avec format direct
 - [x] Tests validés : 3/3 formats fonctionnels
 
+### ✅ Correction 405 Method Not Allowed - Patch 3 (1 crédit)
+- [x] **Problème critique résolu** : Erreur 405 Method Not Allowed
+- [x] **Cause identifiée** : Slash final `/api/webhook/` vs `/api/webhook`
+- [x] **Solution appliquée** : Routes avec et sans slash final ajoutées
+- [x] **Validation** : POST `/api/webhook/` fonctionne maintenant
+- [x] **Test réussi** : Format n8n avec vraie image traité correctement
+
 ### Test de l'endpoint unifié
 ```bash
 # Publication n8n (format jsonData + file)
