@@ -4470,10 +4470,31 @@ async def get_webhook_history():
         log_app(f"❌ Erreur récupération webhooks: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+async def detect_webhook_publication_request(request: Request) -> dict:
+    """Détecte si une requête POST est une demande de publication n8n"""
+    try:
+        content_type = request.headers.get("content-type", "")
+        if "multipart/form-data" in content_type:
+            form_data = await request.form()
+            form_keys = set(form_data.keys())
+            
+            # Champs requis pour une publication
+            required_fields = {"store", "title", "url", "description", "file"}
+            
+            if required_fields.issubset(form_keys):
+                return {
+                    "is_publication": True,
+                    "form_data": form_data
+                }
+        
+        return {"is_publication": False}
+    except:
+        return {"is_publication": False}
+
 @app.post("/api/webhook")
 @app.get("/api/webhook")
 async def webhook_handler(request: Request):
-    """Handle webhook requests from Facebook/Instagram"""
+    """Handle webhook requests from Facebook/Instagram and n8n publications"""
     try:
         method = request.method
         
@@ -4495,7 +4516,15 @@ async def webhook_handler(request: Request):
                 raise HTTPException(status_code=403, detail="Forbidden")
                 
         elif method == "POST":
-            # Webhook event handling with improved multipart/form-data support
+            # Détecter si c'est une requête de publication n8n
+            publication_check = await detect_webhook_publication_request(request)
+            
+            if publication_check["is_publication"]:
+                # NOUVELLE LOGIQUE: Publication automatique n8n
+                log_app("🚀 Détection requête publication n8n", "INFO")
+                return await handle_n8n_publication(publication_check["form_data"])
+            
+            # ANCIENNE LOGIQUE: Gestion des événements webhook Facebook/Instagram
             try:
                 # Get content type to determine parsing strategy
                 content_type = request.headers.get("content-type", "")
