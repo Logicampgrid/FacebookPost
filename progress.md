@@ -68,11 +68,11 @@
 
 ### Test de l'endpoint unifié
 ```bash
-# Publication n8n (format jsonData + file)
+# Publication n8n (format jsonData + file) - AVEC ou SANS slash final
 curl -X POST \
   -F 'jsonData={"store":"gizmobbs","title":"Test","url":"https://example.com","description":"Test desc"}' \
   -F "file=@image.jpg" \
-  http://localhost:8001/api/webhook
+  http://localhost:8001/api/webhook/
 
 # Publication format direct (compatibilité)
 curl -X POST -F "store=gizmobbs" -F "title=Test" -F "url=https://example.com" -F "description=Test desc" -F "file=@image.jpg" http://localhost:8001/api/webhook
