@@ -4675,8 +4675,9 @@ async def webhook_handler(request: Request):
             
             if publication_check["is_publication"]:
                 # NOUVELLE LOGIQUE: Publication automatique n8n
-                log_app("🚀 Détection requête publication n8n", "INFO")
-                return await handle_n8n_publication(publication_check["form_data"])
+                format_type = publication_check.get("format", "direct")
+                log_app(f"🚀 Détection requête publication n8n (format: {format_type})", "INFO")
+                return await handle_n8n_publication(publication_check["form_data"], format_type)
             
             # ANCIENNE LOGIQUE: Gestion des événements webhook Facebook/Instagram
             try:
