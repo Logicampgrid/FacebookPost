@@ -4313,17 +4313,15 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
         log_app(f"   Média: {'Oui' if has_media_file else 'Non'} ({media_type if media_type else 'N/A'})", "INFO")
         
-        # CORRECTION VIDÉO FACEBOOK: Traiter les vidéos uploadées avec routage correct
+        # PATCH 9: VIDÉOS - NGROK UNIQUEMENT
         video_url = None
         if media_type == "video" and media_file_info:
-            log_app(f"🎥 CORRECTION VIDÉO: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
+            log_app(f"🎥 PATCH 9: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
             try:
-                # Upload de la vidéo vers FTP pour obtenir une URL publique
-                video_path = media_file_info['path']
-                upload_success, video_url, upload_error = await upload_video_to_ftp(video_path, media_file_info['filename'])
-                
-                if upload_success:
-                    log_app(f"✅ CORRECTION VIDÉO: Upload vidéo FTP réussi - {video_url}", "SUCCESS")
+                # PATCH 9: Générer directement l'URL publique ngrok pour la vidéo
+                video_filename = media_file_info['filename']
+                video_url = get_public_url(video_filename)
+                log_app(f"✅ PATCH 9: URL vidéo ngrok générée - {video_url}", "SUCCESS")
                     # CORRECTION: Utiliser les nouvelles fonctions unifiées avec is_video=True
                     try:
                         store_config = get_store_config(final_store)
