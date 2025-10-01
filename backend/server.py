@@ -4396,12 +4396,6 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 # Générer l'URL publique ngrok
                 final_image_url = get_public_url(filename)
                 log_app(f"🌐 PATCH 9: URL publique ngrok générée - {final_image_url}", "SUCCESS")
-                            # Sans ngrok, seul Facebook peut fonctionner (avec chemins relatifs)
-                            if "instagram" in platforms:
-                                platforms = [p for p in platforms if p != "instagram"]
-                                log_app(f"⚠️ CORRECTION INSTAGRAM: Instagram retiré - pas d'URL publique disponible", "WARNING")
-                            # Pour Facebook, utiliser un chemin relatif qui sera converti plus tard
-                            final_image_url = f"uploads/{filename}"
                 else:
                     log_app(f"❌ CORRECTION INSTAGRAM: Fichier local introuvable - {local_file_path}", "ERROR")
                     # Si fichier introuvable, retirer Instagram et publier sans image
