@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://prompt-wizard-139.preview.emergentagent.com
+URL : https://prompt-enhance-4.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

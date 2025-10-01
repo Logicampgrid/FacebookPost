@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://prompt-wizard-139.preview.emergentagent.com/api/webhook",
+        "url": "https://prompt-enhance-4.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",
