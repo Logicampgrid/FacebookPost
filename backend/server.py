@@ -595,18 +595,29 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                 except:
                     log_app(f"⚠️ CORRECTION: Impossible de déterminer le répertoire courant", "WARNING")
                 
-                # CORRECTION: Navigation vers le répertoire initial puis le répertoire cible
+                # CORRECTION: Navigation et création automatique des répertoires FTP par date
                 target_directory = None
+                base_url_with_date = FTP_BASE_URL  # Valeur par défaut
                 try:
                     # D'abord aller au répertoire initial si spécifié
                     if FTP_INITIAL_DIRECTORY and FTP_INITIAL_DIRECTORY != ftp.pwd():
                         ftp.cwd(FTP_INITIAL_DIRECTORY)
                         log_app(f"📁 CORRECTION: Navigation vers répertoire initial {FTP_INITIAL_DIRECTORY} réussie", "SUCCESS")
                     
-                    # Ensuite naviguer vers le répertoire de destination
-                    ftp.cwd(FTP_DIRECTORY)
-                    target_directory = FTP_DIRECTORY
-                    log_app(f"📁 CORRECTION: Navigation vers {FTP_DIRECTORY} réussie", "SUCCESS")
+                    # NOUVELLE FONCTIONNALITÉ: Création automatique de la structure /downloads/YYYY/MM/DD/
+                    try:
+                        date_path = create_ftp_date_directories(ftp, "/downloads/")
+                        target_directory = date_path
+                        # Mettre à jour l'URL de base pour inclure la structure de date
+                        base_url_with_date = FTP_BASE_URL.replace("/wordpress/uploads/", f"/downloads/{datetime.now().strftime('%Y/%m/%d')}/")
+                        log_app(f"✅ CORRECTION: Répertoires FTP images créés automatiquement: {date_path}", "SUCCESS")
+                    except Exception as date_dir_error:
+                        log_app(f"⚠️ CORRECTION: Erreur création répertoires images: {date_dir_error}", "WARNING")
+                        # Fallback vers l'ancien comportement
+                        ftp.cwd(FTP_DIRECTORY)
+                        target_directory = FTP_DIRECTORY
+                        base_url_with_date = FTP_BASE_URL
+                        log_app(f"📁 CORRECTION: Navigation vers {FTP_DIRECTORY} réussie (fallback)", "SUCCESS")
                 except ftplib.error_perm as cwd_error:
                     log_app(f"⚠️ CORRECTION: Répertoire {FTP_DIRECTORY} non accessible: {cwd_error}", "WARNING")
                     # Essayer les répertoires alternatifs
