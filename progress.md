@@ -29,6 +29,27 @@
 - [x] Publication Facebook et Instagram avec gestion d'erreurs
 - [x] Test complet et validation technique
 
+## 🎯 Crédits Utilisés: 9/10 (Nouvelle session)
+
+## ✅ Patch 9 - NGROK UNIQUEMENT, FTP DÉSACTIVÉ (2 crédits)
+- [x] **URL ngrok fixe configurée** : `https://9fff391906ce.ngrok-free.app` hardcodée pour simplicité  
+- [x] **Fonction get_public_url() ajoutée** : Construction automatique URLs publiques ngrok
+- [x] **FTP complètement désactivé** : Plus de tentatives FTP dans tout le code webhook
+- [x] **Logique webhook simplifiée** : 
+  - Images : Sauvegarde locale + URL publique ngrok immédiate 
+  - Vidéos : Sauvegarde locale + URL publique ngrok immédiate
+  - Plus de fallbacks FTP complexes
+- [x] **Correction chemins locaux** : Tous les `uploads\webhook_xxx.png` → `https://9fff391906ce.ngrok-free.app/uploads/webhook_xxx.png`
+- [x] **Webhook_data mis à jour** : `public_url` au lieu de `ftp_url`/`ftp_error`
+- [x] **Logs PATCH 9** : Toutes les opérations identifiées clairement
+- [x] **Instagram toujours avec URLs HTTPS** : Plus jamais de chemins locaux Windows
+
+### Comportement ajouté :
+- **URLs publiques garanties** : Chaque fichier uploadé a automatiquement son URL `https://ngrok/uploads/filename` 
+- **Simplicité maximale** : Plus de logique FTP complexe, juste ngrok direct
+- **Instagram 100% compatible** : URLs HTTPS publiques obligatoires toujours respectées
+- **Réduction erreurs** : Plus de timeouts FTP ou problèmes de connexion
+
 ## 🎯 Crédits Utilisés: 7/10 (Nouvelle session)
 
 ## ✅ Patch 8 - Création Automatique Répertoires FTP (2 crédits)
