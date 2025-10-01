@@ -5663,6 +5663,19 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         if not media_url:
             return {"success": False, "error": "URL média obligatoire pour Instagram"}
         
+        # CORRECTION INSTAGRAM: Vérifier et convertir les URLs locales
+        if not media_url.startswith(('http://', 'https://')):
+            log_app(f"⚠️ CORRECTION INSTAGRAM: URL locale détectée, conversion requise - {media_url}", "WARNING")
+            try:
+                converted_url = await convert_local_path_to_public_url(media_url)
+                if converted_url.startswith(('http://', 'https://')):
+                    media_url = converted_url
+                    log_app(f"✅ CORRECTION INSTAGRAM: URL convertie avec succès - {media_url}", "SUCCESS")
+                else:
+                    return {"success": False, "error": f"CORRECTION INSTAGRAM: Impossible de convertir l'URL locale en URL publique: {media_url}"}
+            except Exception as conv_error:
+                return {"success": False, "error": f"CORRECTION INSTAGRAM: Erreur conversion URL: {conv_error}"}
+        
         # Construction du caption
         caption = f"{title}\n{url}\n{description}"
         
