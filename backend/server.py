@@ -234,6 +234,89 @@ async def test_ftp_connection() -> dict:
             "suggestions": ["Erreur interne du test de diagnostic"]
         }
 
+def create_ftp_date_directories(ftp, base_directory="/downloads/") -> str:
+    """Crée automatiquement la structure de répertoires par date sur le serveur FTP
+    
+    Args:
+        ftp: Instance FTP connectée
+        base_directory: Répertoire de base (par défaut: /downloads/)
+        
+    Returns:
+        str: Le chemin complet du répertoire créé (ex: /downloads/2025/09/02/)
+    """
+    from datetime import datetime
+    
+    try:
+        now = datetime.now()
+        
+        log_app("🔧 CORRECTION: Création automatique des répertoires FTP par date...", "INFO")
+        
+        # Naviguer vers le répertoire de base 
+        try:
+            ftp.cwd(base_directory)
+            log_app(f"✅ CORRECTION: Navigation vers répertoire de base: {base_directory}", "SUCCESS")
+        except ftplib.error_perm:
+            # Si le répertoire de base n'existe pas, le créer
+            try:
+                ftp.mkd(base_directory)
+                ftp.cwd(base_directory)
+                log_app(f"✅ CORRECTION: Répertoire de base créé: {base_directory}", "SUCCESS")
+            except Exception as e:
+                log_app(f"❌ CORRECTION: Impossible de créer le répertoire de base {base_directory}: {e}", "ERROR")
+                raise
+        
+        # Créer/naviguer vers le répertoire de l'année (ex: 2025)
+        year_dir = f"{now.year:04d}"
+        try:
+            ftp.cwd(year_dir)
+            log_app(f"✅ CORRECTION: Navigation vers année: {year_dir}", "SUCCESS")
+        except ftplib.error_perm:
+            try:
+                ftp.mkd(year_dir)
+                ftp.cwd(year_dir)
+                log_app(f"✅ CORRECTION: Répertoire année créé: {year_dir}", "SUCCESS")
+            except Exception as e:
+                log_app(f"❌ CORRECTION: Erreur création répertoire année {year_dir}: {e}", "ERROR")
+                raise
+        
+        # Créer/naviguer vers le répertoire du mois (ex: 09)
+        month_dir = f"{now.month:02d}"
+        try:
+            ftp.cwd(month_dir)
+            log_app(f"✅ CORRECTION: Navigation vers mois: {month_dir}", "SUCCESS")
+        except ftplib.error_perm:
+            try:
+                ftp.mkd(month_dir)
+                ftp.cwd(month_dir)
+                log_app(f"✅ CORRECTION: Répertoire mois créé: {month_dir}", "SUCCESS")
+            except Exception as e:
+                log_app(f"❌ CORRECTION: Erreur création répertoire mois {month_dir}: {e}", "ERROR")
+                raise
+        
+        # Créer/naviguer vers le répertoire du jour (ex: 02)
+        day_dir = f"{now.day:02d}"
+        try:
+            ftp.cwd(day_dir)
+            log_app(f"✅ CORRECTION: Navigation vers jour: {day_dir}", "SUCCESS")
+        except ftplib.error_perm:
+            try:
+                ftp.mkd(day_dir)
+                ftp.cwd(day_dir)
+                log_app(f"✅ CORRECTION: Répertoire jour créé: {day_dir}", "SUCCESS")
+            except Exception as e:
+                log_app(f"❌ CORRECTION: Erreur création répertoire jour {day_dir}: {e}", "ERROR")
+                raise
+        
+        # Retourner le chemin complet créé
+        full_path = f"{base_directory}{year_dir}/{month_dir}/{day_dir}/"
+        log_app(f"✅ CORRECTION: Structure de répertoires FTP créée: {full_path}", "SUCCESS")
+        
+        return full_path
+        
+    except Exception as e:
+        log_app(f"❌ CORRECTION: Erreur générale création répertoires FTP: {e}", "ERROR")
+        raise
+
 def get_store_config(store: str) -> dict:
     """Récupère la configuration d'un store (tokens dynamiques prioritaires sur statiques)"""
     if store not in STORES:
