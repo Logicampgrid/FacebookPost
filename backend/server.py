@@ -447,6 +447,7 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                         date_path = create_ftp_date_directories(ftp, "/downloads/")
                         log_video(f"✅ CORRECTION: Répertoires FTP créés automatiquement: {date_path}", "SUCCESS")
                         # Mettre à jour l'URL de base pour inclure la structure de date
+                        from datetime import datetime
                         base_url_with_date = FTP_BASE_URL.replace("/wordpress/uploads/", f"/downloads/{datetime.now().strftime('%Y/%m/%d')}/")
                     except Exception as date_dir_error:
                         log_video(f"⚠️ CORRECTION: Erreur création répertoires automatiques: {date_dir_error}", "WARNING")
