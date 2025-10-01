@@ -4429,60 +4429,26 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
             # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
             
-            # CORRECTION: Normaliser et forcer upload FTP pour image_url si c'est un chemin local
+            # PATCH 9: Simplifier la gestion image_url avec ngrok uniquement
             final_image_url = image_url
             if image_url:
                 # Normaliser les backslashes Windows en slashes Unix
                 normalized_path = image_url.replace("\\", "/")
                 
-                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), forcer l'upload FTP
-                if "uploads/" in normalized_path:
+                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), générer URL ngrok
+                if "uploads/" in normalized_path and not normalized_path.startswith("http"):
                     filename = normalized_path.split("/")[-1]  # Prendre juste le nom de fichier
-                    local_file_path = os.path.join("uploads", filename)
-                    # Correction: Si chemin relatif, utiliser le chemin complet depuis backend
-                    if not os.path.isabs(local_file_path):
-                        local_file_path = os.path.join(os.path.dirname(__file__), local_file_path)
-                    
-                    if os.path.exists(local_file_path):
-                        log_app(f"🔄 CORRECTION: Upload FTP forcé pour chemin local - {local_file_path}", "INFO")
-                        try:
-                            # Upload FTP automatique pour convertir le chemin local en URL publique
-                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
-                            if ftp_success and ftp_url:
-                                final_image_url = ftp_url
-                                log_app(f"✅ CORRECTION: Conversion réussie chemin local -> URL publique: {final_image_url}", "SUCCESS")
-                            else:
-                                log_app(f"❌ CORRECTION: Échec upload FTP - {ftp_error}", "ERROR")
-                                # Fallback ngrok pour Instagram si FTP échoue
-                                ngrok_url = get_active_ngrok_url()
-                                if ngrok_url:
-                                    final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                                    log_app(f"🔄 CORRECTION: Fallback URL ngrok - {final_image_url}", "INFO")
-                                else:
-                                    final_image_url = f"uploads/{filename}"
-                                    log_app(f"⚠️ CORRECTION: Fallback chemin local normalisé - {final_image_url}", "WARNING")
-                        except Exception as upload_error:
-                            log_app(f"❌ CORRECTION: Erreur upload FTP - {upload_error}", "ERROR")
-                            # Fallback ngrok
-                            ngrok_url = get_active_ngrok_url()
-                            if ngrok_url:
-                                final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                                log_app(f"🔄 CORRECTION: Fallback URL ngrok après erreur - {final_image_url}", "INFO")
-                            else:
-                                final_image_url = f"uploads/{filename}"
-                                log_app(f"⚠️ CORRECTION: Fallback final chemin local - {final_image_url}", "WARNING")
-                    else:
-                        final_image_url = f"uploads/{filename}"
-                        log_app(f"⚠️ CORRECTION: Fichier local introuvable, utilisation chemin normalisé - {final_image_url}", "WARNING")
+                    final_image_url = get_public_url(filename)
+                    log_app(f"🌐 PATCH 9: Chemin local converti en URL publique - {final_image_url}", "SUCCESS")
                 else:
                     final_image_url = normalized_path
-                    log_app(f"🔗 CORRECTION: URL déjà publique ou chemin non-local - {final_image_url}", "INFO")
+                    log_app(f"🔗 PATCH 9: URL déjà publique ou chemin non-local - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=final_image_url,  # Utiliser l'URL finale (FTP ou fallback)
+                image_url=final_image_url,  # Utiliser l'URL finale ngrok
                 platforms=platforms
             )
         
