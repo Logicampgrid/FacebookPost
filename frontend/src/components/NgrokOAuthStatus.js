@@ -52,8 +52,8 @@ const NgrokOAuthStatus = () => {
   useEffect(() => {
     fetchStatus();
     
-    // Rafraîchir automatiquement toutes les 30 secondes
-    const interval = setInterval(fetchStatus, 30000);
+    // Rafraîchir automatiquement toutes les 2 minutes (120 secondes) pour réduire le spam
+    const interval = setInterval(fetchStatus, 120000);
     
     return () => clearInterval(interval);
   }, []);
