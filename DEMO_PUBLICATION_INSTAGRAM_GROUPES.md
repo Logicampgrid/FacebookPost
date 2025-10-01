@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://prompt-enhance-4.preview.emergentagent.com
+🔗 https://emergent-helper-2.preview.emergentagent.com
