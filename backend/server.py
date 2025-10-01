@@ -4322,51 +4322,45 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 video_filename = media_file_info['filename']
                 video_url = get_public_url(video_filename)
                 log_app(f"✅ PATCH 9: URL vidéo ngrok générée - {video_url}", "SUCCESS")
-                    # CORRECTION: Utiliser les nouvelles fonctions unifiées avec is_video=True
-                    try:
-                        store_config = get_store_config(final_store)
-                        
-                        # Publication Facebook avec is_video=True
-                        if "facebook" in platforms:
-                            log_app(f"📱 CORRECTION VIDÉO: Publication Facebook avec endpoint /videos", "INFO")
-                            fb_result = await publish_to_facebook(store_config, title, product_url, description, video_url, is_video=True)
-                            log_app(f"✅ CORRECTION VIDÉO: Facebook terminé - {fb_result.get('success', False)}", "SUCCESS" if fb_result.get('success') else "ERROR")
-                        
-                        # Publication Instagram vidéo (Reels)
-                        if "instagram" in platforms:
-                            log_app(f"📸 CORRECTION VIDÉO: Publication Instagram Reels", "INFO") 
-                            ig_result = await publish_to_instagram(store_config, title, product_url, description, video_url, is_video=True)
-                            log_app(f"✅ CORRECTION VIDÉO: Instagram terminé - {ig_result.get('success', False)}", "SUCCESS" if ig_result.get('success') else "ERROR")
-                        
-                        result = {
-                            "success": True,
-                            "status": "success",
-                            "store": final_store,
-                            "platforms": platforms,
-                            "video_url": video_url,
-                            "facebook_result": fb_result if "facebook" in platforms else None,
-                            "instagram_result": ig_result if "instagram" in platforms else None
-                        }
-                        
-                    except Exception as pub_error:
-                        log_app(f"❌ CORRECTION VIDÉO: Erreur publication unifiée - {pub_error}", "ERROR")
-                        # Fallback vers l'ancienne méthode spécialisée
-                        result = await publish_video_main(
-                            store=final_store,
-                            message=message,
-                            product_url=product_url,
-                            video_url=video_url,
-                            platforms=platforms
-                        )
+                
+                # Publication sur les plateformes
+                try:
+                    store_config = get_store_config(final_store)
                     
-                    log_app(f"✅ CORRECTION VIDÉO: Vidéo publiée avec succès sur les plateformes", "SUCCESS")
-                else:
-                    log_app(f"❌ CORRECTION VIDÉO: Échec upload vidéo - {upload_error}", "ERROR")
-                    try:
-                        # Générer l'URL ngrok pour la vidéo locale
-                        filename = media_file_info['filename'] 
-                        ngrok_video_url = await convert_local_path_to_public_url(f"uploads/{filename}")
-                        log_app(f"🔄 CORRECTION VIDÉO: Fallback ngrok pour vidéo - {ngrok_video_url}", "INFO")
+                    # Publication Facebook avec is_video=True
+                    if "facebook" in platforms:
+                        log_app(f"📱 PATCH 9: Publication Facebook avec endpoint /videos", "INFO")
+                        fb_result = await publish_to_facebook(store_config, title, product_url, description, video_url, is_video=True)
+                        log_app(f"✅ PATCH 9: Facebook terminé - {fb_result.get('success', False)}", "SUCCESS" if fb_result.get('success') else "ERROR")
+                    
+                    # Publication Instagram vidéo (Reels)
+                    if "instagram" in platforms:
+                        log_app(f"📸 PATCH 9: Publication Instagram Reels", "INFO") 
+                        ig_result = await publish_to_instagram(store_config, title, product_url, description, video_url, is_video=True)
+                        log_app(f"✅ PATCH 9: Instagram terminé - {ig_result.get('success', False)}", "SUCCESS" if ig_result.get('success') else "ERROR")
+                    
+                    result = {
+                        "success": True,
+                        "status": "success",
+                        "store": final_store,
+                        "platforms": platforms,
+                        "video_url": video_url,
+                        "facebook_result": fb_result if "facebook" in platforms else None,
+                        "instagram_result": ig_result if "instagram" in platforms else None
+                    }
+                    
+                except Exception as pub_error:
+                    log_app(f"❌ PATCH 9: Erreur publication unifiée - {pub_error}", "ERROR")
+                    # Fallback vers l'ancienne méthode spécialisée
+                    result = await publish_video_main(
+                        store=final_store,
+                        message=message,
+                        product_url=product_url,
+                        video_url=video_url,
+                        platforms=platforms
+                    )
+                
+                log_app(f"✅ PATCH 9: Vidéo publiée avec succès sur les plateformes", "SUCCESS")
                         
                         # CORRECTION: Tenter avec les fonctions unifiées en priorité
                         try:
