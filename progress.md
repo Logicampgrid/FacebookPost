@@ -86,6 +86,16 @@ curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]
 - ✅ `/app/progress.md` : Documentation mise à jour
 - ✅ `/app/test_n8n_webhook_formats.py` : Tests format n8n validés
 
+### ✅ Optimisation polling frontend - Patch 4 (1 crédit)
+- [x] **Problème résolu** : Polling OAuth status trop fréquent (toutes les 30s)
+- [x] **Solution appliquée** : Réduction de la fréquence à 120 secondes (2 minutes)
+- [x] **Bénéfices** : Réduction du spam de logs et optimisation performances
+- [x] **Test validé** : Logs beaucoup moins fréquents maintenant
+
+### Fichiers modifiés - Patch 4
+- ✅ `/app/frontend/src/components/NgrokOAuthStatus.js` : Polling optimisé (30s → 120s)
+- ✅ `/app/progress.md` : Documentation mise à jour
+
 ### Fonctionnalités unifiées
 - ✅ Endpoint unique `/api/webhook` (POST) pour n8n
 - ✅ **Format n8n natif** : `jsonData` + `file` supporté
