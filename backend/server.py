@@ -493,8 +493,8 @@ async def upload_video_to_ftp(video_path: str, filename: str = None) -> tuple:
                     except:
                         ftp.close()
                     
-                    # Construire l'URL publique
-                    public_url = f"{FTP_BASE_URL}{filename}"
+                    # Construire l'URL publique avec la nouvelle structure de date
+                    public_url = f"{base_url_with_date}{filename}"
                     log_video(f"Vidéo disponible: {public_url}", "SUCCESS")
                     
                     return True, public_url, None
