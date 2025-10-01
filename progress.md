@@ -39,7 +39,12 @@
 - Configuration automatique des stores selon le paramètre reçu
 - Compatible avec les 3 stores (gizmobbs, logicantiq, outdoor)
 
-## 🔧 Instructions de Reprise
+## 🔧 Instructions de Reprise  
+### ❌ Problèmes Critiques Identifiés - Session 2 (10 crédits)
+- [x] **Problème 1**: Vidéos Facebook détectées comme images (mauvaise logique détection)
+- [x] **Problème 2**: Publications Instagram échouent avec erreur FTP (WinError 64)
+- [x] **Problème 3**: Polling OAuth trop fréquent (1s au lieu de 120s)
+
 ✅ **UNIFICATION WEBHOOK TERMINÉE AVEC SUCCÈS !**
 
 ### ✅ Unification réalisée - Patch 1 (6 crédits)
