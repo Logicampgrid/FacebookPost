@@ -40,10 +40,20 @@
 - Compatible avec les 3 stores (gizmobbs, logicantiq, outdoor)
 
 ## 🔧 Instructions de Reprise  
-### ❌ Problèmes Critiques Identifiés - Session 2 (10 crédits)
-- [x] **Problème 1**: Vidéos Facebook détectées comme images (mauvaise logique détection)
-- [x] **Problème 2**: Publications Instagram échouent avec erreur FTP (WinError 64)
-- [x] **Problème 3**: Polling OAuth trop fréquent (1s au lieu de 120s)
+
+### ✅ Corrections Appliquées - Session 2 - Patch 5 (4 crédits)
+- [x] **CORRECTION 1**: Détection vidéo Facebook améliorée
+  - Remplacement logique URL par analyse MIME type réelle
+  - Support fichiers locaux + extensions complètes (.mp4, .mov, .avi, .wmv, .m4v, .mkv)
+  - Fallback robuste si analyse MIME échoue
+- [x] **CORRECTION 2**: FTP Instagram ultra-robuste contre WinError 64
+  - 4 configurations FTP (actif/passif × utf8/latin1) 
+  - Retry automatique avec backoff exponentiel (1s, 2s, 4s)
+  - Gestion améliorée timeouts et erreurs réseau
+  - Diagnostics détaillés des échecs de connexion
+- [x] **CORRECTION 3**: Confirmation polling OAuth optimisé (120s)
+  - Vérification du polling déjà configuré à 120s (2 minutes)
+  - Aucun autre polling détecté dans le code
 
 ✅ **UNIFICATION WEBHOOK TERMINÉE AVEC SUCCÈS !**
 
