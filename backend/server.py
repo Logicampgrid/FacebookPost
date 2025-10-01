@@ -4361,63 +4361,18 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                     )
                 
                 log_app(f"✅ PATCH 9: Vidéo publiée avec succès sur les plateformes", "SUCCESS")
-                        
-                        # CORRECTION: Tenter avec les fonctions unifiées en priorité
-                        try:
-                            store_config = get_store_config(final_store)
-                            
-                            # Publication Facebook avec is_video=True
-                            if "facebook" in platforms:
-                                fb_result = await publish_to_facebook(store_config, title, product_url, description, ngrok_video_url, is_video=True)
-                            
-                            # Publication Instagram vidéo (Reels) 
-                            if "instagram" in platforms:
-                                ig_result = await publish_to_instagram(store_config, title, product_url, description, ngrok_video_url, is_video=True)
-                            
-                            result = {
-                                "success": True,
-                                "status": "success", 
-                                "store": final_store,
-                                "platforms": platforms,
-                                "video_url": ngrok_video_url,
-                                "facebook_result": fb_result if "facebook" in platforms else None,
-                                "instagram_result": ig_result if "instagram" in platforms else None
-                            }
-                            
-                        except Exception as unified_error:
-                            log_app(f"❌ CORRECTION VIDÉO: Échec fonctions unifiées - {unified_error}", "ERROR")
-                            # Dernier fallback vers l'ancienne méthode
-                            result = await publish_video_main(
-                                store=final_store,
-                                message=message,
-                                product_url=product_url,
-                                video_url=ngrok_video_url,
-                                platforms=platforms
-                            )
-                        
-                        log_app(f"✅ CORRECTION VIDÉO: Vidéo publiée via ngrok fallback", "SUCCESS")
-                        
-                    except Exception as ngrok_error:
-                        log_app(f"❌ CORRECTION: Échec fallback ngrok vidéo - {ngrok_error}", "ERROR")
-                        # Dernier fallback vers publication texte seulement
-                        result = await publish_post_main(
-                            store=final_store,
-                            message=message,
-                            product_url=product_url,
-                            image_url=image_url,
-                            platforms=platforms
-                        )
                 
                 # Nettoyer le fichier temporaire
                 try:
+                    video_path = media_file_info['path']
                     if os.path.exists(video_path):
                         os.remove(video_path)
-                        log_app(f"🧹 CORRECTION: Fichier temporaire supprimé - {video_path}", "INFO")
+                        log_app(f"🧹 PATCH 9: Fichier temporaire supprimé - {video_path}", "INFO")
                 except Exception as cleanup_error:
-                    log_app(f"⚠️ CORRECTION: Erreur nettoyage fichier temporaire - {cleanup_error}", "WARNING")
+                    log_app(f"⚠️ PATCH 9: Erreur nettoyage fichier temporaire - {cleanup_error}", "WARNING")
                     
             except Exception as video_error:
-                log_app(f"❌ CORRECTION: Erreur traitement vidéo - {video_error}", "ERROR")
+                log_app(f"❌ PATCH 9: Erreur traitement vidéo - {video_error}", "ERROR")
                 # Fallback vers publication texte
                 result = await publish_post_main(
                     store=final_store,
