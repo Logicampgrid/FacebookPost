@@ -4436,68 +4436,19 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 )
                 
         elif media_type == "image" and media_file_info:
-            log_app(f"🖼️ CORRECTION: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
+            log_app(f"🖼️ PATCH 9: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
             
-            # NOUVELLE LOGIQUE: Essayer FTP d'abord, puis URL ngrok comme fallback
-            final_image_url = None
+            # PATCH 9: LOGIQUE SIMPLIFIÉE - NGROK UNIQUEMENT
+            filename = media_file_info['filename']
             
-            if media_file_info.get('ftp_url'):
-                # L'upload FTP a réussi, utiliser l'URL publique FTP
-                final_image_url = media_file_info['ftp_url']
-                log_app(f"🌐 CORRECTION: Utilisation URL FTP publique - {final_image_url}", "SUCCESS")
+            # Vérifier d'abord si l'URL publique est déjà disponible dans media_file_info
+            if media_file_info.get('public_url'):
+                final_image_url = media_file_info['public_url']
+                log_app(f"✅ PATCH 9: URL publique déjà générée - {final_image_url}", "SUCCESS")
             else:
-                # NOUVELLE CORRECTION: Upload FTP obligatoire pour Instagram - pas de fallback local
-                filename = media_file_info['filename']
-                local_file_path = media_file_info['path']  # Utiliser le chemin complet au lieu de reconstruire
-                
-                if os.path.exists(local_file_path):
-                    log_app(f"🔄 CORRECTION: Upload FTP obligatoire pour Instagram - {local_file_path}", "INFO")
-                    
-                    # Essayer plusieurs tentatives d'upload FTP
-                    ftp_success = False
-                    ftp_url = None
-                    ftp_error = None
-                    
-                    for attempt in range(3):  # 3 tentatives max
-                        try:
-                            log_app(f"🔄 CORRECTION: Tentative {attempt + 1}/3 upload FTP pour {filename}", "INFO")
-                            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(local_file_path, filename)
-                            
-                            if ftp_success and ftp_url:
-                                final_image_url = ftp_url
-                                log_app(f"✅ CORRECTION: Upload FTP réussi (tentative {attempt + 1}) - {final_image_url}", "SUCCESS")
-                                break
-                            else:
-                                log_app(f"❌ CORRECTION: Échec upload FTP (tentative {attempt + 1}) - {ftp_error}", "ERROR")
-                                if attempt < 2:  # Pas la dernière tentative
-                                    await asyncio.sleep(2)  # Attendre 2 secondes avant de réessayer
-                        except Exception as upload_error:
-                            log_app(f"❌ CORRECTION: Erreur upload FTP (tentative {attempt + 1}) - {upload_error}", "ERROR")
-                            ftp_error = str(upload_error)
-                            if attempt < 2:  # Pas la dernière tentative
-                                await asyncio.sleep(2)  # Attendre 2 secondes avant de réessayer
-                    
-                    if not ftp_success:
-                        # Si toutes les tentatives FTP échouent, utiliser UNIQUEMENT ngrok pour Instagram
-                        ngrok_url = get_active_ngrok_url()
-                        if ngrok_url:
-                            # CORRECTION CRITIQUE: Construire l'URL ngrok correctement
-                            final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
-                            log_app(f"⚠️ CORRECTION: FTP impossible, utilisation URL ngrok pour Instagram - {final_image_url}", "WARNING")
-                            
-                            # CORRECTION INSTAGRAM: Vérifier accessibilité ngrok pour Instagram
-                            if not verify_url_accessibility(final_image_url):
-                                log_app(f"❌ CORRECTION INSTAGRAM: URL ngrok non accessible - {final_image_url}", "ERROR")
-                                # Si ngrok échoue, retirer Instagram des plateformes et utiliser l'URL ngrok quand même pour Facebook
-                                if "instagram" in platforms:
-                                    platforms = [p for p in platforms if p != "instagram"]
-                                    log_app(f"⚠️ CORRECTION INSTAGRAM: Instagram retiré des plateformes - reste {platforms}", "WARNING")
-                                # Garder l'URL ngrok pour Facebook (qui est plus tolérant)
-                                log_app(f"📱 CORRECTION INSTAGRAM: Facebook utilisera l'URL ngrok malgré l'erreur d'accessibilité", "INFO")
-                            else:
-                                log_app(f"✅ CORRECTION INSTAGRAM: URL ngrok accessible pour tous - {final_image_url}", "SUCCESS")
-                        else:
-                            log_app(f"❌ CORRECTION INSTAGRAM: Aucune URL ngrok disponible", "ERROR")
+                # Générer l'URL publique ngrok
+                final_image_url = get_public_url(filename)
+                log_app(f"🌐 PATCH 9: URL publique ngrok générée - {final_image_url}", "SUCCESS")
                             # Sans ngrok, seul Facebook peut fonctionner (avec chemins relatifs)
                             if "instagram" in platforms:
                                 platforms = [p for p in platforms if p != "instagram"]
