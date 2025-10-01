@@ -4210,9 +4210,7 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         
         # CORRECTION VIDÉO FACEBOOK: Traiter les vidéos uploadées avec routage correct
         video_url = None
-        is_video_content = False
         if media_type == "video" and media_file_info:
-            is_video_content = True
             log_app(f"🎥 CORRECTION VIDÉO: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
             try:
                 # Upload de la vidéo vers FTP pour obtenir une URL publique
