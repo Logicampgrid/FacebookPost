@@ -29,7 +29,15 @@
 - [x] Publication Facebook et Instagram avec gestion d'erreurs
 - [x] Test complet et validation technique
 
-## 🎯 Crédits Utilisés: 6/10 (Nouvelle session)
+## 🎯 Crédits Utilisés: 7/10 (Nouvelle session)
+
+## ✅ Patch 8 - Création Automatique Répertoires FTP (2 crédits)
+- [x] **Fonction create_ftp_date_directories()** : Création automatique structure /downloads/YYYY/MM/DD/
+- [x] **Intégration upload_video_to_ftp()** : Utilise la nouvelle structure de répertoires automatique
+- [x] **Intégration upload_image_to_ftp()** : Utilise la nouvelle structure de répertoires automatique
+- [x] **URLs publiques mises à jour** : Génération correcte avec nouveaux chemins
+- [x] **Gestion d'erreurs robuste** : Fallback vers ancien système si création échoue
+- [x] **Logging détaillé** : Traçabilité complète de la création des répertoires
 
 ## 📌 Notes Importantes
 - ✅ **UNIFICATION TERMINÉE**: Endpoint unique `/api/webhook` (POST)
