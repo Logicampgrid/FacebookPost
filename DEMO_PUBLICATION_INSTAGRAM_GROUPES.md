@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://prompt-workshop.preview.emergentagent.com
+🔗 https://prompt-wizard-139.preview.emergentagent.com
