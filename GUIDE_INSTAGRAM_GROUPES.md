@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://emergent-helper-2.preview.emergentagent.com
+URL : https://directoryflow.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
