@@ -679,18 +679,8 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                         ftp.close()
                     
                     if upload_confirmed:
-                        # Construire l'URL publique basée sur le répertoire utilisé
-                        if target_directory == FTP_DIRECTORY:
-                            public_url = f"{FTP_BASE_URL}{ftp_filename}"
-                        else:
-                            # Ajuster l'URL selon le répertoire alternatif utilisé
-                            base_url = FTP_BASE_URL.rstrip('/')
-                            if target_directory == "/":
-                                public_url = f"{base_url}/{ftp_filename}"
-                            else:
-                                clean_dir = target_directory.strip('/')
-                                public_url = f"{base_url}/{clean_dir}/{ftp_filename}"
-                        
+                        # Construire l'URL publique avec la nouvelle structure de date
+                        public_url = f"{base_url_with_date}{ftp_filename}"
                         log_app(f"🌐 CORRECTION: Image Instagram disponible: {public_url}", "SUCCESS")
                         
                         # Vérification finale optionnelle de l'URL (sans bloquer si échoue)
