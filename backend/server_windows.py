@@ -1304,7 +1304,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
             log_video(f"MODE TEST - Publication vidéo Instagram simulée pour {store}", "TEST")
             return {
                 "id": f"test_ig_video_{uuid.uuid4().hex[:8]}",
-                "caption": f"{message}\\n\\n{product_url}",
+                "caption": f"{message}\n\n{product_url}",
                 "video_url": video_url,
                 "test_mode": True
             }
