@@ -4396,23 +4396,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 # Générer l'URL publique ngrok
                 final_image_url = get_public_url(filename)
                 log_app(f"🌐 PATCH 9: URL publique ngrok générée - {final_image_url}", "SUCCESS")
-                else:
-                    log_app(f"❌ CORRECTION INSTAGRAM: Fichier local introuvable - {local_file_path}", "ERROR")
-                    # Si fichier introuvable, retirer Instagram et publier sans image
-                    final_image_url = None
-                    if "instagram" in platforms:
-                        platforms = [p for p in platforms if p != "instagram"]
-                        log_app(f"⚠️ CORRECTION INSTAGRAM: Instagram retiré - fichier introuvable", "WARNING")
-                    log_app(f"📱 CORRECTION INSTAGRAM: Publication texte uniquement sur {platforms}", "INFO")
-                    
-                if media_file_info.get('ftp_error'):
-                    log_app(f"ℹ️ CORRECTION: Erreur FTP précédente - {media_file_info['ftp_error']}", "INFO")
-                        
+            
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=final_image_url,  # Utiliser l'URL finale (FTP ou fallback)
+                image_url=final_image_url,  # Utiliser l'URL finale ngrok
                 platforms=platforms
             )
         else:
