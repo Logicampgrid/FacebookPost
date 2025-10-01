@@ -4208,44 +4208,99 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
         log_app(f"   Média: {'Oui' if has_media_file else 'Non'} ({media_type if media_type else 'N/A'})", "INFO")
         
-        # NOUVELLE CORRECTION: Traiter les vidéos uploadées
+        # CORRECTION VIDÉO FACEBOOK: Traiter les vidéos uploadées avec routage correct
         video_url = None
+        is_video_content = False
         if media_type == "video" and media_file_info:
-            log_app(f"🎥 CORRECTION: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
+            is_video_content = True
+            log_app(f"🎥 CORRECTION VIDÉO: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
             try:
                 # Upload de la vidéo vers FTP pour obtenir une URL publique
                 video_path = media_file_info['path']
                 upload_success, video_url, upload_error = await upload_video_to_ftp(video_path, media_file_info['filename'])
                 
-                if upload_success and video_url:
-                    log_app(f"✅ CORRECTION: Vidéo uploadée avec succès - {video_url}", "SUCCESS")
-                    # Pour les vidéos, utiliser la fonction de publication vidéo
-                    result = await publish_video_main(
-                        store=final_store,
-                        message=message,
-                        product_url=product_url,
-                        video_url=video_url,
-                        platforms=platforms
-                    )
-                else:
-                    log_app(f"❌ CORRECTION: Échec upload vidéo FTP - {upload_error}", "ERROR")
-                    
-                    # NOUVEAU FALLBACK: Utiliser l'URL ngrok locale pour la vidéo
+                if upload_success:
+                    log_app(f"✅ CORRECTION VIDÉO: Upload vidéo FTP réussi - {video_url}", "SUCCESS")
+                    # CORRECTION: Utiliser les nouvelles fonctions unifiées avec is_video=True
                     try:
-                        # Générer l'URL ngrok pour la vidéo locale
-                        filename = media_file_info['filename'] 
-                        ngrok_video_url = await convert_local_path_to_public_url(f"uploads/{filename}")
-                        log_app(f"🔄 CORRECTION: Fallback ngrok pour vidéo - {ngrok_video_url}", "INFO")
+                        store_config = get_store_config(final_store)
                         
-                        # Tenter la publication avec l'URL ngrok
+                        # Publication Facebook avec is_video=True
+                        if "facebook" in platforms:
+                            log_app(f"📱 CORRECTION VIDÉO: Publication Facebook avec endpoint /videos", "INFO")
+                            fb_result = await publish_to_facebook(store_config, title, product_url, description, video_url, is_video=True)
+                            log_app(f"✅ CORRECTION VIDÉO: Facebook terminé - {fb_result.get('success', False)}", "SUCCESS" if fb_result.get('success') else "ERROR")
+                        
+                        # Publication Instagram vidéo (Reels)
+                        if "instagram" in platforms:
+                            log_app(f"📸 CORRECTION VIDÉO: Publication Instagram Reels", "INFO") 
+                            ig_result = await publish_to_instagram(store_config, title, product_url, description, video_url, is_video=True)
+                            log_app(f"✅ CORRECTION VIDÉO: Instagram terminé - {ig_result.get('success', False)}", "SUCCESS" if ig_result.get('success') else "ERROR")
+                        
+                        result = {
+                            "success": True,
+                            "status": "success",
+                            "store": final_store,
+                            "platforms": platforms,
+                            "video_url": video_url,
+                            "facebook_result": fb_result if "facebook" in platforms else None,
+                            "instagram_result": ig_result if "instagram" in platforms else None
+                        }
+                        
+                    except Exception as pub_error:
+                        log_app(f"❌ CORRECTION VIDÉO: Erreur publication unifiée - {pub_error}", "ERROR")
+                        # Fallback vers l'ancienne méthode spécialisée
                         result = await publish_video_main(
                             store=final_store,
                             message=message,
                             product_url=product_url,
-                            video_url=ngrok_video_url,
+                            video_url=video_url,
                             platforms=platforms
                         )
-                        log_app(f"✅ CORRECTION: Vidéo publiée via ngrok fallback", "SUCCESS")
+                    
+                    log_app(f"✅ CORRECTION VIDÉO: Vidéo publiée avec succès sur les plateformes", "SUCCESS")
+                else:
+                    log_app(f"❌ CORRECTION VIDÉO: Échec upload vidéo - {upload_error}", "ERROR")
+                    try:
+                        # Générer l'URL ngrok pour la vidéo locale
+                        filename = media_file_info['filename'] 
+                        ngrok_video_url = await convert_local_path_to_public_url(f"uploads/{filename}")
+                        log_app(f"🔄 CORRECTION VIDÉO: Fallback ngrok pour vidéo - {ngrok_video_url}", "INFO")
+                        
+                        # CORRECTION: Tenter avec les fonctions unifiées en priorité
+                        try:
+                            store_config = get_store_config(final_store)
+                            
+                            # Publication Facebook avec is_video=True
+                            if "facebook" in platforms:
+                                fb_result = await publish_to_facebook(store_config, title, product_url, description, ngrok_video_url, is_video=True)
+                            
+                            # Publication Instagram vidéo (Reels) 
+                            if "instagram" in platforms:
+                                ig_result = await publish_to_instagram(store_config, title, product_url, description, ngrok_video_url, is_video=True)
+                            
+                            result = {
+                                "success": True,
+                                "status": "success", 
+                                "store": final_store,
+                                "platforms": platforms,
+                                "video_url": ngrok_video_url,
+                                "facebook_result": fb_result if "facebook" in platforms else None,
+                                "instagram_result": ig_result if "instagram" in platforms else None
+                            }
+                            
+                        except Exception as unified_error:
+                            log_app(f"❌ CORRECTION VIDÉO: Échec fonctions unifiées - {unified_error}", "ERROR")
+                            # Dernier fallback vers l'ancienne méthode
+                            result = await publish_video_main(
+                                store=final_store,
+                                message=message,
+                                product_url=product_url,
+                                video_url=ngrok_video_url,
+                                platforms=platforms
+                            )
+                        
+                        log_app(f"✅ CORRECTION VIDÉO: Vidéo publiée via ngrok fallback", "SUCCESS")
                         
                     except Exception as ngrok_error:
                         log_app(f"❌ CORRECTION: Échec fallback ngrok vidéo - {ngrok_error}", "ERROR")
