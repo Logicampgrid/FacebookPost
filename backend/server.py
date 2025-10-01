@@ -610,6 +610,7 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
                         date_path = create_ftp_date_directories(ftp, "/downloads/")
                         target_directory = date_path
                         # Mettre à jour l'URL de base pour inclure la structure de date
+                        from datetime import datetime
                         base_url_with_date = FTP_BASE_URL.replace("/wordpress/uploads/", f"/downloads/{datetime.now().strftime('%Y/%m/%d')}/")
                         log_app(f"✅ CORRECTION: Répertoires FTP images créés automatiquement: {date_path}", "SUCCESS")
                     except Exception as date_dir_error:
