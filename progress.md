@@ -38,6 +38,15 @@
 - [x] **URLs publiques mises à jour** : Génération correcte avec nouveaux chemins
 - [x] **Gestion d'erreurs robuste** : Fallback vers ancien système si création échoue
 - [x] **Logging détaillé** : Traçabilité complète de la création des répertoires
+- [x] **Correction erreurs syntaxe** : Correction des `\\n\\n` en `\n\n` dans les captions Instagram
+- [x] **Import datetime** : Import local ajouté dans les fonctions qui utilisent datetime
+- [x] **Compilation réussie** : server.py se compile sans erreur de syntaxe
+
+### Comportement ajouté :
+- **Structure FTP automatique** : `/downloads/2025/09/02/` créée automatiquement selon la date
+- **URLs publiques mises à jour** : `https://logicamp.org/downloads/2025/09/02/filename.ext`
+- **Fallback intelligent** : Si création échoue, retour à l'ancien système `/wordpress/uploads/`
+- **Logs détaillés** : Suivi complet de chaque étape de création des répertoires
 
 ## 📌 Notes Importantes
 - ✅ **UNIFICATION TERMINÉE**: Endpoint unique `/api/webhook` (POST)
