@@ -2161,7 +2161,7 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
             log_publish(f"MODE TEST - Publication Instagram simulée pour {store}", "TEST")
             return {
                 "id": f"test_ig_post_{uuid.uuid4().hex[:8]}",
-                "caption": f"{message}\\n\\n{product_url}",
+                "caption": f"{message}\n\n{product_url}",
                 "image_url": image_url,
                 "test_mode": True
             }
@@ -2175,7 +2175,7 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         
         create_payload = {
             "image_url": image_url,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "access_token": access_token
         }
         
@@ -2213,7 +2213,7 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         return {
             "id": publish_data["id"],
             "creation_id": creation_id,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "image_url": image_url
         }
         
@@ -2330,7 +2330,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
             log_video(f"MODE TEST - Publication vidéo Instagram simulée pour {store}", "TEST")
             return {
                 "id": f"test_ig_video_{uuid.uuid4().hex[:8]}",
-                "caption": f"{message}\\n\\n{product_url}",
+                "caption": f"{message}\n\n{product_url}",
                 "video_url": video_url,
                 "test_mode": True
             }
@@ -2344,7 +2344,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
         
         create_payload = {
             "video_url": video_url,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "media_type": "REELS",  # Utiliser REELS pour les vidéos courtes
             "access_token": access_token
         }
@@ -2387,7 +2387,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
         return {
             "id": publish_data["id"],
             "creation_id": creation_id,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "video_url": video_url
         }
         
