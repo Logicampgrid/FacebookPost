@@ -111,6 +111,20 @@ curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]
 - ✅ `/app/frontend/src/components/NgrokOAuthStatus.js` : Polling optimisé (30s → 120s)
 - ✅ `/app/progress.md` : Documentation mise à jour
 
+### ✅ CORRECTION VIDÉO FACEBOOK - Patch 6 (1 crédit)
+- [x] **Problème résolu** : Vidéo Facebook affichait une image au lieu de la vidéo
+- [x] **Cause identifiée** : Mauvais routage vers endpoint Facebook - `is_video=False` par défaut
+- [x] **Solution appliquée** : 
+  - Modification de la logique webhook pour forcer `is_video=True` pour les vidéos
+  - Facebook utilise maintenant correctement `/videos` endpoint au lieu de `/photos`
+  - Instagram utilise Reels endpoint avec `media_type=REELS`
+  - Ajout de fallback robuste : FTP → fonctions unifiées → fonctions legacy → texte seul
+- [x] **Test attendu** : Les vidéos MP4 uploadées devraient maintenant s'afficher comme vidéos sur Facebook
+
+### Fichiers modifiés - Patch 6
+- ✅ `/app/backend/server.py` : Correction routage vidéo Facebook avec `is_video=True`
+- ✅ `/app/progress.md` : Documentation mise à jour
+
 ### Fonctionnalités unifiées
 - ✅ Endpoint unique `/api/webhook` (POST) pour n8n
 - ✅ **Format n8n natif** : `jsonData` + `file` supporté
