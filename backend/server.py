@@ -2397,16 +2397,34 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
             "test_mode": PUBLICATION_TEST_MODE
         }
         
-        # CORRECTION VIDÉO: Détection automatique du type de média pour Facebook
+        # CORRECTION VIDÉO: Détection automatique du type de média AMÉLIORÉE
         is_video_media = False
         if image_url:
-            # Détecter si c'est une vidéo par l'extension ou le type MIME
-            if any(image_url.lower().endswith(ext) for ext in ['.mp4', '.mov', '.avi', '.wmv']):
-                is_video_media = True
-                log_publish("🎥 CORRECTION: Média vidéo détecté - routage vers endpoint /videos", "INFO")
-            elif 'video' in image_url.lower():
-                is_video_media = True
-                log_publish("🎥 CORRECTION: Média vidéo détecté par nom - routage vers endpoint /videos", "INFO")
+            # NOUVEAU: Détection par MIME type du fichier réel si c'est un chemin local
+            if image_url.startswith(('/uploads', './uploads')) or not image_url.startswith(('http://', 'https://')):
+                # C'est un fichier local - utiliser mimetypes pour détecter le vrai type
+                try:
+                    local_path = image_url.replace('/uploads/', UPLOAD_DIR + '/')
+                    if os.path.exists(local_path):
+                        mime_type, _ = mimetypes.guess_type(local_path)
+                        if mime_type and mime_type.startswith('video/'):
+                            is_video_media = True
+                            log_publish(f"🎥 CORRECTION: Vidéo détectée par MIME type: {mime_type}", "SUCCESS")
+                        else:
+                            log_publish(f"🖼️ CORRECTION: Image détectée par MIME type: {mime_type}", "INFO")
+                    else:
+                        log_publish(f"⚠️ CORRECTION: Fichier non trouvé pour analyse MIME: {local_path}", "WARNING")
+                except Exception as e:
+                    log_publish(f"⚠️ CORRECTION: Erreur analyse MIME: {e}", "WARNING")
+            
+            # Fallback: Détecter par extension dans l'URL (ancienne méthode)  
+            if not is_video_media:
+                if any(image_url.lower().endswith(ext) for ext in ['.mp4', '.mov', '.avi', '.wmv', '.m4v', '.mkv']):
+                    is_video_media = True
+                    log_publish("🎥 CORRECTION: Vidéo détectée par extension URL", "INFO")
+                elif 'video' in image_url.lower() and any(ext in image_url.lower() for ext in ['mp4', 'mov', 'avi']):
+                    is_video_media = True
+                    log_publish("🎥 CORRECTION: Vidéo détectée par nom dans URL", "INFO")
         
         # Publication Facebook avec routage correct
         if "facebook" in platforms:
