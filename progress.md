@@ -125,6 +125,22 @@ curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]
 - ✅ `/app/backend/server.py` : Correction routage vidéo Facebook avec `is_video=True`
 - ✅ `/app/progress.md` : Documentation mise à jour
 
+### ✅ CORRECTION URLs INSTAGRAM - Patch 7 (1 crédit)
+- [x] **Problème résolu** : Instagram recevait des chemins locaux Windows (`uploads\webhook_xxx.png`) au lieu d'URLs publiques HTTPS
+- [x] **Cause identifiée** : 
+  - Code assignait `final_image_url = local_file_path` en cas d'échec FTP/ngrok
+  - Instagram API exige des URLs publiques HTTPS accessibles depuis internet
+- [x] **Solution appliquée** :
+  - Suppression des assignations de chemins locaux pour Instagram
+  - Instagram est retiré automatiquement des plateformes si aucune URL publique n'est disponible
+  - Facebook continue à fonctionner (plus tolérant aux chemins relatifs)
+  - Ajout de conversion d'URL automatique dans `publish_to_instagram()` en sécurité
+- [x] **Test attendu** : Instagram ne devrait plus avoir l'erreur "Only photo or video can be accepted as media type"
+
+### Fichiers modifiés - Patch 7
+- ✅ `/app/backend/server.py` : Correction URLs Instagram + sécurité conversion automatique
+- ✅ `/app/progress.md` : Documentation mise à jour
+
 ### Fonctionnalités unifiées
 - ✅ Endpoint unique `/api/webhook` (POST) pour n8n
 - ✅ **Format n8n natif** : `jsonData` + `file` supporté
