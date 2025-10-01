@@ -29,7 +29,7 @@
 - [x] Publication Facebook et Instagram avec gestion d'erreurs
 - [x] Test complet et validation technique
 
-## 🎯 Crédits Utilisés: 9/10
+## 🎯 Crédits Utilisés: 1/10 (Nouvelle session)
 
 ## 📌 Notes Importantes
 - ✅ **UNIFICATION TERMINÉE**: Endpoint unique `/api/webhook` (POST)
