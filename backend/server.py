@@ -4941,10 +4941,11 @@ async def webhook_handler(request: Request):
                                         with open(temp_path, 'wb') as f:
                                             f.write(file_content)
                                         
-                                        log_app(f"📦 CORRECTION: Image sauvegardée: {temp_path}", "INFO")
+                                        log_app(f"📦 PATCH 9: Image sauvegardée: {temp_path}", "INFO")
                                         
-                                        # NOUVELLE FONCTIONNALITÉ: Upload automatique vers FTP pour Instagram
-                                        ftp_success, ftp_public_url, ftp_error = await upload_image_to_ftp(temp_path, filename)
+                                        # PATCH 9: NGROK UNIQUEMENT - Plus de FTP
+                                        public_url = get_public_url(temp_filename)
+                                        log_app(f"🌐 PATCH 9: URL publique générée: {public_url}", "SUCCESS")
                                         
                                         # Ajouter les infos de l'image aux données webhook
                                         webhook_data['image_file'] = {
@@ -4953,8 +4954,7 @@ async def webhook_handler(request: Request):
                                             'original_filename': filename,
                                             'content_type': content_type,
                                             'size': len(file_content),
-                                            'ftp_url': ftp_public_url if ftp_success else None,
-                                            'ftp_error': ftp_error if not ftp_success else None
+                                            'public_url': public_url  # URL publique toujours disponible
                                         }
                         else:
                             # Process all form fields - CORRECTION POUR LES FICHIERS SANS JSON
@@ -4997,10 +4997,11 @@ async def webhook_handler(request: Request):
                                         with open(temp_path, 'wb') as f:
                                             f.write(file_content)
                                         
-                                        log_app(f"📦 CORRECTION: Image sauvegardée: {temp_path}", "INFO")
+                                        log_app(f"📦 PATCH 9: Image sauvegardée: {temp_path}", "INFO")
                                         
-                                        # NOUVELLE FONCTIONNALITÉ: Upload automatique vers FTP pour Instagram
-                                        ftp_success, ftp_public_url, ftp_error = await upload_image_to_ftp(temp_path, filename)
+                                        # PATCH 9: NGROK UNIQUEMENT - Plus de FTP
+                                        public_url = get_public_url(temp_filename)
+                                        log_app(f"🌐 PATCH 9: URL publique générée: {public_url}", "SUCCESS")
                                         
                                         # Ajouter les infos de l'image aux données webhook
                                         webhook_data['image_file'] = {
@@ -5009,8 +5010,7 @@ async def webhook_handler(request: Request):
                                             'original_filename': filename,
                                             'content_type': content_type,
                                             'size': len(file_content),
-                                            'ftp_url': ftp_public_url if ftp_success else None,
-                                            'ftp_error': ftp_error if not ftp_success else None
+                                            'public_url': public_url  # URL publique toujours disponible
                                         }
                                     else:
                                         # Fichier non reconnu, essayer de le traiter comme texte
