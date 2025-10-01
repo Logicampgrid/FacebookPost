@@ -1361,7 +1361,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
         return {
             "id": publish_data["id"],
             "creation_id": creation_id,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "video_url": video_url
         }
         
