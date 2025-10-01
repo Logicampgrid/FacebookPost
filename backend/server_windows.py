@@ -1318,7 +1318,7 @@ async def post_video_to_instagram(store: str, message: str, product_url: str, vi
         
         create_payload = {
             "video_url": video_url,
-            "caption": f"{message}\\n\\n{product_url}",
+            "caption": f"{message}\n\n{product_url}",
             "media_type": "REELS",  # Utiliser REELS pour les vidéos courtes
             "access_token": access_token
         }
