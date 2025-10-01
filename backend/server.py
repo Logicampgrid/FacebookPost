@@ -4380,19 +4380,25 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                             final_image_url = f"{ngrok_url.rstrip('/')}/uploads/{filename}"
                             log_app(f"⚠️ CORRECTION: FTP impossible, utilisation URL ngrok pour Instagram - {final_image_url}", "WARNING")
                             
-                            # NOUVELLE VÉRIFICATION: S'assurer que l'image est accessible via ngrok
+                            # CORRECTION INSTAGRAM: Vérifier accessibilité ngrok pour Instagram
                             if not verify_url_accessibility(final_image_url):
-                                log_app(f"❌ CORRECTION: URL ngrok non accessible, réduction des plateformes à Facebook seulement", "ERROR")
-                                # Si ngrok ne fonctionne pas non plus, publier uniquement sur Facebook
-                                platforms = ["facebook"] if "instagram" in platforms else platforms
-                                final_image_url = local_file_path  # Facebook peut utiliser les chemins relatifs
+                                log_app(f"❌ CORRECTION INSTAGRAM: URL ngrok non accessible - {final_image_url}", "ERROR")
+                                # Si ngrok échoue, retirer Instagram des plateformes et utiliser l'URL ngrok quand même pour Facebook
+                                if "instagram" in platforms:
+                                    platforms = [p for p in platforms if p != "instagram"]
+                                    log_app(f"⚠️ CORRECTION INSTAGRAM: Instagram retiré des plateformes - reste {platforms}", "WARNING")
+                                # Garder l'URL ngrok pour Facebook (qui est plus tolérant)
+                                log_app(f"📱 CORRECTION INSTAGRAM: Facebook utilisera l'URL ngrok malgré l'erreur d'accessibilité", "INFO")
                             else:
-                                log_app(f"✅ CORRECTION: URL ngrok accessible pour Instagram", "SUCCESS")
+                                log_app(f"✅ CORRECTION INSTAGRAM: URL ngrok accessible pour tous - {final_image_url}", "SUCCESS")
                         else:
-                            log_app(f"❌ CORRECTION: Aucun FTP ni ngrok disponible, publication Facebook uniquement", "ERROR")
-                            # Aucune URL publique disponible, publier uniquement sur Facebook
-                            platforms = ["facebook"] if "instagram" in platforms else platforms
-                            final_image_url = local_file_path  # Facebook peut utiliser les chemins relatifs
+                            log_app(f"❌ CORRECTION INSTAGRAM: Aucune URL ngrok disponible", "ERROR")
+                            # Sans ngrok, seul Facebook peut fonctionner (avec chemins relatifs)
+                            if "instagram" in platforms:
+                                platforms = [p for p in platforms if p != "instagram"]
+                                log_app(f"⚠️ CORRECTION INSTAGRAM: Instagram retiré - pas d'URL publique disponible", "WARNING")
+                            # Pour Facebook, utiliser un chemin relatif qui sera converti plus tard
+                            final_image_url = f"uploads/{filename}"
                 else:
                     log_app(f"❌ CORRECTION: Fichier local introuvable - {local_file_path}", "ERROR")
                     # Si fichier introuvable, publier sans image
