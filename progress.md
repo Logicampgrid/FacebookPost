@@ -1,17 +1,42 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 9/10 
-## 🎯 État actuel: ✅ PATCH 15 RÉUSSI - VRAIE FONCTION INSTAGRAM CORRIGÉE
+## 🎯 Crédits utilisés: 1/10 
+## 🎯 État actuel: ✅ PATCH 16 APPLIQUÉ - CORRECTION FINALE DÉTECTION CHEMINS LOCAUX INSTAGRAM
 
-### 🔍 DIAGNOSTIC COMPLET (1 crédit)
-**Problème confirmé**: Instagram recoit encore des chemins locaux Windows malgré les Patches 7-9
+### ✅ PATCH 16 - CORRECTION FINALE DÉTECTION CHEMINS LOCAUX INSTAGRAM (1 crédit)
+**🎯 ROOT CAUSE DÉFINITIVEMENT TROUVÉ** : La fonction `publish_to_instagram()` dans `server.py` avait une condition bugguée qui ne détectait PAS les chemins Windows avec backslashes
+
+**Problème identifié** :
+- ❌ **Ligne 5541** : Condition défaillante `"uploads/" in media_url and not media_url.startswith('https://')` 
+- ❌ Cette condition ne capturait PAS `uploads\webhook_xxx.jpg` (backslashes Windows)
+- ❌ Résultat : Instagram recevait encore des chemins locaux → Erreur 9004
+
+**Corrections appliquées** :
+- [x] **Détection corrigée** : Nouvelle logique qui capture TOUS les chemins locaux
+- [x] **Support backslashes Windows** : `"uploads\\" in media_url` 
+- [x] **Support slashes Unix** : `"uploads/" in media_url`
+- [x] **Support chemins relatifs** : `media_url.startswith("uploads")`
+- [x] **Pattern webhook** : `"webhook_" in media_url` pour les fichiers spécifiques
+- [x] **Logs PATCH 16** : Traçabilité complète avec identifiants "PATCH 16"
+
+**Test de validation** :
+- ✅ URL `uploads\webhook_d0c8f705_1759416009.jpg` → Détectée comme locale ✅
+- ✅ Conversion automatique garantie vers URLs HTTPS publiques
+- ✅ Server.py compile correctement avec les corrections
+
+**Résultat attendu** : Instagram ne recevra plus JAMAIS de chemins locaux - toutes les URLs seront automatiquement converties en HTTPS publiques avant envoi à l'API.
+
+### 🔍 DIAGNOSTIC COMPLET (RAPPEL - 0 crédit)
+**Problème confirmé**: Instagram recoit encore des chemins locaux Windows malgré les Patches 7-15
 - **Erreur Instagram**: "Only photo or video can be accepted as media type"  
-- **URL problématique dans les logs**: `uploads\webhook_ae3451b0_1759385510.jpg`
-- **URL attendue**: `https://9fff391906ce.ngrok-free.app/uploads/webhook_ae3451b0_1759385510.jpg`
+- **URL problématique dans les logs**: `uploads\webhook_d0c8f705_1759416009.jpg`
+- **URL attendue**: `https://9fff391906ce.ngrok-free.app/uploads/webhook_d0c8f705_1759416009.jpg`
 
-**Cause identifiée**: 
-- La fonction `publish_post_main()` appelait `post_to_instagram()` et `post_to_facebook()` (inexistantes)
-- Cette erreur court-circuitait les corrections des Patches précédents
-- Les bonnes fonctions sont `publish_to_instagram()` et `publish_to_facebook()`
+**Cause définitive identifiée**: 
+- La fonction `publish_to_instagram()` dans `server.py` était utilisée par les webhooks
+- Sa détection de chemins locaux (PATCH 14) était incomplète pour les backslashes Windows
+- Les corrections des PATCH 1-15 étaient appliquées aux bonnes fonctions mais cette condition était bugguée
+
+### ✅ HISTORIQUE DES PATCHES PRÉCÉDENTS
 
 ### ✅ PATCH 10 - CORRECTION APPELS INSTAGRAM/FACEBOOK (1 crédit)
 - [x] **Problème identifié**: Appels vers fonctions inexistantes dans `publish_post_main()`
