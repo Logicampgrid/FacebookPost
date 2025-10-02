@@ -5531,16 +5531,31 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         if not media_url:
             return {"success": False, "error": "URL média obligatoire pour Instagram"}
         
-        # PATCH 13: Conversion URL avec logs détaillés pour débogage Instagram
-        log_app(f"🔍 PATCH 13: URL reçue par Instagram - '{media_url}'", "INFO")
-        if not media_url.startswith(('http://', 'https://')):
-            log_app(f"⚠️ PATCH 13: URL locale détectée, conversion ngrok - {media_url}", "WARNING")
-            # Extraire le nom de fichier et générer l'URL publique ngrok
-            filename = media_url.split("\\")[-1].split("/")[-1]  # Support Windows et Unix paths
+        # PATCH 14: PROTECTION FINALE - Conversion automatique de TOUS les chemins locaux
+        log_app(f"🔍 PATCH 14: URL reçue par Instagram - '{media_url}'", "INFO")
+        
+        # PATCH 14: Détecter tous les types de chemins locaux (Windows et Unix)
+        is_local_url = (
+            not media_url.startswith(('http://', 'https://')) or
+            "uploads\\" in media_url or  # Chemin Windows
+            "uploads/" in media_url and not media_url.startswith('https://')  # Chemin Unix relatif
+        )
+        
+        if is_local_url:
+            log_app(f"⚠️ PATCH 14: URL locale détectée, conversion obligatoire - {media_url}", "WARNING")
+            # Extraire le nom de fichier (support chemins Windows et Unix)
+            filename = media_url.split("\\")[-1].split("/")[-1]
+            original_url = media_url
             media_url = get_public_url(filename)
-            log_app(f"✅ PATCH 13: URL convertie avec ngrok - {media_url}", "SUCCESS")
+            log_app(f"✅ PATCH 14: URL convertie - '{original_url}' → '{media_url}'", "SUCCESS")
+            
+            # PATCH 14: Vérification finale obligatoire
+            if not media_url or not media_url.startswith('https://'):
+                error_msg = f"URL publique invalide générée: {media_url} (fichier: {filename})"
+                log_app(f"❌ PATCH 14: {error_msg}", "ERROR")
+                return {"success": False, "error": error_msg}
         else:
-            log_app(f"✅ PATCH 13: URL déjà publique - {media_url}", "SUCCESS")
+            log_app(f"✅ PATCH 14: URL déjà publique et valide - {media_url}", "SUCCESS")
         
         # Construction du caption
         caption = f"{title}\n{url}\n{description}"
