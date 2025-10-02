@@ -1734,6 +1734,179 @@ class WebhookResponse(BaseModel):
     publication_results: Optional[dict] = None
     error: Optional[str] = None
 
+# === OAUTH CALLBACK ENDPOINTS - PATCH 18 ===
+@app.get("/auth/callb")
+async def handle_facebook_callback(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    """Endpoint pour gérer le callback Facebook OAuth avec le nouveau path /auth/callb"""
+    try:
+        log_app(f"🔗 PATCH 18: Callback Facebook reçu - Code: {'✅' if code else '❌'}, State: {state}, Error: {error}", "INFO")
+        
+        if error:
+            log_app(f"❌ PATCH 18: Erreur OAuth Facebook: {error}", "ERROR")
+            # Rediriger vers le frontend avec l'erreur
+            return PlainTextResponse(
+                content=f"""
+                <html>
+                <head><title>Erreur d'authentification Facebook</title></head>
+                <body>
+                <h1>Erreur d'authentification Facebook</h1>
+                <p>Erreur: {error}</p>
+                <p><a href="/">Retour à l'accueil</a></p>
+                <script>
+                // Essayer de fermer la fenêtre si c'est un popup
+                if (window.opener) {{
+                    window.opener.postMessage({{success: false, error: '{error}'}}, '*');
+                    window.close();
+                }}
+                </script>
+                </body>
+                </html>
+                """,
+                media_type="text/html"
+            )
+        
+        if not code:
+            log_app("❌ PATCH 18: Code d'autorisation manquant", "ERROR")
+            return PlainTextResponse(
+                content="""
+                <html>
+                <head><title>Erreur d'authentification</title></head>
+                <body>
+                <h1>Erreur d'authentification</h1>
+                <p>Code d'autorisation manquant</p>
+                <p><a href="/">Retour à l'accueil</a></p>
+                </body>
+                </html>
+                """,
+                media_type="text/html"
+            )
+        
+        # Tenter l'échange du code
+        try:
+            redirect_uri = build_dynamic_redirect_uri("/auth/callb")
+            log_app(f"🎯 PATCH 18: Redirect URI utilisée pour l'échange: {redirect_uri}", "INFO")
+            
+            exchange_request = FacebookExchangeCodeRequest(
+                code=code,
+                state=state,
+                store=state or "default",
+                redirect_uri=redirect_uri
+            )
+            
+            # Appeler l'endpoint d'échange
+            result = await exchange_facebook_code_endpoint(exchange_request)
+            
+            if result.get("success"):
+                log_app("✅ PATCH 18: Authentification Facebook réussie via callback", "SUCCESS")
+                
+                # Page de succès avec redirection automatique
+                return PlainTextResponse(
+                    content=f"""
+                    <html>
+                    <head>
+                        <title>Authentification réussie</title>
+                        <meta http-equiv="refresh" content="3;url=/">
+                    </head>
+                    <body>
+                    <h1>✅ Authentification Facebook réussie</h1>
+                    <p>Store: {result.get('store', 'default')}</p>
+                    <p>Page ID: {result.get('fb_page_id', 'N/A')}</p>
+                    <p>Instagram ID: {result.get('ig_user_id', 'Non configuré')}</p>
+                    <p>Redirection automatique dans 3 secondes...</p>
+                    <p><a href="/">Retour à l'accueil</a></p>
+                    
+                    <script>
+                    // Poster les résultats au parent si c'est un popup
+                    if (window.opener) {{
+                        window.opener.postMessage({{
+                            success: true,
+                            store: '{result.get('store', 'default')}',
+                            access_token: '{result.get('access_token', '')[:10]}...' if '{result.get('access_token', '')}' else '',
+                            fb_page_id: '{result.get('fb_page_id', '')}',
+                            ig_user_id: '{result.get('ig_user_id', '')}'
+                        }}, '*');
+                        window.close();
+                    }} else {{
+                        // Redirection normale après 3 secondes
+                        setTimeout(() => {{
+                            window.location.href = '/';
+                        }}, 3000);
+                    }}
+                    </script>
+                    </body>
+                    </html>
+                    """,
+                    media_type="text/html"
+                )
+            else:
+                log_app(f"❌ PATCH 18: Échec authentification: {result.get('error')}", "ERROR")
+                return PlainTextResponse(
+                    content=f"""
+                    <html>
+                    <head><title>Échec d'authentification</title></head>
+                    <body>
+                    <h1>❌ Échec d'authentification Facebook</h1>
+                    <p>Erreur: {result.get('error', 'Erreur inconnue')}</p>
+                    <p><a href="/">Retour à l'accueil</a></p>
+                    
+                    <script>
+                    if (window.opener) {{
+                        window.opener.postMessage({{
+                            success: false,
+                            error: '{result.get('error', 'Erreur inconnue')}'
+                        }}, '*');
+                        window.close();
+                    }}
+                    </script>
+                    </body>
+                    </html>
+                    """,
+                    media_type="text/html"
+                )
+                
+        except Exception as exchange_error:
+            log_app(f"❌ PATCH 18: Erreur lors de l'échange du code: {str(exchange_error)}", "ERROR")
+            return PlainTextResponse(
+                content=f"""
+                <html>
+                <head><title>Erreur d'échange</title></head>
+                <body>
+                <h1>❌ Erreur lors de l'authentification</h1>
+                <p>Erreur technique: {str(exchange_error)}</p>
+                <p><a href="/">Retour à l'accueil</a></p>
+                </body>
+                </html>
+                """,
+                media_type="text/html"
+            )
+            
+    except Exception as e:
+        log_app(f"❌ PATCH 18: Erreur callback Facebook: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=f"Erreur callback: {str(e)}")
+
+@app.get("/auth/callback")
+async def handle_facebook_callback_legacy(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    """Endpoint de compatibilité pour l'ancien path /auth/callback - redirige vers /auth/callb - PATCH 18"""
+    try:
+        log_app(f"🔄 PATCH 18: Redirection callback legacy /auth/callback vers /auth/callb", "INFO")
+        # Rediriger vers le nouveau endpoint avec les mêmes paramètres
+        from fastapi.responses import RedirectResponse
+        
+        params = []
+        if code:
+            params.append(f"code={code}")
+        if state:
+            params.append(f"state={state}")
+        if error:
+            params.append(f"error={error}")
+        
+        redirect_url = f"/auth/callb{'?' + '&'.join(params) if params else ''}"
+        return RedirectResponse(url=redirect_url, status_code=302)
+        
+    except Exception as e:
+        log_app(f"❌ PATCH 18: Erreur redirection callback legacy: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=f"Erreur redirection: {str(e)}")
+
 # === AUTHENTICATION FUNCTIONS ===
 async def exchange_facebook_code(code: str, redirect_uri: str) -> dict:
     """Échange un code d'autorisation Facebook contre un access token - VERSION CORRIGÉE REDIRECT URI"""
