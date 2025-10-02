@@ -1821,7 +1821,7 @@ async def handle_facebook_callback(code: Optional[str] = None, state: Optional[s
                         window.opener.postMessage({{
                             success: true,
                             store: '{result.get('store', 'default')}',
-                            access_token: '{result.get('access_token', '')[:10]}...' if '{result.get('access_token', '')}' else '',
+                            access_token: '{str(result.get('access_token', ''))[:10]}...' if result.get('access_token') else '',
                             fb_page_id: '{result.get('fb_page_id', '')}',
                             ig_user_id: '{result.get('ig_user_id', '')}'
                         }}, '*');
