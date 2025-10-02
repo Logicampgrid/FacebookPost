@@ -5531,14 +5531,17 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         if not media_url:
             return {"success": False, "error": "URL média obligatoire pour Instagram"}
         
-        # PATCH 14: PROTECTION FINALE - Conversion automatique de TOUS les chemins locaux
-        log_app(f"🔍 PATCH 14: URL reçue par Instagram - '{media_url}'", "INFO")
+        # PATCH 16: CORRECTION FINALE DÉTECTION CHEMINS LOCAUX INSTAGRAM
+        log_app(f"🔍 PATCH 16: URL reçue par Instagram - '{media_url}'", "INFO")
         
-        # PATCH 14: Détecter tous les types de chemins locaux (Windows et Unix)
+        # PATCH 16: Détecter TOUS les chemins locaux (Windows et Unix) - CONDITION CORRIGÉE
         is_local_url = (
-            not media_url.startswith(('http://', 'https://')) or
-            "uploads\\" in media_url or  # Chemin Windows
-            "uploads/" in media_url and not media_url.startswith('https://')  # Chemin Unix relatif
+            not media_url.startswith(('http://', 'https://')) and (
+                "uploads\\" in media_url or  # Chemin Windows avec backslashes
+                "uploads/" in media_url or   # Chemin Unix avec slashes  
+                media_url.startswith("uploads") or  # Chemin relatif uploads
+                "webhook_" in media_url      # Pattern spécifique fichiers webhook
+            )
         )
         
         if is_local_url:
