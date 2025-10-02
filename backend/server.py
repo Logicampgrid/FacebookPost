@@ -1031,8 +1031,7 @@ def update_facebook_oauth_config(ngrok_url):
         # URLs de redirection multiples pour couvrir tous les cas
         redirect_uris = [
             f"{ngrok_url}/",
-            f"{ngrok_url}/auth/callback", 
-            f"{ngrok_url}/auth/callb"
+            f"{ngrok_url}/auth/callback"
         ]
         
         # Configuration des paramètres Facebook
