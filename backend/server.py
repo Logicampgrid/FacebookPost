@@ -2174,11 +2174,16 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         log_publish("Étape 1/2 - Création conteneur média Instagram", "INFO")
         create_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
         
+        # PATCH 11: Debug avant envoi Instagram
+        log_publish(f"🔍 PATCH 11: URL finale envoyée à Instagram: '{image_url}'", "INFO")
+        
         create_payload = {
             "image_url": image_url,
             "caption": f"{message}\n\n{product_url}",
             "access_token": access_token
         }
+        
+        log_publish(f"🔍 PATCH 11: Payload Instagram: {create_payload}", "INFO")
         
         create_response = requests.post(create_url, data=create_payload, timeout=30)
         create_response.raise_for_status()
