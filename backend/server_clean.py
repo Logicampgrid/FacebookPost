@@ -193,16 +193,49 @@ async def post_to_facebook(store: str, message: str, product_url: str) -> dict:
 # Cette fonction était la source du problème Instagram (chemins locaux Windows)
 # Redirige maintenant vers publish_to_instagram() corrigée dans server.py
 async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
-    """PATCH 17: Redirection vers fonction Instagram corrigée"""
-    # Import de la fonction corrigée depuis server.py
+    """Fonction Instagram ORIGINALE (avant PATCH 17) - ENVOIE CHEMINS LOCAUX WINDOWS"""
     try:
-        from server import publish_to_instagram, get_store_config
-        store_config = get_store_config(store)
-        log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
-        return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
+        log_publish(f"📢 [PUBLISH] Publication Instagram pour {store}", "INFO")
+        
+        # PROBLÈME: Cette fonction envoie directement les chemins locaux à Instagram
+        # Exemple: "uploads\webhook_d0c8f705_1759416009.jpg" au lieu de l'URL HTTPS
+        
+        if store not in STORES:
+            raise ValueError(f"Store inconnu: {store}")
+        
+        store_config = STORES[store]
+        access_token = store_config.get("access_token")
+        ig_user_id = store_config.get("ig_user_id")
+        
+        if not access_token or not ig_user_id:
+            return {"success": False, "error": "Configuration Instagram manquante"}
+        
+        # DÉFAUT CRITIQUE: Envoi direct du chemin local sans conversion URL
+        log_publish(f"📢 [PUBLISH] Envoi à Instagram: {image_url}", "INFO")
+        
+        # Construction des données pour Instagram
+        media_data = {
+            "image_url": image_url,  # PROBLÈME: Peut être "uploads\webhook_xxx.png"
+            "caption": f"{message}\n\n{product_url}",
+            "access_token": access_token
+        }
+        
+        # Envoi à Instagram API
+        url = f"https://graph.facebook.com/v18.0/{ig_user_id}/media"
+        response = requests.post(url, data=media_data, timeout=30)
+        
+        if response.status_code == 200:
+            log_publish("✅ [PUBLISH] Publication Instagram réussie", "SUCCESS")
+            return {"success": True, "response": response.json()}
+        else:
+            error_msg = f"Erreur Instagram API: {response.status_code} - {response.text}"
+            log_publish(f"❌ [PUBLISH] {error_msg}", "ERROR")
+            return {"success": False, "error": error_msg}
+            
     except Exception as e:
-        log_publish(f"❌ PATCH 17: Erreur redirection - {str(e)}", "ERROR")
-        return {"success": False, "error": f"PATCH 17 redirection échouée: {str(e)}"}
+        error_msg = f"Erreur publication Instagram: {str(e)}"
+        log_publish(f"❌ [PUBLISH] {error_msg}", "ERROR")
+        return {"success": False, "error": error_msg}
 
 async def publish_post(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
     """Fonction principale pour publier sur Facebook et/ou Instagram"""
