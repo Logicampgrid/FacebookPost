@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-poster-7.preview.emergentagent.com
+URL : https://better-prompt.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
