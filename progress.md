@@ -21,7 +21,18 @@
 - [x] **Test compilation**: ✅ Server imports successfully
 - [x] **URLs Instagram garanties**: Maintenant les appels utilisent la fonction corrigée avec conversion URLs ngrok
 
-**Action requise**: Test webhook réel pour valider la correction
+### ❌ INVESTIGATION TROUBLESHOOT AGENT (1 crédit) 
+**Problème persiste**: Instagram reçoit encore `uploads\\webhook_6cc27611_1759410087.png` 
+
+**Analyse troubleshoot agent**:
+- ✅ Cause identifiée: Deux fonctions Instagram existent - `post_to_instagram()` et `publish_to_instagram()` 
+- ✅ Les logs montrent `📢 [PUBLISH]` = fonction `post_to_instagram()` active 
+- ✅ Ma correction Patch 10 appelait `publish_to_instagram()` (logs `[APP]`) 
+- ❌ **Mais les logs montrent encore `[PUBLISH]`** = l'ancienne fonction est encore utilisée
+
+**Hypothèse**: Il existe un autre chemin de code qui appelle directement `post_to_instagram()`
+
+**Action requise**: Patch 11 - Corriger directement la fonction `post_to_instagram()` qui est réellement utilisée
 
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
