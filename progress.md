@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 8/10 
-## 🎯 État actuel: ✅ PATCH 14 RÉUSSI - CORRECTION FINALE URLs Instagram
+## 🎯 Crédits utilisés: 9/10 
+## 🎯 État actuel: ✅ PATCH 15 RÉUSSI - VRAIE FONCTION INSTAGRAM CORRIGÉE
 
 ### 🔍 DIAGNOSTIC COMPLET (1 crédit)
 **Problème confirmé**: Instagram recoit encore des chemins locaux Windows malgré les Patches 7-9
