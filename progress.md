@@ -1,68 +1,24 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 5/10 
-## 🎯 État actuel: ✅ PATCH 19 APPLIQUÉ - OAUTH FACEBOOK ENTIÈREMENT FONCTIONNEL !
+## 🎯 Crédits utilisés: 3/10 
+## 🎯 État actuel: ✅ PATCH 17 APPLIQUÉ - PROBLÈME INSTAGRAM DÉFINITIVEMENT RÉSOLU !
 
-### 🎉 PATCH 19 - OAUTH FACEBOOK COMPLÈTEMENT RÉSOLU ! (1 crédit)
-**🎯 PROBLÈME RÉSOLU** : Endpoint d'initiation OAuth manquant
+## 🔄 ROLLBACK EFFECTUÉ - RETOUR AU PATCH 17
+**📅 Date** : Session actuelle
+**🎯 Action** : Rollback depuis PATCH 19 vers PATCH 17 
+**📝 Raison** : Demande utilisateur de revenir 2 patches en arrière
 
-**Problème identifié** :
-- ❌ Les callbacks `/auth/callback` et `/auth/callb` existaient (PATCH 18)
-- ❌ Mais aucun endpoint pour INITIER l'authentification Facebook
-- ❌ Les utilisateurs n'avaient aucun moyen de démarrer le processus OAuth
+**Modifications annulées** :
+- ❌ **PATCH 19** : Endpoint d'initiation OAuth `/auth/start` supprimé
+- ❌ **PATCH 19** : Page de test `/auth/test` supprimée  
+- ❌ **PATCH 18** : Endpoints OAuth callback `/auth/callback` et `/auth/callb` supprimés
+- ❌ **PATCH 18** : Gestion complète des callbacks OAuth supprimée
+- ❌ **PATCH 18** : Compatibilité legacy et interface utilisateur OAuth supprimée
 
-### 🎉 PATCH 18 - CORRECTION URL CALLBACK FACEBOOK OAUTH COMPLÈTE (1 crédit)
-**🎯 PROBLÈME RÉSOLU** : URL de callback Facebook rejetée comme malveillante
-
-**Problème identifié** :
-- ❌ URLs de callback Facebook manquantes dans le serveur principal
-- ❌ Le système configurait automatiquement les URIs OAuth mais n'avait pas d'endpoints pour les traiter
-- ❌ Référence à une URL problématique `social-poster-7.preview.emergentagent.com` (rejetée par Facebook)
-
-**Corrections appliquées** :
-- [x] **Endpoints OAuth callback ajoutés** : `/auth/callback` et `/auth/callb` dans `server.py`
-- [x] **Gestion complète callbacks** : Échange de code d'autorisation, gestion d'erreurs, redirection automatique
-- [x] **Compatibilité legacy** : `/auth/callback` redirige automatiquement vers `/auth/callb`
-- [x] **Integration dynamique** : Utilise la détection ngrok automatique existante
-- [x] **Interface utilisateur** : Pages HTML pour succès/erreur avec JavaScript pour popups
-- [x] **Configuration mise à jour** : URL ngrok active `https://053b2d15594a.ngrok-free.app` configurée
-- [x] **Scripts de vérification** : `fix_oauth_callback.py` et `verify_oauth_fix.py`
-- [x] **Logs PATCH 18** : Traçabilité complète de toutes les opérations OAuth
-
-**Test de validation réussi** :
-- ✅ **Endpoints créés** : `/auth/callb` et `/auth/callback` détectés dans le serveur
-- ✅ **URIs générées** : `https://053b2d15594a.ngrok-free.app/auth/callback` et `/auth/callb`
-- ✅ **URL sûre confirmée** : `053b2d15594a.ngrok-free.app` (format ngrok standard accepté par Facebook)
-- ✅ **Configuration dynamique** : Utilise la détection automatique de la nouvelle URL ngrok
-- ✅ **Compilation validée** : Server.py se compile sans erreur avec les nouveaux endpoints
-- ✅ **Configuration .env mise à jour** : Frontend et backend utilisent la nouvelle URL ngrok
-
-**Corrections appliquées** :
-- [x] **Endpoint initiation ajouté** : `/auth/start` qui génère l'URL d'autorisation Facebook
-- [x] **Page de test créée** : `/auth/test` pour faciliter les tests OAuth
-- [x] **Redirection Facebook** : Vers `https://www.facebook.com/v18.0/dialog/oauth` avec paramètres complets
-- [x] **Permissions configurées** : `pages_manage_posts`, `pages_read_engagement`, `instagram_content_publish`, etc.
-- [x] **State management** : Le paramètre `store` est transmis via `state` pour identifier le magasin
-- [x] **Callback intégré** : Utilise les callbacks existants du PATCH 18
-
-**Tests de validation réussis** :
-- ✅ **Endpoint `/auth/start`** : Redirige vers Facebook avec tous les bons paramètres
-- ✅ **URL générée** : `https://www.facebook.com/v18.0/dialog/oauth?client_id=5664227323683118&redirect_uri=https%3A%2F%2F053b2d15594a.ngrok-free.app%2Fauth%2Fcallb&scope=...&state=gizmobbs&response_type=code`
-- ✅ **Page de test** : Interface simple pour tester les 3 stores (gizmobbs, logicantiq, outdoor)
-- ✅ **Callback handling** : `/auth/callb` gère correctement l'absence de code (erreur attendue)
-
-**Flux OAuth complet maintenant** :
-1. 🚀 **Initiation** : `GET /auth/start?store=gizmobbs`
-2. 🔄 **Autorisation** : Redirection vers Facebook
-3. ✅ **Callback** : Facebook redirige vers `/auth/callb?code=...`
-4. 🔑 **Échange** : Code → Access Token
-5. 💾 **Stockage** : Token sauvé pour le store
-
-**Résultat final** : 
-- **OAuth Facebook 100% fonctionnel de bout en bout**
-- **Infrastructure complète : initiation + callbacks + échange**
-- **Support multi-stores avec state management**
-
-## 🎯 État actuel: ✅ PATCH 18 APPLIQUÉ - CALLBACK OAUTH FACEBOOK RÉSOLU !
+**État restauré au PATCH 17** :
+- ✅ **Corrections Instagram conservées** : Toutes les améliorations du PATCH 17 restent actives
+- ✅ **Fonctions obsolètes supprimées** : Les anciennes fonctions `post_to_instagram()` restent éliminées
+- ✅ **Détection chemins locaux** : Toutes les corrections PATCH 16-17 conservées
+- ✅ **Infrastructure webhook** : Système de publication fonctionnel maintenu
 
 ### 🎉 PATCH 17 - RÉSOLUTION DÉFINITIVE DU PROBLÈME INSTAGRAM (1 crédit)
 **🎯 ROOT CAUSE DÉFINITIVEMENT ÉLIMINÉ** : Les anciennes fonctions `post_to_instagram()` obsolètes dans les fichiers de sauvegarde étaient utilisées et envoyaient des chemins locaux Windows
