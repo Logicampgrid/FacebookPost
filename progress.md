@@ -32,12 +32,17 @@
 
 **Hypothèse**: Il existe un autre chemin de code qui appelle directement `post_to_instagram()`
 
-### 🔧 PATCH 11 - DEBUG LOGS AJOUTÉS (1 crédit)
+### ✅ PATCH 11 - DEBUG LOGS AJOUTÉS (1 crédit)
 - [x] **Logs debug ajoutés** dans `post_to_instagram()` pour tracer l'URL reçue 
 - [x] **Debug avant envoi Instagram**: Log de l'URL finale + payload complet
 - [x] **Compilation validée**: Server compiles with Patch 11 debug logs ✅
 
-**Action requise**: Test webhook et analyse des logs debug pour identifier l'URL exacte reçue par Instagram
+### 🔍 PROBLÈME IDENTIFIÉ - SESSION 2 (1 crédit)
+**Cause trouvée**: La fonction `post_to_instagram()` (ancienne, logs `[PUBLISH]`) existe toujours et est utilisée quelque part
+- ✅ **Analyse logs**: `📢 [15:18:56] [PUBLISH] Publication Instagram pour logicantiq` = ancienne fonction active
+- ✅ **Code webhook**: `publish_post_main()` utilise `publish_to_instagram()` (corrigée) lignes 2558/2561
+- ✅ **Hypothèse confirmée**: Double fonction Instagram coexistent mais une seule est corrigée
+- ⚠️ **Action**: SUPPRIMER complètement l'ancienne fonction `post_to_instagram()` et remplacer tous ses appels
 
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
