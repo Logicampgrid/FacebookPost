@@ -2541,12 +2541,15 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
                 if not image_url:
                     raise Exception("Média requis pour Instagram")
                 
+                # PATCH 10: Correction appels Instagram - Utiliser la bonne fonction publish_to_instagram
+                store_config = get_store_config(store)
+                
                 if is_video_media:
                     # CORRECTION: Utiliser la fonction vidéo pour Instagram (Reels)
-                    ig_result = await post_video_to_instagram(store, message, product_url, image_url)
+                    ig_result = await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=True)
                 else:
-                    # Utiliser la fonction normale pour les images
-                    ig_result = await post_to_instagram(store, message, product_url, image_url)
+                    # PATCH 10: Utiliser la fonction corrigée publish_to_instagram avec conversion URLs
+                    ig_result = await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
                 
                 results["instagram_result"] = ig_result
                 media_type = "vidéo/Reel" if is_video_media else "image"
