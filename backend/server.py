@@ -35,8 +35,18 @@ from database import (
 from token_manager import token_manager
 from webhook_handler import webhook_handler
 
-# Import the new FTP upload utilities
-from utils.ftp_upload import upload_file_via_ftp, get_public_media_url
+# Import the new FTP upload utilities - PATCH 17: Import robuste
+try:
+    from utils.ftp_upload import upload_file_via_ftp, get_public_media_url
+    FTP_UTILS_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ [PATCH 17] Utilities FTP non disponibles: {e}")
+    # Fallback functions
+    def upload_file_via_ftp(local_path: str, remote_name: str, timeout=15):
+        return None
+    def get_public_media_url(filename: str):
+        return f"https://logicamp.org/wordpress/uploads/{filename}"
+    FTP_UTILS_AVAILABLE = False
 
 # Import de la nouvelle fonction poster_media_enhanced (compatible avec ancienne version)
 try:
