@@ -5503,13 +5503,16 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         if not media_url:
             return {"success": False, "error": "URL média obligatoire pour Instagram"}
         
-        # PATCH 9: Conversion URL simplifiée avec ngrok uniquement
+        # PATCH 13: Conversion URL avec logs détaillés pour débogage Instagram
+        log_app(f"🔍 PATCH 13: URL reçue par Instagram - '{media_url}'", "INFO")
         if not media_url.startswith(('http://', 'https://')):
-            log_app(f"⚠️ PATCH 9: URL locale détectée, conversion ngrok - {media_url}", "WARNING")
+            log_app(f"⚠️ PATCH 13: URL locale détectée, conversion ngrok - {media_url}", "WARNING")
             # Extraire le nom de fichier et générer l'URL publique ngrok
             filename = media_url.split("\\")[-1].split("/")[-1]  # Support Windows et Unix paths
             media_url = get_public_url(filename)
-            log_app(f"✅ PATCH 9: URL convertie avec ngrok - {media_url}", "SUCCESS")
+            log_app(f"✅ PATCH 13: URL convertie avec ngrok - {media_url}", "SUCCESS")
+        else:
+            log_app(f"✅ PATCH 13: URL déjà publique - {media_url}", "SUCCESS")
         
         # Construction du caption
         caption = f"{title}\n{url}\n{description}"
