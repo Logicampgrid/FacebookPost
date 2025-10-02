@@ -51,6 +51,12 @@
 
 **Résultat attendu**: Instagram ne devrait plus recevoir d'erreur "Only photo or video can be accepted as media type"
 
+### ✅ PATCH 12B - CORRECTION FICHIERS DE TEST (1 crédit)
+- [x] **Import corrigé** dans `/app/backend/test_instagram_simple.py`
+- [x] **Fonction mise à jour**: `post_to_instagram()` → `publish_to_instagram()` avec `store_config`
+- [x] **Signature corrigée**: Nouveau format avec paramètres `store_config, title, url, description, media_url, is_video`
+- [x] **Autres fichiers détectés**: 2 autres fichiers de test à corriger si nécessaire
+
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
 - [x] Compréhension de la structure FastAPI et des stores (gizmobbs, logicantiq, outdoor)
