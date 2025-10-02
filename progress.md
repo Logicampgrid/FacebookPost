@@ -1,5 +1,23 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 2/10 
+## 🎯 Crédits utilisés: 3/10 
+## 🎯 État actuel: 🔧 PATCH 18 EN COURS - CORRECTION URL CALLBACK FACEBOOK
+
+### 🚨 NOUVEAU PROBLÈME - PATCH 18 EN COURS (1 crédit)
+**🎯 PROBLÈME IDENTIFIÉ** : URL de callback Facebook rejetée comme malveillante
+
+**Problème identifié** :
+- ❌ URL actuelle : `https://social-poster-7.preview.emergentagent.com/auth/callback`
+- ❌ Facebook rejette cette URL comme malveillante
+- ✅ Solution : Remplacer par URL ngrok dynamique (`https://[tunnel-id].ngrok-free.app/auth/callback`)
+
+**Actions en cours** :
+- [x] Analyse du projet et identification du problème ✅
+- [x] Création du contexte dans progress.md ✅  
+- [ ] Localisation de l'URL problématique dans le code
+- [ ] Remplacement par la détection ngrok automatique existante
+- [ ] Test de la nouvelle configuration OAuth
+- [ ] Validation du fonctionnement complet
+
 ## 🎯 État actuel: ✅ PATCH 17 APPLIQUÉ - PROBLÈME INSTAGRAM 100% RÉSOLU !
 
 ### 🎉 PATCH 17 - RÉSOLUTION DÉFINITIVE DU PROBLÈME INSTAGRAM (1 crédit)
