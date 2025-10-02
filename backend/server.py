@@ -2131,6 +2131,7 @@ async def post_to_facebook(store: str, message: str, product_url: str, image_url
 async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
     """Publie une image avec légende sur Instagram (processus en 2 étapes)"""
     try:
+        log_publish(f"🔍 PATCH 11: post_to_instagram appelée avec image_url='{image_url}'", "INFO")
         log_publish(f"Publication Instagram pour {store}", "INFO")
         
         if store not in STORES:
