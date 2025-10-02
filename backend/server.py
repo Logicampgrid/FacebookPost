@@ -1734,6 +1734,57 @@ class WebhookResponse(BaseModel):
     publication_results: Optional[dict] = None
     error: Optional[str] = None
 
+# === OAUTH ENDPOINTS - PATCH 19: AJOUT ENDPOINT INITIATION ===
+
+@app.get("/auth/start")
+async def start_facebook_auth(store: Optional[str] = "default"):
+    """Endpoint pour initier l'authentification Facebook OAuth - PATCH 19 FIX"""
+    try:
+        log_app(f"🚀 PATCH 19: Initiation OAuth Facebook pour store: {store}", "INFO")
+        
+        if not FACEBOOK_APP_ID:
+            log_app("❌ FACEBOOK_APP_ID manquant", "ERROR")
+            raise HTTPException(status_code=500, detail="Configuration Facebook manquante")
+        
+        # Construire l'URI de redirection dynamique avec l'URL ngrok active
+        redirect_uri = build_dynamic_redirect_uri("/auth/callb")
+        log_app(f"🎯 Redirect URI construite: {redirect_uri}", "INFO")
+        
+        # Permissions Facebook requises
+        permissions = [
+            "pages_manage_posts",
+            "pages_read_engagement", 
+            "pages_show_list",
+            "instagram_basic",
+            "instagram_content_publish",
+            "business_management"
+        ]
+        
+        # Construire l'URL d'autorisation Facebook
+        auth_url = f"https://www.facebook.com/v18.0/dialog/oauth"
+        auth_params = {
+            "client_id": FACEBOOK_APP_ID,
+            "redirect_uri": redirect_uri,
+            "scope": ",".join(permissions),
+            "state": store,
+            "response_type": "code"
+        }
+        
+        # Construire l'URL complète
+        from urllib.parse import urlencode
+        full_auth_url = f"{auth_url}?{urlencode(auth_params)}"
+        
+        log_app(f"🌐 PATCH 19: Redirection vers Facebook OAuth: {full_auth_url[:100]}...", "SUCCESS")
+        log_app(f"📋 Permissions demandées: {', '.join(permissions)}", "INFO")
+        log_app(f"🏪 Store: {store}", "INFO")
+        
+        # Rediriger vers Facebook
+        return RedirectResponse(url=full_auth_url, status_code=302)
+        
+    except Exception as e:
+        log_app(f"❌ PATCH 19: Erreur initiation OAuth: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=f"Erreur initiation OAuth: {str(e)}")
+
 # === OAUTH CALLBACK ENDPOINTS - PATCH 18 ===
 @app.get("/auth/callb")
 async def handle_facebook_callback(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
