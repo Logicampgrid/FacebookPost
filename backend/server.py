@@ -5545,20 +5545,20 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         )
         
         if is_local_url:
-            log_app(f"⚠️ PATCH 14: URL locale détectée, conversion obligatoire - {media_url}", "WARNING")
+            log_app(f"⚠️ PATCH 16: URL locale détectée, conversion obligatoire - {media_url}", "WARNING")
             # Extraire le nom de fichier (support chemins Windows et Unix)
             filename = media_url.split("\\")[-1].split("/")[-1]
             original_url = media_url
             media_url = get_public_url(filename)
-            log_app(f"✅ PATCH 14: URL convertie - '{original_url}' → '{media_url}'", "SUCCESS")
+            log_app(f"✅ PATCH 16: URL convertie - '{original_url}' → '{media_url}'", "SUCCESS")
             
-            # PATCH 14: Vérification finale obligatoire
+            # PATCH 16: Vérification finale obligatoire
             if not media_url or not media_url.startswith('https://'):
                 error_msg = f"URL publique invalide générée: {media_url} (fichier: {filename})"
-                log_app(f"❌ PATCH 14: {error_msg}", "ERROR")
+                log_app(f"❌ PATCH 16: {error_msg}", "ERROR")
                 return {"success": False, "error": error_msg}
         else:
-            log_app(f"✅ PATCH 14: URL déjà publique et valide - {media_url}", "SUCCESS")
+            log_app(f"✅ PATCH 16: URL déjà publique et valide - {media_url}", "SUCCESS")
         
         # Construction du caption
         caption = f"{title}\n{url}\n{description}"
