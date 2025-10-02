@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 1/10
-## 🎯 État actuel: Diagnostic - Problème identifié
+## 🎯 Crédits utilisés: 2/10
+## 🎯 État actuel: Correction appliquée - Test requis
 
 ### 🔍 DIAGNOSTIC COMPLET (1 crédit)
 **Problème confirmé**: Instagram recoit encore des chemins locaux Windows malgré les Patches 7-9
@@ -9,11 +9,19 @@
 - **URL attendue**: `https://9fff391906ce.ngrok-free.app/uploads/webhook_ae3451b0_1759385510.jpg`
 
 **Cause identifiée**: 
-- Le Patch 9B a corrigé la fonction `publish_to_instagram()` 
-- Mais il existe probablement une autre fonction qui court-circuite cette logique
-- Besoin de vérifier toutes les fonctions Instagram dans poster_media_enhanced.py
+- La fonction `publish_post_main()` appelait `post_to_instagram()` et `post_to_facebook()` (inexistantes)
+- Cette erreur court-circuitait les corrections des Patches précédents
+- Les bonnes fonctions sont `publish_to_instagram()` et `publish_to_facebook()`
 
-**Action requise**: Patch 10 - Correction finale Instagram URLs
+### ✅ PATCH 10 - CORRECTION APPELS INSTAGRAM/FACEBOOK (1 crédit)
+- [x] **Problème identifié**: Appels vers fonctions inexistantes dans `publish_post_main()`
+- [x] **Ligne 2549 corrigée**: `post_to_instagram()` → `publish_to_instagram()` avec bons paramètres
+- [x] **Ligne 2525/2528 corrigées**: `post_*_to_facebook()` → `publish_to_facebook()` avec bons paramètres  
+- [x] **Configuration stores ajoutée**: `store_config = get_store_config(store)` avant appels
+- [x] **Test compilation**: ✅ Server imports successfully
+- [x] **URLs Instagram garanties**: Maintenant les appels utilisent la fonction corrigée avec conversion URLs ngrok
+
+**Action requise**: Test webhook réel pour valider la correction
 
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
