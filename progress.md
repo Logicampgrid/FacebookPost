@@ -68,6 +68,26 @@
 
 **Résultat garanty** : Instagram ne peut plus jamais recevoir de chemins locaux Windows - toutes les URLs sont automatiquement converties en HTTPS publiques.
 
+### ✅ PATCH 14 - CORRECTION FINALE DÉTECTION CHEMINS LOCAUX (1 crédit)
+**🎯 PROBLÈME IDENTIFIÉ ET RÉSOLU** : La détection des chemins locaux Windows était incomplète dans `process_webhook_publication`
+
+**Corrections appliquées** :
+- [x] **Ligne 4327 corrigée** : Détection `uploads/` ne fonctionnait pas pour `uploads\` Windows
+- [x] **Logique améliorée** : Détecte maintenant `uploads\`, `uploads/`, `./uploads/`, et pattern `webhook_`
+- [x] **Double protection** : Protection supplémentaire dans `publish_to_instagram()` pour intercepter TOUS les chemins locaux
+- [x] **Validation HTTPS obligatoire** : Vérification que toutes les URLs générées commencent par `https://`
+- [x] **Logs détaillés PATCH 14** : Traçabilité complète des conversions d'URLs
+
+**Problème résolu** :
+- ❌ **Avant** : `uploads\webhook_4784afc9_1759414736.jpg` passait la détection
+- ✅ **Après** : Tous les chemins locaux (Windows et Unix) sont automatiquement convertis
+- ✅ **Protection finale** : `publish_to_instagram()` intercepte même les chemins qui échapperaient aux filtres précédents
+
+**Test de validation** : 
+- ✅ Chemins Windows : `uploads\webhook_xxx.jpg` → `https://ngrok/uploads/webhook_xxx.jpg`
+- ✅ Chemins Unix : `uploads/webhook_xxx.jpg` → `https://ngrok/uploads/webhook_xxx.jpg`  
+- ✅ Validation HTTPS : Erreur si URL générée invalide
+
 ### ✅ PATCH 12B - CORRECTION FICHIERS DE TEST (1 crédit)
 - [x] **Import corrigé** dans `/app/backend/test_instagram_simple.py`
 - [x] **Fonction mise à jour**: `post_to_instagram()` → `publish_to_instagram()` avec `store_config`
