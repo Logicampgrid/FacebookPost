@@ -1,26 +1,24 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 3/10 
-## 🎯 État actuel: ✅ PATCH 17 APPLIQUÉ - PROBLÈME INSTAGRAM DÉFINITIVEMENT RÉSOLU !
+## 🎯 Crédits utilisés: 2/10 
+## 🎯 État actuel: ✅ PATCH 16 APPLIQUÉ - DÉTECTION CHEMINS LOCAUX INSTAGRAM CORRIGÉE !
 
-## 🔄 ROLLBACK EFFECTUÉ - RETOUR AU PATCH 17
+## 🔄 ROLLBACK EFFECTUÉ - RETOUR AU PATCH 16
 **📅 Date** : Session actuelle
-**🎯 Action** : Rollback depuis PATCH 19 vers PATCH 17 
-**📝 Raison** : Demande utilisateur de revenir 2 patches en arrière
+**🎯 Action** : Rollback depuis PATCH 17 vers PATCH 16 
+**📝 Raison** : Demande utilisateur de revenir 1 patch en arrière
 
-**Modifications annulées** :
-- ❌ **PATCH 19** : Endpoint d'initiation OAuth `/auth/start` supprimé
-- ❌ **PATCH 19** : Page de test `/auth/test` supprimée  
-- ❌ **PATCH 18** : Endpoints OAuth callback `/auth/callback` et `/auth/callb` supprimés
-- ❌ **PATCH 18** : Gestion complète des callbacks OAuth supprimée
-- ❌ **PATCH 18** : Compatibilité legacy et interface utilisateur OAuth supprimée
+**Modifications annulées (PATCH 17)** :
+- ❌ **Fonctions obsolètes supprimées** : Les anciennes fonctions `post_to_instagram()` RESTAURÉES
+- ❌ **Redirections automatiques** : Supprimées - les anciennes fonctions fonctionnent à nouveau directement
+- ❌ **Élimination définitive** : Le problème des chemins locaux est RÉINTRODUIT
 
-**État restauré au PATCH 17** :
-- ✅ **Corrections Instagram conservées** : Toutes les améliorations du PATCH 17 restent actives
-- ✅ **Fonctions obsolètes supprimées** : Les anciennes fonctions `post_to_instagram()` restent éliminées
-- ✅ **Détection chemins locaux** : Toutes les corrections PATCH 16-17 conservées
+**État restauré au PATCH 16** :
+- ✅ **Détection améliorée conservée** : Les corrections PATCH 16 de détection des chemins locaux restent actives
+- ⚠️ **Anciennes fonctions restaurées** : `post_to_instagram()` dans `server_windows.py`, `server_backup_original.py`, `server_clean.py` renvoient les logs `[PUBLISH]`
+- ⚠️ **Problème réintroduit** : Ces fonctions envoient à nouveau `uploads\webhook_xxx.png` directement à Instagram
 - ✅ **Infrastructure webhook** : Système de publication fonctionnel maintenu
 
-## 🎯 État actuel: ✅ PATCH 17 - RÉSOLUTION DÉFINITIVE DU PROBLÈME INSTAGRAM !
+## 🎯 État actuel: ✅ PATCH 16 - CORRECTION FINALE DÉTECTION CHEMINS LOCAUX INSTAGRAM !
 **🎯 ROOT CAUSE DÉFINITIVEMENT ÉLIMINÉ** : Les anciennes fonctions `post_to_instagram()` obsolètes dans les fichiers de sauvegarde étaient utilisées et envoyaient des chemins locaux Windows
 
 **Problème identifié** :
