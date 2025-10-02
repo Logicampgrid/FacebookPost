@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://ai-prompt-tool-1.preview.emergentagent.com
+🔗 https://emergent-prompt-1.preview.emergentagent.com
