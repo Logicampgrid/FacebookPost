@@ -35,7 +35,9 @@ async def test_instagram_with_local_path():
     
     try:
         print("🚀 Lancement du test...")
-        result = await post_to_instagram(store, message, product_url, image_url_local)
+        # PATCH 12: Utiliser la nouvelle fonction publish_to_instagram avec store_config
+        store_config = get_store_config(store)
+        result = await publish_to_instagram(store_config, message, product_url, "", image_url_local, is_video=False)
         
         print("✅ Test réussi!")
         print("📊 Résultat:")
