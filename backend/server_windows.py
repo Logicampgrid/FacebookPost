@@ -1061,44 +1061,20 @@ async def post_to_facebook(store: str, message: str, product_url: str) -> dict:
         log_publish(error_msg, "ERROR")
         raise Exception(error_msg)
 
+# PATCH 17: FONCTION OBSOLÈTE SUPPRIMÉE - Redirection vers fonction corrigée
+# Cette fonction était la source du problème Instagram (chemins locaux Windows)
+# Redirige maintenant vers publish_to_instagram() corrigée dans server.py
 async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
-    """Publie une image avec légende sur Instagram (processus en 2 étapes)"""
+    """PATCH 17: Redirection vers fonction Instagram corrigée"""
+    # Import de la fonction corrigée depuis server.py
     try:
-        log_publish(f"Publication Instagram pour {store}", "INFO")
-        
-        if store not in STORES:
-            raise ValueError(f"Store inconnu: {store}")
-        
-        creds = get_store_config(store)
-        
-        if not creds["ig_user_id"] or not creds["access_token"]:
-            raise ValueError(f"Configuration Instagram manquante pour {store}")
-        
-        if not image_url:
-            raise ValueError("Image URL requise pour Instagram")
-        
-        # Mode test : simulation
-        if PUBLICATION_TEST_MODE:
-            log_publish(f"MODE TEST - Publication Instagram simulée pour {store}", "TEST")
-            return {
-                "id": f"test_ig_post_{uuid.uuid4().hex[:8]}",
-                "caption": f"{message}\n\n{product_url}",
-                "image_url": image_url,
-                "test_mode": True
-            }
-        
-        ig_user_id = creds["ig_user_id"]
-        access_token = creds["access_token"]
-        
-        # Étape 1 : Créer le conteneur média
-        log_publish("Étape 1/2 - Création conteneur média Instagram", "INFO")
-        create_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media"
-        
-        create_payload = {
-            "image_url": image_url,
-            "caption": f"{message}\n\n{product_url}",
-            "access_token": access_token
-        }
+        from server import publish_to_instagram, get_store_config
+        store_config = get_store_config(store)
+        log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
+        return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
+    except Exception as e:
+        log_publish(f"❌ PATCH 17: Erreur redirection - {str(e)}", "ERROR")
+        return {"success": False, "error": f"PATCH 17 redirection échouée: {str(e)}"}
         
         create_response = requests.post(create_url, data=create_payload, timeout=30)
         create_response.raise_for_status()
