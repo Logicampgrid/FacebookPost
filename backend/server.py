@@ -2144,24 +2144,17 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         if not image_url:
             raise ValueError("Image URL requise pour Instagram")
         
-        # CORRECTION MAJEURE: Conversion intelligente des chemins locaux vers URLs publiques
-        try:
-            log_publish(f"🔍 CORRECTION: Traitement image pour Instagram: '{image_url}'", "INFO")
-            
-            # Utiliser la nouvelle fonction de conversion intelligente
-            converted_image_url = await convert_local_path_to_public_url(image_url)
-            
-            # Vérification finale de l'URL pour Instagram
-            if not converted_image_url.startswith(("http://", "https://")):
-                raise Exception(f"URL finale invalide pour Instagram: {converted_image_url}")
-            
-            # Mise à jour du payload avec l'URL publique
-            image_url = converted_image_url
-            log_publish(f"📤 CORRECTION: URL finale confirmée pour Instagram API: {image_url}", "SUCCESS")
-            
-        except Exception as conversion_error:
-            log_publish(f"❌ CORRECTION: Erreur conversion URL Instagram: {str(conversion_error)}", "ERROR")
-            raise Exception(f"Impossible de préparer l'image pour Instagram: {str(conversion_error)}")
+        # PATCH 9: Conversion URL simplifiée avec ngrok uniquement
+        log_publish(f"🔍 PATCH 9: Traitement image pour Instagram: '{image_url}'", "INFO")
+        
+        # Si ce n'est pas déjà une URL HTTP(S), convertir avec ngrok
+        if not image_url.startswith(("http://", "https://")):
+            # Extraire le nom de fichier et générer l'URL publique ngrok
+            filename = image_url.split("\\")[-1].split("/")[-1]  # Support Windows et Unix paths
+            image_url = get_public_url(filename)
+            log_publish(f"📤 PATCH 9: URL convertie avec ngrok - {image_url}", "SUCCESS")
+        else:
+            log_publish(f"📤 PATCH 9: URL déjà publique - {image_url}", "INFO")
         
         # Mode test : simulation
         if PUBLICATION_TEST_MODE:
