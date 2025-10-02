@@ -1072,62 +1072,20 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         store_config = get_store_config(store)
         log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
         return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
+# PATCH 17: FONCTION OBSOLÈTE SUPPRIMÉE - Redirection vers fonction corrigée
+# Cette fonction était la source du problème Instagram (chemins locaux Windows)
+# Redirige maintenant vers publish_to_instagram() corrigée dans server.py
+async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
+    """PATCH 17: Redirection vers fonction Instagram corrigée"""
+    # Import de la fonction corrigée depuis server.py
+    try:
+        from server import publish_to_instagram, get_store_config
+        store_config = get_store_config(store)
+        log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
+        return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
     except Exception as e:
         log_publish(f"❌ PATCH 17: Erreur redirection - {str(e)}", "ERROR")
         return {"success": False, "error": f"PATCH 17 redirection échouée: {str(e)}"}
-        
-        create_response = requests.post(create_url, data=create_payload, timeout=30)
-        create_response.raise_for_status()
-        
-        media_data = create_response.json()
-        
-        if "id" not in media_data:
-            raise Exception(f"Erreur création conteneur Instagram: {media_data}")
-        
-        creation_id = media_data["id"]
-        log_publish(f"Conteneur créé: {creation_id}", "SUCCESS")
-        
-        # Étape 2 : Publier le média
-        log_publish("Étape 2/2 - Publication du média Instagram", "INFO")
-        publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
-        
-        publish_payload = {
-            "creation_id": creation_id,
-            "access_token": access_token
-        }
-        
-        publish_response = requests.post(publish_url, data=publish_payload, timeout=30)
-        publish_response.raise_for_status()
-        
-        publish_data = publish_response.json()
-        
-        if "id" not in publish_data:
-            raise Exception(f"Erreur publication Instagram: {publish_data}")
-        
-        log_publish(f"Publication Instagram réussie: {publish_data['id']}", "SUCCESS")
-        
-        # Retourner les données combinées
-        return {
-            "id": publish_data["id"],
-            "creation_id": creation_id,
-            "caption": f"{message}\n\n{product_url}",
-            "image_url": image_url
-        }
-        
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Erreur HTTP Instagram: {str(e)}"
-        if hasattr(e, 'response') and e.response is not None:
-            try:
-                error_data = e.response.json()
-                error_msg += f" - {error_data}"
-            except:
-                error_msg += f" - Status: {e.response.status_code}"
-        log_publish(error_msg, "ERROR")
-        raise Exception(error_msg)
-    except Exception as e:
-        error_msg = f"Erreur Instagram: {str(e)}"
-        log_publish(error_msg, "ERROR")
-        raise Exception(error_msg)
 
 async def publish_post(store: str, message: str, product_url: str, image_url: Optional[str] = None, platforms: List[str] = ["facebook", "instagram"]) -> dict:
     """Fonction principale pour publier sur Facebook et/ou Instagram"""
