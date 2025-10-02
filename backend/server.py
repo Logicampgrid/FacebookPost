@@ -4281,19 +4281,26 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 )
                 
         elif media_type == "image" and media_file_info:
-            log_app(f"🖼️ PATCH 9: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
+            log_app(f"🖼️ PATCH 14: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
             
-            # PATCH 9: LOGIQUE SIMPLIFIÉE - NGROK UNIQUEMENT
+            # PATCH 14: CORRECTION FINALE - Garantir URL publique HTTPS pour Instagram
             filename = media_file_info['filename']
             
             # Vérifier d'abord si l'URL publique est déjà disponible dans media_file_info
-            if media_file_info.get('public_url'):
+            if media_file_info.get('public_url') and media_file_info['public_url'].startswith('https://'):
                 final_image_url = media_file_info['public_url']
-                log_app(f"✅ PATCH 9: URL publique déjà générée - {final_image_url}", "SUCCESS")
+                log_app(f"✅ PATCH 14: URL publique déjà générée - {final_image_url}", "SUCCESS")
             else:
-                # Générer l'URL publique ngrok
+                # PATCH 14: Générer OBLIGATOIREMENT l'URL publique ngrok
                 final_image_url = get_public_url(filename)
-                log_app(f"🌐 PATCH 9: URL publique ngrok générée - {final_image_url}", "SUCCESS")
+                log_app(f"🌐 PATCH 14: URL publique ngrok générée - {final_image_url}", "SUCCESS")
+                
+                # PATCH 14: SÉCURITÉ - Vérifier que l'URL est valide
+                if not final_image_url or not final_image_url.startswith('https://'):
+                    log_app(f"❌ PATCH 14: URL publique invalide - {final_image_url}", "ERROR")
+                    raise Exception(f"Impossible de générer une URL publique valide pour {filename}")
+            
+            log_app(f"🔍 PATCH 14: URL finale pour publication - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
