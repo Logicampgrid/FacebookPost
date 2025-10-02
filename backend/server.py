@@ -4317,20 +4317,35 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # - Commentaires automatiques (AMELIORATIONS_REALISEES.md)
             # - Publication intelligente multi-plateformes (SMART_CROSSPOST_FEATURES.md)
             
-            # PATCH 9: Simplifier la gestion image_url avec ngrok uniquement
+            # PATCH 14: CORRECTION FINALE - Détecter TOUS les chemins locaux pour Instagram
             final_image_url = image_url
             if image_url:
                 # Normaliser les backslashes Windows en slashes Unix
                 normalized_path = image_url.replace("\\", "/")
                 
-                # Si c'est un chemin uploads/ (relatif ou dans un chemin complet), générer URL ngrok
-                if "uploads/" in normalized_path and not normalized_path.startswith("http"):
-                    filename = normalized_path.split("/")[-1]  # Prendre juste le nom de fichier
+                # PATCH 14: Détecter TOUS les chemins locaux (avec ou sans uploads/ dans le chemin)
+                is_local_path = (
+                    not normalized_path.startswith(("http://", "https://")) and (
+                        "uploads/" in normalized_path or 
+                        normalized_path.startswith("uploads/") or
+                        normalized_path.startswith("./uploads/") or
+                        "webhook_" in normalized_path  # Pattern spécifique aux fichiers webhook
+                    )
+                )
+                
+                if is_local_path:
+                    # Extraire le nom de fichier (support chemins complets et relatifs)
+                    filename = normalized_path.split("/")[-1]
                     final_image_url = get_public_url(filename)
-                    log_app(f"🌐 PATCH 9: Chemin local converti en URL publique - {final_image_url}", "SUCCESS")
+                    log_app(f"🌐 PATCH 14: Chemin local converti en URL publique - '{image_url}' → '{final_image_url}'", "SUCCESS")
+                    
+                    # PATCH 14: Vérification de sécurité
+                    if not final_image_url or not final_image_url.startswith('https://'):
+                        log_app(f"❌ PATCH 14: URL publique invalide générée - {final_image_url}", "ERROR")
+                        raise Exception(f"Impossible de générer une URL publique valide pour {filename}")
                 else:
                     final_image_url = normalized_path
-                    log_app(f"🔗 PATCH 9: URL déjà publique ou chemin non-local - {final_image_url}", "INFO")
+                    log_app(f"🔗 PATCH 14: URL déjà publique - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
