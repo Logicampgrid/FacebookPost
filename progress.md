@@ -29,6 +29,21 @@
 - [x] Publication Facebook et Instagram avec gestion d'erreurs
 - [x] Test complet et validation technique
 
+## 🎯 Crédits Utilisés: 10/10 (Nouvelle session)
+
+## ✅ Patch 9B - CORRECTION INSTAGRAM URLS COMPLÈTE (1 crédit)
+- [x] **Problème identifié** : Instagram recevait encore `uploads\webhook_xxx.png` malgré le Patch 9
+- [x] **Fonctions mises à jour** :
+  - `publish_to_instagram()` : Conversion URL simplifiée avec get_public_url()
+  - `post_to_instagram()` : Remplacement convert_local_path_to_public_url() → get_public_url()
+  - `post_video_to_instagram()` : Même correction pour vidéos Instagram
+- [x] **Test compilation** : Server imports successfully ✅
+- [x] **URLs Instagram garanties** : Tous les chemins locaux → `https://9fff391906ce.ngrok-free.app/uploads/filename`
+
+### Correction appliquée :
+- **Avant** : `uploads\webhook_fba2432c_1759375951.png` → Erreur Instagram 9004
+- **Après** : `https://9fff391906ce.ngrok-free.app/uploads/webhook_fba2432c_1759375951.png` → URLs compatibles Instagram
+
 ## 🎯 Crédits Utilisés: 9/10 (Nouvelle session)
 
 ## ✅ Patch 9 - NGROK UNIQUEMENT, FTP DÉSACTIVÉ (2 crédits)
