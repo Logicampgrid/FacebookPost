@@ -81,9 +81,15 @@ NGROK_URL = "https://9fff391906ce.ngrok-free.app"  # URL ngrok fixe pour simplic
 def get_public_url(filename: str) -> str:
     """
     Construit l'URL publique ngrok pour un fichier uploadé.
-    Patch 9: FTP désactivé, ngrok uniquement pour simplicité
+    PATCH 13: Utilise l'URL dynamique détectée au lieu de l'URL hardcodée
     """
-    return f"{NGROK_URL}/uploads/{os.path.basename(filename)}"
+    # PATCH 13: Utiliser l'URL dynamique active au lieu de NGROK_URL hardcodée
+    active_url = get_active_ngrok_url()
+    if active_url:
+        return f"{active_url}/uploads/{os.path.basename(filename)}"
+    else:
+        # Fallback vers l'URL hardcodée si détection échoue
+        return f"{NGROK_URL}/uploads/{os.path.basename(filename)}"
 
 # === FACEBOOK/META CONFIGURATION MISE À JOUR ===
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
