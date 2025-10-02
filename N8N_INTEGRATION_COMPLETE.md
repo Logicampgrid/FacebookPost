@@ -8,7 +8,7 @@ L'endpoint `/api/publishProduct` est **opérationnel** et prêt pour l'intégrat
 
 ### 1. **Publication de produits (PRINCIPAL)**
 ```
-POST https://better-prompt.preview.emergentagent.com/api/publishProduct
+POST https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct
 ```
 
 **Payload JSON requis :**
@@ -45,26 +45,26 @@ POST https://better-prompt.preview.emergentagent.com/api/publishProduct
 
 ### 2. **Test de publication (POUR TESTS)**
 ```
-POST https://better-prompt.preview.emergentagent.com/api/publishProduct/test
+POST https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct/test
 ```
 Même payload que l'endpoint principal, mais simule la publication sans poster sur Facebook.
 
 ### 3. **Configuration disponible**
 ```
-GET https://better-prompt.preview.emergentagent.com/api/publishProduct/config
+GET https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct/config
 ```
 Retourne la liste des utilisateurs et pages Facebook disponibles.
 
 ### 4. **Gestion des utilisateurs de test**
 ```
-POST https://better-prompt.preview.emergentagent.com/api/publishProduct/setup-test-user
-DELETE https://better-prompt.preview.emergentagent.com/api/publishProduct/cleanup-test-user
+POST https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct/setup-test-user
+DELETE https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct/cleanup-test-user
 ```
 
 ## 🔧 **Configuration N8N**
 
 ### Étape 1 : Créer un webhook HTTP Request
-1. **URL** : `https://better-prompt.preview.emergentagent.com/api/publishProduct`
+1. **URL** : `https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct`
 2. **Méthode** : `POST`
 3. **Headers** :
    ```
@@ -83,7 +83,7 @@ DELETE https://better-prompt.preview.emergentagent.com/api/publishProduct/cleanu
 
 ### Étape 3 : Exemple complet avec curl
 ```bash
-curl -X POST "https://better-prompt.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://ai-prompt-tool-1.preview.emergentagent.com/api/publishProduct" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Chaise design premium",
