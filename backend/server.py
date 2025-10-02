@@ -1736,6 +1736,64 @@ class WebhookResponse(BaseModel):
 
 # === OAUTH ENDPOINTS - PATCH 19: AJOUT ENDPOINT INITIATION ===
 
+@app.get("/auth/test")
+async def test_oauth_page():
+    """Page de test pour initier l'OAuth Facebook - PATCH 19"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test OAuth Facebook - PATCH 19</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .button { 
+                display: inline-block; 
+                padding: 15px 30px; 
+                margin: 10px; 
+                background: #1877f2; 
+                color: white; 
+                text-decoration: none; 
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            .button:hover { background: #166fe5; }
+            .info { 
+                background: #f8f9fa; 
+                padding: 20px; 
+                border-radius: 5px; 
+                margin: 20px 0; 
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🔧 Test OAuth Facebook - PATCH 19</h1>
+        
+        <div class="info">
+            <p><strong>✅ PATCH 19 APPLIQUÉ</strong> - L'endpoint d'initiation OAuth a été créé</p>
+            <p>Cliquez sur un bouton ci-dessous pour démarrer l'authentification Facebook :</p>
+        </div>
+        
+        <h2>🏪 Choisir un Store</h2>
+        <a href="/auth/start?store=gizmobbs" class="button">🐕 Gizmo BBS</a>
+        <a href="/auth/start?store=logicantiq" class="button">🏺 LogicAntiq</a>
+        <a href="/auth/start?store=outdoor" class="button">🏕️ Logicamp Outdoor</a>
+        
+        <div class="info">
+            <h3>📋 Ce qui va se passer :</h3>
+            <ol>
+                <li>Redirection vers Facebook pour autorisation</li>
+                <li>Vous autorisez l'accès aux pages et Instagram</li>
+                <li>Facebook vous redirige vers /auth/callb avec le code</li>
+                <li>L'application échange le code contre un token</li>
+            </ol>
+        </div>
+    </body>
+    </html>
+    """
+    
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html_content)
+
 @app.get("/auth/start")
 async def start_facebook_auth(store: Optional[str] = "default"):
     """Endpoint pour initier l'authentification Facebook OAuth - PATCH 19 FIX"""
