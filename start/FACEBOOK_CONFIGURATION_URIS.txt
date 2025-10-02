@@ -3,7 +3,7 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 📅 Date de configuration : $(date)
-🌐 URL Backend active : https://auto-backend.preview.emergentagent.com
+🌐 URL Backend active : https://tunnel-finder.preview.emergentagent.com
 
 ========================================================
 1. PARAMÈTRES DE BASE (Basic Settings)
@@ -13,21 +13,21 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
    social-post-proxy.preview.emergentagent.com
 
 🌐 Site Web URL:
-   https://auto-backend.preview.emergentagent.com
+   https://tunnel-finder.preview.emergentagent.com
 
 📱 Privacy Policy URL:
-   https://auto-backend.preview.emergentagent.com/privacy
+   https://tunnel-finder.preview.emergentagent.com/privacy
 
 📋 Terms of Service URL:
-   https://auto-backend.preview.emergentagent.com/terms
+   https://tunnel-finder.preview.emergentagent.com/terms
 
 ========================================================
 2. FACEBOOK LOGIN (OAuth Settings)
 ========================================================
 
 🔐 Valid OAuth Redirect URIs:
-   https://auto-backend.preview.emergentagent.com/auth/callback
-   https://auto-backend.preview.emergentagent.com/auth/callb
+   https://tunnel-finder.preview.emergentagent.com/auth/callback
+   https://tunnel-finder.preview.emergentagent.com/auth/callb
 
 ⚠️ IMPORTANT : Les deux URIs sont incluses pour compatibilité
 
@@ -36,7 +36,7 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🎯 Callback URL:
-   https://auto-backend.preview.emergentagent.com/api/webhook
+   https://tunnel-finder.preview.emergentagent.com/api/webhook
 
 🔑 Verify Token:
    your_webhook_verify_token
@@ -60,13 +60,13 @@ CONFIGURATION FACEBOOK DEVELOPER - URIs À CONFIGURER
 ========================================================
 
 🔐 Valid OAuth Redirect URIs:
-   https://auto-backend.preview.emergentagent.com/auth/instagram/callback
+   https://tunnel-finder.preview.emergentagent.com/auth/instagram/callback
 
 🚫 Deauthorize Callback URL:
-   https://auto-backend.preview.emergentagent.com/auth/instagram/deauthorize
+   https://tunnel-finder.preview.emergentagent.com/auth/instagram/deauthorize
 
 📊 Data Deletion Requests:
-   https://auto-backend.preview.emergentagent.com/auth/instagram/delete
+   https://tunnel-finder.preview.emergentagent.com/auth/instagram/delete
 
 ========================================================
 6. ÉTAPES DE CONFIGURATION
@@ -102,13 +102,13 @@ NGROK_AUTH_TOKEN=votre_ngrok_token
 ========================================================
 
 ✅ Test health check:
-   curl https://auto-backend.preview.emergentagent.com/api/health
+   curl https://tunnel-finder.preview.emergentagent.com/api/health
 
 ✅ Test webhook:
-   curl https://auto-backend.preview.emergentagent.com/api/webhook
+   curl https://tunnel-finder.preview.emergentagent.com/api/webhook
 
 ✅ Test OAuth:
-   https://auto-backend.preview.emergentagent.com/auth/facebook
+   https://tunnel-finder.preview.emergentagent.com/auth/facebook
 
 ========================================================
 
@@ -122,7 +122,7 @@ NGROK_AUTH_TOKEN=votre_ngrok_token
 1. Aller sur https://developers.facebook.com/apps/VOTRE_APP_ID/settings/basic/
 2. Dans "App Domains", ajouter : social-post-proxy.preview.emergentagent.com  
 3. Aller sur https://developers.facebook.com/apps/VOTRE_APP_ID/fb-login/settings/
-4. Dans "Valid OAuth Redirect URIs", ajouter : https://auto-backend.preview.emergentagent.com/auth/callback
+4. Dans "Valid OAuth Redirect URIs", ajouter : https://tunnel-finder.preview.emergentagent.com/auth/callback
 5. Sauvegarder les changements
 6. Tester à nouveau l'authentification
 

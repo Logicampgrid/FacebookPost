@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://auto-backend.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://tunnel-finder.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://auto-backend.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://auto-backend.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://auto-backend.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://tunnel-finder.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://tunnel-finder.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://tunnel-finder.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
