@@ -32,7 +32,12 @@
 
 **Hypothèse**: Il existe un autre chemin de code qui appelle directement `post_to_instagram()`
 
-**Action requise**: Patch 11 - Corriger directement la fonction `post_to_instagram()` qui est réellement utilisée
+### 🔧 PATCH 11 - DEBUG LOGS AJOUTÉS (1 crédit)
+- [x] **Logs debug ajoutés** dans `post_to_instagram()` pour tracer l'URL reçue 
+- [x] **Debug avant envoi Instagram**: Log de l'URL finale + payload complet
+- [x] **Compilation validée**: Server compiles with Patch 11 debug logs ✅
+
+**Action requise**: Test webhook et analyse des logs debug pour identifier l'URL exacte reçue par Instagram
 
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
