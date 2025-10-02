@@ -4893,25 +4893,29 @@ async def webhook_n8n_handler(
             publication_results["publication"] = result
             
         elif publication_data["publication_type"] == "video_post":
-            # Pour les vidéos, uploader sur FTP d'abord
+            # PATCH 13: Pour les vidéos, utiliser ngrok uniquement
             video_path = publication_data["video_path"]
-            upload_success, video_url, upload_error = await upload_video_to_ftp(video_path)
             
-            if upload_success and video_url:
-                result = await publish_video_main(
-                    publication_data["store"],
-                    publication_data["message"],
-                    publication_data["product_url"],
-                    video_url,
-                    publication_data["platforms"]
-                )
-                publication_results["publication"] = result
-                publication_results["video_upload"] = {
-                    "success": True,
-                    "video_url": video_url
-                }
+            # PATCH 13: Générer directement l'URL publique ngrok
+            if not video_path.startswith('http'):
+                filename = os.path.basename(video_path)
+                video_url = get_public_url(filename)
+                log_app(f"🌐 PATCH 13: Vidéo - chemin local converti en URL publique - {video_url}", "SUCCESS")
             else:
-                raise Exception(f"Échec upload vidéo: {upload_error}")
+                video_url = video_path
+            
+            result = await publish_video_main(
+                publication_data["store"],
+                publication_data["message"],
+                publication_data["product_url"],
+                video_url,
+                publication_data["platforms"]
+            )
+            publication_results["publication"] = result
+            publication_results["video_upload"] = {
+                "success": True,
+                "video_url": video_url
+            }
                 
         elif publication_data["publication_type"] == "text_only":
             # Publication texte seulement
