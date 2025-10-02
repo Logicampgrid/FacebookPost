@@ -88,6 +88,26 @@
 - ✅ Chemins Unix : `uploads/webhook_xxx.jpg` → `https://ngrok/uploads/webhook_xxx.jpg`  
 - ✅ Validation HTTPS : Erreur si URL générée invalide
 
+### ✅ PATCH 15 - VRAIE FONCTION INSTAGRAM TROUVÉE ET CORRIGÉE (1 crédit)
+**🎯 ROOT CAUSE TROUVÉ** : Les webhooks utilisaient `publish_to_instagram_with_retry()` dans `poster_media_enhanced.py` qui n'était PAS corrigée
+
+**Problème identifié** :
+- ❌ **PATCH 14** était appliqué aux mauvaises fonctions (`server.py`)  
+- ❌ **Webhooks réels** utilisent `poster_media_enhanced.py` qui envoyait directement les chemins locaux
+- ❌ **Ligne 244** : `"image_url": image_url` sans aucune conversion Windows → HTTPS
+
+**Corrections appliquées** :
+- [x] **Détection automatique ngrok** : Lecture dynamique de `/frontend/.env` pour URL active
+- [x] **Conversion obligatoire** : Tous chemins `uploads\` et `uploads/` → URLs HTTPS  
+- [x] **Validation finale** : Erreur si URL générée ne commence pas par `https://`
+- [x] **Logs détaillés PATCH 15** : Traçabilité complète de chaque conversion
+- [x] **Fallback robuste** : URL hardcodée si détection ngrok échoue
+
+**Test de validation attendu** :
+- ✅ `uploads\webhook_da0a3a72_1759415429.jpg` → `https://9fff391906ce.ngrok-free.app/uploads/webhook_da0a3a72_1759415429.jpg`
+- ✅ Instagram recevra maintenant des URLs HTTPS publiques valides
+- ✅ Logs PATCH 15 visibles dans les prochains tests
+
 ### ✅ PATCH 12B - CORRECTION FICHIERS DE TEST (1 crédit)
 - [x] **Import corrigé** dans `/app/backend/test_instagram_simple.py`
 - [x] **Fonction mise à jour**: `post_to_instagram()` → `publish_to_instagram()` avec `store_config`
