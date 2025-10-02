@@ -42,7 +42,14 @@
 - ✅ **Analyse logs**: `📢 [15:18:56] [PUBLISH] Publication Instagram pour logicantiq` = ancienne fonction active
 - ✅ **Code webhook**: `publish_post_main()` utilise `publish_to_instagram()` (corrigée) lignes 2558/2561
 - ✅ **Hypothèse confirmée**: Double fonction Instagram coexistent mais une seule est corrigée
-- ⚠️ **Action**: SUPPRIMER complètement l'ancienne fonction `post_to_instagram()` et remplacer tous ses appels
+### ✅ PATCH 12 - SUPPRESSION ANCIENNE FONCTION INSTAGRAM (1 crédit)
+- [x] **Fonction obsolète supprimée**: `post_to_instagram()` complètement supprimée du server.py
+- [x] **Cause du problème éliminée**: Cette fonction envoyait des chemins locaux `uploads\\webhook_xxx.png` 
+- [x] **Unification réussie**: Seule `publish_to_instagram()` (corrigée) est maintenant utilisée
+- [x] **Commentaire ajouté**: Explication de la suppression pour traçabilité future
+- [x] **URLs Instagram garanties**: Plus aucune fonction ne peut envoyer des chemins locaux à Instagram
+
+**Résultat attendu**: Instagram ne devrait plus recevoir d'erreur "Only photo or video can be accepted as media type"
 
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
