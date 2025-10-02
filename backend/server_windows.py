@@ -1072,17 +1072,6 @@ async def post_to_instagram(store: str, message: str, product_url: str, image_ur
         store_config = get_store_config(store)
         log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
         return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
-# PATCH 17: FONCTION OBSOLÈTE SUPPRIMÉE - Redirection vers fonction corrigée
-# Cette fonction était la source du problème Instagram (chemins locaux Windows)
-# Redirige maintenant vers publish_to_instagram() corrigée dans server.py
-async def post_to_instagram(store: str, message: str, product_url: str, image_url: str) -> dict:
-    """PATCH 17: Redirection vers fonction Instagram corrigée"""
-    # Import de la fonction corrigée depuis server.py
-    try:
-        from server import publish_to_instagram, get_store_config
-        store_config = get_store_config(store)
-        log_publish(f"🔄 PATCH 17: Redirection vers publish_to_instagram corrigée", "INFO")
-        return await publish_to_instagram(store_config, message, product_url, "", image_url, is_video=False)
     except Exception as e:
         log_publish(f"❌ PATCH 17: Erreur redirection - {str(e)}", "ERROR")
         return {"success": False, "error": f"PATCH 17 redirection échouée: {str(e)}"}
