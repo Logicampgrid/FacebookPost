@@ -2520,12 +2520,15 @@ async def publish_post_main(store: str, message: str, product_url: str, image_ur
         # Publication Facebook avec routage correct
         if "facebook" in platforms:
             try:
+                # PATCH 10: Correction appels Facebook - Utiliser la bonne fonction publish_to_facebook
+                store_config = get_store_config(store)
+                
                 if is_video_media:
                     # CORRECTION: Utiliser la fonction vidéo pour les vidéos (endpoint /videos)
-                    fb_result = await post_video_to_facebook(store, message, product_url, image_url)
+                    fb_result = await publish_to_facebook(store_config, message, product_url, "", image_url, is_video=True)
                 else:
                     # Utiliser la fonction normale pour les images/textes (endpoint /photos ou /feed)
-                    fb_result = await post_to_facebook(store, message, product_url, image_url)
+                    fb_result = await publish_to_facebook(store_config, message, product_url, "", image_url, is_video=False)
                 
                 results["facebook_result"] = fb_result
                 media_type = "vidéo" if is_video_media else "image/texte" 
