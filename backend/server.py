@@ -4871,12 +4871,17 @@ async def webhook_n8n_handler(
         
         # Publier selon le type de contenu
         if publication_data["publication_type"] == "image_post":
-            # Pour les images, utiliser le chemin local d'abord
+            # PATCH 13: Pour les images, convertir les chemins locaux en URLs publiques
             image_url = publication_data.get("image_url")
             if not image_url and publication_data.get("image_path"):
-                # Optionnel: uploader l'image sur FTP pour une URL publique
-                # Pour l'instant, utilisons le chemin local
-                image_url = publication_data["image_path"]
+                # PATCH 13: Convertir le chemin local en URL publique ngrok
+                image_path = publication_data["image_path"]
+                if not image_path.startswith('http'):
+                    filename = os.path.basename(image_path)
+                    image_url = get_public_url(filename)
+                    log_app(f"🌐 PATCH 13: Chemin local converti en URL publique - {image_url}", "SUCCESS")
+                else:
+                    image_url = image_path
             
             result = await publish_post_main(
                 publication_data["store"],
