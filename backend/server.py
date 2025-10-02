@@ -5579,9 +5579,9 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         
         log_app(f"📸 Publication Instagram vers {ig_user_id}: {caption[:100]}...", "INFO")
         
-        # PATCH 13: Debug - afficher exactement ce qui est envoyé à Instagram
+        # PATCH 16: Debug - afficher exactement ce qui est envoyé à Instagram
         media_field = "video_url" if is_video else "image_url"
-        log_app(f"🔍 PATCH 13: Données envoyées à Instagram - {media_field}: '{data.get(media_field)}'", "INFO")
+        log_app(f"🔍 PATCH 16: Données envoyées à Instagram - {media_field}: '{data.get(media_field)}'", "INFO")
         
         # Étape 1: Créer le conteneur média
         response = requests.post(ig_url, data=data, timeout=30)
