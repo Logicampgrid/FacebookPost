@@ -4487,27 +4487,14 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
         content_type = file.content_type or ""
         is_video = content_type.startswith("video/") or file_extension.lower() in ['.mp4', '.mov', '.avi', '.wmv']
         
-        # Upload vers FTP pour obtenir l'URL publique
-        media_url = None
-        if is_video:
-            log_app("🎥 Détection vidéo - Upload FTP...", "INFO")
-            ftp_success, ftp_url, ftp_error = await upload_video_to_ftp(file_path, unique_filename)
-        else:
-            log_app("🖼️ Détection image - Upload FTP...", "INFO")
-            ftp_success, ftp_url, ftp_error = await upload_image_to_ftp(file_path, file.filename)
+        # PATCH 13: NGROK UNIQUEMENT - Plus de FTP dans handle_n8n_publication
+        # Générer directement l'URL publique ngrok comme dans le Patch 9
+        media_url = get_public_url(unique_filename)
+        log_app(f"🌐 PATCH 13: URL publique ngrok générée - {media_url}", "SUCCESS")
         
-        if ftp_success:
-            media_url = ftp_url
-            log_app(f"✅ Upload FTP réussi: {media_url}", "SUCCESS")
-        else:
-            # Fallback vers l'URL ngrok locale si disponible
-            ngrok_url = get_active_ngrok_url()
-            if ngrok_url:
-                media_url = f"{ngrok_url}/uploads/{unique_filename}"
-                log_app(f"⚠️ FTP échoué, utilisation ngrok: {media_url}", "WARNING")
-            else:
-                log_app(f"❌ Pas d'URL publique disponible: {ftp_error}", "ERROR")
-                raise HTTPException(status_code=500, detail=f"Impossible de générer une URL publique: {ftp_error}")
+        if not media_url or not media_url.startswith('https://'):
+            log_app(f"❌ PATCH 13: URL publique invalide générée: {media_url}", "ERROR")
+            raise HTTPException(status_code=500, detail=f"Impossible de générer une URL publique valide")
         
         # Initialiser les résultats
         results = {
