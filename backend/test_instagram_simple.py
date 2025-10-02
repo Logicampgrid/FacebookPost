@@ -10,7 +10,8 @@ import asyncio
 # Ajouter le dossier parent au path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from server import post_to_instagram, PUBLICATION_TEST_MODE
+# PATCH 12: Correction import - utiliser la fonction corrigée
+from server import publish_to_instagram, PUBLICATION_TEST_MODE, get_store_config
 
 async def test_instagram_with_local_path():
     """Test de publication Instagram avec chemin local"""
