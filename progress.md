@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 2/10
-## 🎯 État actuel: Correction appliquée - Test requis
+## 🎯 Crédits utilisés: 3/10
+## 🎯 État actuel: Investigation approfondie - Problème persiste
 
 ### 🔍 DIAGNOSTIC COMPLET (1 crédit)
 **Problème confirmé**: Instagram recoit encore des chemins locaux Windows malgré les Patches 7-9
