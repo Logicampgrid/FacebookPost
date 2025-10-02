@@ -233,6 +233,46 @@ async def publish_to_instagram_with_retry(image_url: str, caption: str, store_co
     if not access_token or not ig_user_id:
         return {"success": False, "error": "Configuration Instagram manquante"}
     
+    # PATCH 15: CORRECTION FINALE URLS INSTAGRAM - Convertir tous les chemins locaux
+    log_poster(f"🔍 PATCH 15: URL originale reçue - '{image_url}'", "INFO")
+    
+    # Détecter et convertir les chemins locaux Windows (uploads\) et Unix (uploads/)
+    if (not image_url.startswith(("http://", "https://")) and 
+        ("uploads" in image_url or "webhook_" in image_url)):
+        
+        # Normaliser les backslashes Windows
+        normalized_path = image_url.replace("\\", "/")
+        filename = normalized_path.split("/")[-1]
+        
+        # Générer URL publique ngrok (réutiliser la logique du server.py)
+        import os
+        from pathlib import Path
+        
+        # Détecter l'URL ngrok active
+        try:
+            frontend_env_path = Path(__file__).parent.parent / "frontend" / ".env"
+            if frontend_env_path.exists():
+                with open(frontend_env_path, 'r') as f:
+                    for line in f:
+                        if line.startswith('REACT_APP_BACKEND_URL='):
+                            ngrok_url = line.split('=', 1)[1].strip()
+                            image_url = f"{ngrok_url}/uploads/{filename}"
+                            log_poster(f"✅ PATCH 15: URL convertie - '{normalized_path}' → '{image_url}'", "SUCCESS")
+                            break
+        except Exception as e:
+            log_poster(f"⚠️ PATCH 15: Erreur détection ngrok, fallback - {e}", "WARNING")
+            # Fallback hardcodé si détection échoue
+            image_url = f"https://9fff391906ce.ngrok-free.app/uploads/{filename}"
+            log_poster(f"🔄 PATCH 15: Fallback URL - '{image_url}'", "INFO")
+    else:
+        log_poster(f"✅ PATCH 15: URL déjà publique - '{image_url}'", "SUCCESS")
+    
+    # PATCH 15: Vérification finale obligatoire
+    if not image_url.startswith('https://'):
+        error_msg = f"URL Instagram invalide: {image_url}"
+        log_poster(f"❌ PATCH 15: {error_msg}", "ERROR")
+        return {"success": False, "error": error_msg}
+    
     for attempt in range(MAX_RETRY_ATTEMPTS):
         try:
             log_poster(f"Publication Instagram tentative {attempt + 1}/{MAX_RETRY_ATTEMPTS}", "INFO")
@@ -240,10 +280,12 @@ async def publish_to_instagram_with_retry(image_url: str, caption: str, store_co
             # Étape 1: Créer le container de média
             container_url = f"https://graph.facebook.com/v18.0/{ig_user_id}/media"
             container_data = {
-                "image_url": image_url,
+                "image_url": image_url,  # Maintenant garanti d'être une URL HTTPS valide
                 "caption": caption,
                 "access_token": access_token
             }
+            
+            log_poster(f"🔍 PATCH 15: URL finale envoyée à Instagram - '{image_url}'", "INFO")
             
             container_response = requests.post(container_url, data=container_data, timeout=30)
             
