@@ -13,10 +13,18 @@
 **Actions en cours** :
 - [x] Analyse du projet et identification du problème ✅
 - [x] Création du contexte dans progress.md ✅  
-- [ ] Localisation de l'URL problématique dans le code
-- [ ] Remplacement par la détection ngrok automatique existante
+- [x] Localisation de la configuration OAuth manquante ✅
+- [x] Ajout des endpoints OAuth callback manquants (/auth/callback et /auth/callb) ✅
+- [x] Création du script de correction automatique ✅
 - [ ] Test de la nouvelle configuration OAuth
 - [ ] Validation du fonctionnement complet
+
+**Corrections appliquées** :
+- [x] **Endpoints OAuth manquants ajoutés** : `/auth/callback` et `/auth/callb` dans `server.py`
+- [x] **Gestion complète des callbacks** : Échange de code, gestion d'erreurs, redirection
+- [x] **Compatibilité legacy** : `/auth/callback` redirige vers `/auth/callb`
+- [x] **Script de correction** : `fix_oauth_callback.py` pour configuration automatique ngrok
+- [x] **Logs PATCH 18** : Traçabilité complète des opérations OAuth
 
 ## 🎯 État actuel: ✅ PATCH 17 APPLIQUÉ - PROBLÈME INSTAGRAM 100% RÉSOLU !
 
