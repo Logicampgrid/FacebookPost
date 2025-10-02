@@ -62,7 +62,7 @@
 - [x] **publish_to_instagram()** : Logs détaillés "🔍 PATCH 13" pour traçabilité et débogage
 
 **Test de validation réussi** :
-- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://ngrok-detector.preview.emergentagent.com/uploads/test_patch13.jpg`
+- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://media-post.preview.emergentagent.com/uploads/test_patch13.jpg`
 - ✅ URLs déjà publiques préservées : `https://example.com/test.jpg` → `https://example.com/test.jpg`
 - ✅ Logs détaillés : "🔍 PATCH 13: URL reçue par Instagram", "🔍 PATCH 13: Données envoyées à Instagram"
 

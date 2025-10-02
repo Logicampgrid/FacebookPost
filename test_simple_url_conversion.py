@@ -33,7 +33,7 @@ async def test_conversion():
             print(f"   📤 Résultat: {converted_url}")
             
             # Vérifier si c'est une URL publique valide
-            if converted_url.startswith('https://ngrok-detector.preview.emergentagent.com'):
+            if converted_url.startswith('https://media-post.preview.emergentagent.com'):
                 print(f"   ✅ URL publique CORRECTE")
             elif converted_url.startswith('http://localhost:8001'):
                 print(f"   ❌ URL locale (problème Instagram)")
@@ -53,7 +53,7 @@ async def test_conversion():
     try:
         result_url = await convert_local_path_to_public_url(problem_path)
         
-        if result_url.startswith('https://ngrok-detector.preview.emergentagent.com'):
+        if result_url.startswith('https://media-post.preview.emergentagent.com'):
             print("✅ PROBLÈME RÉSOLU: Instagram recevra maintenant une URL publique valide")
             print(f"   Avant: {problem_path}")
             print(f"   Après: {result_url}")

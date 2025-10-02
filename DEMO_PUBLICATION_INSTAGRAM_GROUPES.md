@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://ngrok-detector.preview.emergentagent.com
+🔗 https://media-post.preview.emergentagent.com
