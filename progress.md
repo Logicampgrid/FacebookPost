@@ -57,6 +57,22 @@
 - [x] **Signature corrigée**: Nouveau format avec paramètres `store_config, title, url, description, media_url, is_video`
 - [x] **Autres fichiers détectés**: 2 autres fichiers de test à corriger si nécessaire
 
+### 🎉 PATCH 12 - VALIDATION RÉUSSIE (1 crédit) 
+**✅ PROBLÈME PRINCIPAL RÉSOLU** : Instagram ne reçoit plus de chemins locaux Windows !
+
+**Avant le Patch 12** :
+- ❌ Erreur : `"Only photo or video can be accepted as media type"`  
+- ❌ URL envoyée : `uploads\webhook_xxx.png`
+- ❌ Instagram rejette les chemins locaux
+
+**Après le Patch 12** :
+- ✅ URL correctement convertie : `https://9fff391906ce.ngrok-free.app/uploads/xxx.jpg`
+- ✅ Instagram accepte le format d'URL 
+- ✅ Nouvelle erreur différente : `"The image format is not supported"` (problème de format, pas d'URL)
+- ✅ Plus aucun log `[PUBLISH]` de l'ancienne fonction
+
+**Conclusion** : Le problème des URLs locales Instagram est **100% résolu** !
+
 ## ✅ Étapes Accomplies
 - [x] Analyse complète du codebase existant
 - [x] Compréhension de la structure FastAPI et des stores (gizmobbs, logicantiq, outdoor)
