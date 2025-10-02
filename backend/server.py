@@ -3335,8 +3335,7 @@ async def oauth_status_complete():
             "timestamp": datetime.now().isoformat(),
             "redirect_uris_configured": [
                 f"{ngrok_url}/",
-                f"{ngrok_url}/auth/callback", 
-                f"{ngrok_url}/auth/callb"
+                f"{ngrok_url}/auth/callback"
             ] if ngrok_url else []
         }
         
