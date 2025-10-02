@@ -1123,7 +1123,6 @@ def auto_configure_facebook_oauth():
             log_app(f"🔐 URLs de redirection configurées:", "SUCCESS")
             log_app(f"   • {ngrok_url}/", "SUCCESS")
             log_app(f"   • {ngrok_url}/auth/callback", "SUCCESS")
-            log_app(f"   • {ngrok_url}/auth/callb", "SUCCESS")
         else:
             log_app("⚠️ Configuration Facebook OAuth partiellement réussie", "WARNING")
         
