@@ -3426,8 +3426,7 @@ async def force_oauth_setup():
                 "backend_url": backend_url,
                 "redirect_uris": [
                     f"{backend_url}/",
-                    f"{backend_url}/auth/callback",
-                    f"{backend_url}/auth/callb"
+                    f"{backend_url}/auth/callback"
                 ],
                 "timestamp": datetime.now().isoformat()
             }
