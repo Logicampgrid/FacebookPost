@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://media-post.preview.emergentagent.com
+URL : https://social-poster-7.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
