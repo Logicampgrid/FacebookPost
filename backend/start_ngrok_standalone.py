@@ -16,6 +16,9 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement
 load_dotenv()
 
+# Variable globale pour éviter les appels récursifs dans le signal handler
+_cleanup_in_progress = False
+
 def log_ngrok(message: str, level: str = "INFO"):
     """Logging pour ngrok standalone"""
     icons = {"INFO": "🌐", "SUCCESS": "✅", "WARNING": "⚠️", "ERROR": "❌", "START": "🚀"}
