@@ -138,10 +138,8 @@ def show_correction_summary():
 if __name__ == "__main__":
     show_correction_summary()
     print("\n" + "="*50)
-    
-    choice = input("\nLancer les tests webhook? (o/N): ").lower()
-    if choice in ['o', 'oui', 'y', 'yes']:
-        test_webhook_n8n()
-    else:
-        print("Tests non lancés. Pour tester manuellement, redémarrez le serveur")
-        print("et vérifiez que les logs n'affichent plus 'Stream consumed'.")
+    print("💡 Pour tester les webhooks n8n:")
+    print("   1. Redémarrez le serveur pour charger la correction PATCH 19")
+    print("   2. Envoyez des requêtes multipart à /api/webhook")  
+    print("   3. Vérifiez que les logs n'affichent plus 'Stream consumed'")
+    print("   4. Confirmez que les publications n8n fonctionnent")
