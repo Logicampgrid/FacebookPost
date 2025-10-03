@@ -797,8 +797,15 @@ def kill_existing_ngrok():
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
 def get_active_ngrok_url():
-    """Récupère l'URL backend active - LECTURE .ENV UNIQUEMENT (plus d'API ngrok)"""
+    """Récupère l'URL backend active - LECTURE .ENV AVEC CACHE (plus d'API ngrok)"""
+    global _NGROK_URL_CACHE, _NGROK_URL_CACHE_TIME
+    
     try:
+        # Vérifier le cache d'abord pour éviter les lectures répétitives
+        current_time = time.time()
+        if _NGROK_URL_CACHE and (current_time - _NGROK_URL_CACHE_TIME) < _CACHE_DURATION:
+            return _NGROK_URL_CACHE
+        
         # PRIORITÉ 1: Lire depuis le frontend .env (source principale maintenant)
         try:
             frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
@@ -811,7 +818,11 @@ def get_active_ngrok_url():
                         backend_url = line.split("=", 1)[1].strip()
                         # Accepter toute URL valide (pas seulement ngrok)
                         if backend_url and (backend_url.startswith("http://") or backend_url.startswith("https://")):
-                            log_app(f"✅ URL backend depuis .env: {backend_url}", "SUCCESS")
+                            # Mettre en cache et ne loguer que si URL différente
+                            if backend_url != _NGROK_URL_CACHE:
+                                log_app(f"✅ URL backend depuis .env: {backend_url}", "SUCCESS")
+                            _NGROK_URL_CACHE = backend_url
+                            _NGROK_URL_CACHE_TIME = current_time
                             return backend_url
         except Exception as e:
             log_app(f"⚠️ Erreur lecture frontend .env: {e}", "WARNING")
@@ -823,7 +834,10 @@ def get_active_ngrok_url():
                 with open(ngrok_file_path, "r", encoding='utf-8') as f:
                     file_url = f.read().strip()
                     if file_url and file_url.startswith("https://"):
-                        log_app(f"✅ URL depuis ngrok_url.txt: {file_url}", "SUCCESS")
+                        if file_url != _NGROK_URL_CACHE:
+                            log_app(f"✅ URL depuis ngrok_url.txt: {file_url}", "SUCCESS")
+                        _NGROK_URL_CACHE = file_url
+                        _NGROK_URL_CACHE_TIME = current_time
                         return file_url
         except Exception as e:
             log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
@@ -831,7 +845,10 @@ def get_active_ngrok_url():
         # PRIORITÉ 3: Utiliser l'URL globale hardcodée si définie
         global NGROK_URL
         if NGROK_URL and (NGROK_URL.startswith("http://") or NGROK_URL.startswith("https://")):
-            log_app(f"✅ URL depuis variable globale: {NGROK_URL}", "SUCCESS")
+            if NGROK_URL != _NGROK_URL_CACHE:
+                log_app(f"✅ URL depuis variable globale: {NGROK_URL}", "SUCCESS")
+            _NGROK_URL_CACHE = NGROK_URL
+            _NGROK_URL_CACHE_TIME = current_time
             return NGROK_URL
         
         log_app("⚠️ Aucune URL backend active trouvée", "WARNING")
