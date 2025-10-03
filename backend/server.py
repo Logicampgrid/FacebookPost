@@ -4948,7 +4948,8 @@ async def webhook_handler(request: Request):
                 # Handle application/json or text content
                 else:
                     log_app("📦 Processing JSON/text webhook", "INFO")
-                    # Try to decode as UTF-8 first
+                    # PATCH 19: Lire le body seulement pour JSON
+                    body = await request.body()
                     try:
                         body_str = body.decode('utf-8')
                         webhook_data = json.loads(body_str)
