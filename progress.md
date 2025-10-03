@@ -4,18 +4,25 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 📊 État Actuel - PATCH 23
-**Phase**: Correction problèmes publications images/vidéos
-**Problèmes identifiés**:
-- Facebook: "Missing or invalid image file" (code 324)
-- Instagram: "Only photo or video can be accepted as media type" (code 9004) 
-- Instagram vidéo: "Media ID is not available" (code 9007)
-- URLs vidéos: 404 Not Found
-**Diagnostic effectué**:
-- ✅ Mode test désactivé (`PUBLICATION_TEST_MODE=false`)
-- ✅ Dossier uploads existe avec fichiers (images et vidéos)
-- ✅ Fonctions de publication analysées
-**Prochaine étape**: Identifier les causes des erreurs Facebook/Instagram
+## ✅ PATCH 23 - ROOT CAUSE IDENTIFIÉ ! (2 crédits)
+**🎯 PROBLÈME RÉSOLU**: Les fichiers sont supprimés immédiatement après upload, AVANT que Facebook/Instagram puissent y accéder
+
+**Root Cause identifié**:
+- ❌ **Ligne 4303-4304**: `os.remove(video_path)` supprime les vidéos après upload
+- ❌ **Ligne 4734-4735**: `os.remove(file_path)` supprime les fichiers temporaires
+- ❌ **Séquence problématique**: Upload → URL générée → Envoi à FB/IG → **Suppression immédiate** → FB/IG accède → 404
+
+**Tests de validation**:
+- ✅ URLs ngrok accessibles et tokens OK
+- ✅ Images anciennes fonctionnent (200)
+- ❌ Vidéo récente mentionnée dans logs: 404
+- ✅ `webhook_e9ac3760_1759516573.png`: 200 (pas encore supprimée)
+- ❌ `webhook_3189541f_1759516706.mp4`: 404 (déjà supprimée)
+
+**Correction à appliquer**:
+- [ ] Supprimer/commenter les lignes de suppression de fichiers
+- [ ] Ou implémenter une suppression différée (après publication)
+**Prochaine étape**: Appliquer la correction des suppressions de fichiers
 
 ## ✅ PATCH 22 - PRIORITÉ URLs NGROK RÉELLES (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
