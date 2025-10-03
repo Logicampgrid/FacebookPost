@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 7/10 
-## 🎯 État actuel: ✅ PATCH 22 APPLIQUÉ - PRIORITÉ URLs NGROK RÉELLES !
+## 🎯 Crédits utilisés: 8/10 
+## 🎯 État actuel: ✅ PATCH 21 APPLIQUÉ - PUBLICATIONS RÉELLES FONCTIONNELLES !
 
 ## ✅ PATCH 22 - PRIORITÉ URLs NGROK RÉELLES (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
