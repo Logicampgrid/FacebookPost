@@ -4300,8 +4300,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 try:
                     video_path = media_file_info['path']
                     if os.path.exists(video_path):
-                        os.remove(video_path)
-                        log_app(f"🧹 PATCH 9: Fichier temporaire supprimé - {video_path}", "INFO")
+                        # PATCH 23: Suppression fichier commentée - FB/IG ont besoin d'accéder au fichier
+                        # os.remove(video_path)
+                        log_app(f"📁 PATCH 23: Fichier conservé pour accès FB/IG - {video_path}", "INFO")
                 except Exception as cleanup_error:
                     log_app(f"⚠️ PATCH 9: Erreur nettoyage fichier temporaire - {cleanup_error}", "WARNING")
                     
