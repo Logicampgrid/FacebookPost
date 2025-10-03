@@ -839,22 +839,43 @@ def get_active_ngrok_url():
         except Exception as e:
             log_app(f"⚠️ PATCH 22: Erreur lecture ngrok réel: {e}", "WARNING")
         
-        # PATCH 22: PRIORITÉ 3 - Ancien fichier ngrok_url.txt
         try:
             ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
             if os.path.exists(ngrok_file_path):
                 with open(ngrok_file_path, "r", encoding='utf-8') as f:
                     file_url = f.read().strip()
-                    if file_url and file_url.startswith("https://"):
+                    if file_url and file_url.endswith(".ngrok-free.app"):
                         if file_url != _NGROK_URL_CACHE:
-                            log_app(f"✅ URL depuis ngrok_url.txt: {file_url}", "SUCCESS")
+                            log_app(f"✅ PATCH 22: URL ancien fichier ngrok - {file_url}", "SUCCESS")
                         _NGROK_URL_CACHE = file_url
                         _NGROK_URL_CACHE_TIME = current_time
                         return file_url
         except Exception as e:
-            log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
+            log_app(f"⚠️ PATCH 22: Erreur lecture ngrok_url.txt: {e}", "WARNING")
         
-        # PRIORITÉ 3: Utiliser l'URL globale hardcodée si définie
+        # PATCH 22: PRIORITÉ 4 - Frontend .env seulement si URL ngrok
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        backend_url = line.split("=", 1)[1].strip()
+                        # PATCH 22: Accepter seulement les URLs ngrok réelles
+                        if backend_url and backend_url.endswith(".ngrok-free.app"):
+                            if backend_url != _NGROK_URL_CACHE:
+                                log_app(f"✅ PATCH 22: URL backend .env ngrok - {backend_url}", "SUCCESS")
+                            _NGROK_URL_CACHE = backend_url
+                            _NGROK_URL_CACHE_TIME = current_time
+                            return backend_url
+                        elif backend_url and "prompt-emergent" in backend_url:
+                            log_app(f"⚠️ PATCH 22: URL Emergent détectée dans .env - ignorée: {backend_url}", "WARNING")
+        except Exception as e:
+            log_app(f"⚠️ PATCH 22: Erreur lecture frontend .env: {e}", "WARNING")
+        
+        # PATCH 22: PRIORITÉ 5 - Variable globale seulement si ngrok
         global NGROK_URL
         if NGROK_URL and (NGROK_URL.startswith("http://") or NGROK_URL.startswith("https://")):
             if NGROK_URL != _NGROK_URL_CACHE:
