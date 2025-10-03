@@ -883,9 +883,9 @@ def get_active_ngrok_url():
             _NGROK_URL_CACHE_TIME = current_time
             return NGROK_URL
         
-        log_app("⚠️ Aucune URL backend active trouvée", "WARNING")
-        log_app("💡 SOLUTION: Lancez le script 01_start_ngrok_only.bat pour créer une URL ngrok", "INFO")
-        log_app("   Le script mettra automatiquement à jour les fichiers .env", "INFO")
+        log_app("⚠️ PATCH 22: Aucune URL ngrok réelle trouvée", "WARNING")
+        log_app("💡 PATCH 22: SOLUTION: Lancez 01_start_ngrok_only.bat et mettez à jour ngrok_url_real.txt", "INFO")
+        log_app("   avec l'URL ngrok réelle se terminant par .ngrok-free.app", "INFO")
         return None
             
     except Exception as e:
