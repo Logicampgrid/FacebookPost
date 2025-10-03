@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 5/10 
-## 🎯 État actuel: ✅ PATCH 20 APPLIQUÉ - OPTIMISATION NGROK DÉTECTION !
+## 🎯 Crédits utilisés: 6/10 
+## 🎯 État actuel: ✅ PATCH 21 APPLIQUÉ - CORRECTION PUBLICATIONS RÉELLES !
 
 ## ✅ PATCH 20 - OPTIMISATION DÉTECTION NGROK (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Les timeouts répétitifs avec l'API ngrok perturbaient n8n et généraient des erreurs de logs
