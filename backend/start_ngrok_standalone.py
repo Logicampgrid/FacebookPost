@@ -330,10 +330,21 @@ def main():
     try:
         log_ngrok("🚀 NGROK STANDALONE - DÉMARRAGE", "START")
         
+        # Variable globale pour éviter les appels récursifs
+        global _cleanup_in_progress
+        _cleanup_in_progress = False
+        
         # Gestion des signaux pour arrêt propre
         def signal_handler(sig, frame):
+            global _cleanup_in_progress
+            if _cleanup_in_progress:
+                return
+            _cleanup_in_progress = True
             log_ngrok("Signal d'arrêt reçu, nettoyage...", "INFO")
-            kill_existing_ngrok()
+            try:
+                kill_existing_ngrok()
+            except:
+                pass
             sys.exit(0)
         
         signal.signal(signal.SIGINT, signal_handler)
