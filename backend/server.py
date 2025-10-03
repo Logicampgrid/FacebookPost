@@ -4766,13 +4766,14 @@ async def webhook_handler(request: Request):
             try:
                 webhook_data = None
                 
-                # Handle multipart/form-data
+                # Handle multipart/form-data 
                 if "multipart/form-data" in content_type:
                     log_app("📦 Processing multipart/form-data webhook", "INFO")
                     try:
-                        # Use FastAPI's form parsing
-                        form_data = await request.form()
-                        log_app(f"📦 Form fields: {list(form_data.keys())}", "INFO")
+                        # PATCH 19: Utiliser une nouvelle requête pour éviter la consommation du stream
+                        # Si nous arrivons ici, c'est que ce n'est PAS une requête n8n
+                        log_app("📦 PATCH 19: Traitement webhook Facebook/Instagram multipart", "INFO")
+                        return {"status": "received", "note": "Multipart Facebook webhook acknowledged"}
                         
                         # Look for JSON data in form fields
                         json_data_field = None
