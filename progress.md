@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 6/10 
-## 🎯 État actuel: ✅ PATCH 21 APPLIQUÉ - CORRECTION PUBLICATIONS RÉELLES !
+## 🎯 Crédits utilisés: 7/10 
+## 🎯 État actuel: ✅ PATCH 22 APPLIQUÉ - PRIORITÉ URLs NGROK RÉELLES !
 
 ## ✅ PATCH 21 - CORRECTION PUBLICATIONS RÉELLES (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Les publications réelles ne passaient plus depuis le PATCH 19 - seul un accusé de réception était retourné
