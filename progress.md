@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 2/10 
-## 🎯 État actuel: ✅ PATCH 16 APPLIQUÉ - DÉTECTION CHEMINS LOCAUX INSTAGRAM CORRIGÉE !
+## 🎯 Crédits utilisés: 3/10 
+## 🎯 État actuel: ✅ PATCH 18 APPLIQUÉ - SYNCHRONISATION AUTOMATIQUE URL NGROK AVEC .ENV !
 
 ## 🔄 ROLLBACK EFFECTUÉ - RETOUR AU PATCH 16
 **📅 Date** : Session actuelle
