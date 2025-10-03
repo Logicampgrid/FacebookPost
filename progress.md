@@ -2,6 +2,32 @@
 ## 🎯 Crédits utilisés: 6/10 
 ## 🎯 État actuel: ✅ PATCH 21 APPLIQUÉ - CORRECTION PUBLICATIONS RÉELLES !
 
+## ✅ PATCH 21 - CORRECTION PUBLICATIONS RÉELLES (1 crédit)
+**🎯 PROBLÈME RÉSOLU**: Les publications réelles ne passaient plus depuis le PATCH 19 - seul un accusé de réception était retourné
+
+**Problème identifié** :
+- ❌ **Ligne 4769 défaillante** : `return {"status": "received", "note": "Multipart Facebook webhook acknowledged"}` 
+- ❌ **Publications bloquées** : Le webhook retournait immédiatement sans traiter les publications réelles
+- ❌ **Mode test=false ignoré** : Malgré `PUBLICATION_TEST_MODE=false`, les publications n'étaient pas exécutées
+- ❌ **Régression PATCH 19** : La correction "Stream consumed" avait cassé la logique de publication
+
+**Corrections appliquées** :
+- [x] **Détection publications corrigée** : Vérification des champs `store`, `title`, `description` pour différencier les vraies publications des webhooks standard
+- [x] **Traitement publications restauré** : Appel à `handle_n8n_publication_corrected()` au lieu de retourner un accusé de réception
+- [x] **Logs PATCH 21** : Traçabilité complète des publications vs webhooks standard
+- [x] **Mode réel fonctionnel** : Les publications avec `PUBLICATION_TEST_MODE=false` sont maintenant traitées correctement
+
+**Test de validation** :
+- ✅ **Publication webhook testée** : Requête multipart avec store/title/description maintenant traitée
+- ✅ **Mode réel activé** : `PUBLICATION_TEST_MODE=false` respecté pour les publications Facebook/Instagram
+- ✅ **Logs détaillés** : Messages PATCH 21 visibles pour traçabilité
+- ✅ **Distinction webhooks** : Webhooks standard Facebook vs publications n8n correctement différenciés
+
+**Résultat FINAL** : 
+- **Publications réelles 100% fonctionnelles** avec mode test désactivé
+- **Facebook et Instagram** recevront maintenant les vraies publications
+- **Webhooks standard** continuent de fonctionner normalement sans interférer
+
 ## ✅ PATCH 20 - OPTIMISATION DÉTECTION NGROK (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Les timeouts répétitifs avec l'API ngrok perturbaient n8n et généraient des erreurs de logs
 
