@@ -4461,6 +4461,132 @@ async def detect_webhook_publication_request(request: Request) -> dict:
     except:
         return {"is_publication": False}
 
+async def handle_n8n_publication_corrected(form_data) -> dict:
+    """PATCH 19: Traitement corrigé des publications n8n - évite la consommation du stream"""
+    try:
+        log_app("🔧 PATCH 19: Traitement publication n8n corrigé", "INFO")
+        
+        # Parser les données du formulaire
+        publication_data = {}
+        media_file = None
+        
+        for key, value in form_data.items():
+            if hasattr(value, 'read') and hasattr(value, 'filename'):
+                # C'est un fichier uploadé
+                log_app(f"📦 Fichier détecté: {key} = {value.filename}", "INFO")
+                media_file = value
+            elif key == "jsonData" and isinstance(value, str):
+                # Format n8n avec JSON dans le champ jsonData
+                try:
+                    publication_data = json.loads(value)
+                    log_app(f"📦 JSON parsé depuis jsonData: {list(publication_data.keys())}", "INFO")
+                except json.JSONDecodeError as e:
+                    log_app(f"❌ Erreur parsing JSON: {e}", "ERROR")
+            else:
+                # Données directes
+                publication_data[key] = value
+        
+        # Log des données reçues
+        log_app(f"🔍 PATCH 19: Données publication: {list(publication_data.keys())}", "INFO")
+        
+        # Extraire les informations essentielles
+        store = publication_data.get("store") or publication_data.get("shop_type")
+        title = publication_data.get("title", "")
+        description = publication_data.get("description", "")
+        product_url = publication_data.get("url") or publication_data.get("product_url", "")
+        
+        if not store:
+            return {"success": False, "error": "Store manquant dans les données"}
+        
+        log_app(f"🎯 PATCH 19: Publication pour store '{store}': {title}", "INFO")
+        
+        # Traiter le fichier média si présent
+        media_info = None
+        if media_file:
+            try:
+                # Lire le contenu du fichier
+                file_content = await media_file.read()
+                content_type = getattr(media_file, 'content_type', 'application/octet-stream')
+                filename = getattr(media_file, 'filename', 'unknown')
+                
+                log_app(f"📦 PATCH 19: Fichier média: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
+                
+                # Déterminer l'extension selon le type
+                is_video = content_type.startswith('video/') or filename.lower().endswith(('.mp4', '.mov', '.avi'))
+                
+                if is_video:
+                    file_extension = ".mp4" if "mp4" in content_type else ".mov"
+                else:
+                    file_extension = ".jpg" if "jpeg" in content_type else ".png"
+                
+                # Nom de fichier unique
+                temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
+                temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+                
+                # Sauvegarder le fichier
+                with open(temp_path, 'wb') as f:
+                    f.write(file_content)
+                
+                # Générer l'URL publique
+                public_url = get_public_url(temp_filename)
+                
+                media_info = {
+                    'path': temp_path,
+                    'filename': temp_filename,
+                    'original_filename': filename,
+                    'content_type': content_type,
+                    'size': len(file_content),
+                    'public_url': public_url,
+                    'is_video': is_video
+                }
+                
+                log_app(f"✅ PATCH 19: Média sauvegardé: {public_url}", "SUCCESS")
+                
+            except Exception as file_error:
+                log_app(f"❌ PATCH 19: Erreur traitement fichier: {file_error}", "ERROR")
+                return {"success": False, "error": f"Erreur fichier: {file_error}"}
+        
+        # Préparer les données pour publication
+        webhook_publication_data = {
+            "store": store,
+            "title": title,
+            "description": description,
+            "url": product_url,
+            "platforms": ["facebook", "instagram"]  # Par défaut
+        }
+        
+        # Ajouter les informations du média
+        if media_info:
+            if media_info['is_video']:
+                webhook_publication_data['video_file'] = media_info
+            else:
+                webhook_publication_data['image_file'] = media_info
+                webhook_publication_data['image_url'] = media_info['public_url']
+        
+        # Publier sur les plateformes
+        publication_result = await process_webhook_publication(webhook_publication_data)
+        
+        if publication_result and publication_result.get("success"):
+            log_app(f"✅ PATCH 19: Publication réussie pour {store}", "SUCCESS")
+            return {
+                "success": True,
+                "store": store,
+                "title": title,
+                "platforms": publication_result.get("platforms", []),
+                "media": "video" if media_info and media_info['is_video'] else "image" if media_info else "text"
+            }
+        else:
+            log_app(f"❌ PATCH 19: Publication échouée: {publication_result}", "ERROR")
+            return {
+                "success": False,
+                "error": "Publication échouée",
+                "details": publication_result
+            }
+            
+    except Exception as e:
+        log_app(f"❌ PATCH 19: Erreur générale: {e}", "ERROR")
+        return {"success": False, "error": str(e)}
+
 async def handle_n8n_publication(form_data, format_type="direct") -> dict:
     """
     Gère les publications n8n avec logique complète (ex /api/webhook/publish)
