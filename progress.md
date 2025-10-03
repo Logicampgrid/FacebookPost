@@ -2,6 +2,33 @@
 ## 🎯 Crédits utilisés: 5/10 
 ## 🎯 État actuel: ✅ PATCH 20 APPLIQUÉ - OPTIMISATION NGROK DÉTECTION !
 
+## ✅ PATCH 20 - OPTIMISATION DÉTECTION NGROK (1 crédit)
+**🎯 PROBLÈME RÉSOLU**: Les timeouts répétitifs avec l'API ngrok perturbaient n8n et généraient des erreurs de logs
+
+**Problème identifié** :
+- ❌ **API ngrok (port 4040) surchargée** : Appels constants vers `127.0.0.1:4040/api/tunnels` 
+- ❌ **Timeouts répétitifs** : `HTTPConnectionPool: Read timed out. (read timeout=3)` toutes les 30 secondes
+- ❌ **Impact n8n** : Les timeouts perturbaient le traitement des webhooks n8n 
+- ❌ **Spam de logs** : Messages d'erreur répétitifs polluant les logs
+
+**Corrections appliquées** :
+- [x] **API ngrok désactivée** : Suppression des appels vers `127.0.0.1:4040` dans `get_active_ngrok_url()`
+- [x] **Lecture .env prioritaire** : L'URL est maintenant lue uniquement depuis `frontend/.env` 
+- [x] **Cache intégré** : Système de cache 30s pour éviter les lectures répétitives de fichiers
+- [x] **Logs optimisés** : Plus de messages répétitifs, logs uniquement si URL change
+- [x] **Fonctionnalités préservées** : OAuth Facebook et redirects restent 100% fonctionnels
+
+**Test de validation réussi** :
+- ✅ **Plus de timeouts ngrok** : Messages `⚠️ Erreur API ngrok: HTTPConnectionPool` éliminés complètement
+- ✅ **Cache fonctionnel** : URL récupérée depuis `.env` et mise en cache automatiquement 
+- ✅ **N8N opérationnel** : Webhook test traité avec `📦 PATCH 19: Traitement webhook Facebook/Instagram multipart`
+- ✅ **Logs propres** : Plus de spam de détection, seulement les événements importants
+
+**Résultat FINAL** : 
+- **N8N 100% fonctionnel** sans interférence des timeouts ngrok
+- **Performance améliorée** avec cache et moins d'I/O sur les fichiers
+- **Logs lisibles** sans pollution par les erreurs répétitives
+
 ## ✅ PATCH 19 - CORRECTION WEBHOOK N8N "STREAM CONSUMED" (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le webhook ne traitait pas les produits et vidéos de n8n à cause de l'erreur "Stream consumed"
 
