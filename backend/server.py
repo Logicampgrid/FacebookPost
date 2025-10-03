@@ -875,11 +875,10 @@ def get_active_ngrok_url():
         except Exception as e:
             log_app(f"⚠️ PATCH 22: Erreur lecture frontend .env: {e}", "WARNING")
         
-        # PATCH 22: PRIORITÉ 5 - Variable globale seulement si ngrok
         global NGROK_URL
-        if NGROK_URL and (NGROK_URL.startswith("http://") or NGROK_URL.startswith("https://")):
+        if NGROK_URL and NGROK_URL.endswith(".ngrok-free.app"):
             if NGROK_URL != _NGROK_URL_CACHE:
-                log_app(f"✅ URL depuis variable globale: {NGROK_URL}", "SUCCESS")
+                log_app(f"✅ PATCH 22: URL variable globale ngrok - {NGROK_URL}", "SUCCESS")
             _NGROK_URL_CACHE = NGROK_URL
             _NGROK_URL_CACHE_TIME = current_time
             return NGROK_URL
