@@ -4982,6 +4982,20 @@ async def webhook_handler(request: Request):
                     except Exception as e:
                         log_app(f"⚠️ Error parsing multipart data: {str(e)}", "WARNING")
                         return {"status": "received", "note": "Multipart parsing error but acknowledged"}
+                        
+                    # PATCH 21 CORRIGÉ: Si pas de publication n8n détectée, traiter comme webhook standard Facebook
+                    if not webhook_data:
+                        log_app("📦 PATCH 21: Webhook multipart Facebook standard - pas de données JSON trouvées", "INFO")
+                        # Créer des données webhook basiques pour Facebook
+                        webhook_data = {
+                            "object": "page",
+                            "entry": [],
+                            "source": "facebook_multipart_webhook"
+                        }
+                        # Ajouter les données de formulaire si disponibles
+                        for key, value in form_data.items():
+                            if not hasattr(value, 'read'):  # Pas un fichier
+                                webhook_data[key] = value
                 
                 # Handle application/json or text content
                 else:
