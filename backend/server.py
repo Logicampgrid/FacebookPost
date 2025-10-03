@@ -4621,25 +4621,23 @@ async def webhook_handler(request: Request):
                 raise HTTPException(status_code=403, detail="Forbidden")
                 
         elif method == "POST":
-            # Détecter si c'est une requête de publication n8n
-            publication_check = await detect_webhook_publication_request(request)
+            # CORRECTION PATCH 19: Éviter la consommation multiple du stream
+            content_type = request.headers.get("content-type", "")
+            log_app(f"📦 Content-Type: {content_type}", "INFO")
             
-            if publication_check["is_publication"]:
-                # NOUVELLE LOGIQUE: Publication automatique n8n
-                format_type = publication_check.get("format", "direct")
-                log_app(f"🚀 Détection requête publication n8n (format: {format_type})", "INFO")
-                return await handle_n8n_publication(publication_check["form_data"], format_type)
+            # Détecter si c'est une requête de publication n8n SANS consommer le stream
+            if "multipart/form-data" in content_type and any(param in request.headers.get("content-type", "") for param in ["store", "title", "description"]):
+                # C'est probablement une requête de publication n8n
+                log_app(f"🚀 Détection requête publication n8n multipart", "INFO")
+                try:
+                    form_data = await request.form()
+                    return await handle_n8n_publication_corrected(form_data)
+                except Exception as n8n_error:
+                    log_app(f"❌ Erreur traitement n8n: {n8n_error}", "ERROR")
+                    return {"status": "error", "message": str(n8n_error)}
             
             # ANCIENNE LOGIQUE: Gestion des événements webhook Facebook/Instagram
             try:
-                # Get content type to determine parsing strategy
-                content_type = request.headers.get("content-type", "")
-                log_app(f"📦 Content-Type: {content_type}", "INFO")
-                
-                # Try to get the raw body first  
-                body = await request.body()
-                log_app(f"📦 Webhook body size: {len(body)} bytes", "INFO")
-                
                 webhook_data = None
                 
                 # Handle multipart/form-data
