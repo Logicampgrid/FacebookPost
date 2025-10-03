@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://social-publish-fix.preview.emergentagent.com
+URL : https://promptgenius-13.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

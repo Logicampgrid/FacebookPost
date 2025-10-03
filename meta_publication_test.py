@@ -414,7 +414,7 @@ def main():
     """Main test execution"""
     # Get backend URL from environment or use default
     import os
-    backend_url = os.getenv("REACT_APP_BACKEND_URL", "https://social-publish-fix.preview.emergentagent.com")
+    backend_url = os.getenv("REACT_APP_BACKEND_URL", "https://promptgenius-13.preview.emergentagent.com")
     
     print(f"🔧 Backend URL: {backend_url}")
     
