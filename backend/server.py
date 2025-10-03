@@ -88,6 +88,11 @@ DETECT_EXISTING_NGROK = True  # Toujours détecter ngrok existant d'abord
 NGROK_PROCESS = None
 NGROK_URL = "https://9fff391906ce.ngrok-free.app"  # URL ngrok fixe pour simplicité
 
+# Cache pour éviter les lectures répétitives des fichiers
+_NGROK_URL_CACHE = None
+_NGROK_URL_CACHE_TIME = 0
+_CACHE_DURATION = 30  # Cache valide pendant 30 secondes
+
 def get_public_url(filename: str) -> str:
     """
     Construit l'URL publique ngrok pour un fichier uploadé.
