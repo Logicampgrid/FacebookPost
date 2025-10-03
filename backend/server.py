@@ -4810,6 +4810,9 @@ async def webhook_handler(request: Request):
                             log_app(f"✅ PATCH 21: Résultat publication - {publication_result}", "SUCCESS")
                             return publication_result
                         
+                        # PATCH 21 CORRIGÉ: Traitement des webhooks standard Facebook/Instagram (sans publication)
+                        log_app("📦 PATCH 21: Webhook standard Facebook/Instagram - traitement en cours...", "INFO")
+                        
                         # Look for JSON data in form fields
                         json_data_field = None
                         for field_name in ["json_data", "data", "payload", "hub.signature"]:
