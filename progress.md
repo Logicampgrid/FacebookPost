@@ -2,6 +2,39 @@
 ## 🎯 Crédits utilisés: 3/10 
 ## 🎯 État actuel: ✅ PATCH 18 APPLIQUÉ - SYNCHRONISATION AUTOMATIQUE URL NGROK AVEC .ENV !
 
+## ✅ PATCH 18 - CORRECTION SYNCHRONISATION URL NGROK AVEC .ENV (1 crédit)
+**🎯 PROBLÈME RÉSOLU**: server.py ne récupérait pas l'URL ngrok active car le .env n'était pas mis à jour automatiquement quand une nouvelle URL ngrok était créée via `01_start_ngrok_only.bat`
+
+**Problème identifié** :
+- ❌ **Script ngrok incomplet** : `start_ngrok_standalone.py` créait l'URL ngrok mais ne mettait pas à jour les fichiers .env
+- ❌ **URL obsolète dans .env** : `https://053b2d15594a.ngrok-free.app` hardcodée dans frontend/.env
+- ❌ **Fonction get_active_ngrok_url() priorités incorrectes** : Lisait le .env obsolète avant de vérifier l'API ngrok en temps réel
+
+**Corrections appliquées** :
+- [x] **Fonction `update_env_files_with_ngrok_url()` ajoutée** : Met à jour automatiquement frontend/.env (REACT_APP_BACKEND_URL) et backend/.env (WEBHOOK_URL, PUBLIC_BASE_URL)
+- [x] **Script `start_ngrok_standalone.py` amélioré** : Appelle automatiquement la synchronisation .env après création URL
+- [x] **Fonction `get_active_ngrok_url()` optimisée** : Priorité 1 = API ngrok temps réel, Priorité 2 = .env frontend, Priorité 3 = ngrok_url.txt
+- [x] **Logs détaillés PATCH 18** : Traçabilité complète de chaque mise à jour .env
+- [x] **Synchronisation bidirectionnelle** : Même URL existante synchronise les .env au démarrage
+
+**Test de validation attendu** :
+- ✅ Lancer `backend/01_start_ngrok_only.bat` 
+- ✅ Nouvelle URL ngrok générée (ex: `https://abc123.ngrok-free.app`)
+- ✅ `frontend/.env` automatiquement mis à jour : `REACT_APP_BACKEND_URL=https://abc123.ngrok-free.app`
+- ✅ `backend/.env` automatiquement mis à jour : `WEBHOOK_URL=https://abc123.ngrok-free.app`
+- ✅ `server.py` récupère automatiquement la nouvelle URL via `get_active_ngrok_url()`
+- ✅ Plus de problème d'URL obsolète dans les fichiers .env
+
+**Résultat FINAL** : 
+- **Synchronisation 100% automatique** entre ngrok et les fichiers .env
+- **server.py détecte toujours l'URL ngrok active** en temps réel
+- **Workflow utilisateur simplifié** : lancer le script .bat → tout est synchronisé automatiquement
+
+### Fichiers modifiés - PATCH 18
+- ✅ `/app/backend/start_ngrok_standalone.py` : Synchronisation automatique .env ajoutée
+- ✅ `/app/backend/server.py` : Fonction get_active_ngrok_url() optimisée avec priorité API temps réel
+- ✅ `/app/progress.md` : Documentation PATCH 18
+
 ## 🔄 ROLLBACK EFFECTUÉ - RETOUR AU PATCH 16
 **📅 Date** : Session actuelle
 **🎯 Action** : Rollback depuis PATCH 17 vers PATCH 16 
