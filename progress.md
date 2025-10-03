@@ -1,6 +1,17 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 8/10 
-## 🎯 État actuel: ✅ PATCH 21 APPLIQUÉ - PUBLICATIONS RÉELLES FONCTIONNELLES !
+## 🚫 Limites Respectées  
+- ⚡ Crédits utilisés: 1/10
+- 🔄 Travail incrémental par patch
+- 💾 Sauvegarde automatique du progress
+
+## 📊 État Actuel - PATCH 23
+**Phase**: Correction problèmes publications images/vidéos
+**Problèmes identifiés**:
+- Facebook: "Missing or invalid image file" (code 324)
+- Instagram: "Only photo or video can be accepted as media type" (code 9004) 
+- Instagram vidéo: "Media ID is not available" (code 9007)
+- URLs vidéos: 404 Not Found
+**Prochaine étape**: Diagnostic des fonctions de publication
 
 ## ✅ PATCH 22 - PRIORITÉ URLs NGROK RÉELLES (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
