@@ -11,7 +11,11 @@
 - Instagram: "Only photo or video can be accepted as media type" (code 9004) 
 - Instagram vidéo: "Media ID is not available" (code 9007)
 - URLs vidéos: 404 Not Found
-**Prochaine étape**: Diagnostic des fonctions de publication
+**Diagnostic effectué**:
+- ✅ Mode test désactivé (`PUBLICATION_TEST_MODE=false`)
+- ✅ Dossier uploads existe avec fichiers (images et vidéos)
+- ✅ Fonctions de publication analysées
+**Prochaine étape**: Identifier les causes des erreurs Facebook/Instagram
 
 ## ✅ PATCH 22 - PRIORITÉ URLs NGROK RÉELLES (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
