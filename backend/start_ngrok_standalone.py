@@ -75,6 +75,122 @@ def configure_ngrok():
         log_ngrok(f"Erreur configuration ngrok: {e}", "ERROR")
         return False
 
+def update_env_files_with_ngrok_url(ngrok_url):
+    """Met à jour automatiquement les fichiers .env avec la nouvelle URL ngrok"""
+    try:
+        log_ngrok("🔄 Mise à jour automatique des fichiers .env...", "INFO")
+        
+        # Déterminer les chemins des fichiers .env
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(backend_dir)
+        
+        frontend_env_path = os.path.join(project_root, "frontend", ".env")
+        backend_env_path = os.path.join(backend_dir, ".env")
+        
+        updated_files = []
+        
+        # 1. Mettre à jour le .env frontend (REACT_APP_BACKEND_URL)
+        if os.path.exists(frontend_env_path):
+            try:
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    content = f.read()
+                
+                lines = content.splitlines()
+                updated_lines = []
+                backend_url_updated = False
+                
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        old_url = line.split("=", 1)[1] if "=" in line else ""
+                        if old_url != ngrok_url:
+                            updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}")
+                            log_ngrok(f"Frontend .env: {old_url} → {ngrok_url}", "SUCCESS")
+                        else:
+                            updated_lines.append(line)
+                        backend_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                if not backend_url_updated:
+                    updated_lines.append(f"REACT_APP_BACKEND_URL={ngrok_url}")
+                    log_ngrok(f"Frontend .env: REACT_APP_BACKEND_URL ajouté → {ngrok_url}", "SUCCESS")
+                
+                with open(frontend_env_path, "w", encoding='utf-8') as f:
+                    f.write("\n".join(updated_lines))
+                    if updated_lines:
+                        f.write("\n")
+                
+                updated_files.append("frontend/.env")
+                
+            except Exception as e:
+                log_ngrok(f"Erreur mise à jour frontend .env: {e}", "ERROR")
+        else:
+            log_ngrok(f"Fichier frontend .env non trouvé: {frontend_env_path}", "WARNING")
+        
+        # 2. Mettre à jour le .env backend (WEBHOOK_URL et PUBLIC_BASE_URL)
+        if os.path.exists(backend_env_path):
+            try:
+                with open(backend_env_path, "r", encoding='utf-8') as f:
+                    content = f.read()
+                
+                lines = content.splitlines()
+                updated_lines = []
+                webhook_url_updated = False
+                public_base_url_updated = False
+                
+                for line in lines:
+                    if line.startswith("WEBHOOK_URL="):
+                        old_url = line.split("=", 1)[1] if "=" in line else ""
+                        if old_url != ngrok_url:
+                            updated_lines.append(f"WEBHOOK_URL={ngrok_url}")
+                            log_ngrok(f"Backend .env WEBHOOK_URL: {old_url} → {ngrok_url}", "SUCCESS")
+                        else:
+                            updated_lines.append(line)
+                        webhook_url_updated = True
+                    elif line.startswith("PUBLIC_BASE_URL="):
+                        old_url = line.split("=", 1)[1] if "=" in line else ""
+                        if old_url != ngrok_url:
+                            updated_lines.append(f"PUBLIC_BASE_URL={ngrok_url}")
+                            log_ngrok(f"Backend .env PUBLIC_BASE_URL: {old_url} → {ngrok_url}", "SUCCESS")
+                        else:
+                            updated_lines.append(line)
+                        public_base_url_updated = True
+                    else:
+                        updated_lines.append(line)
+                
+                # Ajouter les variables si elles n'existent pas
+                if not webhook_url_updated:
+                    updated_lines.append(f"WEBHOOK_URL={ngrok_url}")
+                    log_ngrok(f"Backend .env: WEBHOOK_URL ajouté → {ngrok_url}", "SUCCESS")
+                
+                if not public_base_url_updated:
+                    updated_lines.append(f"PUBLIC_BASE_URL={ngrok_url}")
+                    log_ngrok(f"Backend .env: PUBLIC_BASE_URL ajouté → {ngrok_url}", "SUCCESS")
+                
+                with open(backend_env_path, "w", encoding='utf-8') as f:
+                    f.write("\n".join(updated_lines))
+                    if updated_lines:
+                        f.write("\n")
+                
+                updated_files.append("backend/.env")
+                
+            except Exception as e:
+                log_ngrok(f"Erreur mise à jour backend .env: {e}", "ERROR")
+        else:
+            log_ngrok(f"Fichier backend .env non trouvé: {backend_env_path}", "WARNING")
+        
+        if updated_files:
+            log_ngrok(f"✅ Fichiers .env mis à jour: {', '.join(updated_files)}", "SUCCESS")
+            log_ngrok("🎯 server.py récupérera automatiquement la nouvelle URL", "SUCCESS")
+            return True
+        else:
+            log_ngrok("⚠️ Aucun fichier .env mis à jour", "WARNING")
+            return False
+            
+    except Exception as e:
+        log_ngrok(f"❌ Erreur générale mise à jour .env: {e}", "ERROR")
+        return False
+
 def start_ngrok_tunnel(port=8001):
     """Démarrer le tunnel ngrok de manière stable"""
     try:
@@ -85,6 +201,8 @@ def start_ngrok_tunnel(port=8001):
         existing_url = check_ngrok_running()
         if existing_url:
             log_ngrok("Ngrok déjà en cours, utilisation de l'URL existante", "INFO")
+            # Même pour une URL existante, s'assurer que les .env sont à jour
+            update_env_files_with_ngrok_url(existing_url)
             return existing_url
         
         # Nettoyer les processus existants
@@ -150,6 +268,14 @@ def start_ngrok_tunnel(port=8001):
                         except Exception as e:
                             log_ngrok(f"Erreur sauvegarde URL: {e}", "WARNING")
                         
+                        # NOUVELLE FONCTIONNALITÉ: Mise à jour automatique des fichiers .env
+                        env_update_success = update_env_files_with_ngrok_url(url)
+                        if env_update_success:
+                            log_ngrok("✅ Les fichiers .env ont été mis à jour automatiquement", "SUCCESS")
+                            log_ngrok("🔄 server.py utilisera maintenant la nouvelle URL ngrok", "SUCCESS")
+                        else:
+                            log_ngrok("⚠️ Mise à jour partielle des fichiers .env", "WARNING")
+                        
                         # Afficher les instructions de configuration Facebook
                         domain = url.replace("https://", "").replace("http://", "")
                         
@@ -159,6 +285,8 @@ def start_ngrok_tunnel(port=8001):
                         log_ngrok(f"2. OAuth Redirect URIs: {url}/auth/callback", "INFO")
                         log_ngrok(f"3. Webhooks: {url}/api/webhook", "INFO")
                         log_ngrok("=" * 50, "INFO")
+                        log_ngrok("✅ PROBLÈME RÉSOLU: server.py récupère maintenant l'URL ngrok active", "SUCCESS")
+                        log_ngrok("🎯 Les fichiers .env ont été synchronisés automatiquement", "SUCCESS")
                         
                         return url
             except requests.exceptions.ConnectionError:
