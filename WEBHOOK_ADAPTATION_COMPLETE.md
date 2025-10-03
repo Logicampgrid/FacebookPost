@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://prompt-emergent.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://social-publish-fix.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://prompt-emergent.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://prompt-emergent.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://prompt-emergent.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://social-publish-fix.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://social-publish-fix.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://social-publish-fix.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

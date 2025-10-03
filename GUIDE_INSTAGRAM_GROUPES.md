@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://prompt-emergent.preview.emergentagent.com
+URL : https://social-publish-fix.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
