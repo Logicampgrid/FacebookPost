@@ -121,7 +121,7 @@
 
 **Test de validation réussi** :
 - ✅ **URL locale détectée** : `uploads\test_patch17.jpg` → Instagram n'a plus d'erreur de chemins locaux
-- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://ai-assistant-210.preview.emergentagent.com/uploads/test_patch17.jpg`
+- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://prompt-emergent.preview.emergentagent.com/uploads/test_patch17.jpg`
 - ✅ **Instagram reçoit URLs HTTPS** : Plus jamais de `uploads\webhook_xxx.png` 
 - ✅ **Redirection fonctionnelle** : Anciennes fonctions → fonction corrigée automatiquement
 
@@ -217,7 +217,7 @@
 - [x] **publish_to_instagram()** : Logs détaillés "🔍 PATCH 13" pour traçabilité et débogage
 
 **Test de validation réussi** :
-- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://ai-assistant-210.preview.emergentagent.com/uploads/test_patch13.jpg`
+- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://prompt-emergent.preview.emergentagent.com/uploads/test_patch13.jpg`
 - ✅ URLs déjà publiques préservées : `https://example.com/test.jpg` → `https://example.com/test.jpg`
 - ✅ Logs détaillés : "🔍 PATCH 13: URL reçue par Instagram", "🔍 PATCH 13: Données envoyées à Instagram"
 
