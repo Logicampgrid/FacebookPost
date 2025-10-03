@@ -792,42 +792,9 @@ def kill_existing_ngrok():
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
 def get_active_ngrok_url():
-    """Récupère l'URL backend active - PRIORITÉ À L'API NGROK EN TEMPS RÉEL"""
+    """Récupère l'URL backend active - LECTURE .ENV UNIQUEMENT (plus d'API ngrok)"""
     try:
-        log_app("🔍 Détection de l'URL backend active...", "INFO")
-        
-        # PRIORITÉ 1: Interroger l'API ngrok locale en temps réel (source de vérité)
-        try:
-            response = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=3)
-            
-            if response.status_code == 200:
-                tunnels_data = response.json()
-                tunnels = tunnels_data.get('tunnels', [])
-                
-                if tunnels:
-                    # Chercher le tunnel qui correspond à notre port backend
-                    for tunnel in tunnels:
-                        config = tunnel.get('config', {})
-                        if config.get('addr') == f"http://localhost:{BACKEND_PORT}":
-                            public_url = tunnel.get('public_url')
-                            if public_url:
-                                log_app(f"✅ URL ngrok active détectée (API temps réel): {public_url}", "SUCCESS")
-                                return public_url
-                    
-                    # Si pas de tunnel spécifique trouvé, prendre le premier
-                    first_tunnel = tunnels[0]
-                    public_url = first_tunnel.get('public_url')
-                    if public_url:
-                        log_app(f"✅ URL ngrok active (premier tunnel): {public_url}", "SUCCESS")
-                        return public_url
-                
-                log_app("⚠️ Aucun tunnel ngrok actif trouvé via API", "WARNING")
-        except requests.exceptions.ConnectionError:
-            log_app("⚠️ API ngrok non accessible - ngrok probablement arrêté", "WARNING")
-        except Exception as e:
-            log_app(f"⚠️ Erreur API ngrok: {e}", "WARNING")
-        
-        # PRIORITÉ 2: Lire depuis le frontend .env (mise à jour par le script ngrok)
+        # PRIORITÉ 1: Lire depuis le frontend .env (source principale maintenant)
         try:
             frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
             if os.path.exists(frontend_env_path):
@@ -839,24 +806,28 @@ def get_active_ngrok_url():
                         backend_url = line.split("=", 1)[1].strip()
                         # Accepter toute URL valide (pas seulement ngrok)
                         if backend_url and (backend_url.startswith("http://") or backend_url.startswith("https://")):
-                            log_app(f"✅ URL backend trouvée dans frontend .env: {backend_url}", "SUCCESS")
-                            log_app("💡 Suggestion: Vérifiez si ngrok est actif pour une URL temps réel", "INFO")
+                            log_app(f"✅ URL backend depuis .env: {backend_url}", "SUCCESS")
                             return backend_url
         except Exception as e:
             log_app(f"⚠️ Erreur lecture frontend .env: {e}", "WARNING")
         
-        # PRIORITÉ 3: Lire depuis le fichier ngrok_url.txt si disponible
+        # PRIORITÉ 2: Lire depuis le fichier ngrok_url.txt si disponible
         try:
             ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
             if os.path.exists(ngrok_file_path):
                 with open(ngrok_file_path, "r", encoding='utf-8') as f:
                     file_url = f.read().strip()
                     if file_url and file_url.startswith("https://"):
-                        log_app(f"✅ URL trouvée dans fichier ngrok_url.txt: {file_url}", "SUCCESS")
-                        log_app("💡 Suggestion: Cette URL pourrait être obsolète, lancez ngrok pour une URL fraîche", "INFO")
+                        log_app(f"✅ URL depuis ngrok_url.txt: {file_url}", "SUCCESS")
                         return file_url
         except Exception as e:
             log_app(f"⚠️ Erreur lecture ngrok_url.txt: {e}", "WARNING")
+        
+        # PRIORITÉ 3: Utiliser l'URL globale hardcodée si définie
+        global NGROK_URL
+        if NGROK_URL and (NGROK_URL.startswith("http://") or NGROK_URL.startswith("https://")):
+            log_app(f"✅ URL depuis variable globale: {NGROK_URL}", "SUCCESS")
+            return NGROK_URL
         
         log_app("⚠️ Aucune URL backend active trouvée", "WARNING")
         log_app("💡 SOLUTION: Lancez le script 01_start_ngrok_only.bat pour créer une URL ngrok", "INFO")
