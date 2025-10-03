@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://auto-ngrok-updater.preview.emergentagent.com
+URL : https://ai-assistant-210.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
