@@ -4763,10 +4763,23 @@ async def webhook_handler(request: Request):
                 if "multipart/form-data" in content_type:
                     log_app("📦 Processing multipart/form-data webhook", "INFO")
                     try:
-                        # PATCH 19: Utiliser une nouvelle requête pour éviter la consommation du stream
-                        # Si nous arrivons ici, c'est que ce n'est PAS une requête n8n
-                        log_app("📦 PATCH 19: Traitement webhook Facebook/Instagram multipart", "INFO")
-                        return {"status": "received", "note": "Multipart Facebook webhook acknowledged"}
+                        # PATCH 21: CORRECTION - Traiter les publications au lieu de retourner un accusé de réception
+                        # Si nous arrivons ici, c'est que ce n'est PAS une requête n8n mais un webhook de publication
+                        log_app("📦 PATCH 21: Traitement publication webhook multipart", "INFO")
+                        
+                        form_data = await request.form()
+                        
+                        # Vérifier si c'est une vraie publication avec store/title/description
+                        has_publication_fields = any(field in form_data for field in ['store', 'title', 'description'])
+                        
+                        if has_publication_fields:
+                            log_app("📤 PATCH 21: Publication détectée - traitement en cours...", "INFO")
+                            publication_result = await handle_n8n_publication_corrected(form_data)
+                            log_app(f"✅ PATCH 21: Résultat publication - {publication_result}", "SUCCESS")
+                            return publication_result
+                        else:
+                            log_app("📦 PATCH 21: Webhook standard Facebook/Instagram (pas de publication)", "INFO")
+                            return {"status": "received", "note": "Multipart Facebook webhook acknowledged"}
                         
                         # Look for JSON data in form fields
                         json_data_field = None
