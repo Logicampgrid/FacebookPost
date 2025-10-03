@@ -4801,7 +4801,7 @@ async def webhook_handler(request: Request):
                         
                         form_data = await request.form()
                         
-                        # Vérifier si c'est une vraie publication avec store/title/description
+                        # PATCH 21 CORRIGÉ: Vérifier si c'est une vraie publication avec store/title/description  
                         has_publication_fields = any(field in form_data for field in ['store', 'title', 'description'])
                         
                         if has_publication_fields:
@@ -4809,9 +4809,6 @@ async def webhook_handler(request: Request):
                             publication_result = await handle_n8n_publication_corrected(form_data)
                             log_app(f"✅ PATCH 21: Résultat publication - {publication_result}", "SUCCESS")
                             return publication_result
-                        else:
-                            log_app("📦 PATCH 21: Webhook standard Facebook/Instagram (pas de publication)", "INFO")
-                            return {"status": "received", "note": "Multipart Facebook webhook acknowledged"}
                         
                         # Look for JSON data in form fields
                         json_data_field = None
