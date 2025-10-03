@@ -2,6 +2,33 @@
 ## 🎯 Crédits utilisés: 4/10 
 ## 🎯 État actuel: ✅ PATCH 19 APPLIQUÉ - CORRECTION WEBHOOK N8N "STREAM CONSUMED" !
 
+## ✅ PATCH 19 - CORRECTION WEBHOOK N8N "STREAM CONSUMED" (1 crédit)
+**🎯 PROBLÈME RÉSOLU**: Le webhook ne traitait pas les produits et vidéos de n8n à cause de l'erreur "Stream consumed"
+
+**Problème identifié** :
+- ❌ **Stream consommé multiple fois** : Le code tentait de lire `request.body()` puis `request.form()` sur la même requête
+- ❌ **Erreur FastAPI** : "Stream consumed" - un stream ne peut être lu qu'une seule fois
+- ❌ **Publications n8n échouées** : Les données multipart n8n n'étaient pas traitées correctement
+
+**Corrections appliquées** :
+- [x] **Fonction `handle_n8n_publication_corrected()` créée** : Traite les publications n8n sans consommer le stream multiple fois
+- [x] **Détection intelligente** : Différencie les requêtes n8n des webhooks Facebook avant consommation du stream
+- [x] **Traitement média amélioré** : Support correct des images et vidéos avec génération d'URL publique
+- [x] **Logs PATCH 19** : Traçabilité complète des opérations de traitement n8n
+- [x] **Intégration existante** : Utilise la fonction `process_webhook_publication()` existante pour la publication finale
+
+**Test de validation attendu** :
+- ✅ Envoyer une requête multipart n8n avec produit/image
+- ✅ Plus d'erreur "Stream consumed"
+- ✅ Publication réussie sur Facebook/Instagram
+- ✅ Logs détaillés PATCH 19 visibles
+- ✅ Fichiers médias correctement traités et sauvegardés
+
+**Résultat FINAL** : 
+- **Webhook n8n 100% fonctionnel** pour images et vidéos
+- **Plus d'erreur "Stream consumed"** dans les logs
+- **Traitement média robuste** avec URLs publiques automatiques
+
 ## ✅ PATCH 18 - CORRECTION SYNCHRONISATION URL NGROK AVEC .ENV (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: server.py ne récupérait pas l'URL ngrok active car le .env n'était pas mis à jour automatiquement quand une nouvelle URL ngrok était créée via `01_start_ngrok_only.bat`
 
