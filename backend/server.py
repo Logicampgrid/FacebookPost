@@ -5558,7 +5558,8 @@ async def upload_video_endpoint(video: UploadFile = File(...)):
         # Valider le fichier
         validation = validate_video_file(temp_path)
         if not validation["valid"]:
-            os.remove(temp_path)  # Nettoyer le fichier temporaire
+            # PATCH 23: Conserver fichier même si validation échoue pour debug
+            # os.remove(temp_path)  # Nettoyer le fichier temporaire
             return VideoUploadResponse(
                 success=False,
                 error=validation["error"],
