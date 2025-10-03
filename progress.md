@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 4/10 
-## 🎯 État actuel: ✅ PATCH 19 APPLIQUÉ - CORRECTION WEBHOOK N8N "STREAM CONSUMED" !
+## 🎯 Crédits utilisés: 5/10 
+## 🎯 État actuel: ✅ PATCH 20 APPLIQUÉ - OPTIMISATION NGROK DÉTECTION !
 
 ## ✅ PATCH 19 - CORRECTION WEBHOOK N8N "STREAM CONSUMED" (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Le webhook ne traitait pas les produits et vidéos de n8n à cause de l'erreur "Stream consumed"
