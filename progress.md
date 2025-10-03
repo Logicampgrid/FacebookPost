@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
-## 🎯 Crédits utilisés: 3/10 
-## 🎯 État actuel: ✅ PATCH 18 APPLIQUÉ - SYNCHRONISATION AUTOMATIQUE URL NGROK AVEC .ENV !
+## 🎯 Crédits utilisés: 4/10 
+## 🎯 État actuel: ✅ PATCH 19 APPLIQUÉ - CORRECTION WEBHOOK N8N "STREAM CONSUMED" !
 
 ## ✅ PATCH 18 - CORRECTION SYNCHRONISATION URL NGROK AVEC .ENV (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: server.py ne récupérait pas l'URL ngrok active car le .env n'était pas mis à jour automatiquement quand une nouvelle URL ngrok était créée via `01_start_ngrok_only.bat`
