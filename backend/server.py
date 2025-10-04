@@ -14,7 +14,14 @@ import signal
 import requests
 import asyncio
 from datetime import datetime, timedelta
-import schedule
+
+# PATCH 25: Import schedule optionnel pour compatibilité Windows
+try:
+    import schedule
+    SCHEDULE_AVAILABLE = True
+except ImportError:
+    SCHEDULE_AVAILABLE = False
+    print("⚠️ [PATCH 25] Module 'schedule' non disponible - nettoyage différé désactivé")
 import webbrowser
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
