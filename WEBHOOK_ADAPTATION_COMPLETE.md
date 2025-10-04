@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://promptgenius-13.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://smart-prompt-4.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://promptgenius-13.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://promptgenius-13.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://promptgenius-13.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://smart-prompt-4.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://smart-prompt-4.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://smart-prompt-4.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
