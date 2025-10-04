@@ -17968,10 +17968,10 @@ def poster_media():
                             shutil.move(processed_file_path, final_destination)
                             log_poster(f"Fichier déplacé vers processed: {processed_filename}", "SUCCESS")
                             
-                            # Supprimer le fichier WebP original si conversion a eu lieu
+                            # PATCH 24: Conservation du fichier WebP original pour accès FB/IG
                             if processed_file_path != file_path and os.path.exists(file_path):
-                                os.remove(file_path)
-                                log_poster(f"Fichier WebP original supprimé: {filename}", "INFO")
+                                # os.remove(file_path)
+                                log_poster(f"📁 PATCH 24: Fichier WebP original conservé: {filename}", "INFO")
                                 
                         except Exception as move_error:
                             log_poster(f"Erreur déplacement {filename}: {str(move_error)}", "WARNING")
