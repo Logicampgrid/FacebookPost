@@ -4730,13 +4730,11 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
             results["message"] = "Échec des publications sur les deux plateformes"
             results["success"] = False
         
-        # PATCH 23: Nettoyage fichier commenté - Facebook/Instagram ont besoin d'accéder au fichier
-        # Suppression différée possible via tâche cron ou après délai
+        # PATCH 24: Suppression différée - Facebook/Instagram ont besoin d'accéder au fichier d'abord
         try:
-            # os.remove(file_path)
-            log_app(f"📁 PATCH 23: Fichier conservé pour accès FB/IG: {file_path}", "INFO")
-        except:
-            log_app(f"⚠️ PATCH 23: Fichier conservé malgré erreur: {file_path}", "WARNING")
+            schedule_file_cleanup(file_path)
+        except Exception as e:
+            log_app(f"⚠️ PATCH 24: Erreur programmation nettoyage: {e}", "WARNING")
         
         return results
         
