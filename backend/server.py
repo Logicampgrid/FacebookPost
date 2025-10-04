@@ -1277,8 +1277,10 @@ async def lifespan(app: FastAPI):
             time.sleep(2)  # Laisser le temps à toutes les configurations de se finaliser
             log_app("✅ Application démarrée avec succès!", "SUCCESS")
             
-            # PATCH 24: Démarrage du planificateur de nettoyage différé
-            start_cleanup_scheduler()
+            # PATCH 25: Démarrage du planificateur de nettoyage différé (si disponible)
+            scheduler_started = start_cleanup_scheduler()
+            if not scheduler_started:
+                log_app("🧹 PATCH 25: Nettoyage manuel requis - les fichiers s'accumuleront dans /uploads", "WARNING")
             
             # NOUVELLE FONCTIONNALITÉ: Auto-démarrage de la surveillance des dossiers (si disponible)
             if ENHANCED_FEATURES_AVAILABLE:
