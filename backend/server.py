@@ -5864,6 +5864,35 @@ def cleanup_old_files():
     if files_cleaned > 0:
         log_app(f"🧹 PATCH 24: {files_cleaned} fichiers nettoyés, {len(files_to_cleanup)} en attente", "INFO")
 
+def manual_cleanup_old_files():
+    """PATCH 25: Nettoyage manuel pour environnements sans 'schedule'"""
+    try:
+        uploads_dir = WINDOWS_PATHS.get('uploads_dir', 'uploads')
+        current_time = datetime.now()
+        cutoff_time = current_time - timedelta(hours=CLEANUP_DELAY_HOURS)
+        
+        files_cleaned = 0
+        if os.path.exists(uploads_dir):
+            for filename in os.listdir(uploads_dir):
+                if filename.startswith('webhook_'):
+                    file_path = os.path.join(uploads_dir, filename)
+                    try:
+                        # Vérifier l'âge du fichier
+                        file_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                        if file_time < cutoff_time:
+                            os.remove(file_path)
+                            files_cleaned += 1
+                    except Exception as e:
+                        log_app(f"⚠️ PATCH 25: Erreur nettoyage manuel {filename}: {e}", "WARNING")
+        
+        if files_cleaned > 0:
+            log_app(f"🧹 PATCH 25: Nettoyage manuel - {files_cleaned} fichiers anciens supprimés", "INFO")
+        
+        return files_cleaned
+    except Exception as e:
+        log_app(f"❌ PATCH 25: Erreur nettoyage manuel: {e}", "ERROR")
+        return 0
+
 def start_cleanup_scheduler():
     """Démarre le planificateur de nettoyage en arrière-plan"""
     if not SCHEDULE_AVAILABLE:
