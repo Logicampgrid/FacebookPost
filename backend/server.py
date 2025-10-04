@@ -5864,6 +5864,11 @@ def cleanup_old_files():
 
 def start_cleanup_scheduler():
     """Démarre le planificateur de nettoyage en arrière-plan"""
+    if not SCHEDULE_AVAILABLE:
+        log_app("⚠️ PATCH 25: Module 'schedule' non disponible - nettoyage différé désactivé", "WARNING")
+        log_app("💡 PATCH 25: Pour activer: pip install schedule", "INFO")
+        return False
+    
     def run_scheduler():
         schedule.every(30).minutes.do(cleanup_old_files)  # Nettoyage toutes les 30 minutes
         while True:
@@ -5873,6 +5878,7 @@ def start_cleanup_scheduler():
     cleanup_thread = threading.Thread(target=run_scheduler, daemon=True)
     cleanup_thread.start()
     log_app(f"🧹 PATCH 24: Planificateur de nettoyage démarré (délai: {CLEANUP_DELAY_HOURS}h)", "INFO")
+    return True
 
 # Ancien endpoint /api/webhook/publish supprimé - Logique intégrée dans /api/webhook
 
