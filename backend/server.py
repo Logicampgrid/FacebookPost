@@ -5817,6 +5817,58 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         log_app(f"❌ {error_msg}", "ERROR")
         return {"success": False, "error": error_msg}
 
+# PATCH 24: Système de nettoyage différé des fichiers
+CLEANUP_DELAY_HOURS = 2  # Délai avant suppression des fichiers (2 heures)
+files_to_cleanup = []  # Liste des fichiers à supprimer plus tard
+
+def schedule_file_cleanup(file_path: str):
+    """Planifie la suppression d'un fichier après un délai"""
+    cleanup_time = datetime.now() + timedelta(hours=CLEANUP_DELAY_HOURS)
+    files_to_cleanup.append({
+        'path': file_path,
+        'cleanup_time': cleanup_time
+    })
+    log_app(f"📅 PATCH 24: Suppression programmée dans {CLEANUP_DELAY_HOURS}h: {file_path}", "INFO")
+
+def cleanup_old_files():
+    """Nettoie les fichiers dont le délai est dépassé"""
+    current_time = datetime.now()
+    files_cleaned = 0
+    
+    # Créer une nouvelle liste sans les fichiers nettoyés
+    global files_to_cleanup
+    remaining_files = []
+    
+    for file_info in files_to_cleanup:
+        if current_time >= file_info['cleanup_time']:
+            file_path = file_info['path']
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    log_app(f"🧹 PATCH 24: Fichier nettoyé: {file_path}", "INFO")
+                    files_cleaned += 1
+            except Exception as e:
+                log_app(f"⚠️ PATCH 24: Erreur nettoyage {file_path}: {e}", "WARNING")
+        else:
+            remaining_files.append(file_info)
+    
+    files_to_cleanup = remaining_files
+    
+    if files_cleaned > 0:
+        log_app(f"🧹 PATCH 24: {files_cleaned} fichiers nettoyés, {len(files_to_cleanup)} en attente", "INFO")
+
+def start_cleanup_scheduler():
+    """Démarre le planificateur de nettoyage en arrière-plan"""
+    def run_scheduler():
+        schedule.every(30).minutes.do(cleanup_old_files)  # Nettoyage toutes les 30 minutes
+        while True:
+            schedule.run_pending()
+            time.sleep(60)  # Vérifier toutes les minutes
+    
+    cleanup_thread = threading.Thread(target=run_scheduler, daemon=True)
+    cleanup_thread.start()
+    log_app(f"🧹 PATCH 24: Planificateur de nettoyage démarré (délai: {CLEANUP_DELAY_HOURS}h)", "INFO")
+
 # Ancien endpoint /api/webhook/publish supprimé - Logique intégrée dans /api/webhook
 
 if __name__ == "__main__":
