@@ -2555,6 +2555,27 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+@app.post("/api/cleanup")
+async def manual_cleanup():
+    """PATCH 25: Endpoint pour nettoyage manuel des fichiers anciens"""
+    try:
+        files_cleaned = manual_cleanup_old_files()
+        pending_files = len(files_to_cleanup)
+        
+        return {
+            "success": True,
+            "files_cleaned": files_cleaned,
+            "pending_scheduled": pending_files,
+            "cleanup_delay_hours": CLEANUP_DELAY_HOURS,
+            "schedule_available": SCHEDULE_AVAILABLE
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "schedule_available": SCHEDULE_AVAILABLE
+        }
+
 @app.get("/api/pages")
 async def get_pages_info():
     """Get pages information and shop mapping for testing"""
