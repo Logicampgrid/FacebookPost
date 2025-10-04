@@ -2911,9 +2911,11 @@ async def upload_video_endpoint(video: UploadFile = File(...)):
         # Upload vers FTP
         success, public_url, error = await upload_video_to_ftp(temp_path, unique_filename)
         
-        # Nettoyer le fichier temporaire
+        # PATCH 24: Conservation fichier temporaire pour accès FB/IG
+        # Les fichiers seront nettoyés par une tâche périodique ou manuellement
         try:
-            os.remove(temp_path)
+            # os.remove(temp_path)
+            log_app(f"📁 PATCH 24: Fichier vidéo conservé: {temp_path}", "INFO")
         except:
             pass
         
