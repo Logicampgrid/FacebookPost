@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 1/10
+- ⚡ Crédits utilisés: 2/10
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
