@@ -11433,8 +11433,8 @@ async def download_product_image(image_url: str) -> str:
             optimized_path = os.path.join(UPLOAD_DIR, f"{optimized_filename}")
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
-                # Remove original and use optimized version
-                os.remove(file_path)
+                # PATCH 24: Conservation du fichier original pour accès FB/IG
+                # os.remove(file_path)
                 file_path = optimized_path
                 unique_filename = optimized_filename
                 print(f"✅ Image optimized: {unique_filename}")
@@ -16470,8 +16470,8 @@ async def upload_media(post_id: str, file: UploadFile = File(...)):
             optimized_path = os.path.join(UPLOAD_DIR, f"{optimized_filename}")
             
             if optimize_image(file_path, optimized_path, max_size=(1200, 1200), quality=90):
-                # Remove original and use optimized version
-                os.remove(file_path)
+                # PATCH 24: Conservation du fichier original pour accès FB/IG
+                # os.remove(file_path)
                 file_path = optimized_path
                 unique_filename = optimized_filename
                 print(f"✅ Image optimized and saved as: {unique_filename}")
