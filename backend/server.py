@@ -133,27 +133,30 @@ def get_public_url(filename: str) -> str:
         return f"{FTP_BASE_URL}{filename}"
 
 async def upload_file_to_ftp_for_publication(local_file_path: str, filename: str = None) -> tuple:
-    """PATCH 29: Upload un fichier vers FTP pour publication Facebook/Instagram avec gestionnaire intelligent"""
+    """PATCH 30: Upload un fichier vers FTP pour publication Facebook/Instagram avec gestionnaire intelligent"""
     try:
-        from ftp_manager_patch29 import upload_for_publication
-        
         if not filename:
             filename = os.path.basename(local_file_path)
             
-        log_app(f"🔄 PATCH 29: Upload FTP intelligent en cours - {filename}", "INFO")
+        log_app(f"🔄 PATCH 30: Upload FTP intelligent en cours - {filename}", "INFO")
         
-        # Utiliser le nouveau gestionnaire FTP
-        success, ftp_url, error = upload_for_publication(local_file_path, filename)
-        
-        if success and ftp_url:
-            log_app(f"✅ PATCH 29: Upload FTP réussi - {ftp_url}", "SUCCESS")
-            return True, ftp_url, None
+        if FTP_MANAGER_AVAILABLE:
+            # Utiliser le nouveau gestionnaire FTP
+            success, ftp_url, error = upload_for_publication(local_file_path, filename)
+            
+            if success and ftp_url:
+                log_app(f"✅ PATCH 30: Upload FTP réussi - {ftp_url}", "SUCCESS")
+                return True, ftp_url, None
+            else:
+                log_app(f"❌ PATCH 30: Upload FTP échoué - {error}", "ERROR")
+                return False, None, error
         else:
-            log_app(f"❌ PATCH 29: Upload FTP échoué - {error}", "ERROR")
-            return False, None, error
+            error_msg = "PATCH 30: Gestionnaire FTP non disponible"
+            log_app(f"❌ {error_msg}", "ERROR")
+            return False, None, error_msg
             
     except Exception as e:
-        error_msg = f"PATCH 29: Erreur générale upload FTP - {str(e)}"
+        error_msg = f"PATCH 30: Erreur générale upload FTP - {str(e)}"
         log_app(f"❌ {error_msg}", "ERROR")
         return False, None, error_msg
 
