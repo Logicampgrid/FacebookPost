@@ -851,7 +851,7 @@ def kill_existing_ngrok():
         log_app(f"⚠️ Erreur lors de l'arrêt des processus ngrok: {e}", "WARNING")
 
 def get_active_ngrok_url():
-    """Récupère l'URL backend active - PATCH 22: PRIORITÉ AUX URLs NGROK RÉELLES"""
+    """PATCH 30: Récupère l'URL backend active - PRIORITÉ AU FRONTEND .ENV"""
     global _NGROK_URL_CACHE, _NGROK_URL_CACHE_TIME
     
     try:
@@ -860,7 +860,26 @@ def get_active_ngrok_url():
         if _NGROK_URL_CACHE and (current_time - _NGROK_URL_CACHE_TIME) < _CACHE_DURATION:
             return _NGROK_URL_CACHE
         
-        # PATCH 22: PRIORITÉ 1 - API ngrok temps réel si disponible
+        # PATCH 30: PRIORITÉ 1 - Frontend .env (source unique de vérité)
+        try:
+            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
+            if os.path.exists(frontend_env_path):
+                with open(frontend_env_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                for line in lines:
+                    if line.startswith("REACT_APP_BACKEND_URL="):
+                        backend_url = line.split("=", 1)[1].strip()
+                        if backend_url and (backend_url.endswith(".ngrok-free.app") or backend_url.startswith("https://")):
+                            if backend_url != _NGROK_URL_CACHE:
+                                log_app(f"✅ PATCH 30: URL depuis frontend .env - {backend_url}", "SUCCESS")
+                            _NGROK_URL_CACHE = backend_url
+                            _NGROK_URL_CACHE_TIME = current_time
+                            return backend_url
+        except Exception as e:
+            log_app(f"⚠️ PATCH 30: Erreur lecture frontend .env: {e}", "WARNING")
+        
+        # PATCH 30: PRIORITÉ 2 - API ngrok temps réel (fallback)
         try:
             import requests
             response = requests.get("http://localhost:4040/api/tunnels", timeout=3)
@@ -871,12 +890,12 @@ def get_active_ngrok_url():
                         ngrok_url = tunnel.get("public_url")
                         if ngrok_url and ngrok_url.endswith(".ngrok-free.app"):
                             if ngrok_url != _NGROK_URL_CACHE:
-                                log_app(f"✅ PATCH 22: URL ngrok API temps réel - {ngrok_url}", "SUCCESS")
+                                log_app(f"✅ PATCH 30: URL ngrok API fallback - {ngrok_url}", "SUCCESS")
                             _NGROK_URL_CACHE = ngrok_url
                             _NGROK_URL_CACHE_TIME = current_time
                             return ngrok_url
         except Exception as e:
-            log_app(f"⚠️ PATCH 22: API ngrok non accessible: {e}", "WARNING")
+            log_app(f"⚠️ PATCH 30: API ngrok non accessible: {e}", "WARNING")
         
         # PATCH 22: PRIORITÉ 2 - Fichier ngrok réel si disponible
         try:
