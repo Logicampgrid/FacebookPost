@@ -4681,9 +4681,9 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 is_video = (content_type and content_type.startswith('video/')) or filename.lower().endswith(('.mp4', '.mov', '.avi'))
                 
                 if is_video:
-                    file_extension = ".mp4" if "mp4" in content_type else ".mov"
+                    file_extension = ".mp4" if content_type and "mp4" in content_type else ".mov"
                 else:
-                    file_extension = ".jpg" if "jpeg" in content_type else ".png"
+                    file_extension = ".jpg" if content_type and "jpeg" in content_type else ".png"
                 
                 # Nom de fichier unique
                 temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
