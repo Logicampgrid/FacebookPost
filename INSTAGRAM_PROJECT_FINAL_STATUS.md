@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://promptbot-1.preview.emergentagent.com/api/webhook
+https://codecraft-110.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

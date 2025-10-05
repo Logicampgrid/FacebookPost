@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://promptbot-1.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://codecraft-110.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://promptbot-1.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://promptbot-1.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://promptbot-1.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://codecraft-110.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://codecraft-110.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://codecraft-110.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
