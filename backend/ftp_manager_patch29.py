@@ -116,15 +116,43 @@ class FTPManager:
                 
                 for config in configs:
                     try:
+                        self.log_ftp(f"PATCH 33: Tentative {config['name']}...", "INFO")
+                        
                         ftp = ftplib.FTP()
                         ftp.set_pasv(config["pasv"])
+                        ftp.encoding = 'utf-8'  # PATCH 33: Encoding explicite
+                        
+                        # PATCH 33: Connexion avec logs détaillés
+                        self.log_ftp(f"Connexion {self.host}:{self.port}...", "INFO")
                         ftp.connect(self.host, self.port, timeout=config["timeout"])
+                        
+                        self.log_ftp(f"Authentification utilisateur '{self.user}'...", "INFO")
                         ftp.login(self.user, self.password)
+                        
+                        self.log_ftp(f"Navigation vers répertoire '{self.base_dir}'...", "INFO")
                         ftp.cwd(self.base_dir)
                         
-                        # Upload du fichier
+                        # PATCH 33: Upload avec progress
+                        file_size = os.path.getsize(local_path)
+                        self.log_ftp(f"Upload fichier {file_size} bytes, blocksize {config['blocksize']}...", "INFO")
+                        
                         with open(local_path, 'rb') as f:
+                            start_time = time.time()
                             ftp.storbinary(f'STOR {remote_filename}', f, blocksize=config["blocksize"])
+                            upload_time = time.time() - start_time
+                            
+                        speed_kbps = (file_size / 1024) / upload_time if upload_time > 0 else 0
+                        self.log_ftp(f"Upload terminé en {upload_time:.2f}s ({speed_kbps:.1f} KB/s)", "SUCCESS")
+                        
+                        # PATCH 33: Vérification upload
+                        try:
+                            remote_size = ftp.size(remote_filename)
+                            if remote_size == file_size:
+                                self.log_ftp(f"Upload vérifié: {remote_size} bytes", "SUCCESS")
+                            else:
+                                self.log_ftp(f"Taille différente: local={file_size}, remote={remote_size}", "WARNING")
+                        except:
+                            self.log_ftp("Vérification taille impossible (mais upload OK)", "INFO")
                         
                         ftp.quit()
                         
@@ -135,11 +163,15 @@ class FTPManager:
                         self.upload_cache[local_path] = ftp_url
                         self.save_cache()
                         
-                        self.log_ftp(f"Upload réussi: {ftp_url}", "SUCCESS")
+                        self.log_ftp(f"PATCH 33: Upload réussi avec {config['name']}: {ftp_url}", "SUCCESS")
                         return True, ftp_url, None
                         
                     except Exception as config_error:
-                        self.log_ftp(f"Config {'passif' if config['pasv'] else 'actif'} échouée: {config_error}", "WARNING")
+                        self.log_ftp(f"PATCH 33: {config['name']} échouée: {config_error}", "WARNING")
+                        try:
+                            ftp.quit()
+                        except:
+                            pass
                         continue
                         
             except Exception as e:
