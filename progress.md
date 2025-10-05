@@ -4,7 +4,8 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## ✅ PATCH 32 - CORRECTION CHEMIN FTP CRUCIAL (1 crédit)
+## ✅ PATCH 32 - CORRECTION CHEMIN FTP CRUCIAL (1 crédit)  
+**✅ VALIDÉ PAR PATCH 33**: Le chemin corrigé `/www/wordpress/uploads/` est bien accessible
 **🎯 PROBLÈME CRITIQUE RÉSOLU**: Upload FTP vers mauvais répertoire causant erreurs 404 sur toutes les images Facebook/Instagram
 
 **Problème identifié par l'utilisateur**:
