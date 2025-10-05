@@ -118,14 +118,16 @@ _NGROK_URL_CACHE_TIME = 0
 _CACHE_DURATION = 30  # Cache valide pendant 30 secondes
 
 def get_public_url(filename: str) -> str:
-    """PATCH 29: Génère une URL publique FTP pour Facebook/Instagram avec gestionnaire intelligent"""
+    """PATCH 30: Génère une URL publique FTP pour Facebook/Instagram avec gestionnaire intelligent"""
     try:
-        from ftp_manager_patch29 import get_ftp_public_url
-        
-        # PATCH 29: Utiliser le gestionnaire FTP intelligent
-        ftp_public_url = get_ftp_public_url(filename)
-        log_app(f"🎯 PATCH 29: URL FTP générée - {ftp_public_url}", "INFO")
-        return ftp_public_url
+        if FTP_MANAGER_AVAILABLE:
+            # PATCH 30: Utiliser le gestionnaire FTP intelligent
+            ftp_public_url = get_ftp_public_url(filename)
+            log_app(f"🎯 PATCH 30: URL FTP générée - {ftp_public_url}", "INFO")
+            return ftp_public_url
+        else:
+            log_app(f"⚠️ PATCH 30: Gestionnaire FTP non disponible - URL fallback", "WARNING")
+            return f"{FTP_BASE_URL}{filename}"
     except Exception as e:
         log_app(f"⚠️ Erreur génération URL FTP: {e}", "WARNING")
         return f"{FTP_BASE_URL}{filename}"
