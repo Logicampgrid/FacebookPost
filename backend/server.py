@@ -5828,7 +5828,6 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
             }
             
             # PATCH 26: Upload direct du fichier au lieu d'URL pour éviter les problèmes ngrok
-            files = None
             if media_url and media_url.startswith(('http://', 'https://')):
                 # Télécharger le fichier et l'uploader directement
                 try:
