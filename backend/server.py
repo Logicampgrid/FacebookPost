@@ -2576,6 +2576,53 @@ async def manual_cleanup():
             "schedule_available": SCHEDULE_AVAILABLE
         }
 
+@app.get("/media/{filename}")
+async def serve_media_file(filename: str):
+    """PATCH 26: Endpoint spécialisé pour servir les fichiers média avec headers optimisés pour Facebook/Instagram"""
+    try:
+        # Sécurité : vérifier que le fichier existe et est dans uploads
+        uploads_dir = WINDOWS_PATHS.get('uploads_dir', 'uploads')
+        file_path = os.path.join(uploads_dir, filename)
+        
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Détecter le type MIME
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if not mime_type:
+            if filename.lower().endswith(('.jpg', '.jpeg')):
+                mime_type = 'image/jpeg'
+            elif filename.lower().endswith('.png'):
+                mime_type = 'image/png'
+            elif filename.lower().endswith('.webp'):
+                mime_type = 'image/webp'
+            elif filename.lower().endswith(('.mp4', '.mov')):
+                mime_type = 'video/mp4'
+            else:
+                mime_type = 'application/octet-stream'
+        
+        # Headers spécialisés pour Facebook/Instagram
+        headers = {
+            'Content-Type': mime_type,
+            'Cache-Control': 'public, max-age=3600',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': '*'
+        }
+        
+        log_app(f"🎯 PATCH 26: Serving media file {filename} ({mime_type})", "INFO")
+        
+        return FileResponse(
+            path=file_path,
+            media_type=mime_type,
+            headers=headers,
+            filename=filename
+        )
+        
+    except Exception as e:
+        log_app(f"❌ PATCH 26: Erreur serving media {filename}: {e}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/pages")
 async def get_pages_info():
     """Get pages information and shop mapping for testing"""
