@@ -5005,9 +5005,25 @@ async def webhook_handler(request: Request):
                                         
                                         log_app(f"📦 PATCH 9: Image sauvegardée: {temp_path}", "INFO")
                                         
-                                        # PATCH 9: NGROK UNIQUEMENT - Plus de FTP
-                                        public_url = get_public_url(temp_filename)
-                                        log_app(f"🌐 PATCH 9: URL publique générée: {public_url}", "SUCCESS")
+                                        # PATCH 30: Upload FTP intelligent pour URLs accessibles
+                                        try:
+                                            if FTP_MANAGER_AVAILABLE:
+                                                ftp_success, ftp_url, ftp_error = await upload_file_to_ftp_for_publication(temp_path, temp_filename)
+                                                if ftp_success and ftp_url:
+                                                    public_url = ftp_url
+                                                    log_app(f"✅ PATCH 30: Upload FTP réussi - {public_url}", "SUCCESS")
+                                                else:
+                                                    log_app(f"⚠️ PATCH 30: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
+                                                    public_url = get_public_url(temp_filename)
+                                            else:
+                                                # Fallback vers ngrok si FTP non disponible
+                                                public_url = get_public_url(temp_filename)
+                                                log_app(f"🌐 PATCH 30: URL ngrok (FTP non disponible): {public_url}", "INFO")
+                                        except Exception as e:
+                                            log_app(f"⚠️ PATCH 30: Erreur upload FTP: {e}", "WARNING")
+                                            public_url = get_public_url(temp_filename)
+                                        
+                                        log_app(f"🌐 PATCH 30: URL publique finale: {public_url}", "SUCCESS")
                                         
                                         # Ajouter les infos de l'image aux données webhook
                                         webhook_data['image_file'] = {
@@ -5061,9 +5077,25 @@ async def webhook_handler(request: Request):
                                         
                                         log_app(f"📦 PATCH 9: Image sauvegardée: {temp_path}", "INFO")
                                         
-                                        # PATCH 9: NGROK UNIQUEMENT - Plus de FTP
-                                        public_url = get_public_url(temp_filename)
-                                        log_app(f"🌐 PATCH 9: URL publique générée: {public_url}", "SUCCESS")
+                                        # PATCH 30: Upload FTP intelligent pour URLs accessibles
+                                        try:
+                                            if FTP_MANAGER_AVAILABLE:
+                                                ftp_success, ftp_url, ftp_error = await upload_file_to_ftp_for_publication(temp_path, temp_filename)
+                                                if ftp_success and ftp_url:
+                                                    public_url = ftp_url
+                                                    log_app(f"✅ PATCH 30: Upload FTP réussi - {public_url}", "SUCCESS")
+                                                else:
+                                                    log_app(f"⚠️ PATCH 30: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
+                                                    public_url = get_public_url(temp_filename)
+                                            else:
+                                                # Fallback vers ngrok si FTP non disponible
+                                                public_url = get_public_url(temp_filename)
+                                                log_app(f"🌐 PATCH 30: URL ngrok (FTP non disponible): {public_url}", "INFO")
+                                        except Exception as e:
+                                            log_app(f"⚠️ PATCH 30: Erreur upload FTP: {e}", "WARNING")
+                                            public_url = get_public_url(temp_filename)
+                                        
+                                        log_app(f"🌐 PATCH 30: URL publique finale: {public_url}", "SUCCESS")
                                         
                                         # Ajouter les infos de l'image aux données webhook
                                         webhook_data['image_file'] = {
