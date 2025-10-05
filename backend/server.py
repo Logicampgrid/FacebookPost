@@ -5754,7 +5754,13 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
         
         log_app(f"📱 Publication Facebook vers {fb_page_id}: {message[:100]}...", "INFO")
         
-        response = requests.post(fb_url, data=data, timeout=30)
+        # PATCH 26: Envoi avec fichier direct si disponible
+        if files:
+            log_app(f"🔄 PATCH 26: Upload direct du fichier à Facebook", "INFO")
+            response = requests.post(fb_url, data=data, files=files, timeout=30)
+        else:
+            log_app(f"🔄 PATCH 26: Envoi URL à Facebook: {data.get('url', 'N/A')}", "INFO")
+            response = requests.post(fb_url, data=data, timeout=30)
         
         if response.status_code == 200:
             result = response.json()
