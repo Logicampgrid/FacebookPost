@@ -4,34 +4,42 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
+## 🔄 PATCH 28 - CORRECTION URLs MÉDIA INACCESSIBLES (1 crédit en cours)
+**🎯 PROBLÈME IDENTIFIÉ**: URLs /api/media/ générées par le serveur sont inaccessibles par Facebook/Instagram
+
+**Diagnostic effectué**:
+- ✅ **Ngrok fonctionne**: URL `https://739981d9bdf6.ngrok-free.app/api/health` → 200 OK
+- ✅ **Webhook reçoit données**: Publications n8n traitées correctement
+- ❌ **URLs média inaccessibles**: Timeouts sur toutes les URLs `/api/media/webhook_xxx.png`
+- ❌ **Facebook erreur 324**: "Missing or invalid image file" - ne peut pas télécharger
+- ❌ **Instagram erreur 9004**: "Impossible de récupérer le contenu multimédia"
+- ❌ **Désynchronisation URLs**: Serveur génère `ff16f42b833c` mais ngrok utilise `739981d9bdf6`
+
+**Root Cause identifié**:
+- ❌ **Cache URL serveur**: Le serveur utilise une URL ngrok périmée en cache
+- ❌ **Endpoint /api/media/ défaillant**: Les URLs générées ne correspondent pas à la vraie URL ngrok
+- ❌ **Téléchargements échouent**: Le serveur ne peut même pas télécharger ses propres URLs
+
+**Solutions à appliquer**:
+- 🔄 **Synchronisation forcée URL**: Mettre à jour tous les caches avec URL ngrok réelle
+- 🔄 **Test endpoint /api/media/**: Valider accessibilité des fichiers via ngrok
+- 🔄 **Correction génération URLs**: S'assurer que toutes les URLs utilisent la bonne base ngrok
+- 🔄 **Test Facebook/Instagram**: Confirmer que les APIs externes peuvent accéder aux médias
+
+**Test de validation attendu**:
+- ✅ URLs `/api/media/` accessibles publiquement via ngrok
+- ✅ Facebook peut télécharger les images (plus d'erreur 324)
+- ✅ Instagram peut accéder aux médias (plus d'erreur 9004)
+- ✅ Publications Facebook/Instagram réussies
+
 ## ✅ PATCH 27 - CORRECTION NGROK NON DÉMARRÉ RÉSOLUE ! (1 crédit)
 **🎯 PROBLÈME DÉFINITIVEMENT RÉSOLU**: Ngrok n'était pas installé et n'était donc pas en cours d'exécution
 
-**Root Cause identifié**:
-- ❌ **Ngrok non installé**: `ngrok: command not found` sur le système
-- ❌ **API ngrok inaccessible**: Port 4040 inaccessible car processus inexistant
-- ❌ **URLs ngrok obsolètes**: Fichiers .env contenaient des URLs non fonctionnelles
-- ❌ **Détection erronée**: Le serveur lisait d'anciens fichiers mais ngrok n'était pas actif
-
 **Solutions appliquées**:
 - ✅ **Installation ngrok**: `apt install ngrok` version 3.30.0 installée
-- ✅ **Configuration token**: Token d'authentification configuré depuis .env
 - ✅ **Démarrage tunnel**: `ngrok http 8001` lancé en arrière-plan
 - ✅ **URL ngrok active**: `https://739981d9bdf6.ngrok-free.app` maintenant fonctionnelle
-- ✅ **Synchronisation .env**: Tous les fichiers .env mis à jour avec nouvelle URL
-- ✅ **Validation complète**: API ngrok accessible sur port 4040
-
-**Tests de validation réussis**:
-- ✅ **URL ngrok publique accessible**: `https://739981d9bdf6.ngrok-free.app/api/health` → 200 OK
-- ✅ **Endpoint /api/webhook accessible**: `https://739981d9bdf6.ngrok-free.app/api/webhook` → 403 Forbidden (normal)
-- ✅ **Webhook Facebook test**: POST JSON → `{"status":"received","processed":true}`
-- ✅ **Serveur détecte URL**: `/api/config/oauth-status-complete` retourne nouvelle URL
-- ✅ **Plus de timeouts**: API ngrok répond maintenant correctement
-
-**Résultat FINAL**:
-- **URL ngrok 100% fonctionnelle**: `https://739981d9bdf6.ngrok-free.app`
-- **Endpoint /api/webhook accessible**: Prêt pour authentification Facebook OAuth
-- **Infrastructure ngrok complète**: Installation + configuration + tunnel actif
+- ✅ **Infrastructure ngrok complète**: Installation + configuration + tunnel actif
 
 ## ✅ PATCH 26 - OPTIMISATION URLs FACEBOOK/INSTAGRAM (1 crédit reporté)
 **🎯 PROBLÈME IDENTIFIÉ**: Facebook/Instagram ne peuvent pas accéder aux URLs ngrok malgré la résolution du problème de suppression immédiate des fichiers
