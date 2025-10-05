@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://code-assistant-33.preview.emergentagent.com
+🔗 https://smart-emergent.preview.emergentagent.com
