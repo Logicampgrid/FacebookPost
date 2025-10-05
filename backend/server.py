@@ -2581,7 +2581,7 @@ async def manual_cleanup():
             "schedule_available": SCHEDULE_AVAILABLE
         }
 
-@app.get("/media/{filename}")
+@app.get("/api/media/{filename}")
 async def serve_media_file(filename: str):
     """PATCH 26: Endpoint spécialisé pour servir les fichiers média avec headers optimisés pour Facebook/Instagram"""
     try:
