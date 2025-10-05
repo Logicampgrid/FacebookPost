@@ -112,7 +112,7 @@ def get_public_url(filename: str) -> str:
             return public_url
         else:
             # Fallback vers URL hardcodée si ngrok non disponible
-            fallback_url = f"https://9fff391906ce.ngrok-free.app/media/{filename}"
+            fallback_url = f"https://9fff391906ce.ngrok-free.app/api/media/{filename}"
             log_app(f"⚠️ PATCH 26: URL media fallback - {fallback_url}", "WARNING")
             return fallback_url
     except Exception as e:
