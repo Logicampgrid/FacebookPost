@@ -140,30 +140,61 @@ def get_public_url(filename: str) -> str:
         return f"{FTP_BASE_URL}{filename}"
 
 async def upload_file_to_ftp_for_publication(local_file_path: str, filename: str = None) -> tuple:
-    """PATCH 30: Upload un fichier vers FTP pour publication Facebook/Instagram avec gestionnaire intelligent"""
+    """PATCH 33: Upload FTP robuste avec fallback ngrok en cas d'échec"""
     try:
         if not filename:
             filename = os.path.basename(local_file_path)
             
-        log_app(f"🔄 PATCH 30: Upload FTP intelligent en cours - {filename}", "INFO")
+        log_app(f"🔄 PATCH 33: Upload FTP robuste en cours - {filename}", "INFO")
         
         if FTP_MANAGER_AVAILABLE:
-            # Utiliser le nouveau gestionnaire FTP
+            # PATCH 33: Tentative upload FTP avec timeout optimisé
             success, ftp_url, error = upload_for_publication(local_file_path, filename)
             
             if success and ftp_url:
-                log_app(f"✅ PATCH 30: Upload FTP réussi - {ftp_url}", "SUCCESS")
+                log_app(f"✅ PATCH 33: Upload FTP réussi - {ftp_url}", "SUCCESS")
                 return True, ftp_url, None
             else:
-                log_app(f"❌ PATCH 30: Upload FTP échoué - {error}", "ERROR")
-                return False, None, error
+                log_app(f"⚠️ PATCH 33: Upload FTP échoué ({error}) - Fallback ngrok...", "WARNING")
+                
+                # PATCH 33: Fallback intelligent vers ngrok
+                ngrok_url = get_active_ngrok_url()
+                if ngrok_url:
+                    # Copier le fichier vers le répertoire uploads local pour ngrok
+                    uploads_dir = "/app/backend/uploads"
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    
+                    local_upload_path = os.path.join(uploads_dir, filename)
+                    shutil.copy2(local_file_path, local_upload_path)
+                    
+                    ngrok_public_url = f"{ngrok_url}/uploads/{filename}"
+                    log_app(f"✅ PATCH 33: Fallback ngrok réussi - {ngrok_public_url}", "SUCCESS")
+                    return True, ngrok_public_url, None
+                else:
+                    # Dernière chance : générer une URL optimiste
+                    optimistic_url = f"{FTP_BASE_URL}{filename}"
+                    log_app(f"⚠️ PATCH 33: URL optimiste générée - {optimistic_url}", "WARNING")
+                    return False, optimistic_url, "Upload FTP et ngrok échoués"
         else:
-            error_msg = "PATCH 30: Gestionnaire FTP non disponible"
-            log_app(f"❌ {error_msg}", "ERROR")
-            return False, None, error_msg
+            # PATCH 33: Si pas de gestionnaire FTP, utiliser ngrok directement
+            ngrok_url = get_active_ngrok_url()
+            if ngrok_url:
+                uploads_dir = "/app/backend/uploads"
+                os.makedirs(uploads_dir, exist_ok=True)
+                
+                local_upload_path = os.path.join(uploads_dir, filename)
+                shutil.copy2(local_file_path, local_upload_path)
+                
+                ngrok_public_url = f"{ngrok_url}/uploads/{filename}"
+                log_app(f"✅ PATCH 33: Upload ngrok direct - {ngrok_public_url}", "SUCCESS")
+                return True, ngrok_public_url, None
+            else:
+                error_msg = "PATCH 33: Aucun gestionnaire FTP ni URL ngrok disponible"
+                log_app(f"❌ {error_msg}", "ERROR")
+                return False, None, error_msg
             
     except Exception as e:
-        error_msg = f"PATCH 30: Erreur générale upload FTP - {str(e)}"
+        error_msg = f"PATCH 33: Erreur générale upload - {str(e)}"
         log_app(f"❌ {error_msg}", "ERROR")
         return False, None, error_msg
 
