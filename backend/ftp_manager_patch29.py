@@ -211,18 +211,30 @@ class FTPManager:
 ftp_manager = None
 
 def init_ftp_manager():
-    """Initialise le gestionnaire FTP global"""
+    """PATCH 30: Initialise le gestionnaire FTP global avec configuration centralisée .env"""
     global ftp_manager
     if not ftp_manager:
+        # PATCH 30: Lire configuration depuis .env backend
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        ftp_host = os.getenv("FTP_HOST", "logicamp.org")
+        ftp_port = int(os.getenv("FTP_PORT", "21"))
+        ftp_user = os.getenv("FTP_USER", "logi")
+        ftp_password = os.getenv("FTP_PASSWORD", "6837")
+        ftp_directory = os.getenv("FTP_DIRECTORY", "/wordpress/uploads/")
+        ftp_base_url = os.getenv("FTP_BASE_URL", f"https://{ftp_host}/wordpress/uploads/")
+        
         ftp_manager = FTPManager(
-            host="logicamp.org",
-            port=21,
-            user="logi", 
-            password="6837",
-            base_dir="/wordpress/uploads/",
-            base_url="https://logicamp.org/wordpress/uploads/"
+            host=ftp_host,
+            port=ftp_port,
+            user=ftp_user, 
+            password=ftp_password,
+            base_dir=ftp_directory,
+            base_url=ftp_base_url
         )
-        ftp_manager.log_ftp("Gestionnaire FTP PATCH 29 initialisé", "SUCCESS")
+        ftp_manager.log_ftp(f"PATCH 30: Gestionnaire FTP initialisé avec config .env - {ftp_host}:{ftp_port}", "SUCCESS")
     return ftp_manager
 
 def upload_for_publication(local_path: str, filename: str = None) -> Tuple[bool, Optional[str], Optional[str]]:
