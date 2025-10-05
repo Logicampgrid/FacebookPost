@@ -4,6 +4,35 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
+## 🔄 PATCH 26 - OPTIMISATION URLs FACEBOOK/INSTAGRAM (1 crédit en cours)
+**🎯 PROBLÈME IDENTIFIÉ**: Facebook/Instagram ne peuvent pas accéder aux URLs ngrok malgré la résolution du problème de suppression immédiate des fichiers
+
+**Recherche effectuée**:
+- ✅ **URLs ngrok accessibles**: Tests confirmés - URLs retournent HTTP 200 avec Content-Type correct
+- ✅ **Headers valides**: Content-Type: image/jpeg, Cache-Control, CORS headers présents
+- ✅ **User-Agent Facebook**: URLs accessibles même avec facebookexternalhit/1.1
+- ❌ **Problème identifié**: Facebook/Instagram rejettent les URLs ngrok malgré l'accessibilité
+
+**Solutions appliquées**:
+- ✅ **Upload direct Facebook**: Modification pour télécharger et uploader fichiers directement au lieu d'URLs
+- ✅ **Endpoint /media/ spécialisé**: Headers optimisés pour Facebook/Instagram avec CORS
+- ✅ **URL génération modifiée**: Utilise `/media/{filename}` au lieu de `/uploads/{filename}`
+- 🔄 **Test en cours**: Vérification que le nouvel endpoint fonctionne correctement
+
+**Architecture nouvelle**:
+1. **Facebook**: Upload direct du fichier (téléchargement + files= dans la requête)
+2. **Instagram**: URLs optimisées via endpoint `/media/` avec headers spéciaux
+3. **Endpoint spécialisé**: `/media/{filename}` avec Cache-Control et Access-Control headers
+4. **Fallback intelligent**: Si téléchargement échoue, fallback vers URL normale
+
+**Test de validation attendu**:
+- ✅ Endpoint `/media/` accessible en local
+- 🔄 URLs ngrok `/media/` accessibles publiquement  
+- 🔄 Facebook accepte les uploads directs de fichiers
+- 🔄 Instagram accepte les URLs `/media/` optimisées
+
+**Résultat attendu**: Publications Facebook/Instagram réussies sans erreurs "Missing or invalid image file"
+
 ## ✅ PATCH 25 - COMPATIBILITÉ WINDOWS RESTAURÉE ! (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: ModuleNotFoundError: No module named 'schedule' sur environnement Windows
 
