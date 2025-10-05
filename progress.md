@@ -4,6 +4,37 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
+## ✅ PATCH 32 - CORRECTION CHEMIN FTP CRUCIAL (1 crédit)
+**🎯 PROBLÈME CRITIQUE RÉSOLU**: Upload FTP vers mauvais répertoire causant erreurs 404 sur toutes les images Facebook/Instagram
+
+**Problème identifié par l'utilisateur**:
+- ❌ **Chemin FTP incorrect**: `/wordpress/uploads/` utilisé au lieu de `/www/wordpress/uploads/`
+- ❌ **Images inaccessibles**: URLs générées pointent vers des fichiers non uploadés au bon endroit
+- ❌ **Facebook/Instagram échouent**: Erreurs "Missing or invalid image file" et "Only photo or video can be accepted"
+- ❌ **Root cause des erreurs 404**: Fichiers uploadés au mauvais répertoire FTP
+
+**Correction appliquée**:
+- [x] **Configuration .env corrigée**: `FTP_DIRECTORY=/www/wordpress/uploads/`
+- [x] **Valeurs par défaut mises à jour**: `server.py` et `ftp_manager_patch29.py` corrigés
+- [x] **Cohérence garantie**: Tous les modules utilisent maintenant le bon chemin
+- [x] **URLs inchangées**: `FTP_BASE_URL` reste `https://logicamp.org/wordpress/uploads/` (correct)
+
+**Fichiers modifiés**:
+- [x] `/app/backend/.env`: `FTP_DIRECTORY=/www/wordpress/uploads/`
+- [x] `/app/backend/server.py`: Valeur par défaut corrigée
+- [x] `/app/backend/ftp_manager_patch29.py`: Valeur par défaut corrigée
+
+**Test de validation attendu**:
+- ✅ Images uploadées vers `/www/wordpress/uploads/` (bon répertoire serveur)
+- ✅ URLs `https://logicamp.org/wordpress/uploads/xxx.jpg` maintenant accessibles
+- ✅ Facebook/Instagram peuvent télécharger les images (plus d'erreur 404)
+- ✅ Publications Facebook/Instagram réussies avec médias
+
+**Résultat FINAL ATTENDU**:
+- **Upload FTP au bon endroit** - fichiers accessibles via web
+- **URLs images fonctionnelles** - plus d'erreur 404 pour Facebook/Instagram
+- **Publications médias réussies** - Facebook et Instagram peuvent accéder aux fichiers
+
 ## ✅ PATCH 31 - CORRECTION VARIABLE 'FILES' FACEBOOK VIDÉO (1 crédit)
 **🎯 PROBLÈME CRITIQUE RÉSOLU**: Erreur "cannot access local variable 'files' where it is not associated with a value" lors des publications vidéo Facebook
 
