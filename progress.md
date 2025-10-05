@@ -4,7 +4,28 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🔄 PATCH 26 - OPTIMISATION URLs FACEBOOK/INSTAGRAM (1 crédit en cours)
+## 🔄 PATCH 27 - CORRECTION NGROK NON DÉMARRÉ (1 crédit en cours)
+**🎯 PROBLÈME IDENTIFIÉ**: Ngrok n'est pas en cours d'exécution malgré la détection dans les logs
+
+**Diagnostic effectué**:
+- ✅ **Serveur FastAPI OK**: http://localhost:8001 répond correctement
+- ✅ **Endpoint /api/webhook existe**: Configuré dans server.py
+- ❌ **API ngrok inaccessible**: Port 4040 ne répond pas (Connection refused)
+- ❌ **URL ngrok non fonctionnelle**: Timeouts sur https://bd85ed4836bf.ngrok-free.app
+- ❌ **Détection erronée**: Le serveur croit que ngrok fonctionne mais il n'est pas démarré
+
+**Solutions à appliquer**:
+- 🔄 **Diagnostic ngrok complet**: Vérifier processus ngrok actifs
+- 🔄 **Redémarrage ngrok**: Utiliser 01_start_ngrok_only.bat si nécessaire  
+- 🔄 **Validation tunnel**: Confirmer que l'URL ngrok est réellement accessible
+- 🔄 **Synchronisation .env**: Mettre à jour avec la vraie URL ngrok fonctionnelle
+
+**Test de validation attendu**:
+- ✅ URL ngrok accessible publiquement
+- ✅ Endpoint /api/webhook accessible via ngrok
+- ✅ Plus de timeouts dans les logs du serveur
+
+## ✅ PATCH 26 - OPTIMISATION URLs FACEBOOK/INSTAGRAM (1 crédit reporté)
 **🎯 PROBLÈME IDENTIFIÉ**: Facebook/Instagram ne peuvent pas accéder aux URLs ngrok malgré la résolution du problème de suppression immédiate des fichiers
 
 **Recherche effectuée**:
