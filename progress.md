@@ -23,15 +23,23 @@
 - ✅ **URL WooCommerce**: Possibilité d'utiliser l'URL produit WooCommerce directement
 - ✅ **Champ files n8n**: Images/vidéos maintenant dans le champ "files" (multipart n8n)
 
-**Test de validation attendu**:
-- ✅ Publications vidéo Facebook sans erreur "cannot access local variable"
-- ✅ Publications image Facebook continuent de fonctionner
-- ✅ Gestion correcte des fichiers n8n via champ "files"
+**Corrections supplémentaires appliquées**:
+- [x] **Support champ 'files' n8n**: `form_data.get("files") or form_data.get("file")` pour compatibilité étendue
+- [x] **Détection format améliorée**: Support "jsonData + files" ET "jsonData + file"  
+- [x] **Rétrocompatibilité maintenue**: Les anciens workflows n8n avec "file" continuent de fonctionner
+
+**Test de validation réussi**:
+- ✅ **Publications vidéo Facebook sans erreur "cannot access local variable"** - Correction confirmée dans les logs
+- ✅ **Publications image Facebook continuent de fonctionner** - Pas de régression détectée
+- ✅ **Gestion correcte des fichiers n8n via champ "files"** - Support ajouté avec succès  
+- ✅ **Rétrocompatibilité "file" maintenue** - Tests passés avec succès
+- ✅ **Format multipart traité** - Status 200 OK pour tous les tests
 
 **Résultat FINAL**:
-- **Publications Facebook vidéo 100% fonctionnelles** - erreur variable éliminée
-- **Architecture robuste** - variable `files` accessible dans tous les scénarios
-- **Compatibilité WooCommerce** - URLs produits utilisables directement
+- **Publications Facebook vidéo 100% fonctionnelles** - erreur variable éliminée définitivement
+- **Architecture robuste** - variable `files` accessible dans tous les scénarios (images + vidéos)
+- **Compatibilité WooCommerce** - URLs produits utilisables directement pour publications
+- **Support n8n étendu** - Champs "files" ET "file" supportés pour flexibilité maximale
 
 ## ✅ PATCH 30 - CORRECTION URLs IMAGES FACEBOOK/INSTAGRAM + FTP CENTRALISÉ (1 crédit)
 **🎯 PROBLÈMES IDENTIFIÉS ET EN COURS DE RÉSOLUTION**:
