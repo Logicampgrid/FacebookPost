@@ -106,8 +106,8 @@ def get_public_url(filename: str) -> str:
     try:
         ngrok_url = get_active_ngrok_url()
         if ngrok_url:
-            # PATCH 26: Utiliser l'endpoint /media spécialisé pour Facebook/Instagram
-            public_url = f"{ngrok_url}/media/{filename}"
+            # PATCH 26: Utiliser l'endpoint /api/media spécialisé pour Facebook/Instagram
+            public_url = f"{ngrok_url}/api/media/{filename}"
             log_app(f"🎯 PATCH 26: URL media générée - {public_url}", "INFO")
             return public_url
         else:
