@@ -118,18 +118,25 @@ _NGROK_URL_CACHE_TIME = 0
 _CACHE_DURATION = 30  # Cache valide pendant 30 secondes
 
 def get_public_url(filename: str) -> str:
-    """PATCH 30: Génère une URL publique FTP pour Facebook/Instagram avec gestionnaire intelligent"""
+    """PATCH 33: Génère une URL publique FTP - Version robuste avec fallback ngrok"""
     try:
         if FTP_MANAGER_AVAILABLE:
-            # PATCH 30: Utiliser le gestionnaire FTP intelligent
+            # PATCH 33: Utiliser le gestionnaire FTP intelligent
             ftp_public_url = get_ftp_public_url(filename)
-            log_app(f"🎯 PATCH 30: URL FTP générée - {ftp_public_url}", "INFO")
+            log_app(f"🎯 PATCH 33: URL FTP générée - {ftp_public_url}", "INFO")
             return ftp_public_url
         else:
-            log_app(f"⚠️ PATCH 30: Gestionnaire FTP non disponible - URL fallback", "WARNING")
-            return f"{FTP_BASE_URL}{filename}"
+            # PATCH 33: Fallback vers ngrok si FTP non disponible
+            ngrok_url = get_active_ngrok_url()
+            if ngrok_url:
+                ngrok_public_url = f"{ngrok_url}/uploads/{filename}"
+                log_app(f"🔄 PATCH 33: URL ngrok fallback - {ngrok_public_url}", "INFO")
+                return ngrok_public_url
+            else:
+                log_app(f"⚠️ PATCH 33: Fallback URL statique - {FTP_BASE_URL}{filename}", "WARNING")
+                return f"{FTP_BASE_URL}{filename}"
     except Exception as e:
-        log_app(f"⚠️ Erreur génération URL FTP: {e}", "WARNING")
+        log_app(f"⚠️ PATCH 33: Erreur génération URL: {e}", "WARNING")
         return f"{FTP_BASE_URL}{filename}"
 
 async def upload_file_to_ftp_for_publication(local_file_path: str, filename: str = None) -> tuple:
