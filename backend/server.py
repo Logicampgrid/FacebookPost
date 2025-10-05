@@ -4716,7 +4716,7 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
     try:
         # Extraire les paramètres selon le format
         if format_type == "n8n":
-            # Format n8n : jsonData + file
+            # Format n8n : jsonData + file (ou files)
             json_data_str = form_data.get("jsonData")
             if isinstance(json_data_str, str):
                 json_data = json.loads(json_data_str)
@@ -4729,7 +4729,8 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
             title = json_data.get("title")
             url = json_data.get("url")
             description = json_data.get("description")
-            file = form_data.get("file")
+            # PATCH 31: Support champ 'files' n8n en plus de 'file'
+            file = form_data.get("files") or form_data.get("file")
             
             log_app(f"📦 Format n8n détecté - JSON: {json_data}", "INFO")
         else:
