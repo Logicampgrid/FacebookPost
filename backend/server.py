@@ -102,22 +102,38 @@ _NGROK_URL_CACHE_TIME = 0
 _CACHE_DURATION = 30  # Cache valide pendant 30 secondes
 
 def get_public_url(filename: str) -> str:
-    """PATCH 26: Génère une URL publique optimisée pour Facebook/Instagram"""
+    """PATCH 29: Génère une URL publique FTP pour Facebook/Instagram"""
     try:
-        ngrok_url = get_active_ngrok_url()
-        if ngrok_url:
-            # PATCH 26: Utiliser l'endpoint /api/media spécialisé pour Facebook/Instagram
-            public_url = f"{ngrok_url}/api/media/{filename}"
-            log_app(f"🎯 PATCH 26: URL media générée - {public_url}", "INFO")
-            return public_url
-        else:
-            # Fallback vers URL hardcodée si ngrok non disponible
-            fallback_url = f"https://9fff391906ce.ngrok-free.app/api/media/{filename}"
-            log_app(f"⚠️ PATCH 26: URL media fallback - {fallback_url}", "WARNING")
-            return fallback_url
+        # PATCH 29: Utiliser FTP au lieu de ngrok pour les URLs publiques
+        ftp_public_url = f"{FTP_BASE_URL}{filename}"
+        log_app(f"🎯 PATCH 29: URL FTP générée - {ftp_public_url}", "INFO")
+        return ftp_public_url
     except Exception as e:
-        log_app(f"⚠️ Erreur génération URL publique: {e}", "WARNING")
-        return f"https://9fff391906ce.ngrok-free.app/api/media/{filename}"
+        log_app(f"⚠️ Erreur génération URL FTP: {e}", "WARNING")
+        return f"{FTP_BASE_URL}{filename}"
+
+async def upload_file_to_ftp_for_publication(local_file_path: str, filename: str = None) -> tuple:
+    """PATCH 29: Upload un fichier vers FTP pour publication Facebook/Instagram"""
+    try:
+        if not filename:
+            filename = os.path.basename(local_file_path)
+            
+        log_app(f"🔄 PATCH 29: Upload FTP en cours - {filename}", "INFO")
+        
+        # Utiliser la fonction d'upload existante mais optimisée
+        success, ftp_url, error = await upload_image_to_ftp(local_file_path, filename)
+        
+        if success and ftp_url:
+            log_app(f"✅ PATCH 29: Upload FTP réussi - {ftp_url}", "SUCCESS")
+            return True, ftp_url, None
+        else:
+            log_app(f"❌ PATCH 29: Upload FTP échoué - {error}", "ERROR")
+            return False, None, error
+            
+    except Exception as e:
+        error_msg = f"PATCH 29: Erreur générale upload FTP - {str(e)}"
+        log_app(f"❌ {error_msg}", "ERROR")
+        return False, None, error_msg
 
 # === FACEBOOK/META CONFIGURATION MISE À JOUR ===
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
