@@ -43,7 +43,23 @@ from database import (
 from token_manager import token_manager
 from webhook_handler import webhook_handler
 
-# Import the new FTP upload utilities - PATCH 17: Import robuste
+# PATCH 30: Import FTP Manager centralisé
+try:
+    from ftp_manager_patch29 import init_ftp_manager, upload_for_publication, get_ftp_public_url
+    FTP_MANAGER_AVAILABLE = True
+    print("✅ [PATCH 30] Gestionnaire FTP PATCH 29 disponible")
+except ImportError as e:
+    print(f"⚠️ [PATCH 30] Gestionnaire FTP non disponible: {e}")
+    # Fallback functions
+    def init_ftp_manager():
+        return None
+    def upload_for_publication(local_path: str, filename: str = None):
+        return False, None, "Gestionnaire FTP non disponible"
+    def get_ftp_public_url(filename: str, local_path: str = None):
+        return f"https://logicamp.org/wordpress/uploads/{filename}"
+    FTP_MANAGER_AVAILABLE = False
+
+# Import the new FTP upload utilities - PATCH 17: Import robuste (gardé pour compatibilité)
 try:
     from utils.ftp_upload import upload_file_via_ftp, get_public_media_url
     FTP_UTILS_AVAILABLE = True
