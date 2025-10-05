@@ -4668,10 +4668,17 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 content_type = getattr(media_file, 'content_type', 'application/octet-stream')
                 filename = getattr(media_file, 'filename', 'unknown')
                 
-                log_app(f"📦 PATCH 19: Fichier média: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
+                log_app(f"📦 PATCH 34: Fichier média: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
                 
-                # Déterminer l'extension selon le type
-                is_video = content_type.startswith('video/') or filename.lower().endswith(('.mp4', '.mov', '.avi'))
+                # PATCH 34: Détection MIME robuste avec protection contre None
+                if not content_type:
+                    import mimetypes
+                    detected_type, _ = mimetypes.guess_type(filename)
+                    content_type = detected_type or 'application/octet-stream'
+                    log_app(f"🔍 PATCH 34: Type MIME détecté: {content_type}", "INFO")
+                
+                # Déterminer l'extension selon le type (avec protection None)
+                is_video = (content_type and content_type.startswith('video/')) or filename.lower().endswith(('.mp4', '.mov', '.avi'))
                 
                 if is_video:
                     file_extension = ".mp4" if "mp4" in content_type else ".mov"
