@@ -117,7 +117,7 @@ def get_public_url(filename: str) -> str:
             return fallback_url
     except Exception as e:
         log_app(f"⚠️ Erreur génération URL publique: {e}", "WARNING")
-        return f"https://9fff391906ce.ngrok-free.app/media/{filename}"
+        return f"https://9fff391906ce.ngrok-free.app/api/media/{filename}"
 
 # === FACEBOOK/META CONFIGURATION MISE À JOUR ===
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
