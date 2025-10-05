@@ -4779,14 +4779,22 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
         content_type = file.content_type or ""
         is_video = content_type.startswith("video/") or file_extension.lower() in ['.mp4', '.mov', '.avi', '.wmv']
         
-        # PATCH 13: NGROK UNIQUEMENT - Plus de FTP dans handle_n8n_publication
-        # Générer directement l'URL publique ngrok comme dans le Patch 9
-        media_url = get_public_url(unique_filename)
-        log_app(f"🌐 PATCH 13: URL publique ngrok générée - {media_url}", "SUCCESS")
+        # PATCH 29: FTP UNIQUEMENT - Upload vers FTP pour publication Facebook/Instagram
+        log_app(f"🔄 PATCH 29: Début upload FTP pour publication", "INFO")
+        
+        upload_success, media_url, upload_error = await upload_file_to_ftp_for_publication(file_path, unique_filename)
+        
+        if not upload_success or not media_url:
+            log_app(f"❌ PATCH 29: Upload FTP échoué - {upload_error}", "ERROR")
+            # Fallback: générer URL FTP directe
+            media_url = get_public_url(unique_filename)
+            log_app(f"🔄 PATCH 29: Fallback URL FTP - {media_url}", "WARNING")
+        else:
+            log_app(f"✅ PATCH 29: Upload FTP réussi - {media_url}", "SUCCESS")
         
         if not media_url or not media_url.startswith('https://'):
-            log_app(f"❌ PATCH 13: URL publique invalide générée: {media_url}", "ERROR")
-            raise HTTPException(status_code=500, detail=f"Impossible de générer une URL publique valide")
+            log_app(f"❌ PATCH 29: URL FTP invalide générée: {media_url}", "ERROR")
+            raise HTTPException(status_code=500, detail=f"Impossible de générer une URL FTP valide")
         
         # Initialiser les résultats
         results = {
