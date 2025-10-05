@@ -107,10 +107,11 @@ class FTPManager:
             try:
                 self.log_ftp(f"Upload tentative {attempt + 1}/{self.max_retries}: {remote_filename}", "INFO")
                 
-                # Configuration FTP optimisée
+                # PATCH 33: Configuration FTP optimisée pour environnement conteneurisé
                 configs = [
-                    {"pasv": False, "timeout": 10, "blocksize": 4096},  # Actif rapide
-                    {"pasv": True, "timeout": 15, "blocksize": 2048},   # Passif standard
+                    {"pasv": True, "timeout": 30, "blocksize": 8192, "name": "Passif optimisé"},   # Priorité conteneur
+                    {"pasv": True, "timeout": 45, "blocksize": 4096, "name": "Passif robuste"},   # Fallback lent
+                    {"pasv": False, "timeout": 20, "blocksize": 8192, "name": "Actif rapide"},    # Test actif
                 ]
                 
                 for config in configs:
