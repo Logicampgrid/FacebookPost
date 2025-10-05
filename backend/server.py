@@ -4561,8 +4561,8 @@ async def detect_webhook_publication_request(request: Request) -> dict:
             form_data = await request.form()
             form_keys = set(form_data.keys())
             
-            # Format n8n : jsonData + file
-            if "jsonData" in form_keys and "file" in form_keys:
+            # Format n8n : jsonData + file (ou files)
+            if "jsonData" in form_keys and ("file" in form_keys or "files" in form_keys):
                 return {
                     "is_publication": True,
                     "form_data": form_data,
