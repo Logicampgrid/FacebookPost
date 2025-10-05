@@ -686,7 +686,7 @@
 - [x] Publication Facebook et Instagram avec gestion d'erreurs
 - [x] Test complet et validation technique
 
-## 🎯 Crédits Utilisés: 10/10 (Nouvelle session)
+## 🎯 Crédits Utilisés: 7/10 (Session actuelle)
 
 ## ✅ Patch 9B - CORRECTION INSTAGRAM URLS COMPLÈTE (1 crédit)
 - [x] **Problème identifié** : Instagram recevait encore `uploads\webhook_xxx.png` malgré le Patch 9
