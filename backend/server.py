@@ -102,17 +102,22 @@ _NGROK_URL_CACHE_TIME = 0
 _CACHE_DURATION = 30  # Cache valide pendant 30 secondes
 
 def get_public_url(filename: str) -> str:
-    """
-    Construit l'URL publique ngrok pour un fichier uploadé.
-    PATCH 13: Utilise l'URL dynamique détectée au lieu de l'URL hardcodée
-    """
-    # PATCH 13: Utiliser l'URL dynamique active au lieu de NGROK_URL hardcodée
-    active_url = get_active_ngrok_url()
-    if active_url:
-        return f"{active_url}/uploads/{os.path.basename(filename)}"
-    else:
-        # Fallback vers l'URL hardcodée si détection échoue
-        return f"{NGROK_URL}/uploads/{os.path.basename(filename)}"
+    """PATCH 26: Génère une URL publique optimisée pour Facebook/Instagram"""
+    try:
+        ngrok_url = get_active_ngrok_url()
+        if ngrok_url:
+            # PATCH 26: Utiliser l'endpoint /media spécialisé pour Facebook/Instagram
+            public_url = f"{ngrok_url}/media/{filename}"
+            log_app(f"🎯 PATCH 26: URL media générée - {public_url}", "INFO")
+            return public_url
+        else:
+            # Fallback vers URL hardcodée si ngrok non disponible
+            fallback_url = f"https://9fff391906ce.ngrok-free.app/media/{filename}"
+            log_app(f"⚠️ PATCH 26: URL media fallback - {fallback_url}", "WARNING")
+            return fallback_url
+    except Exception as e:
+        log_app(f"⚠️ Erreur génération URL publique: {e}", "WARNING")
+        return f"https://9fff391906ce.ngrok-free.app/media/{filename}"
 
 # === FACEBOOK/META CONFIGURATION MISE À JOUR ===
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
