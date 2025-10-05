@@ -5804,6 +5804,9 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
         if not fb_page_id or not access_token:
             return {"success": False, "error": "Configuration Facebook manquante"}
         
+        # PATCH 31: Initialisation files pour éviter 'cannot access local variable'
+        files = None
+        
         # Construction du message
         message = f"{title}\n{url}\n{description}"
         
