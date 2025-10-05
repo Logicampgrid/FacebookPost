@@ -5721,8 +5721,36 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
                 "message": message,
                 "access_token": access_token
             }
-            if media_url:
-                data["url"] = media_url
+            
+            # PATCH 26: Upload direct du fichier au lieu d'URL pour éviter les problèmes ngrok
+            files = None
+            if media_url and media_url.startswith(('http://', 'https://')):
+                # Télécharger le fichier et l'uploader directement
+                try:
+                    log_app(f"🔄 PATCH 26: Téléchargement fichier pour upload direct: {media_url}", "INFO")
+                    media_response = requests.get(media_url, timeout=10)
+                    if media_response.status_code == 200:
+                        files = {'source': ('image.jpg', media_response.content, 'image/jpeg')}
+                        log_app(f"✅ PATCH 26: Fichier téléchargé ({len(media_response.content)} bytes)", "INFO")
+                    else:
+                        log_app(f"⚠️ PATCH 26: Échec téléchargement, fallback URL: {media_response.status_code}", "WARNING")
+                        data["url"] = media_url
+                except Exception as e:
+                    log_app(f"⚠️ PATCH 26: Erreur téléchargement, fallback URL: {e}", "WARNING")
+                    data["url"] = media_url
+            elif media_url:
+                # Chemin local, essayer de le lire directement
+                try:
+                    local_path = media_url.replace('\\', '/').replace('uploads/', '/app/backend/uploads/')
+                    if os.path.exists(local_path):
+                        with open(local_path, 'rb') as f:
+                            files = {'source': ('image.jpg', f.read(), 'image/jpeg')}
+                        log_app(f"✅ PATCH 26: Fichier local lu ({local_path})", "INFO")
+                    else:
+                        data["url"] = media_url
+                except Exception as e:
+                    log_app(f"⚠️ PATCH 26: Erreur lecture locale: {e}", "WARNING")
+                    data["url"] = media_url
         
         log_app(f"📱 Publication Facebook vers {fb_page_id}: {message[:100]}...", "INFO")
         
