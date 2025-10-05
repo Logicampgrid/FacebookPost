@@ -4,26 +4,34 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🔄 PATCH 27 - CORRECTION NGROK NON DÉMARRÉ (1 crédit en cours)
-**🎯 PROBLÈME IDENTIFIÉ**: Ngrok n'est pas en cours d'exécution malgré la détection dans les logs
+## ✅ PATCH 27 - CORRECTION NGROK NON DÉMARRÉ RÉSOLUE ! (1 crédit)
+**🎯 PROBLÈME DÉFINITIVEMENT RÉSOLU**: Ngrok n'était pas installé et n'était donc pas en cours d'exécution
 
-**Diagnostic effectué**:
-- ✅ **Serveur FastAPI OK**: http://localhost:8001 répond correctement
-- ✅ **Endpoint /api/webhook existe**: Configuré dans server.py
-- ❌ **API ngrok inaccessible**: Port 4040 ne répond pas (Connection refused)
-- ❌ **URL ngrok non fonctionnelle**: Timeouts sur https://bd85ed4836bf.ngrok-free.app
-- ❌ **Détection erronée**: Le serveur croit que ngrok fonctionne mais il n'est pas démarré
+**Root Cause identifié**:
+- ❌ **Ngrok non installé**: `ngrok: command not found` sur le système
+- ❌ **API ngrok inaccessible**: Port 4040 inaccessible car processus inexistant
+- ❌ **URLs ngrok obsolètes**: Fichiers .env contenaient des URLs non fonctionnelles
+- ❌ **Détection erronée**: Le serveur lisait d'anciens fichiers mais ngrok n'était pas actif
 
-**Solutions à appliquer**:
-- 🔄 **Diagnostic ngrok complet**: Vérifier processus ngrok actifs
-- 🔄 **Redémarrage ngrok**: Utiliser 01_start_ngrok_only.bat si nécessaire  
-- 🔄 **Validation tunnel**: Confirmer que l'URL ngrok est réellement accessible
-- 🔄 **Synchronisation .env**: Mettre à jour avec la vraie URL ngrok fonctionnelle
+**Solutions appliquées**:
+- ✅ **Installation ngrok**: `apt install ngrok` version 3.30.0 installée
+- ✅ **Configuration token**: Token d'authentification configuré depuis .env
+- ✅ **Démarrage tunnel**: `ngrok http 8001` lancé en arrière-plan
+- ✅ **URL ngrok active**: `https://739981d9bdf6.ngrok-free.app` maintenant fonctionnelle
+- ✅ **Synchronisation .env**: Tous les fichiers .env mis à jour avec nouvelle URL
+- ✅ **Validation complète**: API ngrok accessible sur port 4040
 
-**Test de validation attendu**:
-- ✅ URL ngrok accessible publiquement
-- ✅ Endpoint /api/webhook accessible via ngrok
-- ✅ Plus de timeouts dans les logs du serveur
+**Tests de validation réussis**:
+- ✅ **URL ngrok publique accessible**: `https://739981d9bdf6.ngrok-free.app/api/health` → 200 OK
+- ✅ **Endpoint /api/webhook accessible**: `https://739981d9bdf6.ngrok-free.app/api/webhook` → 403 Forbidden (normal)
+- ✅ **Webhook Facebook test**: POST JSON → `{"status":"received","processed":true}`
+- ✅ **Serveur détecte URL**: `/api/config/oauth-status-complete` retourne nouvelle URL
+- ✅ **Plus de timeouts**: API ngrok répond maintenant correctement
+
+**Résultat FINAL**:
+- **URL ngrok 100% fonctionnelle**: `https://739981d9bdf6.ngrok-free.app`
+- **Endpoint /api/webhook accessible**: Prêt pour authentification Facebook OAuth
+- **Infrastructure ngrok complète**: Installation + configuration + tunnel actif
 
 ## ✅ PATCH 26 - OPTIMISATION URLs FACEBOOK/INSTAGRAM (1 crédit reporté)
 **🎯 PROBLÈME IDENTIFIÉ**: Facebook/Instagram ne peuvent pas accéder aux URLs ngrok malgré la résolution du problème de suppression immédiate des fichiers
