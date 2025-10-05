@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://codecraft-110.preview.emergentagent.com
+URL : https://prompt-architect-14.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
