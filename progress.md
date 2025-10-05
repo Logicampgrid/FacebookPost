@@ -4,6 +4,23 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
+## ✅ PATCH 30 - CORRECTION URLs IMAGES FACEBOOK/INSTAGRAM + FTP CENTRALISÉ (1 crédit)
+**🎯 PROBLÈMES IDENTIFIÉS ET EN COURS DE RÉSOLUTION**:
+1. **Module FTP manquant**: "No module named 'ftp_manager_patch29'" cause les échecs FTP
+2. **URLs images inaccessibles**: Facebook/Instagram reçoivent erreur HTTP 400
+3. **Configuration FTP non centralisée**: Password FTP à centraliser dans .env uniquement
+
+**Erreurs actuelles analysées**:
+- ❌ Facebook HTTP 400: "Missing or invalid image file" 
+- ❌ Instagram HTTP 400: "Only photo or video can be accepted as media type"
+- ❌ "⚠️ PATCH 26: Échec téléchargement, fallback URL: 404"
+
+**Corrections en cours**:
+- [x] **Import ftp_manager_patch29**: Corriger l'import du module FTP manquant
+- [ ] **URLs publiques valides**: Assurer que Facebook/Instagram peuvent accéder aux images
+- [ ] **Configuration centralisée**: FTP_PASSWORD uniquement dans /app/backend/.env
+- [ ] **URLs ngrok centralisées**: REACT_APP_BACKEND_URL uniquement dans /app/frontend/.env
+
 ## ✅ PATCH 29 - MIGRATION NGROK → FTP COMPLÈTE (1 crédit)
 **🎯 PROBLÈME RÉSOLU**: Migration complète du système de ngrok vers FTP pour les publications Facebook/Instagram
 
