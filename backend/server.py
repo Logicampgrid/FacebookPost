@@ -897,68 +897,18 @@ def get_active_ngrok_url():
         except Exception as e:
             log_app(f"⚠️ PATCH 30: API ngrok non accessible: {e}", "WARNING")
         
-        # PATCH 22: PRIORITÉ 2 - Fichier ngrok réel si disponible
-        try:
-            ngrok_real_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url_real.txt")
-            if os.path.exists(ngrok_real_path):
-                with open(ngrok_real_path, "r", encoding='utf-8') as f:
-                    real_ngrok_url = f.read().strip()
-                    if real_ngrok_url and real_ngrok_url.endswith(".ngrok-free.app"):
-                        if real_ngrok_url != _NGROK_URL_CACHE:
-                            log_app(f"✅ PATCH 22: URL ngrok réelle - {real_ngrok_url}", "SUCCESS")
-                        _NGROK_URL_CACHE = real_ngrok_url
-                        _NGROK_URL_CACHE_TIME = current_time
-                        return real_ngrok_url
-        except Exception as e:
-            log_app(f"⚠️ PATCH 22: Erreur lecture ngrok réel: {e}", "WARNING")
-        
-        try:
-            ngrok_file_path = os.path.join(WINDOWS_PATHS["backend_dir"], "ngrok_url.txt")
-            if os.path.exists(ngrok_file_path):
-                with open(ngrok_file_path, "r", encoding='utf-8') as f:
-                    file_url = f.read().strip()
-                    if file_url and file_url.endswith(".ngrok-free.app"):
-                        if file_url != _NGROK_URL_CACHE:
-                            log_app(f"✅ PATCH 22: URL ancien fichier ngrok - {file_url}", "SUCCESS")
-                        _NGROK_URL_CACHE = file_url
-                        _NGROK_URL_CACHE_TIME = current_time
-                        return file_url
-        except Exception as e:
-            log_app(f"⚠️ PATCH 22: Erreur lecture ngrok_url.txt: {e}", "WARNING")
-        
-        # PATCH 22: PRIORITÉ 4 - Frontend .env seulement si URL ngrok
-        try:
-            frontend_env_path = os.path.join(WINDOWS_PATHS["project_root"], "frontend", ".env")
-            if os.path.exists(frontend_env_path):
-                with open(frontend_env_path, "r", encoding='utf-8') as f:
-                    lines = f.readlines()
-                
-                for line in lines:
-                    if line.startswith("REACT_APP_BACKEND_URL="):
-                        backend_url = line.split("=", 1)[1].strip()
-                        # PATCH 22: Accepter seulement les URLs ngrok réelles
-                        if backend_url and backend_url.endswith(".ngrok-free.app"):
-                            if backend_url != _NGROK_URL_CACHE:
-                                log_app(f"✅ PATCH 22: URL backend .env ngrok - {backend_url}", "SUCCESS")
-                            _NGROK_URL_CACHE = backend_url
-                            _NGROK_URL_CACHE_TIME = current_time
-                            return backend_url
-                        elif backend_url and "prompt-emergent" in backend_url:
-                            log_app(f"⚠️ PATCH 22: URL Emergent détectée dans .env - ignorée: {backend_url}", "WARNING")
-        except Exception as e:
-            log_app(f"⚠️ PATCH 22: Erreur lecture frontend .env: {e}", "WARNING")
-        
+        # PATCH 30: PRIORITÉ 3 - Variable globale (fallback final)
         global NGROK_URL
-        if NGROK_URL and NGROK_URL.endswith(".ngrok-free.app"):
+        if NGROK_URL and (NGROK_URL.endswith(".ngrok-free.app") or NGROK_URL.startswith("https://")):
             if NGROK_URL != _NGROK_URL_CACHE:
-                log_app(f"✅ PATCH 22: URL variable globale ngrok - {NGROK_URL}", "SUCCESS")
+                log_app(f"✅ PATCH 30: URL variable globale fallback - {NGROK_URL}", "SUCCESS")
             _NGROK_URL_CACHE = NGROK_URL
             _NGROK_URL_CACHE_TIME = current_time
             return NGROK_URL
         
-        log_app("⚠️ PATCH 22: Aucune URL ngrok réelle trouvée", "WARNING")
-        log_app("💡 PATCH 22: SOLUTION: Lancez 01_start_ngrok_only.bat et mettez à jour ngrok_url_real.txt", "INFO")
-        log_app("   avec l'URL ngrok réelle se terminant par .ngrok-free.app", "INFO")
+        log_app("⚠️ PATCH 30: Aucune URL active trouvée", "WARNING")
+        log_app("💡 PATCH 30: SOLUTION: Mettez à jour REACT_APP_BACKEND_URL dans /app/frontend/.env", "INFO")
+        log_app("   avec l'URL ngrok active", "INFO")
         return None
             
     except Exception as e:
