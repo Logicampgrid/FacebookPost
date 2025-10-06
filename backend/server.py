@@ -4316,7 +4316,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 instagram_message = f"{description}\n\n#gizmobbs #tech #innovation"
             
             message = instagram_message
-            log_app(f"📱 Message Instagram optimisé pour @logicamp_berger : {message[:50]}...", "INFO")
+            # PATCH 38B: Protection None
+            safe_instagram_msg = (message or "")[:50]
+            log_app(f"📱 Message Instagram optimisé pour @logicamp_berger : {safe_instagram_msg}...", "INFO")
             log_app(f"🔧 Business Manager cible : {business_manager_id}", "INFO")
             
             if len(platforms) == 2:
