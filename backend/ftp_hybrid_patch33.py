@@ -23,7 +23,7 @@ class HybridFTPManager:
         self.host = os.getenv("FTP_HOST", "logicamp.org")
         self.port = int(os.getenv("FTP_PORT", "21"))
         self.user = os.getenv("FTP_USER", "logi")
-        self.password = os.getenv("FTP_PASSWORD", "6837")
+        self.password = os.getenv("FTP_PASSWORD", "logi")
         self.base_dir = os.getenv("FTP_DIRECTORY", "/www/wordpress/uploads/")
         self.base_url = os.getenv("FTP_BASE_URL", f"https://{self.host}/wordpress/uploads/")
         
