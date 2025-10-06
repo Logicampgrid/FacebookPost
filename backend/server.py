@@ -5192,7 +5192,9 @@ async def webhook_handler(request: Request):
                                             log_app(f"⚠️ PATCH 39: webhook_data None, impossible d'ajouter image_file", "WARNING")
                         else:
                             # Process all form fields - CORRECTION POUR LES FICHIERS SANS JSON
-                            webhook_data = {}
+                            # PATCH 44: Ne pas réinitialiser webhook_data si elle contient déjà des données (régression fix)
+                            if not webhook_data:
+                                webhook_data = {}
                             for key, value in form_data.items():
                                 if hasattr(value, 'read') and hasattr(value, 'filename'):  # File upload
                                     file_content = await value.read()
