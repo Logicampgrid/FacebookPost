@@ -4228,6 +4228,27 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         
         log_app(f"🔍 DEBUG webhook_data keys: {list(webhook_data.keys())}", "INFO")
         
+        # PATCH 42: CORRECTION CRITIQUE - Parser json_data si présent (format n8n)
+        if "json_data" in webhook_data:
+            json_data_content = webhook_data["json_data"]
+            log_app(f"🔧 PATCH 42: Champ json_data détecté - type: {type(json_data_content)}", "INFO")
+            
+            # Si c'est une string, parser le JSON
+            if isinstance(json_data_content, str):
+                try:
+                    parsed_json = json.loads(json_data_content)
+                    log_app(f"✅ PATCH 42: JSON parsé depuis json_data: {parsed_json}", "SUCCESS")
+                    # Fusionner les données parsées dans webhook_data
+                    for key, value in parsed_json.items():
+                        webhook_data[key] = value
+                except json.JSONDecodeError as e:
+                    log_app(f"⚠️ PATCH 42: Erreur parsing JSON: {e}", "WARNING")
+            # Si c'est déjà un dict (déjà parsé), utiliser directement
+            elif isinstance(json_data_content, dict):
+                log_app(f"✅ PATCH 42: json_data déjà parsé (dict)", "INFO")
+                for key, value in json_data_content.items():
+                    webhook_data[key] = value
+        
         # PATCH 40: CORRECTION CRITIQUE - Extraction des données depuis la structure correcte
         # Vérifier si on a une structure webhook_handler (avec sous-objet 'data') ou structure directe
         if "data" in webhook_data and isinstance(webhook_data["data"], dict):
