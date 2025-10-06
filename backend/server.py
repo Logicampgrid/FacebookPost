@@ -4279,7 +4279,11 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             custom_message = f"{title}\n\n{product_url}" if product_url else title
             log_app(f"📝 Message auto-généré à partir du titre: {custom_message[:50]}...", "INFO")
         
-        log_app(f"🔍 DEBUG - custom_message: '{custom_message[:50]}...', title: '{title[:30]}...', product_url: '{product_url[:50]}...'", "INFO")
+        # PATCH 38B: Protection contre 'NoneType' object is not subscriptable
+        safe_message = (custom_message or "")[:50]
+        safe_title = (title or "")[:30] 
+        safe_url = (product_url or "")[:50]
+        log_app(f"🔍 DEBUG - custom_message: '{safe_message}...', title: '{safe_title}...', product_url: '{safe_url}...'", "INFO")
         
         # PRIORITÉ RÉCENTE 2: Logique spéciale pour gizmobbs → @logicamp_berger (SOLUTION_LOGICAMP_BERGER_COMPLETE.md)
         if store == "gizmobbs" or shop_type == "gizmobbs":
