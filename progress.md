@@ -6,7 +6,44 @@
 
 ## ✅ PROBLÈMES RÉSOLUS (SESSION ACTUELLE)
 
-### 1. ✅ PATCH 41 - CORRECTIONS CRITIQUES INSTAGRAM + N8N BATCH (1 crédit)
+### 1. ✅ PATCH 42 - CORRECTION PARSING JSON_DATA (1 crédit)
+**Status**: ✅ PROBLÈME PUBLICATIONS RÉGLÉ !
+
+#### Problème: Publications ne passent pas - store=None ❌
+**Root cause identifié**:
+- ❌ **n8n envoie**: Champ `json_data` (string JSON) + fichier `image_file`
+- ❌ **Code multipart**: Stocke `json_data` dans `webhook_data['json_data']` sans le parser
+- ❌ **process_webhook_publication**: Cherche `store` directement dans `webhook_data` → **store=None**
+- ❌ **Résultat**: "⚠️ Webhook ne contient pas de données de publication: store/shop_type"
+
+**Logs utilisateur confirmant le bug**:
+```
+📦 Processed form data: ['json_data', 'image_file']
+🔧 PATCH 40: Structure directe détectée
+🔍 PATCH 40: Données extraites - store=None, shop_type=None
+⚠️ Webhook ne contient pas de données de publication: store/shop_type
+```
+
+**Correction appliquée**:
+- [x] **Détection json_data**: Ajout de vérification `if "json_data" in webhook_data`
+- [x] **Parsing automatique**: Si string JSON → `json.loads()` → fusion dans webhook_data
+- [x] **Support dual format**: String JSON ou dict déjà parsé
+- [x] **Extraction corrigée**: `store` maintenant disponible dans `data_source`
+- [x] **Logs PATCH 42**: Traçabilité complète du parsing
+
+**Architecture PATCH 42**:
+1. **n8n envoie**: `{"json_data": '{"store":"gizmobbs","title":"..."}', "image_file": ...}`
+2. **Multipart parsing**: Stocke json_data dans webhook_data
+3. **PATCH 42**: Détecte json_data → Parse JSON → Fusionne dans webhook_data
+4. **Extraction**: `store = webhook_data.get("store")` → **store="gizmobbs"** ✅
+5. **Publication**: Traitement normal avec store valide
+
+**Résultat attendu**:
+- ✅ store correctement extrait depuis json_data
+- ✅ Publications Facebook + Instagram fonctionnelles
+- ✅ Plus d'erreur "store/shop_type manquant"
+
+### 2. ✅ PATCH 41 - CORRECTIONS CRITIQUES INSTAGRAM + N8N BATCH (1 crédit)
 **Status**: ✅ DEUX PROBLÈMES CRITIQUES RÉSOLUS !
 
 #### Problème 1: Vidéos Instagram timeout malgré status FINISHED ✅
