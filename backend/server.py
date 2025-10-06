@@ -5115,6 +5115,11 @@ async def webhook_handler(request: Request):
                                 
                                 # Sauvegarder le fichier temporairement
                                 if content_type.startswith('video/') or 'video' in key.lower():
+                                    # PATCH 43: Ne traiter qu'une seule vidéo (ignorer les doublons)
+                                    if webhook_data and 'video_file' in webhook_data:
+                                        log_app(f"⚠️ PATCH 43: Vidéo déjà traitée, fichier ignoré - {filename}", "WARNING")
+                                        continue
+                                    
                                     # C'est une vidéo
                                     file_extension = ".mp4" if "mp4" in content_type else ".mov"
                                     temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
