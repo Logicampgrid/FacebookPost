@@ -4381,15 +4381,37 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
         log_app(f"   Média: {'Oui' if has_media_file else 'Non'} ({media_type if media_type else 'N/A'})", "INFO")
         
-        # PATCH 9: VIDÉOS - NGROK UNIQUEMENT
+        # PATCH 35: VIDÉOS - UPLOAD FTP RÉEL AVEC GESTIONNAIRE
         video_url = None
         if media_type == "video" and media_file_info:
-            log_app(f"🎥 PATCH 9: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
+            log_app(f"🎥 PATCH 35: Traitement de la vidéo uploadée - {media_file_info['filename']}", "INFO")
             try:
-                # PATCH 9: Générer directement l'URL publique ngrok pour la vidéo
+                # PATCH 35: Upload réel de la vidéo vers FTP avec gestionnaire PATCH 29
+                video_local_path = media_file_info['path']
                 video_filename = media_file_info['filename']
-                video_url = get_public_url(video_filename)
-                log_app(f"✅ PATCH 9: URL vidéo ngrok générée - {video_url}", "SUCCESS")
+                
+                log_app(f"📤 PATCH 35: Upload vidéo FTP en cours - {video_filename}", "INFO")
+                
+                if FTP_MANAGER_AVAILABLE:
+                    # Utiliser le gestionnaire FTP PATCH 29 pour l'upload
+                    success, ftp_url, ftp_error = upload_for_publication(video_local_path, video_filename)
+                    
+                    if success and ftp_url:
+                        video_url = ftp_url
+                        log_app(f"✅ PATCH 35: Vidéo uploadée sur FTP - {video_url}", "SUCCESS")
+                    else:
+                        log_app(f"⚠️ PATCH 35: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
+                        # Fallback vers copie locale + URL ngrok
+                        uploads_dir = "/app/backend/uploads"
+                        os.makedirs(uploads_dir, exist_ok=True)
+                        import shutil
+                        shutil.copy2(video_local_path, os.path.join(uploads_dir, video_filename))
+                        video_url = get_public_url(video_filename)
+                        log_app(f"🔄 PATCH 35: Fallback URL ngrok - {video_url}", "INFO")
+                else:
+                    # Gestionnaire FTP non disponible, utiliser ngrok
+                    log_app(f"⚠️ PATCH 35: Gestionnaire FTP non disponible, utilisation ngrok", "WARNING")
+                    video_url = get_public_url(video_filename)
                 
                 # Publication sur les plateformes
                 try:
