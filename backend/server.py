@@ -4246,17 +4246,20 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         media_type = None
         media_file_info = None
         
-        # Vérifier d'abord les nouveaux champs de fichiers traités
-        if webhook_data.get("video_file"):
-            has_media_file = True
-            media_type = "video"
-            media_file_info = webhook_data["video_file"]
-            log_app(f"📦 CORRECTION: Fichier vidéo détecté - {media_file_info['filename']}", "INFO")
-        elif webhook_data.get("image_file"):
-            has_media_file = True
-            media_type = "image"
-            media_file_info = webhook_data["image_file"]
-            log_app(f"📦 CORRECTION: Fichier image détecté - {media_file_info['filename']}", "INFO")
+        # PATCH 39: Protection contre 'NoneType' object is not subscriptable
+        if webhook_data and isinstance(webhook_data, dict):
+            if webhook_data.get("video_file"):
+                has_media_file = True
+                media_type = "video"
+                media_file_info = webhook_data.get("video_file", {})
+                filename = media_file_info.get('filename', 'unknown') if isinstance(media_file_info, dict) else 'unknown'
+                log_app(f"📦 CORRECTION: Fichier vidéo détecté - {filename}", "INFO")
+            elif webhook_data.get("image_file"):
+                has_media_file = True
+                media_type = "image"
+                media_file_info = webhook_data.get("image_file", {})
+                filename = media_file_info.get('filename', 'unknown') if isinstance(media_file_info, dict) else 'unknown'
+                log_app(f"📦 CORRECTION: Fichier image détecté - {filename}", "INFO")
         else:
             # Vérifier les anciens champs de fichiers dans les données webhook (fallback)
             for key, value in webhook_data.items():
