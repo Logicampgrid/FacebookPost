@@ -4840,7 +4840,9 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
             description = form_data.get("description")
             file = form_data.get("file")
         
-        log_app(f"📥 Nouveau webhook n8n reçu - Store: {store}, Titre: {title[:50] if title else 'N/A'}...", "INFO")
+        # PATCH 38B: Protection None
+        safe_title_webhook = (title or "N/A")[:50] 
+        log_app(f"📥 Nouveau webhook n8n reçu - Store: {store}, Titre: {safe_title_webhook}...", "INFO")
         
         # Vérification du store
         if store not in STORES:
