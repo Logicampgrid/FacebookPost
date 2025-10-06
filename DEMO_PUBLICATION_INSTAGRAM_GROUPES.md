@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://emergentech-pro.preview.emergentagent.com
+🔗 https://emergent-builder-9.preview.emergentagent.com
