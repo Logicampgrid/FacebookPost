@@ -6,7 +6,49 @@
 
 ## ✅ PROBLÈMES RÉSOLUS (SESSION ACTUELLE)
 
-### 1. ✅ PATCH 42 - CORRECTION PARSING JSON_DATA (1 crédit)
+### 1. ✅ PATCH 43 - CORRECTION FICHIERS VIDES (0 BYTES) (1 crédit)
+**Status**: ✅ PUBLICATIONS FACEBOOK/INSTAGRAM RÉGLÉES !
+
+#### Problème: Toutes les publications échouent - fichiers vides ❌
+**Root cause identifié dans vos logs**:
+- ❌ **n8n envoie chaque fichier 2 fois**:
+  - 1ère fois: Contenu complet (48330 bytes, 171316 bytes, 23919212 bytes)
+  - 2ème fois: **0 bytes** (métadonnées ou marker)
+- ❌ **Code traite les 2 fichiers**: Le 2ème écrase le 1er avec 0 bytes
+- ❌ **Résultat**:
+  - Facebook: "(#324) Requires upload file" - fichier vide
+  - Instagram: HTTP 500 - ne peut pas télécharger fichier vide
+  - Vidéo Facebook: "Video too small" (minimum 1 Ko)
+  - Vidéo Instagram: "Media upload failed with error code 0"
+
+**Vos logs confirmant le bug**:
+```
+📦 CORRECTION: Fichier détecté - files: image.webp (48330 bytes)  ✅
+📦 CORRECTION: Fichier détecté - files: image.webp (0 bytes)     ❌
+🔄 PATCH 26: Upload direct du fichier à Facebook
+❌ Erreur Facebook HTTP 400: (#324) Requires upload file
+```
+
+**Correction appliquée**:
+- [x] **Filtrage fichiers vides**: `if len(file_content) == 0: continue`
+- [x] **Protection doublons images**: Ne traiter qu'une seule image
+- [x] **Protection doublons vidéos**: Ne traiter qu'une seule vidéo
+- [x] **Logs PATCH 43**: "Fichier vide ignoré", "Fichier déjà traité"
+- [x] **Priorité au premier**: Le fichier avec contenu est toujours traité en premier
+
+**Architecture PATCH 43**:
+1. **n8n envoie**: Fichier 1 (48330 bytes) + Fichier 2 (0 bytes)
+2. **Traitement Fichier 1**: Sauvegarde → Upload FTP → `webhook_data['image_file']` ✅
+3. **Filtrage Fichier 2**: 0 bytes détecté → **IGNORÉ** ✅
+4. **Publication**: Facebook/Instagram reçoivent le fichier valide (48330 bytes) ✅
+
+**Résultat attendu**:
+- ✅ Publications Facebook avec images/vidéos complètes
+- ✅ Publications Instagram avec URLs FTP valides
+- ✅ Plus d'erreur "#324 Requires upload file"
+- ✅ Plus d'erreur "Video too small" ou "Media upload failed"
+
+### 2. ✅ PATCH 42 - CORRECTION PARSING JSON_DATA (1 crédit)
 **Status**: ✅ PROBLÈME PUBLICATIONS RÉGLÉ !
 
 #### Problème: Publications ne passent pas - store=None ❌
