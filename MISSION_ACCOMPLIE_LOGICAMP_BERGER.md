@@ -39,7 +39,7 @@ Votre plateforme de publication a été **OPTIMISÉE AVEC SUCCÈS** pour publier
 
 1. **🌐 Ouvrez l'interface :**
    ```
-   https://dev-ai-helper-1.preview.emergentagent.com
+   https://emergent-upgrade.preview.emergentagent.com
    ```
 
 2. **🔑 Connectez-vous avec Facebook :**
@@ -63,7 +63,7 @@ Votre plateforme de publication a été **OPTIMISÉE AVEC SUCCÈS** pour publier
 
 #### **Format JSON :**
 ```bash
-curl -X POST "https://dev-ai-helper-1.preview.emergentagent.com/api/publishProduct" \
+curl -X POST "https://emergent-upgrade.preview.emergentagent.com/api/publishProduct" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Mon Produit Gizmobbs",
@@ -76,7 +76,7 @@ curl -X POST "https://dev-ai-helper-1.preview.emergentagent.com/api/publishProdu
 
 #### **Format Multipart (avec image) :**
 ```bash
-curl -X POST "https://dev-ai-helper-1.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://emergent-upgrade.preview.emergentagent.com/api/webhook" \
   -F "image=@/chemin/vers/image.jpg" \
   -F 'json_data={"title":"Mon Produit","description":"Description","url":"https://gizmobbs.com/produit","store":"gizmobbs"}'
 ```
@@ -124,16 +124,16 @@ Nouveau smartphone avec IA intégrée
 
 ```bash
 # Santé générale
-curl "https://dev-ai-helper-1.preview.emergentagent.com/api/health"
+curl "https://emergent-upgrade.preview.emergentagent.com/api/health"
 
 # Test spécifique @logicamp_berger
-curl -X POST "https://dev-ai-helper-1.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
+curl -X POST "https://emergent-upgrade.preview.emergentagent.com/api/debug/test-logicamp-berger-webhook"
 
 # Historique publications gizmobbs
-curl "https://dev-ai-helper-1.preview.emergentagent.com/api/webhook-history?shop_type=gizmobbs"
+curl "https://emergent-upgrade.preview.emergentagent.com/api/webhook-history?shop_type=gizmobbs"
 
 # Diagnostic Instagram complet
-curl "https://dev-ai-helper-1.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
+curl "https://emergent-upgrade.preview.emergentagent.com/api/debug/instagram-complete-diagnosis"
 ```
 
 ### **Interface Web :**
@@ -166,7 +166,7 @@ curl "https://dev-ai-helper-1.preview.emergentagent.com/api/debug/instagram-comp
 
 ## 📞 ÉTAPES SUIVANTES
 
-1. **Authentifiez-vous** : https://dev-ai-helper-1.preview.emergentagent.com
+1. **Authentifiez-vous** : https://emergent-upgrade.preview.emergentagent.com
 2. **Testez** via l'onglet "@logicamp_berger"
 3. **Lancez** vos webhooks avec `shop_type: "gizmobbs"`
 4. **Vérifiez** les publications sur https://www.instagram.com/logicamp_berger/

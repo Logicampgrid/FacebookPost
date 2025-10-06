@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://dev-ai-helper-1.preview.emergentagent.com
+URL : https://emergent-upgrade.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
