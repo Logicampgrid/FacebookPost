@@ -4344,7 +4344,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 platforms = ["facebook"]  # Facebook seulement si pas de média
                 log_app(f"📦 CORRECTION: Pas de média → Publication Facebook uniquement", "INFO")
         
-        log_app(f"🔍 DEBUG - Final message: '{message[:50]}...', length: {len(message)}", "INFO")
+        # PATCH 38B: Protection contre 'NoneType' object is not subscriptable  
+        safe_final_message = (message or "")[:50]
+        log_app(f"🔍 DEBUG - Final message: '{safe_final_message}...', length: {len(message or '')}", "INFO")
         
         # Validation améliorée avec logging détaillé
         missing_fields = []
