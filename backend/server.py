@@ -4228,18 +4228,32 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         
         log_app(f"🔍 DEBUG webhook_data keys: {list(webhook_data.keys())}", "INFO")
         
+        # PATCH 40: CORRECTION CRITIQUE - Extraction des données depuis la structure correcte
+        # Vérifier si on a une structure webhook_handler (avec sous-objet 'data') ou structure directe
+        if "data" in webhook_data and isinstance(webhook_data["data"], dict):
+            # Structure webhook_handler: {"data": {...}, "file": {...}, ...}
+            data_source = webhook_data["data"]
+            log_app("🔧 PATCH 40: Structure webhook_handler détectée - extraction depuis 'data'", "INFO")
+        else:
+            # Structure directe pour compatibilité
+            data_source = webhook_data
+            log_app("🔧 PATCH 40: Structure directe détectée", "INFO")
+        
         # PRIORITÉ RÉCENTE 1: Support des modifications @logicamp_berger (MISSION_ACCOMPLIE_LOGICAMP_BERGER.md)
         # Structure attendue depuis n8n (flexible) avec support spécial gizmobbs → @logicamp_berger
         
-        # Extraction flexible des données
-        store = webhook_data.get("store")
-        shop_type = webhook_data.get("shop_type")  # Support ancien format
-        title = webhook_data.get("title", "")
-        description = webhook_data.get("description", "")
-        custom_message = webhook_data.get("message", "")
-        product_url = webhook_data.get("product_url") or webhook_data.get("url")
-        image_url = webhook_data.get("image_url")
-        platforms = webhook_data.get("platforms", ["facebook", "instagram"])  # Default both platforms
+        # Extraction flexible des données depuis la bonne source
+        store = data_source.get("store")
+        shop_type = data_source.get("shop_type")  # Support ancien format
+        title = data_source.get("title", "")
+        description = data_source.get("description", "")
+        custom_message = data_source.get("message", "")
+        product_url = data_source.get("product_url") or data_source.get("url")
+        image_url = data_source.get("image_url")
+        platforms = data_source.get("platforms", ["facebook", "instagram"])  # Default both platforms
+        
+        # PATCH 40: Log des données extraites pour debug
+        log_app(f"🔍 PATCH 40: Données extraites - store={store}, shop_type={shop_type}, title='{(title or '')[:30]}...'", "INFO")
         
         # NOUVELLE CORRECTION: Détecter les fichiers médias uploadés (image/vidéo)
         has_media_file = False
