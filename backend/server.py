@@ -4388,7 +4388,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         log_app(f"🔍 Vérification déduplication - Signature: {content_signature[:8]}", "INFO")
         
         log_app(f"📝 Publication webhook PRIORITÉS RÉCENTES - Store: {final_store}, Plateformes: {platforms}", "INFO")
-        log_app(f"   Titre: {title[:50]}{'...' if len(title) > 50 else ''}", "INFO")
+        # PATCH 38B: Protection None
+        safe_title_display = (title or "")[:50]
+        log_app(f"   Titre: {safe_title_display}{'...' if len(title or '') > 50 else ''}", "INFO")
         log_app(f"   URL produit: {product_url}", "INFO")
         log_app(f"   Image: {'Oui' if image_url else 'Non'}", "INFO")
         log_app(f"   Média: {'Oui' if has_media_file else 'Non'} ({media_type if media_type else 'N/A'})", "INFO")
