@@ -106,17 +106,17 @@ def test_patch38_instagram_workflow():
     print(f"\n📸 Test 2: Publication image Instagram (normal)")
     print("-" * 50)
     
-    image_data = {
-        "jsonData": json.dumps({
-            **test_data,
-            "title": "Test PATCH 38 - Image Instagram",
-            "media_url": "https://logicamp.org/wordpress/uploads/test_patch38.jpg",
-            "is_video": False
-        })
-    }
-    
     try:
-        response = requests.post(webhook_url, data=image_data, timeout=30)
+        response = requests.post(
+            webhook_url, 
+            files={"jsonData": (None, json.dumps({
+                **test_data,
+                "title": "Test PATCH 38 - Image Instagram",
+                "media_url": "https://logicamp.org/wordpress/uploads/test_patch38.jpg",
+                "is_video": False
+            }))},
+            timeout=30
+        )
         print(f"📡 Réponse image HTTP: {response.status_code}")
         
         if response.status_code == 200:
