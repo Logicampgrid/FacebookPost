@@ -1,18 +1,19 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 4/10 (PATCH 34 appliqué - 6 crédits restants)
+- ⚡ Crédits utilisés: 5/10 (PATCH 38 en cours - 5 crédits restants)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
 ## 🎯 PROBLÈMES À RÉSOUDRE (SESSION ACTUELLE)
 
 ### 1. 🎬 Vidéos Instagram ne marchent pas  
-**Status**: 🔍 PATCH 37 APPLIQUÉ - NOUVEAU PROBLÈME IDENTIFIÉ
+**Status**: 🔄 PATCH 38 APPLIQUÉ - WORKFLOW CONTAINER IMPLÉMENTÉ
 - ✅ **FTP fonctionnel**: Upload 23MB réussi `https://logicamp.org/wordpress/uploads/webhook_xxx.mp4`
 - ✅ **Facebook vidéo**: Publication réussie ID `2173116219878795`
-- ❌ **Instagram erreur 9007**: "Media ID is not available" - workflow container requis
-- **Root cause**: Instagram vidéos nécessitent workflow container → processing → publication
-- **Next**: Implémenter workflow container Instagram (create → wait → publish)
+- ✅ **PATCH 38**: Workflow container Instagram implémenté (create → wait 60s → publish)
+- ❌ **Erreur webhook**: `'NoneType' object is not subscriptable` dans traitement publication
+- **Root cause**: Erreur dans logique webhook empêche d'atteindre le workflow container
+- **Next**: Débugger erreur `NoneType` pour permettre au PATCH 38 de s'exécuter
 
 ### 2. 🌐 Connexion N8N se ferme (timeout 300s)
 **Status**: ✅ RÉSOLU - PATCH 37
