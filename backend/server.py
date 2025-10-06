@@ -4751,25 +4751,22 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 webhook_publication_data['image_file'] = media_info
                 webhook_publication_data['image_url'] = media_info['public_url']
         
-        # Publier sur les plateformes
-        publication_result = await process_webhook_publication(webhook_publication_data)
+        # PATCH 37: Publication asynchrone pour éviter timeout N8N
+        log_app(f"🚀 PATCH 37: Démarrage publication asynchrone pour {store}", "INFO")
         
-        if publication_result and publication_result.get("success"):
-            log_app(f"✅ PATCH 19: Publication réussie pour {store}", "SUCCESS")
-            return {
-                "success": True,
-                "store": store,
-                "title": title,
-                "platforms": publication_result.get("platforms", []),
-                "media": "video" if media_info and media_info['is_video'] else "image" if media_info else "text"
-            }
-        else:
-            log_app(f"❌ PATCH 19: Publication échouée: {publication_result}", "ERROR")
-            return {
-                "success": False,
-                "error": "Publication échouée",
-                "details": publication_result
-            }
+        # Démarrer la publication en arrière-plan (sans attendre)
+        asyncio.create_task(process_webhook_publication_async(webhook_publication_data.copy()))
+        
+        # Retourner immédiatement la réponse HTTP pour éviter timeout N8N
+        log_app(f"✅ PATCH 37: Réponse immédiate envoyée, publication en cours en arrière-plan", "SUCCESS")
+        return {
+            "success": True,
+            "status": "processing",
+            "store": store,
+            "title": title,
+            "media": "video" if media_info and media_info['is_video'] else "image" if media_info else "text",
+            "note": "Publication en cours en arrière-plan - check logs pour status final"
+        }
             
     except Exception as e:
         log_app(f"❌ PATCH 19: Erreur générale: {e}", "ERROR")
