@@ -5072,7 +5072,7 @@ async def webhook_handler(request: Request):
                                     else:
                                         log_app(f"⚠️ PATCH 39: webhook_data None, impossible d'ajouter video_file", "WARNING")
                                         
-                                    elif content_type.startswith('image/') or 'image' in key.lower():
+                                elif content_type.startswith('image/') or 'image' in key.lower():
                                         # C'est une image
                                         file_extension = ".jpg" if "jpeg" in content_type else ".png"
                                         temp_filename = f"webhook_{uuid.uuid4().hex[:8]}_{int(time.time())}{file_extension}"
