@@ -6177,7 +6177,7 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
                     
                     # Timeout atteint
                     if elapsed_time >= max_wait_time:
-                        error_msg = f"PATCH 38: Timeout - vidéo non traitée après {max_wait_time}s"
+                        error_msg = f"PATCH 41: Timeout - vidéo non traitée après {max_wait_time}s"
                         log_app(f"❌ {error_msg}", "ERROR")
                         return {"success": False, "error": error_msg}
                 else:
