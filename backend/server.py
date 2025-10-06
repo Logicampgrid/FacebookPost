@@ -4260,8 +4260,37 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         media_type = None
         media_file_info = None
         
-        # PATCH 39: Protection contre 'NoneType' object is not subscriptable
-        if webhook_data and isinstance(webhook_data, dict):
+        # PATCH 40: Support des fichiers dans les deux structures (webhook_handler ou multipart directe)
+        # Vérifier la structure webhook_handler d'abord
+        if "image_file" in webhook_data or "video_file" in webhook_data:
+            # Structure multipart directe (ancien format)
+            if webhook_data.get("video_file"):
+                has_media_file = True
+                media_type = "video"
+                media_file_info = webhook_data.get("video_file", {})
+                filename = media_file_info.get('filename', 'unknown') if isinstance(media_file_info, dict) else 'unknown'
+                log_app(f"📦 PATCH 40: Fichier vidéo détecté (multipart) - {filename}", "INFO")
+            elif webhook_data.get("image_file"):
+                has_media_file = True
+                media_type = "image"
+                media_file_info = webhook_data.get("image_file", {})
+                filename = media_file_info.get('filename', 'unknown') if isinstance(media_file_info, dict) else 'unknown'
+                log_app(f"📦 PATCH 40: Fichier image détecté (multipart) - {filename}", "INFO")
+        elif "file" in webhook_data and webhook_data["file"]:
+            # Structure webhook_handler (nouveau format)
+            file_info = webhook_data["file"]
+            has_media_file = True
+            if file_info.get("is_video"):
+                media_type = "video"
+                log_app(f"📦 PATCH 40: Fichier vidéo détecté (webhook_handler) - {file_info.get('filename', 'unknown')}", "INFO")
+            elif file_info.get("is_image"):
+                media_type = "image"  
+                log_app(f"📦 PATCH 40: Fichier image détecté (webhook_handler) - {file_info.get('filename', 'unknown')}", "INFO")
+            else:
+                media_type = "unknown"
+                log_app(f"📦 PATCH 40: Fichier média détecté (webhook_handler) - type inconnu", "INFO")
+        # PATCH 39: Protection contre 'NoneType' object is not subscriptable (code original)
+        elif webhook_data and isinstance(webhook_data, dict):
             if webhook_data.get("video_file"):
                 has_media_file = True
                 media_type = "video"
