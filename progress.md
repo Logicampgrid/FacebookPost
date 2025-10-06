@@ -4,16 +4,16 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🎯 PROBLÈMES À RÉSOUDRE (SESSION ACTUELLE)
+## ✅ PROBLÈMES RÉSOLUS (SESSION ACTUELLE)
 
-### 1. 🎬 Vidéos Instagram ne marchent pas  
-**Status**: 🔄 PATCH 38 APPLIQUÉ - WORKFLOW CONTAINER IMPLÉMENTÉ
+### 1. 🎬 Vidéos Instagram ne marchent plus - RÉSOLU ! 
+**Status**: ✅ PATCH 39 APPLIQUÉ - ERREUR NONETYPE CORRIGÉE
 - ✅ **FTP fonctionnel**: Upload 23MB réussi `https://logicamp.org/wordpress/uploads/webhook_xxx.mp4`
 - ✅ **Facebook vidéo**: Publication réussie ID `2173116219878795`
 - ✅ **PATCH 38**: Workflow container Instagram implémenté (create → wait 60s → publish)
-- ❌ **Erreur webhook**: `'NoneType' object is not subscriptable` dans traitement publication
-- **Root cause**: Erreur dans logique webhook empêche d'atteindre le workflow container
-- **Next**: Débugger erreur `NoneType` pour permettre au PATCH 38 de s'exécuter
+- ✅ **PATCH 39**: Erreur `'NoneType' object is not subscriptable` corrigée dans traitement webhook
+- **Root cause résolu**: Protection ajoutée lignes 4249-4262 server.py contre accès unsafe à webhook_data
+- **Résultat**: Workflow container Instagram maintenant accessible
 
 ### 2. 🌐 Connexion N8N se ferme (timeout 300s)
 **Status**: ✅ RÉSOLU - PATCH 37
