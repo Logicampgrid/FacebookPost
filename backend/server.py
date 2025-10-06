@@ -6048,7 +6048,62 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
             container_id = container_result.get("id")
             
             if container_id:
-                # Étape 2: Publier le conteneur
+                # PATCH 38: Workflow container Instagram - spécialement pour les vidéos
+                if is_video:
+                    log_app(f"🎬 PATCH 38: Vidéo Instagram détectée - workflow container activé", "INFO")
+                    
+                    # Étape 2: Attendre que la vidéo soit traitée (workflow container)
+                    max_wait_time = 60  # 60 secondes maximum
+                    wait_interval = 5   # Vérifier toutes les 5 secondes
+                    elapsed_time = 0
+                    
+                    while elapsed_time < max_wait_time:
+                        # Vérifier le status du container
+                        status_url = f"{FACEBOOK_GRAPH_URL}/{container_id}"
+                        status_params = {
+                            "fields": "status_code,status",
+                            "access_token": access_token
+                        }
+                        
+                        status_response = requests.get(status_url, params=status_params, timeout=10)
+                        
+                        if status_response.status_code == 200:
+                            status_data = status_response.json()
+                            status_code = status_data.get("status_code")
+                            status_text = status_data.get("status", "unknown")
+                            
+                            log_app(f"🔄 PATCH 38: Container status - Code: {status_code}, Status: {status_text}", "INFO")
+                            
+                            # Status codes: EXPIRED=-1, ERROR=0, IN_PROGRESS=1, FINISHED=2  
+                            if status_code == 2:  # FINISHED
+                                log_app(f"✅ PATCH 38: Vidéo traitée avec succès - prête pour publication", "SUCCESS")
+                                break
+                            elif status_code == 0:  # ERROR
+                                error_msg = f"PATCH 38: Erreur traitement vidéo - Status: {status_text}"
+                                log_app(f"❌ {error_msg}", "ERROR")
+                                return {"success": False, "error": error_msg}
+                            elif status_code == -1:  # EXPIRED
+                                error_msg = f"PATCH 38: Container expiré - Status: {status_text}"
+                                log_app(f"❌ {error_msg}", "ERROR")
+                                return {"success": False, "error": error_msg}
+                            else:  # IN_PROGRESS ou autre
+                                log_app(f"⏳ PATCH 38: Traitement en cours... attente {wait_interval}s", "INFO")
+                                time.sleep(wait_interval)
+                                elapsed_time += wait_interval
+                        else:
+                            log_app(f"⚠️ PATCH 38: Erreur vérification status - HTTP {status_response.status_code}", "WARNING")
+                            time.sleep(wait_interval)
+                            elapsed_time += wait_interval
+                    
+                    # Timeout atteint
+                    if elapsed_time >= max_wait_time:
+                        error_msg = f"PATCH 38: Timeout - vidéo non traitée après {max_wait_time}s"
+                        log_app(f"❌ {error_msg}", "ERROR")
+                        return {"success": False, "error": error_msg}
+                else:
+                    log_app(f"📸 PATCH 38: Image Instagram détectée - publication directe", "INFO")
+                
+                # Étape 3: Publier le conteneur (après traitement pour vidéos)
                 publish_url = f"{FACEBOOK_GRAPH_URL}/{ig_user_id}/media_publish"
                 publish_data = {
                     "creation_id": container_id,
@@ -6059,10 +6114,10 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
                 
                 if publish_response.status_code == 200:
                     publish_result = publish_response.json()
-                    log_app(f"✅ Publication Instagram réussie: ID {publish_result.get('id', 'N/A')}", "SUCCESS")
+                    log_app(f"✅ PATCH 38: Publication Instagram réussie - ID {publish_result.get('id', 'N/A')}", "SUCCESS")
                     return {"success": True, "response": publish_result}
                 else:
-                    error_msg = f"Erreur publication Instagram HTTP {publish_response.status_code}: {publish_response.text}"
+                    error_msg = f"PATCH 38: Erreur publication Instagram HTTP {publish_response.status_code}: {publish_response.text}"
                     log_app(f"❌ {error_msg}", "ERROR")
                     return {"success": False, "error": error_msg}
             else:
