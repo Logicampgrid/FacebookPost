@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://smart-emergent.preview.emergentagent.com
+🔗 https://code-mender-3.preview.emergentagent.com

@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://smart-emergent.preview.emergentagent.com
+URL : https://code-mender-3.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://smart-emergent.preview.emergentagent.com/api/webhook
+https://code-mender-3.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :
