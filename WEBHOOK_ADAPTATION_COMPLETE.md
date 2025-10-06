@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://emergent-builder-9.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://prompt-emergence.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://emergent-builder-9.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://emergent-builder-9.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://emergent-builder-9.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://prompt-emergence.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://prompt-emergence.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://prompt-emergence.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 
