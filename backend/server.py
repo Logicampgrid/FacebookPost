@@ -5103,15 +5103,18 @@ async def webhook_handler(request: Request):
                                         
                                         log_app(f"🌐 PATCH 30: URL publique finale: {public_url}", "SUCCESS")
                                         
-                                        # Ajouter les infos de l'image aux données webhook
-                                        webhook_data['image_file'] = {
-                                            'path': temp_path,
-                                            'filename': temp_filename,
-                                            'original_filename': filename,
-                                            'content_type': content_type,
-                                            'size': len(file_content),
-                                            'public_url': public_url  # URL publique toujours disponible
-                                        }
+                                        # PATCH 39: Protection contre NoneType + ajouter les infos de l'image aux données webhook
+                                        if webhook_data is not None:
+                                            webhook_data['image_file'] = {
+                                                'path': temp_path,
+                                                'filename': temp_filename,
+                                                'original_filename': filename,
+                                                'content_type': content_type,
+                                                'size': len(file_content),
+                                                'public_url': public_url  # URL publique toujours disponible
+                                            }
+                                        else:
+                                            log_app(f"⚠️ PATCH 39: webhook_data None, impossible d'ajouter image_file", "WARNING")
                         else:
                             # Process all form fields - CORRECTION POUR LES FICHIERS SANS JSON
                             webhook_data = {}
@@ -5175,15 +5178,18 @@ async def webhook_handler(request: Request):
                                         
                                         log_app(f"🌐 PATCH 30: URL publique finale: {public_url}", "SUCCESS")
                                         
-                                        # Ajouter les infos de l'image aux données webhook
-                                        webhook_data['image_file'] = {
-                                            'path': temp_path,
-                                            'filename': temp_filename,
-                                            'original_filename': filename,
-                                            'content_type': content_type,
-                                            'size': len(file_content),
-                                            'public_url': public_url  # URL publique toujours disponible
-                                        }
+                                        # PATCH 39: Protection contre NoneType + ajouter les infos de l'image aux données webhook
+                                        if webhook_data is not None:
+                                            webhook_data['image_file'] = {
+                                                'path': temp_path,
+                                                'filename': temp_filename,
+                                                'original_filename': filename,
+                                                'content_type': content_type,
+                                                'size': len(file_content),
+                                                'public_url': public_url  # URL publique toujours disponible
+                                            }
+                                        else:
+                                            log_app(f"⚠️ PATCH 39: webhook_data None, impossible d'ajouter image_file", "WARNING")
                                     else:
                                         # Fichier non reconnu, essayer de le traiter comme texte
                                         try:
