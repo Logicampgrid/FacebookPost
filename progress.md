@@ -935,3 +935,30 @@ curl -X POST -H "Content-Type: application/json" -d '{"object":"page","entry":[]
 - ✅ Publication Facebook et Instagram
 - ✅ Gestion d'erreurs robuste
 - ✅ Compatibilité totale maintenue
+
+## 🚨 PATCH 40 - CORRECTION CRITIQUE BUG PUBLICATIONS (19/01/2025 19:50)
+
+### 🔍 **Problème identifié :**
+- ❌ **Les publications ne passaient plus depuis quelques jours**
+- ❌ Logs montraient : `⚠️ Webhook ne contient pas de données de publication: store/shop_type`
+- ❌ Les données JSON étaient bien parsées mais `store=None, shop_type=None` après extraction
+- ❌ Webhooks sauvés en MongoDB mais **0 publications réelles**
+
+### 🎯 **Root Cause :**
+- **Incohérence de structure de données** entre webhook_handler et process_webhook_publication
+- webhook_handler créait : `{"data": {"store": "gizmobbs"}, "file": {...}}`  
+- process_webhook_publication cherchait : `webhook_data.get("store")` (racine ❌)
+- Au lieu de : `webhook_data["data"]["store"]` (correct ✅)
+
+### ✅ **Solution PATCH 40 :**
+- 🔧 **Auto-détection structure** : webhook_handler vs multipart direct
+- 🔧 **Extraction intelligente** : `data_source = webhook_data["data"] if "data" in webhook_data else webhook_data`
+- 🔧 **Support dual des fichiers** : structure webhook_handler + multipart legacy
+- 🔧 **Logging amélioré** : debug des données extraites
+- ✅ **Compatibilité préservée** : ancien + nouveau format
+
+### 🚀 **Résultat attendu :**
+- ✅ Publications Facebook + Instagram fonctionnelles
+- ✅ Traitement correct des stores (gizmobbs → @logicamp_berger, logicantiq, outdoor)
+- ✅ Upload FTP + génération URLs publiques
+- ✅ Messages optimisés selon plateforme et média
