@@ -6052,7 +6052,9 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
         else:
             data["image_url"] = media_url
         
-        log_app(f"📸 Publication Instagram vers {ig_user_id}: {caption[:100]}...", "INFO")
+        # PATCH 38B: Protection None
+        safe_ig_caption = (caption or "")[:100]
+        log_app(f"📸 Publication Instagram vers {ig_user_id}: {safe_ig_caption}...", "INFO")
         
         # PATCH 16: Debug - afficher exactement ce qui est envoyé à Instagram
         media_field = "video_url" if is_video else "image_url"
