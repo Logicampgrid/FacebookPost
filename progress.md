@@ -370,7 +370,7 @@
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
 
 **Problème identifié** :
-- ❌ **URL incorrecte** : `https://emergent-upgrade.preview.emergentagent.com` utilisée pour les images
+- ❌ **URL incorrecte** : `https://emergentech-pro.preview.emergentagent.com` utilisée pour les images
 - ❌ **URL inaccessible** : Les serveurs Facebook/Instagram ne peuvent pas accéder à l'URL Emergent
 - ❌ **Priorité incorrecte** : Frontend .env privilégié sur l'URL ngrok réelle
 - ❌ **Erreur Instagram 9004** : "Only photo or video can be accepted" à cause de l'URL inaccessible
@@ -540,7 +540,7 @@
 
 **Test de validation réussi** :
 - ✅ **URL locale détectée** : `uploads\test_patch17.jpg` → Instagram n'a plus d'erreur de chemins locaux
-- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://emergent-upgrade.preview.emergentagent.com/uploads/test_patch17.jpg`
+- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://emergentech-pro.preview.emergentagent.com/uploads/test_patch17.jpg`
 - ✅ **Instagram reçoit URLs HTTPS** : Plus jamais de `uploads\webhook_xxx.png` 
 - ✅ **Redirection fonctionnelle** : Anciennes fonctions → fonction corrigée automatiquement
 
@@ -636,7 +636,7 @@
 - [x] **publish_to_instagram()** : Logs détaillés "🔍 PATCH 13" pour traçabilité et débogage
 
 **Test de validation réussi** :
-- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://emergent-upgrade.preview.emergentagent.com/uploads/test_patch13.jpg`
+- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://emergentech-pro.preview.emergentagent.com/uploads/test_patch13.jpg`
 - ✅ URLs déjà publiques préservées : `https://example.com/test.jpg` → `https://example.com/test.jpg`
 - ✅ Logs détaillés : "🔍 PATCH 13: URL reçue par Instagram", "🔍 PATCH 13: Données envoyées à Instagram"
 
