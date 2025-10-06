@@ -5968,7 +5968,9 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
                     log_app(f"⚠️ PATCH 26: Erreur lecture locale: {e}", "WARNING")
                     data["url"] = media_url
         
-        log_app(f"📱 Publication Facebook vers {fb_page_id}: {message[:100]}...", "INFO")
+        # PATCH 38B: Protection None
+        safe_fb_msg = (message or "")[:100]
+        log_app(f"📱 Publication Facebook vers {fb_page_id}: {safe_fb_msg}...", "INFO")
         
         # PATCH 26: Envoi avec fichier direct si disponible
         if files:
