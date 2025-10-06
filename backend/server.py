@@ -5108,6 +5108,11 @@ async def webhook_handler(request: Request):
                                 
                                 log_app(f"📦 CORRECTION: Fichier détecté - {key}: {filename} ({content_type}, {len(file_content)} bytes)", "INFO")
                                 
+                                # PATCH 43: Ignorer les fichiers vides (0 bytes) - n8n envoie souvent des doublons
+                                if len(file_content) == 0:
+                                    log_app(f"⚠️ PATCH 43: Fichier vide ignoré - {filename} (0 bytes)", "WARNING")
+                                    continue
+                                
                                 # Sauvegarder le fichier temporairement
                                 if content_type.startswith('video/') or 'video' in key.lower():
                                     # C'est une vidéo
