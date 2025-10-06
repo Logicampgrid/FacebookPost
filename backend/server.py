@@ -4364,7 +4364,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             
         if missing_fields:
             log_app(f"⚠️ Webhook ne contient pas de données de publication: {', '.join(missing_fields)}", "WARNING")
-            log_app(f"   Données reçues: store={store}, shop_type={shop_type}, title='{title}', message='{message[:30]}...', product_url={bool(product_url)}", "INFO")
+            # PATCH 38B: Protection None  
+            safe_msg = (message or "")[:30]
+            log_app(f"   Données reçues: store={store}, shop_type={shop_type}, title='{title}', message='{safe_msg}...', product_url={bool(product_url)}", "INFO")
             return None
         
         # Normaliser le store (support shop_type legacy)
