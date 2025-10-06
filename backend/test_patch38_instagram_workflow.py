@@ -39,7 +39,7 @@ def test_patch38_instagram_workflow():
     # Simuler une vidéo uploadée sur FTP (du progress.md)
     video_url = "https://logicamp.org/wordpress/uploads/webhook_test_patch38.mp4"
     
-    # Créer une requête multipart avec URL vidéo
+    # Créer une requête multipart/form-data avec URL vidéo
     multipart_data = {
         "jsonData": json.dumps({
             **test_data,
@@ -52,10 +52,14 @@ def test_patch38_instagram_workflow():
     print(f"📦 Données envoyées: {multipart_data}")
     
     try:
-        # Envoyer la requête
+        # Envoyer la requête avec files= pour forcer multipart/form-data
         response = requests.post(
             webhook_url,
-            data=multipart_data,
+            files={"jsonData": (None, json.dumps({
+                **test_data,
+                "media_url": video_url,
+                "is_video": True
+            }))},
             timeout=90  # Timeout étendu pour workflow container
         )
         
