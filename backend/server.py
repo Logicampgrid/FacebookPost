@@ -4811,22 +4811,15 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 webhook_publication_data['image_file'] = media_info
                 webhook_publication_data['image_url'] = media_info['public_url']
         
-        # PATCH 37: Publication asynchrone pour éviter timeout N8N
-        log_app(f"🚀 PATCH 37: Démarrage publication asynchrone pour {store}", "INFO")
+        # PATCH 41: Publication synchrone pour éviter surcharge avec batch n8n
+        log_app(f"🚀 PATCH 41: Traitement publication synchrone pour {store}", "INFO")
         
-        # Démarrer la publication en arrière-plan (sans attendre)
-        asyncio.create_task(process_webhook_publication_async(webhook_publication_data.copy()))
+        # Traiter la publication de manière synchrone pour que n8n attende avant le prochain objet
+        result = await process_webhook_publication(webhook_publication_data)
         
-        # Retourner immédiatement la réponse HTTP pour éviter timeout N8N
-        log_app(f"✅ PATCH 37: Réponse immédiate envoyée, publication en cours en arrière-plan", "SUCCESS")
-        return {
-            "success": True,
-            "status": "processing",
-            "store": store,
-            "title": title,
-            "media": "video" if media_info and media_info['is_video'] else "image" if media_info else "text",
-            "note": "Publication en cours en arrière-plan - check logs pour status final"
-        }
+        # Retourner le résultat complet à n8n
+        log_app(f"✅ PATCH 41: Publication terminée pour {store} - Résultat: {result.get('status', 'unknown')}", "SUCCESS")
+        return result
             
     except Exception as e:
         log_app(f"❌ PATCH 19: Erreur générale: {e}", "ERROR")
