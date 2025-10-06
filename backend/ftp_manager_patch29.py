@@ -255,7 +255,7 @@ def init_ftp_manager():
         ftp_host = os.getenv("FTP_HOST", "logicamp.org")
         ftp_port = int(os.getenv("FTP_PORT", "21"))
         ftp_user = os.getenv("FTP_USER", "logi")
-        ftp_password = os.getenv("FTP_PASSWORD", "6837")
+        ftp_password = os.getenv("FTP_PASSWORD", "logi")
         ftp_directory = os.getenv("FTP_DIRECTORY", "/www/wordpress/uploads/")
         ftp_base_url = os.getenv("FTP_BASE_URL", f"https://{ftp_host}/wordpress/uploads/")
         
