@@ -53,13 +53,19 @@ def test_patch38_instagram_workflow():
     
     try:
         # Envoyer la requête avec files= pour forcer multipart/form-data
+        # Inclure un faux fichier pour respecter le format n8n
+        fake_file_content = b"fake_video_content_for_test"
+        
         response = requests.post(
             webhook_url,
-            files={"jsonData": (None, json.dumps({
-                **test_data,
-                "media_url": video_url,
-                "is_video": True
-            }))},
+            data={
+                "jsonData": json.dumps({
+                    **test_data,
+                    "media_url": video_url,
+                    "is_video": True
+                })
+            },
+            files={"file": ("test_patch38.mp4", fake_file_content, "video/mp4")},
             timeout=90  # Timeout étendu pour workflow container
         )
         
