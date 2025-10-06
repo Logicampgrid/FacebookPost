@@ -7,12 +7,12 @@
 ## 🎯 PROBLÈMES À RÉSOUDRE (SESSION ACTUELLE)
 
 ### 1. 🎬 Vidéos Instagram ne marchent pas
-**Status**: 🔍 PROBLÈMES IDENTIFIÉS - PATCH 35
-- ❌ **FTP Password rejeté**: `530 Password not accepted` - configuration FTP à corriger
-- ❌ **Erreur shutil.move**: Tentative de déplacer fichier vers même emplacement
-- ❌ **Facebook Erreur 324**: "Requires upload file" - upload multipart défaillant
-- ❌ **Instagram**: "Média requis pour Instagram" - fichiers non traités correctement
-- **Root cause**: Problème dans la chaîne de traitement FTP → ngrok → publication
+**Status**: 🔄 PATCH 36 APPLIQUÉ - FTP CORRIGÉ
+- ✅ **FTP Password corrigé**: `6837` → `logi` dans `.env` et tous les modules
+- ✅ **FTP Authentication**: `230 User logged in` - connexion FTP validée
+- 🔄 **À tester**: Upload vidéo après restart serveur
+- ❌ **Timeout serveur**: Problème de réponse lente détecté (45s timeout)
+- **Next**: Test upload vidéo avec nouveau FTP + analyse timeout
 
 ### 2. 🌐 Connexion N8N se ferme (timeout 300s)
 **Status**: 🔄 EN ATTENTE D'ANALYSE APRÈS PATCH 35
