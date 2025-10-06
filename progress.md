@@ -6,19 +6,20 @@
 
 ## 🎯 PROBLÈMES À RÉSOUDRE (SESSION ACTUELLE)
 
-### 1. 🎬 Vidéos Instagram ne marchent pas
-**Status**: 🔄 PATCH 36 APPLIQUÉ - FTP CORRIGÉ
-- ✅ **FTP Password corrigé**: `6837` → `logi` dans `.env` et tous les modules
-- ✅ **FTP Authentication**: `230 User logged in` - connexion FTP validée
-- 🔄 **À tester**: Upload vidéo après restart serveur
-- ❌ **Timeout serveur**: Problème de réponse lente détecté (45s timeout)
-- **Next**: Test upload vidéo avec nouveau FTP + analyse timeout
+### 1. 🎬 Vidéos Instagram ne marchent pas  
+**Status**: 🔍 PATCH 37 APPLIQUÉ - NOUVEAU PROBLÈME IDENTIFIÉ
+- ✅ **FTP fonctionnel**: Upload 23MB réussi `https://logicamp.org/wordpress/uploads/webhook_xxx.mp4`
+- ✅ **Facebook vidéo**: Publication réussie ID `2173116219878795`
+- ❌ **Instagram erreur 9007**: "Media ID is not available" - workflow container requis
+- **Root cause**: Instagram vidéos nécessitent workflow container → processing → publication
+- **Next**: Implémenter workflow container Instagram (create → wait → publish)
 
 ### 2. 🌐 Connexion N8N se ferme (timeout 300s)
-**Status**: 🔄 EN ATTENTE D'ANALYSE APRÈS PATCH 35
-- Erreur: "The connection was aborted, perhaps the server is offline"
-- Timeout 300000ms exceeded sur HTTP Request
-- **Priority**: Après correction problème #1
+**Status**: ✅ RÉSOLU - PATCH 37
+- ✅ **Webhook fonctionne**: Réponse complète reçue avec tous les logs
+- ✅ **FTP asynchrone**: Publication en arrière-plan + réponse HTTP immédiate
+- ✅ **Test validé**: Upload 23MB + publications Facebook/Instagram tentées
+- **Result**: Timeout N8N complètement résolu
 
 ## 🔧 ÉTAT ACTUEL DES SERVICES
 - ✅ Backend: RUNNING (pid 780) 
