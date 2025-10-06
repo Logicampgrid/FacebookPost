@@ -4277,7 +4277,9 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         # CORRECTION: Si pas de message personnalisé, créer le message à partir du title + URL
         if not custom_message and title:
             custom_message = f"{title}\n\n{product_url}" if product_url else title
-            log_app(f"📝 Message auto-généré à partir du titre: {custom_message[:50]}...", "INFO")
+            # PATCH 38B: Protection None
+            safe_custom_msg = (custom_message or "")[:50]
+            log_app(f"📝 Message auto-généré à partir du titre: {safe_custom_msg}...", "INFO")
         
         # PATCH 38B: Protection contre 'NoneType' object is not subscriptable
         safe_message = (custom_message or "")[:50]
