@@ -1,6 +1,6 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 2/10 (PATCH 42 complété - 8 crédits restants - NOUVELLE SESSION)
+- ⚡ Crédits utilisés: 3/10 (PATCH 43 complété - 7 crédits restants - NOUVELLE SESSION)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
