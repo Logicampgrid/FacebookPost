@@ -4774,6 +4774,26 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
 
 async def handle_n8n_publication(form_data, format_type="direct") -> dict:
     """
+async def process_webhook_publication_async(webhook_publication_data: dict):
+    """PATCH 37: Version asynchrone de process_webhook_publication pour éviter timeout"""
+    try:
+        store = webhook_publication_data.get("store")
+        log_app(f"🔄 PATCH 37: Publication asynchrone démarrée pour {store}", "INFO")
+        
+        # Appeler la fonction synchrone existante en arrière-plan
+        result = await process_webhook_publication(webhook_publication_data)
+        
+        if result and result.get("success"):
+            log_app(f"✅ PATCH 37: Publication asynchrone réussie pour {store}: {result.get('platforms', [])}", "SUCCESS")
+        else:
+            log_app(f"❌ PATCH 37: Publication asynchrone échouée pour {store}: {result}", "ERROR")
+        
+        return result
+        
+    except Exception as e:
+        log_app(f"❌ PATCH 37: Erreur publication asynchrone: {e}", "ERROR")
+        return {"success": False, "error": str(e)}
+
     Gère les publications n8n avec logique complète (ex /api/webhook/publish)
     Intégré avec l'infrastructure existante (stores, FTP, ngrok)
     """
