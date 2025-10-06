@@ -5767,8 +5767,18 @@ async def upload_video_endpoint(video: UploadFile = File(...)):
                 validation=validation
             )
         
-        # Upload vers FTP
-        success, public_url, error = await upload_video_to_ftp(temp_path, unique_filename)
+        # PATCH 35: Upload vers FTP avec gestionnaire PATCH 29
+        log_video(f"PATCH 35: Upload vidéo FTP avec gestionnaire - {unique_filename}", "INFO")
+        
+        if FTP_MANAGER_AVAILABLE:
+            success, public_url, error = upload_for_publication(temp_path, unique_filename)
+            if success:
+                log_video(f"✅ PATCH 35: Vidéo uploadée sur FTP - {public_url}", "SUCCESS")
+            else:
+                log_video(f"⚠️ PATCH 35: Upload FTP échoué - {error}", "ERROR")
+        else:
+            log_video(f"❌ PATCH 35: Gestionnaire FTP non disponible", "ERROR")
+            success, public_url, error = False, None, "Gestionnaire FTP non disponible"
         
         # PATCH 24: Suppression différée des fichiers temporaires pour accès FB/IG
         try:
