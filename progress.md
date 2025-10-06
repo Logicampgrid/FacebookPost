@@ -4,6 +4,28 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
+## 🎯 PROBLÈMES À RÉSOUDRE (SESSION ACTUELLE)
+
+### 1. 🎬 Vidéos Instagram ne marchent pas
+**Status**: 🔍 PROBLÈMES IDENTIFIÉS - PATCH 35
+- ❌ **FTP Password rejeté**: `530 Password not accepted` - configuration FTP à corriger
+- ❌ **Erreur shutil.move**: Tentative de déplacer fichier vers même emplacement
+- ❌ **Facebook Erreur 324**: "Requires upload file" - upload multipart défaillant
+- ❌ **Instagram**: "Média requis pour Instagram" - fichiers non traités correctement
+- **Root cause**: Problème dans la chaîne de traitement FTP → ngrok → publication
+
+### 2. 🌐 Connexion N8N se ferme (timeout 300s)
+**Status**: 🔄 EN ATTENTE D'ANALYSE APRÈS PATCH 35
+- Erreur: "The connection was aborted, perhaps the server is offline"
+- Timeout 300000ms exceeded sur HTTP Request
+- **Priority**: Après correction problème #1
+
+## 🔧 ÉTAT ACTUEL DES SERVICES
+- ✅ Backend: RUNNING (pid 780) 
+- ✅ Frontend: RUNNING (pid 846)
+- ✅ MongoDB: RUNNING (pid 49)
+- ✅ Code-server: RUNNING (pid 44)
+- ✅ API Health Check: OK `/api/health`
 ## ✅ PATCH 34 - CORRECTIONS FTP + MIME FINALISÉES (1 crédit)
 **🎯 PROBLÈMES CRITIQUES DÉFINITIVEMENT RÉSOLUS**: Gestionnaire FTP + Détection MIME + Chemin FTP
 
