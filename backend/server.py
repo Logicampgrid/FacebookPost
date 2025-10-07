@@ -5010,6 +5010,38 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
         log_app(f"❌ {error_msg}", "ERROR")
         raise HTTPException(status_code=500, detail=error_msg)
 
+async def process_webhook_background(webhook_data: dict):
+    """PATCH 45: Traitement asynchrone des webhooks en arrière-plan pour éviter timeout n8n"""
+    try:
+        log_app("🔄 PATCH 45: Début traitement publication en arrière-plan", "INFO")
+        
+        # Traiter la publication
+        publication_result = await process_webhook_publication(webhook_data)
+        if publication_result:
+            log_app(f"✅ PATCH 45: Publication arrière-plan réussie: {publication_result}", "SUCCESS")
+        else:
+            log_app(f"⚠️ PATCH 45: Publication arrière-plan sans résultat", "WARNING")
+        
+        # Sauvegarder dans MongoDB
+        try:
+            webhook_record = {
+                "type": "publication",
+                "data": webhook_data,
+                "result": publication_result,
+                "status": "processed" if publication_result else "failed",
+                "background_processing": True,  # PATCH 45 indicator
+                "timestamp": datetime.now()
+            }
+            await save_webhook_data(webhook_record)
+            log_app("✅ PATCH 45: Webhook sauvegardé dans MongoDB", "SUCCESS")
+        except Exception as save_error:
+            log_app(f"⚠️ PATCH 45: Erreur sauvegarde webhook: {save_error}", "WARNING")
+            
+    except Exception as bg_error:
+        log_app(f"❌ PATCH 45: Erreur traitement arrière-plan: {bg_error}", "ERROR")
+        import traceback
+        log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
+
 @app.post("/api/webhook")
 @app.get("/api/webhook")
 @app.post("/api/webhook/")
