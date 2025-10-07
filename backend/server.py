@@ -5354,6 +5354,7 @@ async def webhook_handler(request: Request):
                         log_app(f"📦 Raw webhook data: {body_str[:500]}...", "INFO")
                         return {"status": "received", "note": "Invalid JSON acknowledged"}
                 
+                # PATCH 45: Réponse immédiate + traitement arrière-plan pour éviter timeout N8N
                 # Process webhook data if successfully parsed
                 if webhook_data:
                     if isinstance(webhook_data, dict):
@@ -5363,25 +5364,15 @@ async def webhook_handler(request: Request):
                         if 'entry' in webhook_data:
                             log_app(f"📦 Webhook entries: {len(webhook_data['entry'])}", "INFO")
                         
-                        # NOUVELLE LOGIQUE: Traitement des données de publication depuis n8n
-                        publication_result = await process_webhook_publication(webhook_data)
-                        if publication_result:
-                            log_app(f"🚀 Publication webhook réussie: {publication_result}", "SUCCESS")
+                        # PATCH 45: Traitement asynchrone en arrière-plan pour éviter timeout n8n
+                        log_app("🚀 PATCH 45: Lancement traitement publication en arrière-plan", "INFO")
+                        asyncio.create_task(process_webhook_background(webhook_data))
                         
-                        # Sauvegarder le webhook dans MongoDB
-                        try:
-                            webhook_record = {
-                                "type": "publication",
-                                "data": webhook_data,
-                                "result": publication_result,
-                                "status": "processed" if publication_result else "failed"
-                            }
-                            await save_webhook_data(webhook_record)
-                            log_app("✅ Webhook sauvegardé dans MongoDB", "SUCCESS")
-                        except Exception as save_error:
-                            log_app(f"⚠️ Erreur sauvegarde webhook: {save_error}", "WARNING")
+                        # Répondre immédiatement à n8n
+                        log_app("✅ PATCH 45: Réponse immédiate envoyée à n8n (traitement en cours)", "SUCCESS")
+                        return {"status": "received", "processing": "background", "patch": 45}
                         
-                    log_app("✅ Webhook data processed successfully", "SUCCESS")
+                    log_app("✅ Webhook data received", "SUCCESS")
                 else:
                     log_app("⚠️ No webhook data could be extracted", "WARNING")
                 
