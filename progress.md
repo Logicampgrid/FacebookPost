@@ -46,7 +46,7 @@
 - ✅ **Instagram** : Plus d'erreur "Only photo or video can be accepted"
 - ✅ **Cohérence** : Images ET vidéos utilisent maintenant le même processus d'upload FTP
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 0/10 (NOUVELLE SESSION - 10 crédits disponibles)
+- ⚡ Crédits utilisés: 1/10 (PATCH 51 appliqué)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
