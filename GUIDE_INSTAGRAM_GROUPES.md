@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://prod-sync-fix.preview.emergentagent.com
+URL : https://code-wizard-38.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles
