@@ -1,10 +1,62 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 5/10 (PATCH 45 complété - 5 crédits restants - NOUVELLE SESSION)
+- ⚡ Crédits utilisés: 6/10 (PATCH 46 complété - 4 crédits restants - NOUVELLE SESSION)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
 ## ✅ PROBLÈMES RÉSOLUS (SESSION ACTUELLE)
+
+### 1. ✅ PATCH 46 - NOUVEAU STORE "LOGICAMP" POUR VIDÉOS (1 crédit)
+**Status**: ✅ STORE LOGICAMP CONFIGURÉ - PUBLICATIONS VIDÉOS ACTIVÉES !
+
+#### Objectif: Publier des vidéos depuis N8N sur pages Facebook/Instagram Logicamp ✅
+**Configuration demandée**:
+- ✅ Store: "logicamp"
+- ✅ Page Facebook: ID 174450429258625
+- ✅ Instagram: @logicamp.org (ID récupéré automatiquement)
+- ✅ Token: Utiliser le token existant de Didier Preud'homme
+- ✅ Plateformes: Facebook + Instagram (les deux)
+
+**Implémentation PATCH 46**:
+- [x] **Store ajouté**: Configuration "logicamp" dans STORES
+- [x] **Page Facebook**: ID 174450429258625 configuré
+- [x] **Instagram automatique**: Endpoint `/api/stores/logicamp/setup-instagram` créé
+- [x] **Token partagé**: Utilise le token de l'utilisateur connecté
+- [x] **TOKENS mis à jour**: Dictionnaire TOKENS inclut maintenant "logicamp"
+- [x] **Support vidéos**: Format vidéo supporté pour publications
+
+**Endpoint de configuration**:
+```
+GET /api/stores/logicamp/setup-instagram
+```
+**Fonctionnalités**:
+- ✅ Récupère automatiquement l'Instagram Business Account ID
+- ✅ Configure le store avec le token existant
+- ✅ Met à jour STORES et TOKENS en mémoire
+- ✅ Validation que la page Facebook a bien un compte Instagram connecté
+
+**Utilisation depuis N8N**:
+```json
+{
+  "store": "logicamp",
+  "title": "Titre de la vidéo",
+  "url": "https://logicamp.org/produit/...",
+  "description": "Description",
+  "file": "[vidéo MP4]"
+}
+```
+
+**Configuration automatique**:
+1. **Première utilisation**: Appeler `/api/stores/logicamp/setup-instagram`
+2. **Publications suivantes**: Utiliser directement `store="logicamp"` dans webhooks
+3. **Plateformes**: Facebook + Instagram automatiquement
+4. **Token**: Partagé avec les autres stores (même Business Manager)
+
+**Résultat attendu**:
+- ✅ Vidéos publiées sur page Facebook Logicamp
+- ✅ Vidéos publiées sur Instagram @logicamp.org (Reels)
+- ✅ Upload FTP automatique
+- ✅ Token unique partagé entre tous les stores
 
 ### 1. ✅ PATCH 45 - CORRECTION TIMEOUT N8N (1 crédit)
 **Status**: ✅ TIMEOUT N8N RÉSOLU - TRAITEMENT ARRIÈRE-PLAN !
