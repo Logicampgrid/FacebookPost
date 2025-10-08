@@ -4821,13 +4821,13 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 # C'est un fichier uploadé
                 log_app(f"📦 Fichier détecté: {key} = {value.filename}", "INFO")
                 media_file = value
-            elif key == "jsonData" and isinstance(value, str):
-                # Format n8n avec JSON dans le champ jsonData
+            elif key in ["jsonData", "json_data"] and isinstance(value, str):
+                # Format n8n avec JSON dans le champ jsonData ou json_data
                 try:
                     publication_data = json.loads(value)
-                    log_app(f"📦 JSON parsé depuis jsonData: {list(publication_data.keys())}", "INFO")
+                    log_app(f"📦 PATCH 50: JSON parsé depuis {key}: {list(publication_data.keys())}", "INFO")
                 except json.JSONDecodeError as e:
-                    log_app(f"❌ Erreur parsing JSON: {e}", "ERROR")
+                    log_app(f"❌ Erreur parsing JSON depuis {key}: {e}", "ERROR")
             else:
                 # Données directes
                 publication_data[key] = value
