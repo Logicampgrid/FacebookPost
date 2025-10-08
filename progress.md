@@ -1,13 +1,53 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 5/10 (PATCH 47 TERMINÉ ✅ - 5 crédits restants - SESSION fb5-test3)
+- ⚡ Crédits utilisés: 1/10 (PATCH 48 EN COURS ✅ - 9 crédits restants - NOUVELLE SESSION)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🎉 SUCCÈS SESSION fb5-test3
+## 🎯 SESSION ACTUELLE - CORRECTION VIDÉOS FACEBOOK
+✅ PATCH 48 appliqué - Upload direct vidéos Facebook
+⏳ Tests en cours
+
+## 🎉 SUCCÈS SESSION PRÉCÉDENTE (fb5-test3)
 ✅ Store "logicamp" configuré et testé
 ✅ Tous les tests passés (variables, config, API)
-✅ Publications vidéos maintenant possibles sur logicamp
+✅ Publications vidéos Instagram maintenant possibles sur logicamp
+
+## ✅ PATCH 48 - UPLOAD DIRECT VIDÉOS FACEBOOK (1 crédit)
+**Status**: ✅ CORRECTION APPLIQUÉE
+**Problème identifié**: Vidéos Facebook échouent avec erreur permission 6000/1363042
+**Root cause**: Les vidéos utilisaient `file_url` (URL FTP) au lieu d'upload direct comme les images
+
+### Erreur résolue:
+- ❌ **Avant**: `"Vous n'avez pas l'autorisation d'importer une vidéo ici"` (erreur 6000)
+- ❌ **Code problématique**: `data["file_url"] = media_url` ligne 6135
+- ❌ **Différence avec images**: PATCH 26 fonctionnait pour images mais pas vidéos
+
+### Solution appliquée:
+- [x] **Upload direct vidéos**: Même mécanisme que PATCH 26 pour images
+- [x] **Téléchargement FTP**: Vidéo téléchargée depuis URL FTP publique
+- [x] **Upload multipart**: Envoi du fichier directement à Facebook via `files={'source': ...}`
+- [x] **Détection MIME**: Auto-détection MP4 vs MOV pour Content-Type correct
+- [x] **Timeout augmenté**: 60s pour vidéos (vs 10s pour images)
+- [x] **Fallback intelligent**: Si échec téléchargement, fallback vers `file_url`
+- [x] **Logs PATCH 48**: Traçabilité complète des téléchargements et uploads
+
+### Code modifié:
+- **Fichier**: `/app/backend/server.py`
+- **Fonction**: `publish_to_facebook()` lignes 6128-6171
+- **Ajout**: Upload direct vidéos avec détection MIME et gestion erreurs
+
+### Résultat attendu:
+- ✅ **Vidéos Facebook**: Upload direct du fichier au lieu de file_url
+- ✅ **Plus d'erreur permission**: Facebook acceptera les vidéos uploadées directement
+- ✅ **Compatibilité totale**: Images ET vidéos utilisent le même mécanisme robuste
+- ✅ **Tous les stores**: gizmobbs, logicantiq, outdoor, logicamp - vidéos fonctionnelles
+
+### Test de validation:
+1. Redémarrer le backend pour appliquer les changements
+2. Envoyer une vidéo via webhook n8n
+3. Vérifier logs PATCH 48 (téléchargement + upload)
+4. Confirmer publication Facebook vidéo réussie
 
 ## ✅ PATCH 47 - STORE LOGICAMP CONFIGURÉ (4 crédits)
 **Status**: ✅ CONFIGURATION RÉUSSIE
