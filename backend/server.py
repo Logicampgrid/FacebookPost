@@ -5133,6 +5133,43 @@ async def process_webhook_background(webhook_data: dict):
         log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
 
 @app.post("/api/webhook")
+async def process_webhook_background_n8n(webhook_publication_data: dict):
+    """PATCH 50: Traitement asynchrone des publications N8N multipart en arrière-plan pour éviter timeout"""
+    try:
+        store = webhook_publication_data.get("store", "unknown")
+        title = webhook_publication_data.get("title", "Unknown")
+        log_app(f"🔄 PATCH 50: Début traitement N8N arrière-plan - Store: {store}, Title: {title}", "INFO")
+        
+        # Traiter la publication N8N  
+        publication_result = await process_webhook_publication(webhook_publication_data)
+        if publication_result:
+            success_status = publication_result.get("success", False)
+            platforms = publication_result.get("platforms", [])
+            log_app(f"✅ PATCH 50: Publication N8N arrière-plan réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
+        else:
+            log_app(f"⚠️ PATCH 50: Publication N8N arrière-plan sans résultat - Store: {store}", "WARNING")
+        
+        # Sauvegarder dans MongoDB avec marqueur N8N
+        try:
+            webhook_record = {
+                "type": "n8n_publication",
+                "store": store,
+                "title": title,
+                "data": webhook_publication_data,
+                "result": publication_result,
+                "status": "processed" if publication_result and publication_result.get("success") else "failed",
+                "background_processing": True,  # PATCH 50 indicator
+                "patch": 50,
+                "timestamp": datetime.now()
+            }
+            await save_webhook_data(webhook_record)
+            log_app(f"✅ PATCH 50: Publication N8N sauvegardée - Store: {store}", "SUCCESS")
+        except Exception as save_error:
+            log_app(f"⚠️ PATCH 50: Erreur sauvegarde N8N - Store: {store}: {save_error}", "WARNING")
+            
+    except Exception as bg_error:
+        log_app(f"❌ PATCH 50: Erreur traitement N8N arrière-plan - Store: {store}: {bg_error}", "ERROR")
+        log_app(f"❌ PATCH 50: Traceback: {traceback.format_exc()}", "ERROR")
 @app.get("/api/webhook")
 @app.post("/api/webhook/")
 @app.get("/api/webhook/")
