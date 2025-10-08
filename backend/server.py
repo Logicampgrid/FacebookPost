@@ -669,14 +669,42 @@ async def upload_image_to_ftp(image_path: str, original_filename: str = None) ->
         timestamp = int(time.time())
         unique_id = uuid.uuid4().hex[:8]
         filename_parts = os.path.splitext(original_filename)
-        # Support pour .webp converti en .png pour Instagram
+        
+        # PATCH 51: Conversion réelle WEBP → PNG pour Instagram
+        converted_path = image_path
         if filename_parts[1].lower() == '.webp':
-            filename_parts = (filename_parts[0], '.png')
+            log_app(f"🎨 PATCH 51: Conversion Instagram WEBP → PNG", "INFO")
+            try:
+                from PIL import Image
+                
+                # Créer le nouveau chemin PNG
+                png_filename = f"instagram_{unique_id}_{timestamp}.png"
+                png_path = os.path.join(os.path.dirname(image_path), png_filename)
+                
+                # Convertir WEBP → PNG
+                with Image.open(image_path) as img:
+                    if img.mode in ('RGBA', 'LA'):
+                        background = Image.new('RGBA', img.size, (255, 255, 255, 255))
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background.convert('RGB')
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    img.save(png_path, 'PNG', optimize=True)
+                
+                log_app(f"✅ PATCH 51: Conversion Instagram réussie - {png_path}", "SUCCESS")
+                converted_path = png_path
+                filename_parts = (filename_parts[0], '.png')
+                
+            except Exception as conv_error:
+                log_app(f"❌ PATCH 51: Erreur conversion Instagram: {conv_error}", "ERROR")
+                log_app(f"🔄 PATCH 51: Utilisation WEBP original", "WARNING")
+        
         ftp_filename = f"instagram_{unique_id}_{timestamp}{filename_parts[1]}"
         
         # Validation avant upload
-        if not os.path.exists(image_path):
-            return False, None, f"Fichier non trouvé: {image_path}"
+        if not os.path.exists(converted_path):
+            return False, None, f"Fichier non trouvé: {converted_path}"
         
         file_size = os.path.getsize(image_path)
         log_app(f"📊 CORRECTION: Taille image: {file_size / (1024*1024):.2f} MB", "INFO")
