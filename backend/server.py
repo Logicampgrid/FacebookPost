@@ -226,6 +226,12 @@ STORES = {
         "fb_page_id": "236260991673388", 
         "ig_user_id": os.getenv("IG_USER_ID_OUTDOOR"),
         "access_token": os.getenv("FB_ACCESS_TOKEN_OUTDOOR")
+    },
+    "logicamp": {
+        "name": "Logicamp",
+        "fb_page_id": "174450429258625",
+        "ig_user_id": os.getenv("IG_USER_ID_LOGICAMP"),  # Sera récupéré automatiquement
+        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICAMP")  # Utilisera le token connecté
     }
 }
 
@@ -233,7 +239,8 @@ STORES = {
 TOKENS = {
     "gizmobbs": {},
     "logicantiq": {},
-    "outdoor": {}
+    "outdoor": {},
+    "logicamp": {}  # PATCH 46: Nouveau store pour publications vidéos
 }
 
 # MongoDB will now handle storage
