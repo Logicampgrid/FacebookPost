@@ -4666,32 +4666,73 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                 )
                 
         elif media_type == "image" and media_file_info:
-            log_app(f"🖼️ PATCH 14: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
+            log_app(f"🖼️ PATCH 51: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
             
-            # PATCH 14: CORRECTION FINALE - Garantir URL publique HTTPS pour Instagram
+            # PATCH 51: UPLOAD FTP RÉEL POUR IMAGES (comme pour les vidéos PATCH 35)
             filename = media_file_info['filename']
+            image_local_path = media_file_info['path']
             
-            # Vérifier d'abord si l'URL publique est déjà disponible dans media_file_info
+            log_app(f"📤 PATCH 51: Upload image FTP en cours - {filename}", "INFO")
+            
+            final_image_url = None
+            
+            # Vérifier d'abord si l'URL publique est déjà disponible ET le fichier uploadé
             if media_file_info.get('public_url') and media_file_info['public_url'].startswith('https://'):
                 final_image_url = media_file_info['public_url']
-                log_app(f"✅ PATCH 14: URL publique déjà générée - {final_image_url}", "SUCCESS")
-            else:
-                # PATCH 14: Générer OBLIGATOIREMENT l'URL publique ngrok
-                final_image_url = get_public_url(filename)
-                log_app(f"🌐 PATCH 14: URL publique ngrok générée - {final_image_url}", "SUCCESS")
-                
-                # PATCH 14: SÉCURITÉ - Vérifier que l'URL est valide
-                if not final_image_url or not final_image_url.startswith('https://'):
-                    log_app(f"❌ PATCH 14: URL publique invalide - {final_image_url}", "ERROR")
-                    raise Exception(f"Impossible de générer une URL publique valide pour {filename}")
+                log_app(f"✅ PATCH 51: URL publique déjà générée - {final_image_url}", "SUCCESS")
             
-            log_app(f"🔍 PATCH 14: URL finale pour publication - {final_image_url}", "INFO")
+            # PATCH 51: Si pas d'URL publique OU URL non uploadée, faire upload FTP réel
+            if not final_image_url:
+                if FTP_MANAGER_AVAILABLE:
+                    # Utiliser le gestionnaire FTP PATCH 29 pour l'upload (comme PATCH 35 pour vidéos)
+                    success, ftp_url, ftp_error = upload_for_publication(image_local_path, filename)
+                    
+                    if success and ftp_url:
+                        final_image_url = ftp_url
+                        log_app(f"✅ PATCH 51: Image uploadée sur FTP - {final_image_url}", "SUCCESS")
+                    else:
+                        log_app(f"⚠️ PATCH 51: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
+                        # Fallback vers copie locale + URL ngrok
+                        uploads_dir = "/app/backend/uploads"
+                        os.makedirs(uploads_dir, exist_ok=True)
+                        import shutil
+                        shutil.copy2(image_local_path, os.path.join(uploads_dir, filename))
+                        
+                        ngrok_url = get_active_ngrok_url()
+                        if ngrok_url:
+                            final_image_url = f"{ngrok_url}/uploads/{filename}"
+                            log_app(f"🌐 PATCH 51: Fallback ngrok - {final_image_url}", "INFO")
+                        else:
+                            log_app(f"⚠️ PATCH 51: Ngrok non disponible, URL optimiste FTP", "WARNING")
+                            final_image_url = get_public_url(filename)
+                else:
+                    log_app(f"⚠️ PATCH 51: Gestionnaire FTP non disponible, fallback ngrok", "WARNING")
+                    # Fallback vers ngrok si FTP non disponible
+                    uploads_dir = "/app/backend/uploads"
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    import shutil
+                    shutil.copy2(image_local_path, os.path.join(uploads_dir, filename))
+                    
+                    ngrok_url = get_active_ngrok_url()
+                    if ngrok_url:
+                        final_image_url = f"{ngrok_url}/uploads/{filename}"
+                        log_app(f"🌐 PATCH 51: Fallback ngrok (FTP indisponible) - {final_image_url}", "INFO")
+                    else:
+                        final_image_url = get_public_url(filename)
+                        log_app(f"⚠️ PATCH 51: URL optimiste - {final_image_url}", "WARNING")
+            
+            # PATCH 51: SÉCURITÉ - Vérifier que l'URL est valide
+            if not final_image_url or not final_image_url.startswith('https://'):
+                log_app(f"❌ PATCH 51: URL publique invalide - {final_image_url}", "ERROR")
+                raise Exception(f"Impossible de générer une URL publique valide pour {filename}")
+            
+            log_app(f"🔍 PATCH 51: URL finale pour publication - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
                 message=message,
                 product_url=product_url,
-                image_url=final_image_url,  # Utiliser l'URL finale ngrok
+                image_url=final_image_url,  # Utiliser l'URL finale avec upload FTP réel
                 platforms=platforms
             )
         else:
