@@ -29,29 +29,51 @@ def test_ftp_upload(file_path, file_type):
     print(f"📏 Taille: {file_size} bytes")
     print(f"🎯 Destination: {FTP_DIRECTORY}")
     
+    # Test avec mode PASSIF et ACTIF
+    modes = [("PASSIF", True), ("ACTIF", False)]
+    
+    for mode_name, passive_mode in modes:
+        try:
+            print(f"\n🔄 Test mode {mode_name}...")
+            
+            # Connexion FTP
+            print(f"\n📡 Connexion à {FTP_HOST}:{FTP_PORT}...")
+            ftp = ftplib.FTP()
+            ftp.set_pasv(passive_mode)
+            ftp.connect(FTP_HOST, FTP_PORT, timeout=30)
+            print(f"✅ Connexion établie (mode {mode_name})")
+            
+            # Login
+            print(f"🔐 Login avec {FTP_USER}...")
+            ftp.login(FTP_USER, FTP_PASSWORD)
+            print("✅ Authentification réussie")
+            
+            # Changement de répertoire
+            print(f"📁 Changement vers {FTP_DIRECTORY}...")
+            ftp.cwd(FTP_DIRECTORY)
+            print("✅ Répertoire OK")
+            
+            # Upload
+            print(f"⬆️ Upload de {filename} (mode {mode_name})...")
+            with open(file_path, 'rb') as f:
+                ftp.storbinary(f'STOR {filename}', f, blocksize=8192)
+            print(f"✅ Upload réussi (mode {mode_name})")
+            
+            # Success - break the loop
+            break
+            
+        except Exception as e_mode:
+            print(f"❌ Mode {mode_name} échoué: {e_mode}")
+            try:
+                ftp.quit()
+            except:
+                pass
+            
+            if mode_name == "ACTIF":  # Si les deux modes échouent
+                raise e_mode
+            continue  # Essayer le mode suivant
+    
     try:
-        # Connexion FTP
-        print(f"\n📡 Connexion à {FTP_HOST}:{FTP_PORT}...")
-        ftp = ftplib.FTP()
-        ftp.set_pasv(True)
-        ftp.connect(FTP_HOST, FTP_PORT, timeout=30)
-        print("✅ Connexion établie")
-        
-        # Login
-        print(f"🔐 Login avec {FTP_USER}...")
-        ftp.login(FTP_USER, FTP_PASSWORD)
-        print("✅ Authentification réussie")
-        
-        # Changement de répertoire
-        print(f"📁 Changement vers {FTP_DIRECTORY}...")
-        ftp.cwd(FTP_DIRECTORY)
-        print("✅ Répertoire OK")
-        
-        # Upload
-        print(f"⬆️ Upload de {filename}...")
-        with open(file_path, 'rb') as f:
-            ftp.storbinary(f'STOR {filename}', f)
-        print("✅ Upload réussi")
         
         # Vérification
         print(f"🔍 Vérification présence fichier...")
