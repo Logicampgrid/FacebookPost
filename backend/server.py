@@ -5132,7 +5132,6 @@ async def process_webhook_background(webhook_data: dict):
         import traceback
         log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
 
-@app.post("/api/webhook")
 async def process_webhook_background_n8n(webhook_publication_data: dict):
     """PATCH 50: Traitement asynchrone des publications N8N multipart en arrière-plan pour éviter timeout"""
     try:
