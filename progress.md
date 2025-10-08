@@ -1,12 +1,13 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 1/10 (PATCH 48 EN COURS ✅ - 9 crédits restants - NOUVELLE SESSION)
+- ⚡ Crédits utilisés: 2/10 (PATCH 49 APPLIQUÉ ✅ - 8 crédits restants - NOUVELLE SESSION)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
 ## 🎯 SESSION ACTUELLE - CORRECTION VIDÉOS FACEBOOK
-✅ PATCH 48 appliqué - Upload direct vidéos Facebook
-⏳ Tests en cours
+✅ PATCH 48 appliqué - Upload direct vidéos (INCOMPLET)
+✅ PATCH 49 appliqué - Format upload corrigé ('file' au lieu de 'source')
+⏳ Test final en cours
 
 ## 🎉 SUCCÈS SESSION PRÉCÉDENTE (fb5-test3)
 ✅ Store "logicamp" configuré et testé
