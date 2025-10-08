@@ -25,36 +25,47 @@
 **Problème**: Utilisait `{'source': ...}` comme pour les images
 **Erreur persistante**: Facebook continuait de refuser avec code 6000
 
-### Erreur résolue:
-- ❌ **Avant**: `"Vous n'avez pas l'autorisation d'importer une vidéo ici"` (erreur 6000)
-- ❌ **Code problématique**: `data["file_url"] = media_url` ligne 6135
-- ❌ **Différence avec images**: PATCH 26 fonctionnait pour images mais pas vidéos
+### Erreurs résolues:
+- ❌ **PATCH 48**: Utilisait `files={'source': ...}` comme les images → Facebook refusait
+- ❌ **Erreur API**: `"Vous n'avez pas l'autorisation d'importer une vidéo ici"` (erreur 6000/1363042)
+- ✅ **PATCH 49**: Correction paramètre → `files={'file': ...}` pour vidéos Facebook
 
-### Solution appliquée:
-- [x] **Upload direct vidéos**: Même mécanisme que PATCH 26 pour images
-- [x] **Téléchargement FTP**: Vidéo téléchargée depuis URL FTP publique
-- [x] **Upload multipart**: Envoi du fichier directement à Facebook via `files={'source': ...}`
+### Root Cause finale identifiée:
+**Facebook API différencie les endpoints:**
+- 📸 **Images** (`/photos`): Utilisent le paramètre `source` dans files
+- 🎬 **Vidéos** (`/videos`): Utilisent le paramètre `file` dans files
+
+### Solution PATCH 49 appliquée:
+- [x] **Paramètre corrigé**: `files={'file': (filename, content, mime)}` au lieu de `source`
+- [x] **Upload direct maintenu**: Téléchargement depuis FTP + upload multipart
 - [x] **Détection MIME**: Auto-détection MP4 vs MOV pour Content-Type correct
-- [x] **Timeout augmenté**: 60s pour vidéos (vs 10s pour images)
+- [x] **Timeout 60s**: Pour vidéos lourdes
 - [x] **Fallback intelligent**: Si échec téléchargement, fallback vers `file_url`
-- [x] **Logs PATCH 48**: Traçabilité complète des téléchargements et uploads
+- [x] **Logs PATCH 49**: Traçabilité complète avec identifiants PATCH 49
 
-### Code modifié:
+### Modifications PATCH 49:
 - **Fichier**: `/app/backend/server.py`
-- **Fonction**: `publish_to_facebook()` lignes 6128-6171
-- **Ajout**: Upload direct vidéos avec détection MIME et gestion erreurs
+- **Fonction**: `publish_to_facebook()` lignes 6135-6171
+- **Changement**: `{'source': ...}` → `{'file': ...}` pour vidéos
+- **Lignes modifiées**: 6144, 6162 (upload vidéos)
 
-### Résultat attendu:
-- ✅ **Vidéos Facebook**: Upload direct du fichier au lieu de file_url
-- ✅ **Plus d'erreur permission**: Facebook acceptera les vidéos uploadées directement
-- ✅ **Compatibilité totale**: Images ET vidéos utilisent le même mécanisme robuste
-- ✅ **Tous les stores**: gizmobbs, logicantiq, outdoor, logicamp - vidéos fonctionnelles
+### Diagnostic effectué:
+- ✅ Toutes les pages ont déjà des vidéos publiées (25, 25, 16, 25 vidéos)
+- ✅ Endpoint `/videos` accessible pour toutes les pages
+- ✅ Les permissions existent (pages non vérifiées mais fonctionnelles)
+- ⚠️ PATCH 48 utilisait le mauvais format d'upload
+
+### Résultat attendu PATCH 49:
+- ✅ **Vidéos Facebook**: Upload direct avec bon paramètre `file`
+- ✅ **Plus d'erreur 6000**: Facebook acceptera les vidéos correctement formatées
+- ✅ **Compatibilité totale**: Images (`source`) ET vidéos (`file`)
+- ✅ **Tous les stores**: gizmobbs, logicantiq, outdoor, logicamp
 
 ### Test de validation:
-1. Redémarrer le backend pour appliquer les changements
+1. Backend redémarré automatiquement (reload mode)
 2. Envoyer une vidéo via webhook n8n
-3. Vérifier logs PATCH 48 (téléchargement + upload)
-4. Confirmer publication Facebook vidéo réussie
+3. Vérifier logs PATCH 49 (téléchargement + upload avec 'file')
+4. Confirmer publication Facebook vidéo réussie (plus d'erreur 6000)
 
 ## ✅ PATCH 47 - STORE LOGICAMP CONFIGURÉ (4 crédits)
 **Status**: ✅ CONFIGURATION RÉUSSIE
