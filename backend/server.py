@@ -6132,22 +6132,23 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
                 "access_token": access_token
             }
             
-            # PATCH 48: Upload direct des vidéos comme pour les images (PATCH 26)
+            # PATCH 49: Correction format upload vidéo Facebook (utilise 'file' pas 'source')
             if media_url and media_url.startswith(('http://', 'https://')):
                 try:
-                    log_app(f"🔄 PATCH 48: Téléchargement vidéo pour upload direct: {media_url}", "INFO")
+                    log_app(f"🔄 PATCH 49: Téléchargement vidéo pour upload direct: {media_url}", "INFO")
                     media_response = requests.get(media_url, timeout=60)  # Timeout plus long pour vidéos
                     if media_response.status_code == 200:
                         # Détecter le type MIME réel
                         content_type = media_response.headers.get('Content-Type', 'video/mp4')
                         extension = 'mp4' if 'mp4' in content_type else 'mov'
-                        files = {'source': (f'video.{extension}', media_response.content, content_type)}
-                        log_app(f"✅ PATCH 48: Vidéo téléchargée ({len(media_response.content)} bytes, {content_type})", "INFO")
+                        # PATCH 49: Facebook vidéos utilise 'file' pas 'source'
+                        files = {'file': (f'video.{extension}', media_response.content, content_type)}
+                        log_app(f"✅ PATCH 49: Vidéo téléchargée ({len(media_response.content)} bytes, {content_type})", "INFO")
                     else:
-                        log_app(f"⚠️ PATCH 48: Échec téléchargement, fallback file_url: {media_response.status_code}", "WARNING")
+                        log_app(f"⚠️ PATCH 49: Échec téléchargement, fallback file_url: {media_response.status_code}", "WARNING")
                         data["file_url"] = media_url
                 except Exception as e:
-                    log_app(f"⚠️ PATCH 48: Erreur téléchargement vidéo, fallback file_url: {e}", "WARNING")
+                    log_app(f"⚠️ PATCH 49: Erreur téléchargement vidéo, fallback file_url: {e}", "WARNING")
                     data["file_url"] = media_url
             elif media_url:
                 # Chemin local, essayer de le lire directement
@@ -6159,16 +6160,17 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
                             # Détecter le type MIME
                             content_type = 'video/mp4' if local_path.endswith('.mp4') else 'video/quicktime'
                             extension = 'mp4' if local_path.endswith('.mp4') else 'mov'
-                            files = {'source': (f'video.{extension}', video_content, content_type)}
-                        log_app(f"✅ PATCH 48: Vidéo locale lue ({local_path}, {len(video_content)} bytes)", "INFO")
+                            # PATCH 49: Facebook vidéos utilise 'file' pas 'source'
+                            files = {'file': (f'video.{extension}', video_content, content_type)}
+                        log_app(f"✅ PATCH 49: Vidéo locale lue ({local_path}, {len(video_content)} bytes)", "INFO")
                     else:
-                        log_app(f"⚠️ PATCH 48: Fichier local introuvable: {local_path}", "WARNING")
+                        log_app(f"⚠️ PATCH 49: Fichier local introuvable: {local_path}", "WARNING")
                         data["file_url"] = media_url
                 except Exception as e:
-                    log_app(f"⚠️ PATCH 48: Erreur lecture vidéo locale: {e}", "WARNING")
+                    log_app(f"⚠️ PATCH 49: Erreur lecture vidéo locale: {e}", "WARNING")
                     data["file_url"] = media_url
             else:
-                log_app(f"⚠️ PATCH 48: Aucune URL vidéo fournie", "WARNING")
+                log_app(f"⚠️ PATCH 49: Aucune URL vidéo fournie", "WARNING")
         else:
             # Pour les images, utiliser l'endpoint photos
             fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"
