@@ -1,10 +1,65 @@
-# 📋 Progress - Intégration Webhook Facebook/Instagram
+# 📋 Progress - NOUVELLE SESSION - Problème connexions N8N (50 objets)
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 2/10 (PATCH 49 APPLIQUÉ ✅ - 8 crédits restants - NOUVELLE SESSION)
+- ⚡ Crédits utilisés: 0/10 (NOUVELLE SESSION - 10 crédits disponibles)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🎯 SESSION ACTUELLE - CORRECTION VIDÉOS FACEBOOK
+## 🎯 PROBLÈME ACTUEL - SESSION NOUVELLE
+⚠️ **PROBLÈME**: Les connexions N8N s'arrêtent après 3 objets alors que j'en ai plus de 50
+
+### Analyse initiale (0 crédits):
+- ✅ État du projet compris depuis progress.md précédent
+- ✅ Système fonctionnel avec corrections PATCH 1-49 appliquées  
+- ✅ Architecture: FastAPI backend + ngrok + webhooks n8n multipart
+- ✅ Publications Facebook/Instagram opérationnelles (vidéos corrigées PATCH 49)
+- ⚠️ **Nouveau problème**: N8N s'arrête après seulement 3 objets sur 50+
+
+### Symptômes identifiés:
+- ❌ N8N traite seulement 3 objets puis s'arrête
+- ❌ 47+ objets restants ne sont pas traités
+- ❓ Nature de l'arrêt: timeout? erreur? limitation?
+- ❓ Comportement côté serveur vs côté N8N
+
+### Hypothèses à vérifier:
+1. **Timeout N8N**: Connexions fermées après timeout
+2. **Surcharge serveur**: Trop d'objets simultanés  
+3. **Limitation rate**: N8N ou serveur limite les requêtes
+4. **Erreur serveur**: Crash après 3 objets
+5. **Problème webhook**: Response incorrecte après 3ème objet
+
+## 📋 PLAN D'ACTION INCRÉMENTAL
+
+### PHASE 1 - DIAGNOSTIC (1-2 crédits)
+- [ ] **PATCH 50**: Analyser les logs backend pour identifier l'arrêt après 3 objets
+- [ ] **Investigation**: Vérifier les timeouts, erreurs, patterns dans les logs
+- [ ] **Identification root cause**: Timeout vs erreur vs limitation
+
+### PHASE 2 - CORRECTION (1-2 crédits)  
+- [ ] **PATCH 51**: Implémenter la solution selon root cause identifiée
+- [ ] **Test validation**: Vérifier que N8N peut maintenant traiter 50+ objets
+
+### PHASE 3 - OPTIMISATION (1 crédit si nécessaire)
+- [ ] **PATCH 52**: Optimisations performances si nécessaire
+- [ ] **Documentation**: Mise à jour guides N8N
+
+## 🔄 Règles session:
+- Travail par patch incrémental
+- Sauvegarde progress à chaque patch
+- Maximum 10 crédits
+- Stop et indication si proche limite
+- Rollback possible vers patch précédent
+
+## 📊 ÉTAT SERVICES (à vérifier)
+Services supposés fonctionnels d'après session précédente:
+- Backend: RUNNING (port 8001)
+- Frontend: RUNNING (port 3000) 
+- MongoDB: RUNNING
+- Ngrok: URL active via .env
+
+## 🎯 OBJECTIF SESSION
+Résoudre pourquoi N8N s'arrête après 3 objets au lieu de traiter les 50+ objets complets.
+
+## ✅ HISTORIQUE PRÉCÉDENT (SESSION PRÉCÉDENTE - CONSERVÉ POUR RÉFÉRENCE)
 ✅ PATCH 48 appliqué - Upload direct vidéos (INCOMPLET)
 ✅ PATCH 49 appliqué - Format upload corrigé ('file' au lieu de 'source')
 ⏳ Test final en cours
