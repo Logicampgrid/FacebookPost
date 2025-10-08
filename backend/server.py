@@ -5025,6 +5025,45 @@ async def handle_n8n_publication(form_data, format_type="direct") -> dict:
         content_type = file.content_type or ""
         is_video = content_type.startswith("video/") or file_extension.lower() in ['.mp4', '.mov', '.avi', '.wmv']
         
+        # PATCH 51: CORRECTION CONVERSION WEBP → PNG
+        if file_extension.lower() == '.webp' and not is_video:
+            log_app(f"🎨 PATCH 51: Conversion WEBP → PNG requise", "INFO")
+            try:
+                from PIL import Image
+                
+                # Ouvrir l'image WEBP
+                with Image.open(file_path) as img:
+                    # Convertir en PNG
+                    png_filename = unique_filename.replace('.webp', '.png')
+                    png_path = os.path.join(UPLOAD_DIR, png_filename)
+                    
+                    # Convertir RGBA si nécessaire pour PNG
+                    if img.mode in ('RGBA', 'LA'):
+                        background = Image.new('RGBA', img.size, (255, 255, 255, 255))
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background.convert('RGB')
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    img.save(png_path, 'PNG', optimize=True)
+                
+                # Mettre à jour les variables pour le nouveau fichier PNG
+                old_path = file_path
+                file_path = png_path
+                unique_filename = png_filename
+                file_extension = '.png'
+                
+                log_app(f"✅ PATCH 51: Conversion WEBP → PNG réussie", "SUCCESS")
+                log_app(f"   Original: {os.path.getsize(old_path)} bytes", "INFO")
+                log_app(f"   Converti: {os.path.getsize(png_path)} bytes", "INFO")
+                
+                # Supprimer l'ancien fichier WEBP
+                os.remove(old_path)
+                
+            except Exception as conv_error:
+                log_app(f"❌ PATCH 51: Erreur conversion WEBP → PNG: {conv_error}", "ERROR")
+                log_app(f"🔄 PATCH 51: Utilisation du fichier WEBP original", "WARNING")
+        
         # PATCH 29: FTP UNIQUEMENT - Upload vers FTP pour publication Facebook/Instagram
         log_app(f"🔄 PATCH 29: Début upload FTP pour publication", "INFO")
         
