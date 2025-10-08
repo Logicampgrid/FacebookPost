@@ -5170,6 +5170,7 @@ async def process_webhook_background_n8n(webhook_publication_data: dict):
         log_app(f"❌ PATCH 50: Erreur traitement N8N arrière-plan - Store: {store}: {bg_error}", "ERROR")
         log_app(f"❌ PATCH 50: Traceback: {traceback.format_exc()}", "ERROR")
 @app.get("/api/webhook")
+@app.post("/api/webhook")
 @app.post("/api/webhook/")
 @app.get("/api/webhook/")
 async def webhook_handler(request: Request):
