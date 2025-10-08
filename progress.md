@@ -1,8 +1,28 @@
 # 📋 Progress - Intégration Webhook Facebook/Instagram
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 6/10 (PATCH 46 complété - 4 crédits restants - NOUVELLE SESSION)
+- ⚡ Crédits utilisés: 3/10 (PATCH 47 EN COURS - 7 crédits restants - SESSION fb5-test3)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
+
+## 🔍 PATCH 47 - DIAGNOSTIC LOGICAMP & VIDÉOS (EN COURS)
+**Status**: 🔍 ANALYSE DES PROBLÈMES
+
+### Problèmes identifiés:
+1. ❌ **Store "logicamp"**: Variables d'environnement manquantes
+   - `IG_USER_ID_LOGICAMP` → Non défini dans .env
+   - `FB_ACCESS_TOKEN_LOGICAMP` → Non défini dans .env
+   - Code configuré (ligne 230-235 server.py) mais valeurs NULL
+
+2. ❌ **Publications vidéo échouent**: "Configuration Facebook/Instagram manquante"
+   - Fonction `publish_to_facebook()` retourne erreur si fb_page_id/access_token manquants
+   - Fonction `publish_to_instagram()` retourne erreur si ig_user_id/access_token manquants
+   - Upload FTP fonctionne ✅ mais publication sur réseaux sociaux échoue ❌
+
+### Solution proposée (PATCH 47):
+1. Obtenir le Page Access Token pour page Logicamp (ID: 174450429258625)
+2. Récupérer l'Instagram Business Account ID lié à cette page
+3. Ajouter les variables dans .env
+4. Tester avec une vidéo
 
 ## ✅ PROBLÈMES RÉSOLUS (SESSION ACTUELLE)
 
