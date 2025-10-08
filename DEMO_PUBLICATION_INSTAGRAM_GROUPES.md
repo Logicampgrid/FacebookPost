@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://emergentsh-boost.preview.emergentagent.com
+🔗 https://prompt-expert-3.preview.emergentagent.com

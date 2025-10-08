@@ -158,7 +158,7 @@ This operation expects the node's input data to contain a binary file 'data', bu
 
 ### **URL Webhook de production** :
 ```
-https://emergentsh-boost.preview.emergentagent.com/api/webhook
+https://prompt-expert-3.preview.emergentagent.com/api/webhook
 ```
 
 ### **Stores disponibles** :

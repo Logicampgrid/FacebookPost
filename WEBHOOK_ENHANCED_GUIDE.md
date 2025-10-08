@@ -29,7 +29,7 @@ return items.map(item => {
 
 ### 1. **Webhook Enhancé (PRINCIPAL)**
 ```
-POST https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced
+POST https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced
 Content-Type: multipart/form-data
 ```
 
@@ -39,7 +39,7 @@ Content-Type: multipart/form-data
 
 ### 2. **Informations du Webhook Enhancé**
 ```
-GET https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced
+GET https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced
 ```
 Retourne la documentation, exemples, et configuration disponible.
 
@@ -67,7 +67,7 @@ return items.map(item => {
 
 ### **Étape 2: Nœud HTTP Request**
 1. **Method**: `POST`
-2. **URL**: `https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced`
+2. **URL**: `https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced`
 3. **Body Type**: `Multipart-Form Data`
 4. **Fields**:
    - `json_data`: `{{ JSON.stringify($json) }}`
@@ -126,7 +126,7 @@ return items.map(item => {
     "duplicate_skipped": false,
     "enhanced_webhook": true,
     "original_filename": "nom_fichier.jpg",
-    "generated_image_url": "https://emergentsh-boost.preview.emergentagent.com/api/uploads/xxx.jpg",
+    "generated_image_url": "https://prompt-expert-3.preview.emergentagent.com/api/uploads/xxx.jpg",
     "comment_text": "Découvrez ce produit dans notre boutique !",
     "publication_summary": {
       "total_published": 1,
@@ -161,14 +161,14 @@ return items.map(item => {
 ### **Test Simple avec curl**
 ```bash
 # Créer un test multipart
-curl -X POST "https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced" \
+curl -X POST "https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced" \
   -F 'json_data={"store":"ma-boutique","title":"test.jpg","description":"Test produit","product_url":"https://www.logicamp.org/wordpress/gizmobbs/","comment":"Test comment"}' \
   -F 'image=@/path/to/test/image.jpg'
 ```
 
 ### **Vérification des Informations**
 ```bash
-curl -X GET "https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced"
+curl -X GET "https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced"
 ```
 
 ## 🔧 **Configuration N8N Détaillée**
@@ -177,7 +177,7 @@ curl -X GET "https://emergentsh-boost.preview.emergentagent.com/api/webhook/enha
 
 1. **Parameters**:
    - **Method**: `POST`
-   - **URL**: `https://emergentsh-boost.preview.emergentagent.com/api/webhook/enhanced`
+   - **URL**: `https://prompt-expert-3.preview.emergentagent.com/api/webhook/enhanced`
    - **Authentication**: None
    - **Send Body**: Yes
    - **Body Content Type**: `Multipart-Form Data`
