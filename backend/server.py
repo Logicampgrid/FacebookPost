@@ -3763,6 +3763,83 @@ async def instagram_complete_diagnosis_endpoint():
         log_app(f"❌ Erreur diagnostic Instagram: {str(e)}", "ERROR")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/stores/logicamp/setup-instagram")
+async def setup_logicamp_instagram():
+    """PATCH 46: Récupère automatiquement l'Instagram ID pour la page Logicamp"""
+    try:
+        log_app("🔍 PATCH 46: Récupération Instagram ID pour Logicamp...", "INFO")
+        
+        # Récupérer le token de l'utilisateur connecté
+        user_token = None
+        user_id = None
+        
+        # Chercher dans les tokens stockés
+        users_collection = db["users"]
+        users = await users_collection.find({}).to_list(length=None)
+        
+        for user in users:
+            if user.get("access_token"):
+                user_token = user.get("access_token")
+                user_id = user.get("facebook_id")
+                log_app(f"✅ PATCH 46: Token trouvé pour utilisateur {user.get('name', 'N/A')}", "SUCCESS")
+                break
+        
+        if not user_token:
+            raise HTTPException(status_code=401, detail="Aucun utilisateur connecté. Veuillez vous connecter avec Facebook d'abord.")
+        
+        # Récupérer l'Instagram ID de la page Logicamp
+        fb_page_id = "174450429258625"
+        url = f"https://graph.facebook.com/v21.0/{fb_page_id}"
+        params = {
+            "fields": "instagram_business_account",
+            "access_token": user_token
+        }
+        
+        log_app(f"🔍 PATCH 46: Requête API Facebook pour page {fb_page_id}", "INFO")
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            ig_account = data.get("instagram_business_account")
+            
+            if ig_account:
+                ig_id = ig_account.get("id")
+                log_app(f"✅ PATCH 46: Instagram ID trouvé: {ig_id}", "SUCCESS")
+                
+                # Mettre à jour STORES en mémoire
+                if "logicamp" in STORES:
+                    STORES["logicamp"]["ig_user_id"] = ig_id
+                    STORES["logicamp"]["access_token"] = user_token
+                    
+                # Mettre à jour TOKENS
+                if "logicamp" not in TOKENS:
+                    TOKENS["logicamp"] = {}
+                TOKENS["logicamp"]["access_token"] = user_token
+                TOKENS["logicamp"]["ig_user_id"] = ig_id
+                
+                return {
+                    "success": True,
+                    "store": "logicamp",
+                    "fb_page_id": fb_page_id,
+                    "ig_user_id": ig_id,
+                    "message": "Instagram configuré avec succès pour Logicamp"
+                }
+            else:
+                raise HTTPException(
+                    status_code=404, 
+                    detail="Aucun compte Instagram Business associé à cette page Facebook. Veuillez connecter un compte Instagram à votre page Facebook."
+                )
+        else:
+            error_data = response.json()
+            log_app(f"❌ PATCH 46: Erreur API Facebook: {error_data}", "ERROR")
+            raise HTTPException(status_code=response.status_code, detail=error_data.get("error", {}).get("message", "Erreur API"))
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_app(f"❌ PATCH 46: Erreur setup Instagram: {str(e)}", "ERROR")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/posts")
 async def get_posts(user_id: str):
     """Get posts for a specific user"""
