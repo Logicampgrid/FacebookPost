@@ -14,10 +14,16 @@
 ✅ Tous les tests passés (variables, config, API)
 ✅ Publications vidéos Instagram maintenant possibles sur logicamp
 
-## ✅ PATCH 48 - UPLOAD DIRECT VIDÉOS FACEBOOK (1 crédit)
+## ✅ PATCH 49 - CORRECTION FORMAT UPLOAD VIDÉO FACEBOOK (2 crédits)
 **Status**: ✅ CORRECTION APPLIQUÉE
 **Problème identifié**: Vidéos Facebook échouent avec erreur permission 6000/1363042
-**Root cause**: Les vidéos utilisaient `file_url` (URL FTP) au lieu d'upload direct comme les images
+**Root cause PATCH 48**: Les vidéos utilisaient `file_url` (URL FTP) → Corrigé avec upload direct
+**Root cause PATCH 49**: L'upload direct utilisait le mauvais paramètre `source` au lieu de `file`
+
+## ⚠️ PATCH 48 - UPLOAD DIRECT VIDÉOS (INCOMPLET - 1 crédit)
+**Status**: ⚠️ CORRECTION PARTIELLE
+**Problème**: Utilisait `{'source': ...}` comme pour les images
+**Erreur persistante**: Facebook continuait de refuser avec code 6000
 
 ### Erreur résolue:
 - ❌ **Avant**: `"Vous n'avez pas l'autorisation d'importer une vidéo ici"` (erreur 6000)
