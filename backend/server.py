@@ -5200,15 +5200,28 @@ async def webhook_handler(request: Request):
             content_type = request.headers.get("content-type", "")
             log_app(f"📦 Content-Type: {content_type}", "INFO")
             
-            # Détecter si c'est une requête de publication n8n SANS consommer le stream
-            if "multipart/form-data" in content_type and any(param in request.headers.get("content-type", "") for param in ["store", "title", "description"]):
-                # C'est probablement une requête de publication n8n
-                log_app(f"🚀 Détection requête publication n8n multipart", "INFO")
+            # PATCH 50: Détecter les webhooks N8N multipart (tous multipart sauf Facebook purs)
+            if "multipart/form-data" in content_type:
+                log_app(f"🚀 PATCH 50: Détection requête multipart - Vérification contenu...", "INFO")
                 try:
                     form_data = await request.form()
-                    return await handle_n8n_publication_corrected(form_data)
+                    
+                    # Vérifier si c'est une publication N8N (contient json_data)
+                    if "json_data" in form_data:
+                        log_app(f"🚀 PATCH 50: Publication N8N multipart détectée avec json_data", "INFO")
+                        return await handle_n8n_publication_corrected(form_data)
+                    
+                    # Vérifier si c'est une publication N8N (contient store/title/description directement)
+                    has_publication_fields = any(field in form_data for field in ['store', 'title', 'description'])
+                    if has_publication_fields:
+                        log_app(f"🚀 PATCH 50: Publication N8N multipart détectée avec champs direct", "INFO")
+                        return await handle_n8n_publication_corrected(form_data)
+                    
+                    # Si c'est multipart mais sans données N8N, continuer avec le traitement Facebook
+                    log_app(f"📦 PATCH 50: Multipart Facebook détecté - traitement standard", "INFO")
+                    
                 except Exception as n8n_error:
-                    log_app(f"❌ Erreur traitement n8n: {n8n_error}", "ERROR")
+                    log_app(f"❌ PATCH 50: Erreur traitement multipart: {n8n_error}", "ERROR")
                     return {"status": "error", "message": str(n8n_error)}
             
             # ANCIENNE LOGIQUE: Gestion des événements webhook Facebook/Instagram
