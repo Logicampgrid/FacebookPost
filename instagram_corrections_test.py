@@ -15,7 +15,7 @@ from PIL import Image
 import io
 
 class InstagramCorrectionsTester:
-    def __init__(self, base_url="https://prompt-expert-3.preview.emergentagent.com"):
+    def __init__(self, base_url="https://emergent-n8n-fix.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

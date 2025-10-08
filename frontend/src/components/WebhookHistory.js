@@ -257,7 +257,7 @@ const WebhookHistory = () => {
           <div>
             <h4 className="font-medium text-blue-900 mb-2">Endpoint Webhook :</h4>
             <code className="bg-blue-100 px-2 py-1 rounded text-sm text-blue-900">
-              POST https://prompt-expert-3.preview.emergentagent.com/api/webhook
+              POST https://emergent-n8n-fix.preview.emergentagent.com/api/webhook
             </code>
           </div>
           
