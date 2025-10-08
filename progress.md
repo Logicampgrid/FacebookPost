@@ -1,4 +1,20 @@
-# 📋 Progress - NOUVELLE SESSION - Problème connexions N8N (50 objets)
+# 📋 Progress - NOUVELLE SESSION - Correction FTP Images
+
+## 🔧 PATCH 51 - Analyse et Correction Upload FTP Images
+
+### Problème identifié
+- ❌ Les images (PNG/JPG) ne sont pas uploadées correctement vers FTP
+- ✅ Les vidéos (MP4) fonctionnent parfaitement  
+- ❌ Facebook/Instagram reçoivent des erreurs 404 sur les URLs d'images
+- ✅ Le serveur web et les chemins sont accessibles
+
+### Tests effectués
+1. **Credentials FTP** : `logi:logi` confirmés fonctionnels
+2. **Accessibilité HTTP** : Serveur web OK, images 404, vidéo accessible
+3. **URLs générées** : Format correct `https://logicamp.org/wordpress/uploads/webhook_xxx`
+
+### Diagnostic
+Le problème n'est pas dans la configuration FTP de base mais dans la logique d'upload spécifique aux images. (50 objets)
 ## 🚫 Limites Respectées  
 - ⚡ Crédits utilisés: 0/10 (NOUVELLE SESSION - 10 crédits disponibles)
 - 🔄 Travail incrémental par patch
