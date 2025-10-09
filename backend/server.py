@@ -5242,11 +5242,12 @@ async def process_webhook_background(webhook_data: dict):
         log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
 
 def process_webhook_background_n8n_sync(webhook_publication_data: dict):
-    """PATCH 53: Traitement SYNCHRONE dans thread séparé pour éviter blocage asyncio"""
+    """PATCH 54: Traitement SYNCHRONE dans thread séparé avec sauvegarde MongoDB corrigée"""
+    store = "unknown"
     try:
         store = webhook_publication_data.get("store", "unknown")
         title = webhook_publication_data.get("title", "Unknown")
-        log_app(f"🔄 PATCH 53: Thread séparé démarré - Store: {store}, Title: {title}", "INFO")
+        log_app(f"🔄 PATCH 54: Thread séparé démarré - Store: {store}, Title: {title}", "INFO")
         
         # Créer une nouvelle boucle événementielle pour ce thread
         loop = asyncio.new_event_loop()
@@ -5259,34 +5260,37 @@ def process_webhook_background_n8n_sync(webhook_publication_data: dict):
             if publication_result:
                 success_status = publication_result.get("success", False)
                 platforms = publication_result.get("platforms", [])
-                log_app(f"✅ PATCH 53: Publication thread séparé réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
+                log_app(f"✅ PATCH 54: Publication thread séparé réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
             else:
-                log_app(f"⚠️ PATCH 53: Publication thread séparé sans résultat - Store: {store}", "WARNING")
+                log_app(f"⚠️ PATCH 54: Publication thread séparé sans résultat - Store: {store}", "WARNING")
             
-            # Sauvegarder dans MongoDB avec marqueur N8N
+            # PATCH 54: Sauvegarder dans MongoDB avec gestion correcte de la boucle
             try:
                 webhook_record = {
                     "type": "n8n_publication",
                     "store": store,
                     "title": title,
-                    "data": webhook_publication_data,
+                    "data": {k: v for k, v in webhook_publication_data.items() if k not in ['image_file', 'video_file']},  # PATCH 54: Exclure fichiers binaires
                     "result": publication_result,
                     "status": "processed" if publication_result and publication_result.get("success") else "failed",
                     "background_processing": True,
-                    "patch": 53,  # PATCH 53: Thread séparé
+                    "patch": 54,  # PATCH 54: Correction sauvegarde MongoDB
                     "timestamp": datetime.now()
                 }
+                
+                # PATCH 54: Créer une nouvelle connexion MongoDB dans cette boucle
                 loop.run_until_complete(save_webhook_data(webhook_record))
-                log_app(f"✅ PATCH 53: Publication N8N sauvegardée - Store: {store}", "SUCCESS")
+                log_app(f"✅ PATCH 54: Publication N8N sauvegardée - Store: {store}", "SUCCESS")
             except Exception as save_error:
-                log_app(f"⚠️ PATCH 53: Erreur sauvegarde N8N - Store: {store}: {save_error}", "WARNING")
+                # PATCH 54: Log l'erreur mais ne pas bloquer le traitement
+                log_app(f"⚠️ PATCH 54: Sauvegarde MongoDB échouée (non bloquant) - Store: {store}: {str(save_error)[:100]}", "WARNING")
                 
         finally:
             loop.close()
             
     except Exception as bg_error:
-        log_app(f"❌ PATCH 53: Erreur traitement thread séparé - Store: {store}: {bg_error}", "ERROR")
-        log_app(f"❌ PATCH 53: Traceback: {traceback.format_exc()}", "ERROR")
+        log_app(f"❌ PATCH 54: Erreur traitement thread séparé - Store: {store}: {bg_error}", "ERROR")
+        log_app(f"❌ PATCH 54: Traceback: {traceback.format_exc()}", "ERROR")
 
 async def process_webhook_background_n8n(webhook_publication_data: dict):
     """PATCH 50: Traitement asynchrone des publications N8N multipart en arrière-plan pour éviter timeout"""
