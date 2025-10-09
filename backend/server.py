@@ -5243,12 +5243,12 @@ async def process_webhook_background(webhook_data: dict):
         log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
 
 def process_webhook_background_n8n_sync(webhook_publication_data: dict):
-    """PATCH 54: Traitement SYNCHRONE dans thread séparé avec sauvegarde MongoDB corrigée"""
+    """PATCH 55: Traitement SYNCHRONE dans thread séparé avec sauvegarde MongoDB SYNCHRONE"""
     store = "unknown"
     try:
         store = webhook_publication_data.get("store", "unknown")
         title = webhook_publication_data.get("title", "Unknown")
-        log_app(f"🔄 PATCH 54: Thread séparé démarré - Store: {store}, Title: {title}", "INFO")
+        log_app(f"🔄 PATCH 55: Thread séparé démarré - Store: {store}, Title: {title}", "INFO")
         
         # Créer une nouvelle boucle événementielle pour ce thread
         loop = asyncio.new_event_loop()
@@ -5261,37 +5261,53 @@ def process_webhook_background_n8n_sync(webhook_publication_data: dict):
             if publication_result:
                 success_status = publication_result.get("success", False)
                 platforms = publication_result.get("platforms", [])
-                log_app(f"✅ PATCH 54: Publication thread séparé réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
+                log_app(f"✅ PATCH 55: Publication thread séparé réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
             else:
-                log_app(f"⚠️ PATCH 54: Publication thread séparé sans résultat - Store: {store}", "WARNING")
+                log_app(f"⚠️ PATCH 55: Publication thread séparé sans résultat - Store: {store}", "WARNING")
             
-            # PATCH 54: Sauvegarder dans MongoDB avec gestion correcte de la boucle
+            # PATCH 55: Sauvegarder dans MongoDB avec connexion SYNCHRONE (pymongo)
             try:
+                # PATCH 55: Import pymongo pour connexion synchrone dans thread
+                from pymongo import MongoClient
+                
                 webhook_record = {
                     "type": "n8n_publication",
                     "store": store,
                     "title": title,
-                    "data": {k: v for k, v in webhook_publication_data.items() if k not in ['image_file', 'video_file']},  # PATCH 54: Exclure fichiers binaires
+                    "data": {k: v for k, v in webhook_publication_data.items() if k not in ['image_file', 'video_file']},  # Exclure fichiers binaires
                     "result": publication_result,
                     "status": "processed" if publication_result and publication_result.get("success") else "failed",
                     "background_processing": True,
-                    "patch": 54,  # PATCH 54: Correction sauvegarde MongoDB
-                    "timestamp": datetime.now()
+                    "patch": 55,  # PATCH 55: Correction MongoDB avec pymongo synchrone
+                    "timestamp": datetime.now(),
+                    "created_at": datetime.now().isoformat(),
+                    "id": str(uuid.uuid4())
                 }
                 
-                # PATCH 54: Créer une nouvelle connexion MongoDB dans cette boucle
-                loop.run_until_complete(save_webhook_data(webhook_record))
-                log_app(f"✅ PATCH 54: Publication N8N sauvegardée - Store: {store}", "SUCCESS")
+                # PATCH 55: Créer une connexion MongoDB SYNCHRONE (pymongo) pour ce thread
+                mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+                client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+                db = client["meta_platform"]
+                webhooks_collection = db["webhooks"]
+                
+                # PATCH 55: Insert synchrone (pas de await)
+                result = webhooks_collection.insert_one(webhook_record)
+                client.close()  # PATCH 55: Fermer la connexion après utilisation
+                
+                log_app(f"✅ PATCH 55: Publication N8N sauvegardée (pymongo sync) - Store: {store}", "SUCCESS")
             except Exception as save_error:
-                # PATCH 54: Log l'erreur mais ne pas bloquer le traitement
-                log_app(f"⚠️ PATCH 54: Sauvegarde MongoDB échouée (non bloquant) - Store: {store}: {str(save_error)[:100]}", "WARNING")
+                # PATCH 55: Log l'erreur mais ne pas bloquer le traitement
+                log_app(f"⚠️ PATCH 55: Sauvegarde MongoDB échouée (non bloquant) - Store: {store}: {str(save_error)[:100]}", "WARNING")
+                import traceback
+                log_app(f"⚠️ PATCH 55: Traceback sauvegarde: {traceback.format_exc()[:200]}", "WARNING")
                 
         finally:
             loop.close()
             
     except Exception as bg_error:
-        log_app(f"❌ PATCH 54: Erreur traitement thread séparé - Store: {store}: {bg_error}", "ERROR")
-        log_app(f"❌ PATCH 54: Traceback: {traceback.format_exc()}", "ERROR")
+        log_app(f"❌ PATCH 55: Erreur traitement thread séparé - Store: {store}: {bg_error}", "ERROR")
+        import traceback
+        log_app(f"❌ PATCH 55: Traceback: {traceback.format_exc()}", "ERROR")
 
 async def process_webhook_background_n8n(webhook_publication_data: dict):
     """PATCH 50: Traitement asynchrone des publications N8N multipart en arrière-plan pour éviter timeout"""
