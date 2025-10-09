@@ -159,9 +159,10 @@ OU (si erreur)
 - ✅ **Cohérence totale**: Images ET vidéos utilisent le processus d'upload FTP identique
 
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 1/10 (PATCH 53 - Thread séparé N8N)
+- ⚡ Crédits utilisés: 3/10 (PATCH 53: 1, PATCH 54: 2)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
+- ✅ **PATCH 54 APPLIQUÉ**: Sauvegarde MongoDB corrigée + Diagnostic vidéo FB
 - ✅ **PATCH 53 APPLIQUÉ**: Thread séparé pour N8N 50+ objets
 - ✅ **PATCH 51+52 VALIDÉS**: Fonctionnels selon logs temps réel
 
