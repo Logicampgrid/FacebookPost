@@ -4696,12 +4696,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                         ngrok_url = get_active_ngrok_url()
                         if ngrok_url:
                             final_image_url = f"{ngrok_url}/uploads/{filename}"
-                            log_app(f"🌐 PATCH 51: Fallback ngrok - {final_image_url}", "INFO")
+                            log_app(f"🌐 PATCH 52: Fallback ngrok - {final_image_url}", "INFO")
                         else:
-                            log_app(f"⚠️ PATCH 51: Ngrok non disponible, URL optimiste FTP", "WARNING")
+                            log_app(f"⚠️ PATCH 52: Ngrok non disponible, URL optimiste FTP", "WARNING")
                             final_image_url = get_public_url(filename)
                 else:
-                    log_app(f"⚠️ PATCH 51: Gestionnaire FTP non disponible, fallback ngrok", "WARNING")
+                    log_app(f"⚠️ PATCH 52: Gestionnaire FTP non disponible, fallback ngrok", "WARNING")
                     # Fallback vers ngrok si FTP non disponible
                     uploads_dir = "/app/backend/uploads"
                     os.makedirs(uploads_dir, exist_ok=True)
@@ -4711,10 +4711,10 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                     ngrok_url = get_active_ngrok_url()
                     if ngrok_url:
                         final_image_url = f"{ngrok_url}/uploads/{filename}"
-                        log_app(f"🌐 PATCH 51: Fallback ngrok (FTP indisponible) - {final_image_url}", "INFO")
+                        log_app(f"🌐 PATCH 52: Fallback ngrok (FTP indisponible) - {final_image_url}", "INFO")
                     else:
                         final_image_url = get_public_url(filename)
-                        log_app(f"⚠️ PATCH 51: URL optimiste - {final_image_url}", "WARNING")
+                        log_app(f"⚠️ PATCH 52: URL optimiste - {final_image_url}", "WARNING")
             
             # PATCH 51: SÉCURITÉ - Vérifier que l'URL est valide
             if not final_image_url or not final_image_url.startswith('https://'):
