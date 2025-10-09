@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://smartprompt-7.preview.emergentagent.com
+🔗 https://senior-engineer-1.preview.emergentagent.com
