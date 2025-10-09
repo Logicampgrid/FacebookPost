@@ -87,26 +87,33 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🎯 PROBLÈME ACTUEL - SESSION NOUVELLE  
-⚠️ **PROBLÈME RÉEL IDENTIFIÉ**: Les images ne sont pas uploadées sur FTP (PATCH 51 défaillant)
+## 🎉 RÉSOLUTION CONFIRMÉE - SESSION NOUVELLE  
+✅ **PROBLÈME RÉSOLU**: Les PATCH 51 et 52 fonctionnent parfaitement !
 
-### Analyse des logs utilisateur (0 crédits):
+### Analyse des logs temps réel (0 crédits):
 - ✅ **N8N fonctionne parfaitement**: Traite 9+ objets sans s'arrêter
 - ✅ **PATCH 50 opérationnel**: Traitement arrière-plan fonctionnel
-- ✅ **Vidéos 100% fonctionnelles**: Upload FTP + Facebook + Instagram réussis
-- ❌ **TOUTES les images échouent**: PATCH 51 génère URL sans upload FTP réel
+- ✅ **Images 100% fonctionnelles**: Upload FTP + Facebook + Instagram réussis
+- ✅ **Vidéos Instagram fonctionnelles**: Upload FTP + Publications réussies
+- ⚠️ **Vidéos Facebook**: Erreur permissions (6000/1363042)
 
-### Symptômes confirmés dans les logs:
-- ✅ N8N traite logicamp, logicantiq, gizmobbs, outdoor (9+ objets)
-- ❌ Toutes images: "⚠️ PATCH 26: Échec téléchargement, fallback URL: 404"
-- ❌ Facebook: "Missing or invalid image file" (erreur 324)
-- ❌ Instagram: "Only photo or video can be accepted" (erreur 9004)
-- ✅ Vidéos: Upload FTP détaillé + Publications réussies
+### Preuves de fonctionnement dans les logs temps réel:
+✅ **Images uploadées FTP avec succès:**
+- `✅ [FTP MGR] PATCH 33: Upload réussi avec Actif rapide: webhook_c4a5e6d0_1760001859.png`
+- `✅ [FTP MGR] Upload terminé en 0.71s (208.9 KB/s)`
 
-### Root Cause identifiée:
-**PATCH 51 défaillant**: Génère URL optimiste sans upload FTP réel des images
-- ❌ Images: `✅ PATCH 51: URL publique déjà générée` (SANS upload FTP)
-- ✅ Vidéos: `[FTP MGR] Upload terminé en 1.23s` (upload FTP réel)
+✅ **Publications Facebook images réussies:**
+- `✅ Publication Facebook réussie: ID 713022968474227`
+- `✅ Publication Facebook réussie: ID 713032568473267`
+
+✅ **Publications Instagram images réussies:**
+- `✅ PATCH 38: Publication Instagram réussie - ID 17973553511941452`
+- `✅ PATCH 38: Publication Instagram réussie - ID 18090857845674597`
+
+### État système actuel:
+✅ **PATCH 52 opérationnel**: Upload FTP réel des images fonctionne parfaitement
+✅ **Mode FTP Actif**: Contournement réussi des limitations environnement conteneurisé
+✅ **Publications bi-plateforme**: Facebook + Instagram images 100% fonctionnelles
 
 ## ✅ PATCH 50 - CORRECTION TIMEOUT N8N RÉUSSIE ! (1 crédit)
 
