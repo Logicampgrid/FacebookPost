@@ -45,8 +45,45 @@
 - ✅ **Facebook** : Plus d'erreur "Missing or invalid image file"
 - ✅ **Instagram** : Plus d'erreur "Only photo or video can be accepted"
 - ✅ **Cohérence** : Images ET vidéos utilisent maintenant le même processus d'upload FTP
+## ✅ PATCH 52 - CORRECTION UPLOAD FTP IMAGES RÉEL (1 crédit)
+
+### ROOT CAUSE PATCH 51 IDENTIFIÉE ET CORRIGÉE:
+- ❌ **PATCH 51 problématique**: Raccourci ligne 4680-4682 évitait l'upload FTP si URL existait déjà
+- ❌ **Conséquence**: Images généraient URL optimiste sans upload FTP réel → Facebook/Instagram 404
+- ✅ **PATCH 35 (vidéos)**: Upload FTP TOUJOURS exécuté → Fonctionnement parfait
+- ✅ **PATCH 52**: Suppression raccourci + Upload FTP obligatoire pour images (comme vidéos)
+
+### CORRECTIONS APPLIQUÉES (lignes 4671-4730):
+- [x] **Raccourci supprimé**: Plus de vérification "URL déjà générée" qui évitait l'upload
+- [x] **Upload FTP obligatoire**: `if True:` au lieu de `if not final_image_url:`
+- [x] **Logique identique vidéos**: Même processus que PATCH 35 qui fonctionne
+- [x] **Logs PATCH 52**: Traçabilité complète upload images FTP
+- [x] **Cohérence totale**: Images ET vidéos utilisent maintenant le même processus d'upload FTP
+
+### AVANT vs APRÈS PATCH 52:
+**AVANT (PATCH 51 - défaillant)** :
+```
+🖼️ PATCH 51: Traitement de l'image
+✅ URL publique déjà générée (RACCOURCI - pas d'upload)
+❌ Facebook: 404 "Missing or invalid image file"
+```
+
+**APRÈS (PATCH 52 - corrigé)** :
+```
+🖼️ PATCH 52: Traitement de l'image
+📤 Upload image FTP en cours
+✅ Image uploadée sur FTP (upload réel)
+✅ Facebook/Instagram peuvent télécharger
+```
+
+### RÉSULTAT ATTENDU PATCH 52:
+- ✅ **Images PNG/JPG/WEBP**: Upload FTP réel obligatoire avant publication
+- ✅ **Facebook**: Plus d'erreur "Missing or invalid image file"
+- ✅ **Instagram**: Plus d'erreur "Only photo or video can be accepted"
+- ✅ **Cohérence totale**: Images ET vidéos utilisent le processus d'upload FTP identique
+
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 1/10 (PATCH 51 appliqué)
+- ⚡ Crédits utilisés: 3/10 (PATCH 51 + PATCH 52 appliqués)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
