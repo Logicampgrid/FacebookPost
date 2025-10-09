@@ -4980,20 +4980,26 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 webhook_publication_data['image_file'] = media_info
                 webhook_publication_data['image_url'] = media_info['public_url']
         
-        # PATCH 50: Traitement arrière-plan N8N pour éviter timeout 5 minutes
-        log_app(f"🚀 PATCH 50: Traitement publication arrière-plan N8N pour {store}", "INFO")
+        # PATCH 53: Traitement dans THREAD SÉPARÉ pour éviter timeout 5 minutes
+        log_app(f"🚀 PATCH 53: Lancement thread séparé N8N pour {store}", "INFO")
         
-        # Lancer le traitement en arrière-plan pour éviter timeout N8N
-        asyncio.create_task(process_webhook_background_n8n(webhook_publication_data))
+        # Lancer le traitement dans un thread séparé (pas asyncio.create_task)
+        # Cela évite que les await asyncio.sleep() des vidéos Instagram ne bloquent la réponse
+        thread = threading.Thread(
+            target=process_webhook_background_n8n_sync, 
+            args=(webhook_publication_data,),
+            daemon=True
+        )
+        thread.start()
         
         # Retourner une réponse immédiate à N8N
-        log_app(f"✅ PATCH 50: Réponse immédiate N8N - Traitement {store} en cours", "SUCCESS")
+        log_app(f"✅ PATCH 53: Réponse immédiate N8N - Thread démarré pour {store}", "SUCCESS")
         return {
             "status": "received", 
-            "processing": "background", 
-            "patch": 50,
+            "processing": "background_thread",  # PATCH 53: Indique thread séparé
+            "patch": 53,
             "store": store,
-            "message": f"N8N multipart content '{webhook_publication_data.get('title', 'Unknown')}' received and processing in background"
+            "message": f"N8N multipart content '{webhook_publication_data.get('title', 'Unknown')}' received and processing in separate thread"
         }
             
     except Exception as e:
