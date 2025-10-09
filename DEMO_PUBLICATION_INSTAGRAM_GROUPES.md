@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://code-wizard-38.preview.emergentagent.com
+🔗 https://smartprompt-7.preview.emergentagent.com

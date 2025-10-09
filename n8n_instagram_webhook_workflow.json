@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://code-wizard-38.preview.emergentagent.com/api/webhook",
+        "url": "https://smartprompt-7.preview.emergentagent.com/api/webhook",
         "sendHeaders": true,
         "sendBody": true,
         "contentType": "multipart-form-data",
