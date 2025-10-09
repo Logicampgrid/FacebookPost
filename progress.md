@@ -120,9 +120,10 @@
 - ✅ **Cohérence totale**: Images ET vidéos utilisent le processus d'upload FTP identique
 
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 0/10 (découverte que le problème était déjà résolu)
+- ⚡ Crédits utilisés: 1/10 (PATCH 53 - Thread séparé N8N)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
+- ✅ **PATCH 53 APPLIQUÉ**: Thread séparé pour N8N 50+ objets
 - ✅ **PATCH 51+52 VALIDÉS**: Fonctionnels selon logs temps réel
 
 ## 🎉 RÉSOLUTION CONFIRMÉE - SESSION NOUVELLE  
