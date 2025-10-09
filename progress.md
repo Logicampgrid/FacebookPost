@@ -1,5 +1,44 @@
 # 📋 Progress - NOUVELLE SESSION - Correction Timeout N8N 50+ Objets
 
+## ✅ PATCH 55 - CORRECTION MONGODB ASYNCIO LOOP (1 crédit)
+
+### ROOT CAUSE IDENTIFIÉ ET RÉSOLU
+- ❌ **Problème**: PATCH 54 utilisait `save_webhook_data()` (async/motor) dans un thread avec nouvelle boucle asyncio
+- ❌ **Erreur**: "Task got Future attached to a different loop" - Motor lié à boucle principale
+- ❌ **Conséquence**: Sauvegarde MongoDB échouait dans threads séparés N8N
+- ✅ **Solution**: Utilisation pymongo (synchrone) au lieu de motor (async) dans threads
+
+### CORRECTIONS APPLIQUÉES (lignes 5245-5294)
+- [x] **Import pymongo**: Connexion MongoDB synchrone dans chaque thread
+- [x] **MongoClient synchrone**: Pas de dépendance à asyncio event loop
+- [x] **insert_one() sans await**: Opération synchrone directe
+- [x] **Fermeture connexion**: client.close() après chaque sauvegarde
+- [x] **Logs PATCH 55**: Traçabilité complète avec identifier "PATCH 55"
+- [x] **Error handling robuste**: Traceback complet en cas d'erreur
+
+### AVANT vs APRÈS
+**AVANT (PATCH 54 - problématique):**
+```
+🚀 PATCH 54: Thread séparé lancé
+📤 loop.run_until_complete(save_webhook_data())
+❌ Task got Future attached to a different loop
+⚠️ PATCH 54: Sauvegarde MongoDB échouée
+```
+
+**APRÈS (PATCH 55 - corrigé):**
+```
+🚀 PATCH 55: Thread séparé lancé
+📤 MongoClient(mongo_url) - connexion synchrone
+✅ webhooks_collection.insert_one() - sans await
+✅ PATCH 55: Publication N8N sauvegardée (pymongo sync)
+```
+
+### RÉSULTAT ATTENDU
+- ✅ **Sauvegarde MongoDB fonctionnelle**: Dans tous les threads N8N séparés
+- ✅ **Plus d'erreur asyncio loop**: Pymongo ne dépend pas d'event loop
+- ✅ **Publications N8N 50+ objets**: Toutes sauvegardées correctement
+- ✅ **Performance maintenue**: Thread séparé + sauvegarde rapide
+
 ## ✅ PATCH 54 - CORRECTION SAUVEGARDE MONGODB + DIAGNOSTIC VIDÉO FB (2 crédits)
 
 ### CORRECTIONS APPLIQUÉES
