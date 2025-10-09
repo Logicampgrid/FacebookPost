@@ -4668,21 +4668,16 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
         elif media_type == "image" and media_file_info:
             log_app(f"🖼️ PATCH 51: Traitement de l'image uploadée - {media_file_info['filename']}", "INFO")
             
-            # PATCH 51: UPLOAD FTP RÉEL POUR IMAGES (comme pour les vidéos PATCH 35)
+            # PATCH 52: UPLOAD FTP RÉEL POUR IMAGES (correction PATCH 51 - même logique que PATCH 35)
             filename = media_file_info['filename']
             image_local_path = media_file_info['path']
             
-            log_app(f"📤 PATCH 51: Upload image FTP en cours - {filename}", "INFO")
+            log_app(f"📤 PATCH 52: Upload image FTP en cours - {filename}", "INFO")
             
             final_image_url = None
             
-            # Vérifier d'abord si l'URL publique est déjà disponible ET le fichier uploadé
-            if media_file_info.get('public_url') and media_file_info['public_url'].startswith('https://'):
-                final_image_url = media_file_info['public_url']
-                log_app(f"✅ PATCH 51: URL publique déjà générée - {final_image_url}", "SUCCESS")
-            
-            # PATCH 51: Si pas d'URL publique OU URL non uploadée, faire upload FTP réel
-            if not final_image_url:
+            # PATCH 52: UPLOAD FTP OBLIGATOIRE (comme PATCH 35 pour vidéos - pas de raccourci URL)
+            if True:  # Toujours tenter l'upload FTP réel
                 if FTP_MANAGER_AVAILABLE:
                     # Utiliser le gestionnaire FTP PATCH 29 pour l'upload (comme PATCH 35 pour vidéos)
                     success, ftp_url, ftp_error = upload_for_publication(image_local_path, filename)
