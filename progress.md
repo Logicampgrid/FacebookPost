@@ -166,6 +166,8 @@ Services supposés fonctionnels d'après session précédente:
 ✅ **RÉSOLU**: N8N peut maintenant traiter 50+ objets sans s'arrêter  
 ✅ **Performance**: Chaque objet traité en ~0.001s au lieu de 300s+ timeout  
 ✅ **Test confirmé**: Objets 1, 2, 3 tous traités avec succès successivement
+✅ **BONUS DÉCOUVERT**: Images FTP + Publications Facebook/Instagram 100% fonctionnelles
+⚠️ **SEUL PROBLÈME RESTANT**: Vidéos Facebook (erreur permissions 6000)
 
 ## ✅ HISTORIQUE PRÉCÉDENT (SESSION PRÉCÉDENTE - CONSERVÉ POUR RÉFÉRENCE)
 ✅ PATCH 48 appliqué - Upload direct vidéos (INCOMPLET)
