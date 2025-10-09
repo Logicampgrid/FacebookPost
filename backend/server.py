@@ -5235,6 +5235,53 @@ async def process_webhook_background(webhook_data: dict):
         import traceback
         log_app(f"❌ PATCH 45: Traceback: {traceback.format_exc()}", "ERROR")
 
+def process_webhook_background_n8n_sync(webhook_publication_data: dict):
+    """PATCH 53: Traitement SYNCHRONE dans thread séparé pour éviter blocage asyncio"""
+    try:
+        store = webhook_publication_data.get("store", "unknown")
+        title = webhook_publication_data.get("title", "Unknown")
+        log_app(f"🔄 PATCH 53: Thread séparé démarré - Store: {store}, Title: {title}", "INFO")
+        
+        # Créer une nouvelle boucle événementielle pour ce thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            # Traiter la publication N8N dans cette nouvelle boucle
+            publication_result = loop.run_until_complete(process_webhook_publication(webhook_publication_data))
+            
+            if publication_result:
+                success_status = publication_result.get("success", False)
+                platforms = publication_result.get("platforms", [])
+                log_app(f"✅ PATCH 53: Publication thread séparé réussie - Store: {store}, Plateformes: {platforms}, Succès: {success_status}", "SUCCESS")
+            else:
+                log_app(f"⚠️ PATCH 53: Publication thread séparé sans résultat - Store: {store}", "WARNING")
+            
+            # Sauvegarder dans MongoDB avec marqueur N8N
+            try:
+                webhook_record = {
+                    "type": "n8n_publication",
+                    "store": store,
+                    "title": title,
+                    "data": webhook_publication_data,
+                    "result": publication_result,
+                    "status": "processed" if publication_result and publication_result.get("success") else "failed",
+                    "background_processing": True,
+                    "patch": 53,  # PATCH 53: Thread séparé
+                    "timestamp": datetime.now()
+                }
+                loop.run_until_complete(save_webhook_data(webhook_record))
+                log_app(f"✅ PATCH 53: Publication N8N sauvegardée - Store: {store}", "SUCCESS")
+            except Exception as save_error:
+                log_app(f"⚠️ PATCH 53: Erreur sauvegarde N8N - Store: {store}: {save_error}", "WARNING")
+                
+        finally:
+            loop.close()
+            
+    except Exception as bg_error:
+        log_app(f"❌ PATCH 53: Erreur traitement thread séparé - Store: {store}: {bg_error}", "ERROR")
+        log_app(f"❌ PATCH 53: Traceback: {traceback.format_exc()}", "ERROR")
+
 async def process_webhook_background_n8n(webhook_publication_data: dict):
     """PATCH 50: Traitement asynchrone des publications N8N multipart en arrière-plan pour éviter timeout"""
     try:
