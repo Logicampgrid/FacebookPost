@@ -4716,12 +4716,12 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
                         final_image_url = get_public_url(filename)
                         log_app(f"⚠️ PATCH 52: URL optimiste - {final_image_url}", "WARNING")
             
-            # PATCH 51: SÉCURITÉ - Vérifier que l'URL est valide
+            # PATCH 52: SÉCURITÉ - Vérifier que l'URL est valide
             if not final_image_url or not final_image_url.startswith('https://'):
-                log_app(f"❌ PATCH 51: URL publique invalide - {final_image_url}", "ERROR")
+                log_app(f"❌ PATCH 52: URL publique invalide - {final_image_url}", "ERROR")
                 raise Exception(f"Impossible de générer une URL publique valide pour {filename}")
             
-            log_app(f"🔍 PATCH 51: URL finale pour publication - {final_image_url}", "INFO")
+            log_app(f"🔍 PATCH 52: URL finale pour publication - {final_image_url}", "INFO")
             
             result = await publish_post_main(
                 store=final_store,
