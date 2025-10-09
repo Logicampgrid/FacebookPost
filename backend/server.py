@@ -4679,14 +4679,14 @@ async def process_webhook_publication(webhook_data: dict) -> dict:
             # PATCH 52: UPLOAD FTP OBLIGATOIRE (comme PATCH 35 pour vidéos - pas de raccourci URL)
             if True:  # Toujours tenter l'upload FTP réel
                 if FTP_MANAGER_AVAILABLE:
-                    # Utiliser le gestionnaire FTP PATCH 29 pour l'upload (comme PATCH 35 pour vidéos)
+                    # PATCH 52: Utiliser le gestionnaire FTP PATCH 29 pour l'upload (identique PATCH 35)
                     success, ftp_url, ftp_error = upload_for_publication(image_local_path, filename)
                     
                     if success and ftp_url:
                         final_image_url = ftp_url
-                        log_app(f"✅ PATCH 51: Image uploadée sur FTP - {final_image_url}", "SUCCESS")
+                        log_app(f"✅ PATCH 52: Image uploadée sur FTP - {final_image_url}", "SUCCESS")
                     else:
-                        log_app(f"⚠️ PATCH 51: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
+                        log_app(f"⚠️ PATCH 52: Upload FTP échoué ({ftp_error}), fallback ngrok", "WARNING")
                         # Fallback vers copie locale + URL ngrok
                         uploads_dir = "/app/backend/uploads"
                         os.makedirs(uploads_dir, exist_ok=True)
