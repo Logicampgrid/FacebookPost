@@ -50,28 +50,26 @@
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
 
-## 🎯 PROBLÈME ACTUEL - SESSION NOUVELLE
-⚠️ **PROBLÈME**: Les connexions N8N s'arrêtent après 3 objets alors que j'en ai plus de 50
+## 🎯 PROBLÈME ACTUEL - SESSION NOUVELLE  
+⚠️ **PROBLÈME RÉEL IDENTIFIÉ**: Les images ne sont pas uploadées sur FTP (PATCH 51 défaillant)
 
-### Analyse initiale (0 crédits):
-- ✅ État du projet compris depuis progress.md précédent
-- ✅ Système fonctionnel avec corrections PATCH 1-49 appliquées  
-- ✅ Architecture: FastAPI backend + ngrok + webhooks n8n multipart
-- ✅ Publications Facebook/Instagram opérationnelles (vidéos corrigées PATCH 49)
-- ⚠️ **Nouveau problème**: N8N s'arrête après seulement 3 objets sur 50+
+### Analyse des logs utilisateur (0 crédits):
+- ✅ **N8N fonctionne parfaitement**: Traite 9+ objets sans s'arrêter
+- ✅ **PATCH 50 opérationnel**: Traitement arrière-plan fonctionnel
+- ✅ **Vidéos 100% fonctionnelles**: Upload FTP + Facebook + Instagram réussis
+- ❌ **TOUTES les images échouent**: PATCH 51 génère URL sans upload FTP réel
 
-### Symptômes identifiés:
-- ❌ N8N traite seulement 3 objets puis s'arrête
-- ❌ 47+ objets restants ne sont pas traités
-- ❓ Nature de l'arrêt: timeout? erreur? limitation?
-- ❓ Comportement côté serveur vs côté N8N
+### Symptômes confirmés dans les logs:
+- ✅ N8N traite logicamp, logicantiq, gizmobbs, outdoor (9+ objets)
+- ❌ Toutes images: "⚠️ PATCH 26: Échec téléchargement, fallback URL: 404"
+- ❌ Facebook: "Missing or invalid image file" (erreur 324)
+- ❌ Instagram: "Only photo or video can be accepted" (erreur 9004)
+- ✅ Vidéos: Upload FTP détaillé + Publications réussies
 
-### Hypothèses à vérifier:
-1. **Timeout N8N**: Connexions fermées après timeout
-2. **Surcharge serveur**: Trop d'objets simultanés  
-3. **Limitation rate**: N8N ou serveur limite les requêtes
-4. **Erreur serveur**: Crash après 3 objets
-5. **Problème webhook**: Response incorrecte après 3ème objet
+### Root Cause identifiée:
+**PATCH 51 défaillant**: Génère URL optimiste sans upload FTP réel des images
+- ❌ Images: `✅ PATCH 51: URL publique déjà générée` (SANS upload FTP)
+- ✅ Vidéos: `[FTP MGR] Upload terminé en 1.23s` (upload FTP réel)
 
 ## ✅ PATCH 50 - CORRECTION TIMEOUT N8N RÉUSSIE ! (1 crédit)
 
