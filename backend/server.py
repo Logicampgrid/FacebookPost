@@ -4980,8 +4980,8 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
                 webhook_publication_data['image_file'] = media_info
                 webhook_publication_data['image_url'] = media_info['public_url']
         
-        # PATCH 54: Traitement dans THREAD SÉPARÉ pour éviter timeout 5 minutes
-        log_app(f"🚀 PATCH 54: Lancement thread séparé N8N pour {store}", "INFO")
+        # PATCH 55: Traitement dans THREAD SÉPARÉ avec MongoDB synchrone
+        log_app(f"🚀 PATCH 55: Lancement thread séparé N8N pour {store}", "INFO")
         
         # Lancer le traitement dans un thread séparé (pas asyncio.create_task)
         # Cela évite que les await asyncio.sleep() des vidéos Instagram ne bloquent la réponse
@@ -4989,16 +4989,16 @@ async def handle_n8n_publication_corrected(form_data) -> dict:
             target=process_webhook_background_n8n_sync, 
             args=(webhook_publication_data,),
             daemon=True,
-            name=f"N8N-{store}-{int(time.time())}"  # PATCH 54: Nommage thread pour debug
+            name=f"N8N-{store}-{int(time.time())}"  # PATCH 55: Nommage thread pour debug
         )
         thread.start()
         
         # Retourner une réponse immédiate à N8N
-        log_app(f"✅ PATCH 54: Réponse immédiate N8N - Thread démarré pour {store}", "SUCCESS")
+        log_app(f"✅ PATCH 55: Réponse immédiate N8N - Thread démarré pour {store}", "SUCCESS")
         return {
             "status": "received", 
-            "processing": "background_thread",  # PATCH 54: Indique thread séparé
-            "patch": 54,
+            "processing": "background_thread",  # PATCH 55: Thread séparé avec MongoDB sync
+            "patch": 55,
             "store": store,
             "message": f"N8N multipart content '{webhook_publication_data.get('title', 'Unknown')}' received and processing in separate thread"
         }
