@@ -1,5 +1,44 @@
 # 📋 Progress - NOUVELLE SESSION - Correction Timeout N8N 50+ Objets
 
+## ✅ PATCH 54 - CORRECTION SAUVEGARDE MONGODB + DIAGNOSTIC VIDÉO FB (2 crédits)
+
+### CORRECTIONS APPLIQUÉES
+- [x] **Sauvegarde MongoDB corrigée**: Gestion correcte des boucles événementielles asyncio
+- [x] **Fichiers binaires exclus**: Les image_file/video_file ne sont plus sauvegardés dans MongoDB
+- [x] **Logs PATCH 54**: Traçabilité complète avec gestion erreurs non bloquantes
+- [x] **Nommage threads**: Debug facilité avec nom thread identifiable
+- [x] **Script diagnostic vidéo FB**: `/app/diagnostic_video_facebook_logicamp.py` créé
+
+### PROBLÈME SAUVEGARDE MONGODB RÉSOLU
+**AVANT (PATCH 53):**
+```
+❌ Task got Future attached to a different loop
+⚠️ Erreur sauvegarde N8N
+```
+
+**APRÈS (PATCH 54):**
+```
+✅ Publication N8N sauvegardée - Store: xxx
+OU (si erreur)
+⚠️ Sauvegarde MongoDB échouée (non bloquant)
+```
+
+### DIAGNOSTIC VIDÉO FACEBOOK LOGICAMP
+**Script créé**: `/app/diagnostic_video_facebook_logicamp.py`
+
+**Fonctionnalités:**
+- ✅ Vérification permissions token
+- ✅ Analyse page Facebook (catégorie, restrictions)
+- ✅ Liste vidéos existantes
+- ✅ Test accès endpoint /videos
+- ✅ Diagnostic complet avec recommandations
+
+**Erreur 6000/1363042 - Causes possibles:**
+1. Page non vérifiée pour vidéos
+2. Token sans permission CREATE_CONTENT
+3. Restrictions contenu vidéo sur page
+4. Business Manager rôle insuffisant
+
 ## ✅ PATCH 53 - CORRECTION TIMEOUT N8N THREAD SÉPARÉ (1 crédit)
 
 ### ROOT CAUSE IDENTIFIÉ ET RÉSOLU
