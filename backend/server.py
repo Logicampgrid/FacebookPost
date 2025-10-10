@@ -6565,23 +6565,23 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
                             status_code = status_data.get("status_code")
                             status_text = status_data.get("status", "unknown")
                             
-                            log_app(f"🔄 PATCH 41: Container status - Code: {status_code}, Status: {status_text}", "INFO")
+                            log_app(f"🔄 PATCH 56: Container status - Code: {status_code}, Status: {status_text}", "INFO")
                             
-                            # PATCH 41: Support des status codes en string ET int
+                            # PATCH 56: Support des status codes en string ET int (timeout augmenté à 180s)
                             # Status codes: EXPIRED=-1/"EXPIRED", ERROR=0/"ERROR", IN_PROGRESS=1/"IN_PROGRESS", FINISHED=2/"FINISHED"
                             if status_code == 2 or status_code == "FINISHED":  # FINISHED
-                                log_app(f"✅ PATCH 41: Vidéo traitée avec succès - prête pour publication", "SUCCESS")
+                                log_app(f"✅ PATCH 56: Vidéo traitée avec succès - prête pour publication", "SUCCESS")
                                 break
                             elif status_code == 0 or status_code == "ERROR":  # ERROR
-                                error_msg = f"PATCH 41: Erreur traitement vidéo - Status: {status_text}"
+                                error_msg = f"PATCH 56: Erreur traitement vidéo - Status: {status_text}"
                                 log_app(f"❌ {error_msg}", "ERROR")
                                 return {"success": False, "error": error_msg}
                             elif status_code == -1 or status_code == "EXPIRED":  # EXPIRED
-                                error_msg = f"PATCH 41: Container expiré - Status: {status_text}"
+                                error_msg = f"PATCH 56: Container expiré - Status: {status_text}"
                                 log_app(f"❌ {error_msg}", "ERROR")
                                 return {"success": False, "error": error_msg}
                             else:  # IN_PROGRESS ou autre
-                                log_app(f"⏳ PATCH 41: Traitement en cours... attente {wait_interval}s", "INFO")
+                                log_app(f"⏳ PATCH 56: Traitement en cours... attente {wait_interval}s (max {max_wait_time}s)", "INFO")
                                 time.sleep(wait_interval)
                                 elapsed_time += wait_interval
                         else:
