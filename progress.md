@@ -454,9 +454,11 @@ OU (si erreur)
 - ✅ **Cohérence totale**: Images ET vidéos utilisent le processus d'upload FTP identique
 
 ## 🚫 Limites Respectées  
-- ⚡ Crédits utilisés: 7/10 (PATCH 58: 1, PATCH 56: 1, PATCH 55: 1, PATCH 53: 1, PATCH 54: 2, PATCH 57: 0 annulé)
+- ⚡ Crédits utilisés: 8/10 (PATCH 60: 1, PATCH 58: 1, PATCH 56: 1, PATCH 55: 1, PATCH 53: 1, PATCH 54: 2, PATCH 57: 0 annulé)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
+- ✅ **PATCH 60 APPLIQUÉ**: Protection get_store_config() pour logicamp (FACEBOOK_DIRECT_TOKEN préservé)
+- ✅ **PATCH 59 APPLIQUÉ**: Token non écrasé par setup-instagram
 - ✅ **PATCH 58 APPLIQUÉ**: Permissions vidéo Facebook Logicamp corrigées (token utilisateur)
 - ✅ **PATCH 56 APPLIQUÉ**: Timeout vidéo Instagram augmenté à 180s (3 min)
 - ✅ **PATCH 55 APPLIQUÉ**: Correction MongoDB asyncio loop avec pymongo
