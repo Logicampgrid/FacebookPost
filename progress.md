@@ -53,6 +53,13 @@ config["access_token"] = STORES["logicamp"]["access_token"]  # FACEBOOK_DIRECT_T
 - ✅ **Publications fonctionnelles**: Facebook vidéos + Instagram vidéos logicamp
 - ✅ **Autres stores inchangés**: gizmobbs, logicantiq, outdoor continuent de fonctionner
 
+### APPLICATION SUR SERVEUR WINDOWS
+⚠️ **IMPORTANT**: Ce PATCH a été appliqué et testé sur l'environnement Emergent. Pour l'appliquer sur le serveur Windows :
+1. Consulter le fichier `/app/PATCH_60_INSTRUCTIONS_WINDOWS.md`
+2. Modifier la fonction `get_store_config()` dans `C:\FacebookPost\backend\server.py`
+3. Redémarrer le serveur backend avec `02_start_server_only.bat`
+4. Vérifier les logs pour confirmer l'activation du PATCH 60
+
 ### NOTE TECHNIQUE
 La fonction `get_store_config()` donne la priorité aux tokens dynamiques (TOKENS) sur les tokens 
 statiques (STORES). Pour logicamp, cette logique doit être inversée car FACEBOOK_DIRECT_TOKEN 
