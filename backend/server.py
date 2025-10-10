@@ -457,8 +457,12 @@ def get_store_config(store: str) -> dict:
     # Surcharger avec les tokens dynamiques si disponibles
     if store in TOKENS and TOKENS[store]:
         dynamic_config = TOKENS[store]
-        if dynamic_config.get("access_token"):
+        # PATCH 60: Pour logicamp, JAMAIS écraser access_token (FACEBOOK_DIRECT_TOKEN requis pour vidéos)
+        if dynamic_config.get("access_token") and store != "logicamp":
             config["access_token"] = dynamic_config["access_token"]
+            log_app(f"🔄 PATCH 60: Token dynamique utilisé pour {store}", "INFO")
+        elif store == "logicamp" and dynamic_config.get("access_token"):
+            log_app(f"✅ PATCH 60: Token dynamique ignoré pour logicamp - FACEBOOK_DIRECT_TOKEN préservé", "SUCCESS")
         if dynamic_config.get("fb_page_id"):
             config["fb_page_id"] = dynamic_config["fb_page_id"]
         if dynamic_config.get("ig_user_id"):
