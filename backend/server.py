@@ -3849,6 +3849,7 @@ async def setup_logicamp_instagram():
                 # PATCH 59: Ne PAS écraser access_token pour logicamp car FACEBOOK_DIRECT_TOKEN est requis
                 # TOKENS["logicamp"]["access_token"] = user_token  # DÉSACTIVÉ
                 TOKENS["logicamp"]["ig_user_id"] = ig_id
+                log_app(f"✅ PATCH 59: Instagram ID configuré, access_token préservé (FACEBOOK_DIRECT_TOKEN)", "SUCCESS")
                 
                 return {
                     "success": True,
