@@ -1,5 +1,55 @@
 # 📋 Progress - NOUVELLE SESSION - Correction Timeout N8N 50+ Objets
 
+## ✅ PATCH 59 - CORRECTION TOKEN ÉCRASÉ PAR SETUP-INSTAGRAM (1 crédit)
+
+### ROOT CAUSE IDENTIFIÉ
+- ❌ **Problème**: PATCH 58 utilise FACEBOOK_DIRECT_TOKEN mais endpoint `/api/stores/logicamp/setup-instagram` l'écrase
+- ❌ **Cause**: Ligne 3842-3847 écrase `access_token` avec `user_token` (sans permissions vidéo)
+- ❌ **Conséquence**: `get_store_config()` récupère le user_token au lieu de FACEBOOK_DIRECT_TOKEN
+- ✅ **Solution**: Préserver FACEBOOK_DIRECT_TOKEN et ne mettre à jour que `ig_user_id`
+
+### CORRECTIONS APPLIQUÉES (lignes 3839-3852)
+- [x] **Access_token préservé**: STORES["logicamp"]["access_token"] n'est plus écrasé
+- [x] **Token dynamique désactivé**: TOKENS["logicamp"]["access_token"] n'est plus écrasé
+- [x] **Instagram ID mis à jour**: Seul `ig_user_id` est maintenant modifié
+- [x] **FACEBOOK_DIRECT_TOKEN préservé**: Token avec permissions vidéo conservé
+- [x] **Logs PATCH 59**: Traçabilité avec message de confirmation
+
+### AVANT vs APRÈS
+**AVANT (PATCH 58 + setup-instagram):**
+```python
+# PATCH 58: Configuration initiale
+STORES["logicamp"]["access_token"] = FACEBOOK_DIRECT_TOKEN  ✅
+
+# setup-instagram appelé
+STORES["logicamp"]["access_token"] = user_token  ❌ ÉCRASÉ
+TOKENS["logicamp"]["access_token"] = user_token  ❌ ÉCRASÉ
+
+# get_store_config() priorité dynamique
+config["access_token"] = TOKENS["logicamp"]["access_token"]  ❌ user_token sans permissions vidéo
+```
+
+**APRÈS (PATCH 59):**
+```python
+# PATCH 58: Configuration initiale
+STORES["logicamp"]["access_token"] = FACEBOOK_DIRECT_TOKEN  ✅
+
+# setup-instagram appelé
+STORES["logicamp"]["ig_user_id"] = ig_id  ✅ Seulement ig_user_id
+# STORES["logicamp"]["access_token"] = user_token  ❌ DÉSACTIVÉ
+TOKENS["logicamp"]["ig_user_id"] = ig_id  ✅ Seulement ig_user_id
+# TOKENS["logicamp"]["access_token"] = user_token  ❌ DÉSACTIVÉ
+
+# get_store_config() utilise FACEBOOK_DIRECT_TOKEN
+config["access_token"] = STORES["logicamp"]["access_token"]  ✅ FACEBOOK_DIRECT_TOKEN avec permissions vidéo
+```
+
+### RÉSULTAT ATTENDU
+- ✅ **Vidéos Facebook Logicamp**: FACEBOOK_DIRECT_TOKEN utilisé avec permissions complètes
+- ✅ **Instagram ID configuré**: setup-instagram fonctionne pour récupérer ig_user_id
+- ✅ **Token stable**: Plus d'écrasement par OAuth callback
+- ✅ **Publications fonctionnelles**: Facebook vidéos + Instagram vidéos
+
 ## ✅ PATCH 58 - CORRECTION PERMISSIONS VIDÉO FACEBOOK LOGICAMP (1 crédit)
 
 ### ROOT CAUSE IDENTIFIÉ
