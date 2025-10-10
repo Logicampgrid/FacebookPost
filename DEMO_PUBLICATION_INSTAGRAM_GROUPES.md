@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://code-craftsman-57.preview.emergentagent.com
+🔗 https://prompt-enhance-5.preview.emergentagent.com
