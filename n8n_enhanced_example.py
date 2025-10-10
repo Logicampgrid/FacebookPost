@@ -199,7 +199,7 @@ return items.map(item => {
 });""")
     
     print("\n2. Configurez le nœud HTTP Request :")
-    print("   • URL: https://patch-master-8.preview.emergentagent.com/api/webhook/enhanced")
+    print("   • URL: https://code-craftsman-57.preview.emergentagent.com/api/webhook/enhanced")
     print("   • Method: POST")
     print("   • Body Type: Multipart-Form Data")
     print("   • Fields:")

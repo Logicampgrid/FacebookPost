@@ -16,7 +16,7 @@
 
 ### 1.1 Accéder à l'application
 ```
-URL : https://patch-master-8.preview.emergentagent.com
+URL : https://code-craftsman-57.preview.emergentagent.com
 ```
 
 ### 1.2 Méthodes de connexion disponibles

@@ -259,4 +259,4 @@ Message contextuel + image cliquable + commentaire
 **L'application gère automatiquement toute la complexité technique !** ✨
 
 Pour publier maintenant, connectez-vous à :
-🔗 https://patch-master-8.preview.emergentagent.com
+🔗 https://code-craftsman-57.preview.emergentagent.com
