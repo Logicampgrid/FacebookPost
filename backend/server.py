@@ -3839,12 +3839,15 @@ async def setup_logicamp_instagram():
                 # Mettre à jour STORES en mémoire
                 if "logicamp" in STORES:
                     STORES["logicamp"]["ig_user_id"] = ig_id
-                    STORES["logicamp"]["access_token"] = user_token
+                    # PATCH 59: Ne PAS écraser access_token pour logicamp
+                    # FACEBOOK_DIRECT_TOKEN (configuré dans PATCH 58) doit être utilisé pour les vidéos
+                    # STORES["logicamp"]["access_token"] = user_token  # DÉSACTIVÉ
                     
-                # Mettre à jour TOKENS
+                # Mettre à jour TOKENS - seulement ig_user_id, pas access_token
                 if "logicamp" not in TOKENS:
                     TOKENS["logicamp"] = {}
-                TOKENS["logicamp"]["access_token"] = user_token
+                # PATCH 59: Ne PAS écraser access_token pour logicamp car FACEBOOK_DIRECT_TOKEN est requis
+                # TOKENS["logicamp"]["access_token"] = user_token  # DÉSACTIVÉ
                 TOKENS["logicamp"]["ig_user_id"] = ig_id
                 
                 return {
