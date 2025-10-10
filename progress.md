@@ -1,5 +1,64 @@
 # 📋 Progress - NOUVELLE SESSION - Correction Timeout N8N 50+ Objets
 
+## ✅ PATCH 60 - CORRECTION get_store_config() POUR LOGICAMP (1 crédit)
+
+### ROOT CAUSE IDENTIFIÉ
+- ❌ **Problème**: Vidéos Facebook Logicamp échouent malgré PATCH 58+59 appliqués
+- ❌ **Erreur**: "(#100) No permission to publish the video" à 20:07:55
+- ❌ **Cause**: `get_store_config()` écrase FACEBOOK_DIRECT_TOKEN avec token dynamique de TOKENS
+- ❌ **Séquence bugguée**:
+  1. PATCH 58: STORES["logicamp"]["access_token"] = FACEBOOK_DIRECT_TOKEN ✅
+  2. Utilisateur se connecte OAuth → token sauvegardé quelque part (session ou autre) ❌
+  3. `get_store_config()` ligne 460-461: Écrase avec token dynamique sans permissions vidéo ❌
+  4. Publication vidéo → Erreur permission ❌
+
+### CORRECTIONS APPLIQUÉES (lignes 449-467)
+- [x] **Protection logicamp**: `if store != "logicamp"` avant écrasement access_token
+- [x] **FACEBOOK_DIRECT_TOKEN préservé**: Token utilisateur avec permissions vidéo conservé
+- [x] **Logs PATCH 60**: "Token dynamique ignoré pour logicamp - FACEBOOK_DIRECT_TOKEN préservé"
+- [x] **Autres stores inchangés**: gizmobbs, logicantiq, outdoor continuent d'utiliser tokens dynamiques
+- [x] **Instagram ID mis à jour**: ig_user_id toujours mis à jour depuis TOKENS (pas de conflit)
+
+### AVANT vs APRÈS
+**AVANT (PATCH 59 insuffisant):**
+```python
+# PATCH 58: STORES configuré correctement
+STORES["logicamp"]["access_token"] = FACEBOOK_DIRECT_TOKEN  ✅
+
+# PATCH 59: setup-instagram ne remplit plus TOKENS["logicamp"]["access_token"]  ✅
+
+# MAIS get_store_config() écraserait toujours si TOKENS["logicamp"]["access_token"] existe
+if TOKENS[store].get("access_token"):
+    config["access_token"] = TOKENS[store]["access_token"]  ❌ Écrase FACEBOOK_DIRECT_TOKEN
+
+# Résultat: Token OAuth (sans permissions vidéo) utilisé
+```
+
+**APRÈS (PATCH 60):**
+```python
+# get_store_config() protège logicamp
+if TOKENS[store].get("access_token") and store != "logicamp":  ✅ Protection
+    config["access_token"] = TOKENS[store]["access_token"]
+elif store == "logicamp" and TOKENS[store].get("access_token"):
+    log_app("✅ PATCH 60: Token dynamique ignoré pour logicamp")  ✅ Log explicite
+
+# Résultat: FACEBOOK_DIRECT_TOKEN toujours utilisé pour logicamp
+config["access_token"] = STORES["logicamp"]["access_token"]  # FACEBOOK_DIRECT_TOKEN
+```
+
+### RÉSULTAT ATTENDU
+- ✅ **Vidéos Facebook Logicamp**: FACEBOOK_DIRECT_TOKEN utilisé systématiquement
+- ✅ **Permissions vidéo complètes**: Token utilisateur avec CREATE_CONTENT
+- ✅ **Plus d'erreur (#100)**: "No permission to publish the video" éliminée
+- ✅ **Publications fonctionnelles**: Facebook vidéos + Instagram vidéos logicamp
+- ✅ **Autres stores inchangés**: gizmobbs, logicantiq, outdoor continuent de fonctionner
+
+### NOTE TECHNIQUE
+La fonction `get_store_config()` donne la priorité aux tokens dynamiques (TOKENS) sur les tokens 
+statiques (STORES). Pour logicamp, cette logique doit être inversée car FACEBOOK_DIRECT_TOKEN 
+(token utilisateur avec permissions complètes) est indispensable pour les publications vidéo 
+Facebook. Cette exception est maintenant codée en dur pour garantir le bon fonctionnement.
+
 ## ✅ PATCH 59 - CORRECTION TOKEN ÉCRASÉ PAR SETUP-INSTAGRAM (1 crédit)
 
 ### ROOT CAUSE IDENTIFIÉ
