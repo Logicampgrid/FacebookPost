@@ -231,7 +231,9 @@ STORES = {
         "name": "Logicamp",
         "fb_page_id": "174450429258625",
         "ig_user_id": os.getenv("IG_USER_ID_LOGICAMP"),  # Sera récupéré automatiquement
-        "access_token": os.getenv("FB_ACCESS_TOKEN_LOGICAMP")  # Utilisera le token connecté
+        # PATCH 58: Utiliser FACEBOOK_DIRECT_TOKEN (user token) au lieu de FB_ACCESS_TOKEN_LOGICAMP (page token)
+        # pour avoir les permissions vidéo complètes
+        "access_token": os.getenv("FACEBOOK_DIRECT_TOKEN")  # Token utilisateur avec permissions complètes
     }
 }
 
