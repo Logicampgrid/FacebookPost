@@ -4,7 +4,7 @@
 Document and test the workflow for publishing to Instagram and Facebook Groups through the Meta Publishing Platform.
 
 ## 📋 Application Overview
-- **URL**: https://prompt-engineer-14.preview.emergentagent.com
+- **URL**: https://emergent-boost-1.preview.emergentagent.com
 - **Backend**: FastAPI with MongoDB
 - **Frontend**: React with Facebook SDK integration
 - **Key Features**: Cross-platform publishing (Pages, Groups, Instagram)
