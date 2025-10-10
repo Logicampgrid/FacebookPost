@@ -296,6 +296,7 @@ OU (si erreur)
 - ⚡ Crédits utilisés: 6/10 (PATCH 57: 1, PATCH 56: 1, PATCH 55: 1, PATCH 53: 1, PATCH 54: 2)
 - 🔄 Travail incrémental par patch
 - 💾 Sauvegarde automatique du progress
+- ✅ **PATCH 57 APPLIQUÉ**: URL webhook ngrok obsolète corrigée → URL Emergent active
 - ✅ **PATCH 56 APPLIQUÉ**: Timeout vidéo Instagram augmenté à 180s (3 min)
 - ✅ **PATCH 55 APPLIQUÉ**: Correction MongoDB asyncio loop avec pymongo
 - ✅ **PATCH 54 APPLIQUÉ**: Sauvegarde MongoDB corrigée + Diagnostic vidéo FB
