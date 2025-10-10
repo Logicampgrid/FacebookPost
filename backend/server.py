@@ -6543,11 +6543,11 @@ async def publish_to_instagram(store_config: dict, title: str, url: str, descrip
             if container_id:
                 # PATCH 38: Workflow container Instagram - spécialement pour les vidéos
                 if is_video:
-                    log_app(f"🎬 PATCH 38: Vidéo Instagram détectée - workflow container activé", "INFO")
+                    log_app(f"🎬 PATCH 56: Vidéo Instagram détectée - workflow container activé", "INFO")
                     
                     # Étape 2: Attendre que la vidéo soit traitée (workflow container)
-                    max_wait_time = 60  # 60 secondes maximum
-                    wait_interval = 5   # Vérifier toutes les 5 secondes
+                    max_wait_time = 180  # PATCH 56: 180 secondes (3 minutes) au lieu de 60s
+                    wait_interval = 5    # Vérifier toutes les 5 secondes
                     elapsed_time = 0
                     
                     while elapsed_time < max_wait_time:
