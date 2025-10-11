@@ -1,0 +1,137 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║   🚀 INSTRUCTIONS RAPIDES - Application PATCH sur Serveur Windows        ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📦 FICHIERS À TÉLÉCHARGER DEPUIS EMERGENT
+══════════════════════════════════════════
+
+1. GUIDE_APPLICATION_PATCH_WINDOWS.md      → Guide détaillé complet
+2. verifier_patch_windows.py               → Script vérification Python
+3. verifier_patch_windows.bat              → Script vérification Batch
+4. PATCH_WINDOWS_RESUME_FINAL.md           → Résumé procédure
+
+📥 Télécharger ces 4 fichiers dans: C:\FacebookPost\
+
+
+⚡ PROCÉDURE RAPIDE (45 minutes)
+══════════════════════════════════
+
+ÉTAPE 1 : PRÉPARATION (5 min)
+────────────────────────────────
+cd C:\FacebookPost\backend
+copy server.py server.py.backup_20250108
+notepad++ server.py
+
+
+ÉTAPE 2 : APPLICATION PATCH (30 min)
+──────────────────────────────────────
+Ouvrir: GUIDE_APPLICATION_PATCH_WINDOWS.md
+
+Appliquer dans l'ordre:
+  [✓] PATCH 58 - Ligne ~234   - Token logicamp
+  [✓] PATCH 60 - Ligne ~460   - Protection get_store_config
+  [✓] PATCH 59 - Ligne ~3846  - Setup Instagram
+  [✓] PATCH 56 - Ligne ~6549  - Timeout 180s
+  [✓] PATCH 55 - Ligne ~5256  - MongoDB pymongo
+  [✓] PATCH 53 - Ligne ~4993  - Thread séparé
+  [✓] PATCH 51 - Ligne ~4680  - Upload FTP images
+  [✓] PATCH 52 - Ligne ~4671  - Upload obligatoire
+  [✓] PATCH 45 - Ligne ~5224  - Traitement arrière-plan
+
+CTRL+S après chaque modification !
+
+
+ÉTAPE 3 : VÉRIFICATION (2 min)
+───────────────────────────────
+cd C:\FacebookPost
+verifier_patch_windows.bat
+
+Résultat attendu:
+✅ 9/9 PATCH trouvés
+
+
+ÉTAPE 4 : REDÉMARRAGE (3 min)
+──────────────────────────────
+cd C:\FacebookPost
+02_start_server_only.bat
+
+Vérifier logs:
+✅ PATCH 58: Configuration logicamp
+✅ PATCH 60: Protection active
+
+
+ÉTAPE 5 : TEST (5 min)
+──────────────────────
+Envoyer webhook N8N:
+{
+  "store": "logicamp",
+  "title": "Test vidéo",
+  "file": [vidéo MP4]
+}
+
+Vérifier logs:
+✅ PATCH 60: FACEBOOK_DIRECT_TOKEN préservé
+✅ PATCH 56: Timeout 180s
+✅ Publication Facebook réussie
+✅ Publication Instagram réussie
+
+
+🔍 VÉRIFICATION RAPIDE DES PATCH
+═════════════════════════════════
+
+findstr /N "PATCH 58" C:\FacebookPost\backend\server.py
+findstr /N "PATCH 60" C:\FacebookPost\backend\server.py
+findstr /N "PATCH 55" C:\FacebookPost\backend\server.py
+
+Chaque commande doit retourner 1+ ligne(s)
+
+
+🆘 EN CAS DE PROBLÈME
+═════════════════════
+
+Serveur ne démarre pas:
+  → python -m py_compile C:\FacebookPost\backend\server.py
+  → Si erreur: copy server.py.backup_20250108 server.py
+
+PATCH manquants:
+  → Relire GUIDE_APPLICATION_PATCH_WINDOWS.md
+  → Vérifier numéros de ligne
+
+Erreur "pymongo not found":
+  → pip install pymongo
+
+
+✅ RÉSULTAT FINAL ATTENDU
+═════════════════════════
+
+✅ Vidéos Facebook logicamp fonctionnelles
+✅ Timeout Instagram 180s au lieu de 60s
+✅ Batch N8N 50+ objets sans timeout
+✅ Images FTP uploadées correctement
+✅ MongoDB sauvegarde synchrone
+✅ Token logicamp protégé
+
+
+📞 DOCUMENTS COMPLETS
+═════════════════════
+
+Documentation détaillée:
+  → GUIDE_APPLICATION_PATCH_WINDOWS.md
+
+Résumé complet:
+  → PATCH_WINDOWS_RESUME_FINAL.md
+
+Validation automatique:
+  → verifier_patch_windows.py
+  → verifier_patch_windows.bat
+
+
+══════════════════════════════════════════════════════════════════════════
+
+Créé: Session #2 - Emergent
+Crédits: 2/10 utilisés
+Status: ✅ Prêt pour application Windows
+
+══════════════════════════════════════════════════════════════════════════
