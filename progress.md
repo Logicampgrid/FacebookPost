@@ -543,6 +543,7 @@ OU (si erreur)
 - `/app/test_patch60_validation.py` - Script validation PATCH 60
 - `/app/test_webhook_patch60.py` - Script test webhook réel
 - `/app/VALIDATION_SESSION2_COMPLETE.md` - Rapport complet de validation
+- `/app/GUIDE_APPLICATION_PATCH_WINDOWS.md` - Guide complet application PATCH sur Windows ✅ NOUVEAU
 
 ## 🎉 RÉSOLUTION CONFIRMÉE - SESSION NOUVELLE  
 ✅ **PROBLÈME RÉSOLU**: Les PATCH 51 et 52 fonctionnent parfaitement !
