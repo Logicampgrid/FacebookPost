@@ -84,7 +84,7 @@ class LogicampBackendTester:
     def test_stores_configuration(self) -> bool:
         """Test stores endpoint and verify logicamp configuration"""
         try:
-            response = self.session.get(f"{self.base_url}/api/stores", timeout=10)
+            response = self.session.get(f"{self.base_url}/api/stores/config", timeout=10)
             
             if response.status_code != 200:
                 self.log(f"Stores endpoint failed with status {response.status_code}", "ERROR")
