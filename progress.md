@@ -5,7 +5,24 @@
 - 📅 Date: Session focus Logicamp uniquement
 - 🎯 Objectif: Vérifier et maintenir publications Facebook/Instagram Logicamp ✅ VALIDÉ
 
-## ✅ VALIDATION SESSION #2 - Tests Complets Réussis (1 crédit)
+## ✅ VALIDATION SESSION #3 - Focus Logicamp Réussi (1 crédit)
+
+### Tests Effectués Logicamp:
+1. ✅ **Backend fonctionnel**: API health check OK, webhooks répondent
+2. ✅ **Configuration Logicamp**: Facebook ID 174450429258625 + Instagram ID 17841461492706552 ✅
+3. ✅ **PATCH 58-60 actifs**: FACEBOOK_DIRECT_TOKEN préservé et utilisé correctement ✅
+4. ✅ **Publications testées**: Store "logicamp" détecté et traité sans erreur ✅
+5. ✅ **Correction mineure**: Endpoint setup-instagram corrigé (variable db) ✅
+
+### Résultats Session #3:
+- ✅ **Store Logicamp 100% opérationnel**: Configuration et tokens corrects
+- ✅ **PATCH 58**: FACEBOOK_DIRECT_TOKEN utilisé (permissions vidéo complètes) ✅
+- ✅ **PATCH 59**: Setup-instagram ne peut plus écraser le token ✅
+- ✅ **PATCH 60**: get_store_config() protège FACEBOOK_DIRECT_TOKEN ✅
+- ✅ **Publications routées**: Facebook 174450429258625 + Instagram 17841461492706552 ✅
+- ✅ **Pas de régression**: Tous les PATCH précédents maintenus ✅
+
+## ✅ VALIDATION SESSION #2 - Tests Complets Réussis (SESSION PRÉCÉDENTE)
 
 ### Tests Effectués:
 1. ✅ **Démarrage services**: Backend, Frontend, MongoDB - RUNNING
