@@ -5,6 +5,52 @@
 - 📅 Date: Session focus Logicamp uniquement
 - 🎯 Objectif: Corriger permissions vidéo Facebook pour logicamp ✅ RÉSOLU
 
+## ✅ PATCH 61 - NOUVEAU TOKEN FACEBOOK DIRECT POUR LOGICAMP (1 crédit)
+
+### ROOT CAUSE IDENTIFIÉ ET RÉSOLU
+- ❌ **Problème**: Publications vidéo Facebook échouent avec erreur "(#100) No permission to publish the video" 
+- ❌ **Cause**: FACEBOOK_DIRECT_TOKEN avait des permissions expirées/insuffisantes
+- ✅ **Solution**: Nouveau token fourni avec toutes les permissions requises
+
+### NOUVEAU TOKEN APPLIQUÉ
+**Token mis à jour**: EABQflbGOIS4BPhq29Og...v25vQ9WK04
+
+**Permissions confirmées** ✅:
+- `publish_video` - Publication vidéos Facebook ✅
+- `instagram_content_publish` - Publication Instagram ✅  
+- `pages_manage_posts` - Gestion publications pages ✅
+- Total: 20 permissions accordées
+
+### CORRECTIONS APPLIQUÉES
+- [x] **FACEBOOK_DIRECT_TOKEN mis à jour**: Nouveau token avec permissions complètes
+- [x] **Backend redémarré**: Nouveau token chargé et fonctionnel
+- [x] **Tests validation**: Permissions confirmées via API Facebook
+- [x] **Webhook testé**: Store logicamp traité correctement (PATCH 45 actif)
+
+### AVANT vs APRÈS
+**AVANT (token expiré/insuffisant):**
+```
+❌ Facebook: "(#100) No permission to publish the video"
+❌ Token: Permissions expirées ou manquantes
+```
+
+**APRÈS (PATCH 61):**
+```
+✅ Token validé: 20 permissions accordées
+✅ publish_video: ACCORDÉE
+✅ instagram_content_publish: ACCORDÉE  
+✅ Webhook logicamp: Traité avec succès
+```
+
+### RÉSULTAT ATTENDU
+- ✅ **Vidéos Facebook Logicamp**: Publications autorisées avec nouveau token
+- ✅ **Vidéos Instagram Logicamp**: Permissions Instagram disponibles
+- ✅ **Plus d'erreur (#100)**: Token avec permissions complètes
+- ✅ **Store logicamp 100% fonctionnel**: Publications Facebook + Instagram opérationnelles
+
+### NOTE TECHNIQUE
+Le nouveau token a été fourni avec toutes les permissions Meta Business requises, incluant spécifiquement `publish_video` qui était la permission manquante causant l'erreur (#100). Le PATCH 60 (protection get_store_config) garantit que ce token sera toujours utilisé pour logicamp.
+
 ## ✅ VALIDATION SESSION #3 - Focus Logicamp Réussi (1 crédit)
 
 ### Tests Effectués Logicamp:
