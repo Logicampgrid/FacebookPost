@@ -1,9 +1,9 @@
 # 📋 Progress - NOUVELLE SESSION #2 - Validation & Tests Finaux
 
 ## 🔄 SESSION ACTUELLE #2 (10 crédits disponibles)
-- ⚡ Crédits utilisés: 1/10
+- ⚡ Crédits utilisés: 2/10
 - 📅 Date: Session nouvelle après PATCH 60
-- 🎯 Objectif: Valider que tous les PATCH fonctionnent + Tests finaux
+- 🎯 Objectif: Valider que tous les PATCH fonctionnent + Tests finaux + Guide Windows
 
 ## ✅ VALIDATION SESSION #2 - Tests Complets Réussis (1 crédit)
 
