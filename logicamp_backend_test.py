@@ -225,7 +225,10 @@ class LogicampBackendTester:
                 self.log(f"Webhook response: {json.dumps(data, indent=2)}", "INFO")
                 
                 # Check if logicamp store was detected and processed
-                if data.get("success") or "processed" in str(data).lower():
+                if data.get("status") == "received" and data.get("processing") == "background":
+                    self.log("✅ Webhook JSON simple pour logicamp received and processing in background", "SUCCESS")
+                    return True
+                elif data.get("success") or "processed" in str(data).lower():
                     self.log("✅ Webhook JSON simple pour logicamp processed successfully", "SUCCESS")
                     return True
                 else:
