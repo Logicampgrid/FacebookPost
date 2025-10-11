@@ -535,9 +535,9 @@ OU (si erreur)
 - ✅ **PATCH 51+52 VALIDÉS**: Fonctionnels selon logs temps réel
 
 ## ⚡ SESSION ACTUELLE #2 - Crédits Disponibles
-- 💰 **Crédits restants: 9/10** (1 crédit utilisé pour validation complète)
-- 🎯 **Objectif**: Validation finale et tests complets ✅ ACCOMPLI
-- 📝 **Plan**: Tester tous les PATCH + documenter résultats finaux ✅ TERMINÉ
+- 💰 **Crédits restants: 8/10** (2 crédits utilisés: 1 validation + 1 guide Windows)
+- 🎯 **Objectif**: Validation finale + Guide application Windows ✅ ACCOMPLI
+- 📝 **Plan**: Tester tous les PATCH + Guide Windows complet ✅ TERMINÉ
 
 ### 📄 Documents Créés:
 - `/app/test_patch60_validation.py` - Script validation PATCH 60
