@@ -3808,7 +3808,9 @@ async def setup_logicamp_instagram():
         user_id = None
         
         # Chercher dans les tokens stockés
-        users_collection = db["users"]
+        from database import get_database
+        db_instance = get_database()
+        users_collection = db_instance["users"]
         users = await users_collection.find({}).to_list(length=None)
         
         for user in users:
