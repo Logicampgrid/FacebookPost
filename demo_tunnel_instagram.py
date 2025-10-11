@@ -12,7 +12,7 @@ from PIL import Image
 from datetime import datetime
 
 API_BASE = "http://localhost:8001"
-WEBHOOK_URL = "https://prompt-wizard-156.preview.emergentagent.com/api/webhook"
+WEBHOOK_URL = "https://ai-code-helper-4.preview.emergentagent.com/api/webhook"
 
 def create_demo_image():
     """Crée une image de démonstration pour le test"""

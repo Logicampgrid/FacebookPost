@@ -155,7 +155,7 @@ elif store == "logicamp" and dynamic_config.get("access_token"):
 ✅ FB_PAGE_ID_LOGICAMP: 174450429258625
 ✅ IG_USER_ID_LOGICAMP: 17841461492706552
 ✅ MONGO_URL: mongodb://localhost:27017/facebook_publisher
-✅ WEBHOOK_URL: https://prompt-wizard-156.preview.emergentagent.com
+✅ WEBHOOK_URL: https://ai-code-helper-4.preview.emergentagent.com
 ```
 
 ### Configuration STORES
@@ -173,7 +173,7 @@ STORES["logicamp"] = {
 ✅ Backend (FastAPI): http://localhost:8001 (RUNNING pid 976)
 ✅ Frontend (React): http://localhost:3000 (RUNNING pid 977)
 ✅ MongoDB: mongodb://localhost:27017 (RUNNING pid 36)
-✅ URL Publique: https://prompt-wizard-156.preview.emergentagent.com
+✅ URL Publique: https://ai-code-helper-4.preview.emergentagent.com
 ```
 
 ---

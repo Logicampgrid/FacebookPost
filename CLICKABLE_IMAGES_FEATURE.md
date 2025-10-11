@@ -114,7 +114,7 @@ cd /app && python test_clickable_images.py
 ```
 
 ### **Test Manuel**
-1. **Connectez-vous** : https://prompt-wizard-156.preview.emergentagent.com
+1. **Connectez-vous** : https://ai-code-helper-4.preview.emergentagent.com
 2. **Créez un post** avec une image + un lien
 3. **Vérifiez l'indicateur** 🎯 "Images cliquables activées"
 4. **Publiez** le post

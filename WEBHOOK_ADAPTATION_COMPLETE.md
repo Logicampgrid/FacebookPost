@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://prompt-wizard-156.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://prompt-wizard-156.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://prompt-wizard-156.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://prompt-wizard-156.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://ai-code-helper-4.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

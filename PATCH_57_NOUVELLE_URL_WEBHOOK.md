@@ -15,7 +15,7 @@ Le système utilise maintenant l'URL Emergent stable et active.
 Dans votre workflow N8N, remplacez l'ancienne URL webhook par:
 
 ```
-https://prompt-wizard-156.preview.emergentagent.com/api/webhook
+https://ai-code-helper-4.preview.emergentagent.com/api/webhook
 ```
 
 **Comment faire:**
@@ -41,7 +41,7 @@ https://prompt-wizard-156.preview.emergentagent.com/api/webhook
 Pour tester que le webhook fonctionne:
 
 ```bash
-curl -X POST "https://prompt-wizard-156.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://ai-code-helper-4.preview.emergentagent.com/api/webhook" \
   -H "Content-Type: application/json" \
   -d '{"store":"gizmobbs","title":"Test","description":"Test webhook"}'
 ```
@@ -57,10 +57,10 @@ curl -X POST "https://prompt-wizard-156.preview.emergentagent.com/api/webhook" \
 
 | Élément | URL Active |
 |---------|-----------|
-| **Webhook N8N** | `https://prompt-wizard-156.preview.emergentagent.com/api/webhook` |
-| **Backend API** | `https://prompt-wizard-156.preview.emergentagent.com/api` |
-| **OAuth Facebook** | `https://prompt-wizard-156.preview.emergentagent.com/auth/callback` |
-| **Health Check** | `https://prompt-wizard-156.preview.emergentagent.com/api/health` |
+| **Webhook N8N** | `https://ai-code-helper-4.preview.emergentagent.com/api/webhook` |
+| **Backend API** | `https://ai-code-helper-4.preview.emergentagent.com/api` |
+| **OAuth Facebook** | `https://ai-code-helper-4.preview.emergentagent.com/auth/callback` |
+| **Health Check** | `https://ai-code-helper-4.preview.emergentagent.com/api/health` |
 
 ---
 
