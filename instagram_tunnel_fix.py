@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://emergent-boost-1.preview.emergentagent.com"
+BACKEND_URL = "https://smart-prompt-5.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""
