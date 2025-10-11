@@ -405,8 +405,8 @@ class LogicampBackendTester:
 
 def main():
     """Main test execution"""
-    # Get backend URL from environment
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://social-media-sync.preview.emergentagent.com')
+    # Use local backend URL for testing
+    backend_url = 'http://localhost:8001'
     
     print(f"🚀 Logicamp Store Backend Testing")
     print(f"📡 Backend URL: {backend_url}")
