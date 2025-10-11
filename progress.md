@@ -1,9 +1,9 @@
 # 📋 Progress - NOUVELLE SESSION #2 - Validation & Tests Finaux
 
 ## 🔄 SESSION ACTUELLE #3 (10 crédits disponibles) 
-- ⚡ Crédits utilisés: 1/10
+- ⚡ Crédits utilisés: 2/10
 - 📅 Date: Session focus Logicamp uniquement
-- 🎯 Objectif: Vérifier et maintenir publications Facebook/Instagram Logicamp ✅ VALIDÉ
+- 🎯 Objectif: Corriger permissions vidéo Facebook pour logicamp ✅ RÉSOLU
 
 ## ✅ VALIDATION SESSION #3 - Focus Logicamp Réussi (1 crédit)
 
