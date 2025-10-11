@@ -1,73 +1,79 @@
 <analysis>
-The previous AI engineer successfully initiated the environment, confirmed the application's functionality for image and Instagram video posts, and identified two critical issues. The primary focus of the previous agent was a No permission to publish the video error for Facebook video posts from the logicamp store, despite an apparent fix (PATCH 58) involving . A secondary, recent issue emerged: N8N processing halting after 4-5 items.
+The provided trajectory consists of the initial system prompt and a detailed  that contains extensive log output from a previous session. The core task defined by the user is to address an issue with gage Faceboo Logicamp et la page instagram logicamp.org, focusing on  and strictly adhering to credit limits and incremental patches. The logs reveal a Meta Publishing Platform managing social media posts (images and videos) to Facebook and Instagram for different stores (outdoor, logicantiq, gizmobbs, logicamp).
 
-The engineer's approach to the Facebook video issue involved a systematic code tracing: first verifying the presence of PATCH 58 in , then confirming the  in , and finally examining the  function. This led to the discovery that  uses , prompting an investigation into how  is populated via  at the point of publication. The immediate next step is to inspect .
+The previous AI engineer successfully set up the backend (FastAPI, MongoDB) and frontend (React) environment, including ngrok for external access and automated Facebook OAuth configuration. FTP uploads to  were a recurring step. Image publications to Facebook and Instagram consistently succeeded. However, repeated attempts to publish *videos* to Facebook, particularly for the 'logicamp' and 'gizmobbs' stores, consistently resulted in  errors, while Instagram video publishing seemed to eventually succeed after processing. The  module was noted as missing, disabling deferred cleanup. The current work revolves around resolving the persistent Facebook video publishing permission issue.
 </analysis>
 
 <product_requirements>
-The core product is a Meta Publishing Platform designed to automatically post content (images and videos) to Facebook and Instagram. It integrates with N8N for triggering publications via a webhook endpoint. Key features include:
-- Automatic detection and synchronization of ngrok URL for external access.
-- FTP management for media uploads to a WordPress-based media server (e.g., ).
-- Support for multiple stores (e.g., outdoor, logicantiq, gizmobbs, logicamp), each with specific Facebook Page IDs and Instagram Business Account IDs.
-- Handling of multipart form data for webhook requests, supporting  and file uploads.
-- Auto-generation of post messages from product titles.
-- Prioritization logic for webhook data processing.
-- Asynchronous processing of N8N publications using separate threads.
-- OAuth configuration for Facebook, including dynamic update of redirect URIs.
-- MongoDB integration for data persistence.
+The primary product is a Meta Publishing Platform designed to automatically post content (images and videos) to Facebook and Instagram for various stores (e.g., Logicamp, LogicAntiq, Gizmo BBS, Logicamp Outdoor). The system needs to:
+1.  **Read :** The user explicitly requests to always start by reading this file to understand previous work and remaining tasks.
+2.  **Save progress:** Systematically save advancement and remaining steps in  after each patch.
+3.  **Credit management:** Operate within a strict limit of 10 credits per session, stopping and notifying the user if approaching the limit.
+4.  **Incremental development:** Work patch by patch, avoiding unnecessary code rewrites.
+5.  **Address Facebook/Instagram issues:** Specifically, resolve a problem with gage Faceboo Logicamp et la page instagram logicamp.org (Facebook Logicamp and Instagram Logicamp.org pages), focusing modifications on  if possible.
 
-Current issues that need resolution:
-1.  **Facebook Video Publishing Error (Logicamp)**: Despite PATCH 58 (which intended to use ), Facebook video posts for the logicamp store are failing with a No permission to publish the video (HTTP 400, code 100) error. This indicates a potential issue with the access token usage or permissions.
-2.  **N8N Processing Halt**: N8N workflows are reported to stop processing after 4-5 items, suggesting a regression in the N8N handling, potentially related to PATCH 53/55 which aimed to resolve similar issues.
+The logs indicate the platform handles:
+-   Receiving multipart form-data webhooks containing product information (store, title, description, URL) and media (images/videos).
+-   Saving media locally and uploading it to an FTP server ().
+-   Generating messages from product titles.
+-   Publishing content to configured Facebook pages and Instagram accounts, with specific optimizations for accounts like .
 </product_requirements>
 
 <key_technical_concepts>
-- **FastAPI**: Python backend framework for API services.
-- **React**: JavaScript library for building user interfaces (frontend).
-- **MongoDB**: NoSQL database for data storage.
-- **Ngrok**: Tunneling service to expose local servers to the internet.
-- **N8N**: Workflow automation tool, used here to trigger social media posts.
-- **FTP**: File Transfer Protocol for uploading media files.
-- **Facebook Graph API**: API for interacting with Facebook pages and posts.
-- **Instagram Graph API**: API for interacting with Instagram business accounts and posts.
-- **Supervisor**: Process control system for managing application processes.
-- **Asynchronous Programming**: Python's  for non-blocking operations.
+-   **Full-stack application:** React frontend, FastAPI backend, MongoDB database.
+-   **Deployment & Networking:** Kubernetes container, ngrok for external access, Supervisor for process management.
+-   **Social Media Integration:** Facebook Graph API, Instagram API (for publishing).
+-   **File Management:** FTP for media uploads ().
+-   **Asynchronous Processing:** Thread separation for N8N publication.
+-   **Environment Configuration:**  files, environment variables (, ).
 </key_technical_concepts>
 
 <code_architecture>
+The application follows a standard full-stack structure:
 
 
-- ****: This is the main FastAPI application file.
-    -   **Summary of why important**: Contains all backend API endpoints, business logic for social media posting (Facebook, Instagram), FTP interactions, N8N webhook processing, and MongoDB integration. It defines store configurations, publishing functions (, ), and media handling.
-    -   **Summary of changes/focus**:
-        -   **PATCH 58 (lines 234-236)**: Modified the logicamp store configuration to use  for  when publishing to Facebook.
-        -   ** function (around line 6347)**: Identified to be using .
-        -   **N8N webhook handling (around line 4600)**: Contains the logic that retrieves  via .
-- ****:
-    -   **Summary of why important**: Stores sensitive environment variables like  and .
-    -   **Summary of changes/focus**: Confirmed  is present and has a value.
-- ****:
-    -   **Summary of why important**: Stores the  which is dynamically updated by ngrok.
-- ****:
-    -   **Summary of why important**: Tracks the development progress, listing applied patches and the current state of the application. The previous AI engineer's work included several patches (58, 56, 55, 54, 53, 51+52) addressing various aspects like video timeouts, MongoDB async, FTP uploads, and Facebook permissions.
+
+Detailed Directory structure and important files:
+-   : Python-based FastAPI backend.
+    -   : Lists Python dependencies.
+    -   : The main FastAPI application file, handling API endpoints, database interactions (MongoDB), FTP media uploads, Facebook OAuth configuration updates, and social media publishing logic. This file is crucial as it contains the core business logic for processing webhooks and interacting with external APIs.
+    -   : Stores backend environment variables, specifically .
+-   : React-based frontend.
+    -   : Manages Node.js dependencies and scripts.
+    -   : Tailwind CSS configuration.
+    -   : PostCSS configuration.
+    -   : Stores frontend environment variables, notably .
+    -   : Static assets.
+    -   : React source code.
+        -   : Frontend entry point.
+        -   : Main React component.
+        -   : Component-specific styles.
+        -   : Global styles.
+
+The logs mention various PATCH numbers (e.g., PATCH 19, 25, 30, 33, 34, 35, 38, 40, 49, 50, 51, 52, 55, 56) indicating incremental changes made by the previous engineer, mostly within  related to webhook processing, media handling (FTP upload, direct download for social media), and social media API calls. The  (FTP Manager) and  (Publisher) components are active parts of the backend's functionality.
 </code_architecture>
 
 <pending_tasks>
-- Investigate why PATCH 58 did not resolve the No permission to publish the video error for Facebook video posts from the logicamp store.
-- Address the regression where N8N processing stops after 4-5 items.
+-   **Install  module:** The  module is noted as non disponible (not available), disabling deferred cleanup and requiring manual file cleanup in .
+-   **Resolve Facebook video permission errors:** Repeated  errors for Facebook video posts need investigation and resolution.
 </pending_tasks>
 
 <current_work>
-The immediate work being done is troubleshooting the Facebook video publishing issue for the logicamp store. The previous AI engineer has systematically traced the code path for this issue:
-1.  Confirmed that  in  (lines 234-236) correctly sets  to  for the logicamp store.
-    
-2.  Verified that  is defined in  with a valid-looking value.
-3.  Inspected the  function in  (around line 6347) and noted that it correctly attempts to retrieve the access token using .
-4.  Identified that the  object is obtained via a call to  in the N8N webhook processing logic (around  line 4613).
+The system is a Meta Publishing Platform that automates social media posts. The application has successfully:
+-   Initialized the FastAPI backend and React frontend.
+-   Connected to MongoDB.
+-   Dynamically configured ngrok URLs for external access and updated Facebook OAuth settings.
+-   Processed incoming webhooks for various stores (outdoor, logicantiq, gizmobbs, logicamp) containing product data and media files (images/videos).
+-   Saved media files and uploaded them to an FTP server ().
+-   Successfully published **images** to both Facebook and Instagram for all stores.
+-   Successfully published **videos** to Instagram for stores like  and  after container processing.
 
-The current state is that the  function is expected to receive the correct , but the error persists, indicating a potential issue in how  retrieves or processes the store configuration, or a deeper permission problem on Facebook's side not directly related to the token value itself.
+However, a critical issue persists:
+-   **Facebook video publishing failures:** Multiple attempts to publish videos to Facebook (for 'logicamp' and 'gizmobbs' stores) consistently fail with the error: . This indicates a permission misconfiguration or a limitation with the Facebook API for the connected page/account. This issue is specific to Facebook video uploads, while images and Instagram videos are working.
+The previous engineer attempted to upload videos directly to Facebook via  endpoint (PATCH 9) after downloading them from the FTP, but this consistently resulted in the permission error.
 </current_work>
 
 <optional_next_step>
-Investigate the  function to ensure it retrieves the correct configuration, especially the .
+Investigate and resolve the Facebook API permission error  for video uploads.
 </optional_next_step>
+

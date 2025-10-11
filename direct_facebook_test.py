@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://smart-prompt-5.preview.emergentagent.com"
+    base_url = "https://prompt-wizard-156.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     

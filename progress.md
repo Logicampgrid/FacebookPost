@@ -57,7 +57,7 @@
 - ✅ Backend: RUNNING (pid 976) - Port 8001
 - ✅ Frontend: RUNNING (pid 977) - Port 3000
 - ✅ MongoDB: RUNNING (pid 36)
-- ✅ URL publique: https://smart-prompt-5.preview.emergentagent.com
+- ✅ URL publique: https://prompt-wizard-156.preview.emergentagent.com
 
 ## 📋 RÉSUMÉ SESSION PRÉCÉDENTE (8 crédits utilisés)
 
@@ -235,7 +235,7 @@ Le FACEBOOK_DIRECT_TOKEN fournit ces permissions complètes.
 - ❌ **Problème**: N8N utilise URL ngrok obsolète `https://ceba33970344.ngrok-free.app` qui ne répond plus
 - ❌ **Cause**: Ngrok n'est pas disponible dans l'environnement Emergent (conteneurisé)
 - ❌ **Conséquence**: Aucune vidéo n'est postée car N8N ne peut pas atteindre le webhook
-- ✅ **Solution**: Utiliser l'URL Emergent `https://smart-prompt-5.preview.emergentagent.com`
+- ✅ **Solution**: Utiliser l'URL Emergent `https://prompt-wizard-156.preview.emergentagent.com`
 
 ### CORRECTIONS APPLIQUÉES
 - [x] **URL Emergent configurée**: Tous les fichiers .env et configs mis à jour
@@ -247,7 +247,7 @@ Le FACEBOOK_DIRECT_TOKEN fournit ces permissions complètes.
 ### URL ACTIVE POUR N8N
 **⚠️ IMPORTANT**: Mettre à jour N8N avec cette nouvelle URL:
 ```
-https://smart-prompt-5.preview.emergentagent.com/api/webhook
+https://prompt-wizard-156.preview.emergentagent.com/api/webhook
 ```
 
 ### AVANT vs APRÈS
@@ -260,7 +260,7 @@ N8N → https://ceba33970344.ngrok-free.app/api/webhook
 
 **APRÈS (URL Emergent active):**
 ```
-N8N → https://smart-prompt-5.preview.emergentagent.com/api/webhook
+N8N → https://prompt-wizard-156.preview.emergentagent.com/api/webhook
 ✅ Webhook répond: {"status":"received","processing":"background","patch":45}
 ✅ Vidéos traitées et postées
 ```
@@ -273,7 +273,7 @@ N8N → https://smart-prompt-5.preview.emergentagent.com/api/webhook
 
 ### NOTE IMPORTANTE
 Dans l'environnement Emergent, ngrok n'est pas disponible. L'URL Emergent 
-`https://smart-prompt-5.preview.emergentagent.com` est l'URL publique stable 
+`https://prompt-wizard-156.preview.emergentagent.com` est l'URL publique stable 
 à utiliser pour tous les webhooks et redirections OAuth.
 
 ## ✅ PATCH 56 - AUGMENTATION TIMEOUT VIDÉO INSTAGRAM (1 crédit)
@@ -1400,7 +1400,7 @@ GET /api/stores/logicamp/setup-instagram
 **🎯 PROBLÈME RÉSOLU**: Le système utilisait l'URL Emergent au lieu de l'URL ngrok réelle pour les publications
 
 **Problème identifié** :
-- ❌ **URL incorrecte** : `https://smart-prompt-5.preview.emergentagent.com` utilisée pour les images
+- ❌ **URL incorrecte** : `https://prompt-wizard-156.preview.emergentagent.com` utilisée pour les images
 - ❌ **URL inaccessible** : Les serveurs Facebook/Instagram ne peuvent pas accéder à l'URL Emergent
 - ❌ **Priorité incorrecte** : Frontend .env privilégié sur l'URL ngrok réelle
 - ❌ **Erreur Instagram 9004** : "Only photo or video can be accepted" à cause de l'URL inaccessible
@@ -1570,7 +1570,7 @@ GET /api/stores/logicamp/setup-instagram
 
 **Test de validation réussi** :
 - ✅ **URL locale détectée** : `uploads\test_patch17.jpg` → Instagram n'a plus d'erreur de chemins locaux
-- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://smart-prompt-5.preview.emergentagent.com/uploads/test_patch17.jpg`
+- ✅ **Conversion automatique** : `uploads\test_patch17.jpg` → `https://prompt-wizard-156.preview.emergentagent.com/uploads/test_patch17.jpg`
 - ✅ **Instagram reçoit URLs HTTPS** : Plus jamais de `uploads\webhook_xxx.png` 
 - ✅ **Redirection fonctionnelle** : Anciennes fonctions → fonction corrigée automatiquement
 
@@ -1666,7 +1666,7 @@ GET /api/stores/logicamp/setup-instagram
 - [x] **publish_to_instagram()** : Logs détaillés "🔍 PATCH 13" pour traçabilité et débogage
 
 **Test de validation réussi** :
-- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://smart-prompt-5.preview.emergentagent.com/uploads/test_patch13.jpg`
+- ✅ Conversion automatique : `uploads\test_patch13.jpg` → `https://prompt-wizard-156.preview.emergentagent.com/uploads/test_patch13.jpg`
 - ✅ URLs déjà publiques préservées : `https://example.com/test.jpg` → `https://example.com/test.jpg`
 - ✅ Logs détaillés : "🔍 PATCH 13: URL reçue par Instagram", "🔍 PATCH 13: Données envoyées à Instagram"
 

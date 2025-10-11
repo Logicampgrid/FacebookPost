@@ -15,7 +15,7 @@ Le système utilise maintenant l'URL Emergent stable et active.
 Dans votre workflow N8N, remplacez l'ancienne URL webhook par:
 
 ```
-https://smart-prompt-5.preview.emergentagent.com/api/webhook
+https://prompt-wizard-156.preview.emergentagent.com/api/webhook
 ```
 
 **Comment faire:**
@@ -41,7 +41,7 @@ https://smart-prompt-5.preview.emergentagent.com/api/webhook
 Pour tester que le webhook fonctionne:
 
 ```bash
-curl -X POST "https://smart-prompt-5.preview.emergentagent.com/api/webhook" \
+curl -X POST "https://prompt-wizard-156.preview.emergentagent.com/api/webhook" \
   -H "Content-Type: application/json" \
   -d '{"store":"gizmobbs","title":"Test","description":"Test webhook"}'
 ```
@@ -57,10 +57,10 @@ curl -X POST "https://smart-prompt-5.preview.emergentagent.com/api/webhook" \
 
 | Élément | URL Active |
 |---------|-----------|
-| **Webhook N8N** | `https://smart-prompt-5.preview.emergentagent.com/api/webhook` |
-| **Backend API** | `https://smart-prompt-5.preview.emergentagent.com/api` |
-| **OAuth Facebook** | `https://smart-prompt-5.preview.emergentagent.com/auth/callback` |
-| **Health Check** | `https://smart-prompt-5.preview.emergentagent.com/api/health` |
+| **Webhook N8N** | `https://prompt-wizard-156.preview.emergentagent.com/api/webhook` |
+| **Backend API** | `https://prompt-wizard-156.preview.emergentagent.com/api` |
+| **OAuth Facebook** | `https://prompt-wizard-156.preview.emergentagent.com/auth/callback` |
+| **Health Check** | `https://prompt-wizard-156.preview.emergentagent.com/api/health` |
 
 ---
 
