@@ -543,7 +543,10 @@ OU (si erreur)
 - `/app/test_patch60_validation.py` - Script validation PATCH 60
 - `/app/test_webhook_patch60.py` - Script test webhook réel
 - `/app/VALIDATION_SESSION2_COMPLETE.md` - Rapport complet de validation
-- `/app/GUIDE_APPLICATION_PATCH_WINDOWS.md` - Guide complet application PATCH sur Windows ✅ NOUVEAU
+- `/app/GUIDE_APPLICATION_PATCH_WINDOWS.md` - Guide complet application PATCH sur Windows ✅
+- `/app/verifier_patch_windows.py` - Script Python vérification automatique PATCH ✅
+- `/app/verifier_patch_windows.bat` - Script Batch Windows vérification PATCH ✅
+- `/app/PATCH_WINDOWS_RESUME_FINAL.md` - Résumé complet procédure Windows ✅
 
 ## 🎉 RÉSOLUTION CONFIRMÉE - SESSION NOUVELLE  
 ✅ **PROBLÈME RÉSOLU**: Les PATCH 51 et 52 fonctionnent parfaitement !
