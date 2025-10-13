@@ -5,6 +5,64 @@
 - 📅 Date: Réactivation stores gizmobbs, logicantiq, outdoor
 - 🎯 Objectif: Tous les stores fonctionnels ✅ RÉSOLU
 
+## ✅ PATCH 62 - CORRECTION ENDPOINT FACEBOOK PUBLICATIONS TEXTE (1 crédit)
+
+### ROOT CAUSE IDENTIFIÉ ET RÉSOLU
+- ❌ **Problème**: Stores gizmobbs, logicantiq, outdoor ne fonctionnaient plus après PATCH 60-61
+- ❌ **Erreur**: "(#324) Requires upload file" pour publications texte sans média
+- ❌ **Cause**: Code utilisait endpoint `/photos` même sans image → Facebook attendait un fichier
+- ✅ **Solution**: Utiliser `/feed` pour texte seul, `/photos` uniquement pour images
+
+### CORRECTIONS APPLIQUÉES (lignes 6419-6479)
+- [x] **Détection type publication**: Vérification présence `media_url` avant choix endpoint
+- [x] **Endpoint /feed pour texte**: Publications sans média utilisent `/feed` (texte/lien)
+- [x] **Endpoint /photos pour images**: Publications avec média utilisent `/photos` (images)
+- [x] **Logs PATCH 62**: Traçabilité complète type publication détecté
+- [x] **Messages explicites**: "Publication texte détectée" vs "Publication image détectée"
+
+### AVANT vs APRÈS
+**AVANT (PATCH 61 - stores cassés):**
+```python
+else:  # Pas vidéo
+    # Toujours /photos même sans image
+    fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"
+    
+# Sans média
+🔄 PATCH 26: Envoi URL à Facebook: N/A
+❌ Erreur Facebook HTTP 400: (#324) Requires upload file
+```
+
+**APRÈS (PATCH 62 - stores réactivés):**
+```python
+else:  # Pas vidéo
+    if media_url:
+        fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"  # Images
+        log_app("📸 PATCH 62: Publication image détectée")
+    else:
+        fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/feed"   # Texte
+        log_app("📝 PATCH 62: Publication texte détectée")
+
+# Sans média
+📝 PATCH 62: Publication texte seul à Facebook (endpoint /feed)
+✅ Publication Facebook réussie: ID 210654558802531_122265564242195124
+```
+
+### RÉSULTAT VALIDÉ
+- ✅ **gizmobbs**: Publication réussie ✅
+- ✅ **logicantiq**: Publication réussie - ID 210654558802531_122265564242195124 ✅
+- ✅ **outdoor**: Publication réussie - ID 236260991673388_824011650144762 ✅
+- ✅ **logicamp**: Continue de fonctionner (PATCH 58-60 préservés) ✅
+- ✅ **Plus d'erreur (#324)**: Endpoint correct selon type contenu ✅
+
+### TESTS EFFECTUÉS
+1. ✅ **Diagnostic complet**: Tous tokens valides, Instagram connecté pour 4 stores
+2. ✅ **Tests publications**: 4 stores testés avec webhooks texte
+3. ✅ **Logs validation**: Publications réussies confirmées dans logs backend
+4. ✅ **Facebook Graph API**: Posts créés avec IDs valides sur 3 stores
+
+### NOTE TECHNIQUE
+Le PATCH 60 protégeait correctement logicamp mais n'avait pas introduit de régression. Le bug existait depuis longtemps : les publications texte (sans média) échouaient car l'endpoint `/photos` était toujours utilisé. Les stores autres que logicamp utilisaient probablement des webhooks avec médias, donc le problème n'apparaissait pas. Dès qu'une publication texte était tentée, l'erreur (#324) survenait pour tous les stores sauf si un média était fourni.
+
 ## ✅ PATCH 61 - NOUVEAU TOKEN FACEBOOK DIRECT POUR LOGICAMP (1 crédit)
 
 ### ROOT CAUSE IDENTIFIÉ ET RÉSOLU
