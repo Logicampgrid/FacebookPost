@@ -6417,8 +6417,16 @@ async def publish_to_facebook(store_config: dict, title: str, url: str, descript
             else:
                 log_app(f"⚠️ PATCH 49: Aucune URL vidéo fournie", "WARNING")
         else:
-            # Pour les images, utiliser l'endpoint photos
-            fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"
+            # PATCH 62: Différencier publications image vs texte
+            if media_url:
+                # Pour les images, utiliser l'endpoint photos
+                fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/photos"
+                log_app(f"📸 PATCH 62: Publication image détectée - endpoint /photos", "INFO")
+            else:
+                # Pour les publications texte seul, utiliser l'endpoint feed
+                fb_url = f"{FACEBOOK_GRAPH_URL}/{fb_page_id}/feed"
+                log_app(f"📝 PATCH 62: Publication texte détectée - endpoint /feed", "INFO")
+            
             data = {
                 "message": message,
                 "access_token": access_token
