@@ -414,7 +414,7 @@ def main():
     """Main test execution"""
     # Get backend URL from environment or use default
     import os
-    backend_url = os.getenv("REACT_APP_BACKEND_URL", "https://ai-code-helper-4.preview.emergentagent.com")
+    backend_url = os.getenv("REACT_APP_BACKEND_URL", "https://code-mentor-pro.preview.emergentagent.com")
     
     print(f"🔧 Backend URL: {backend_url}")
     

@@ -9,7 +9,7 @@ import uuid
 import io
 
 def test_facebook_posting_logic():
-    base_url = "https://ai-code-helper-4.preview.emergentagent.com"
+    base_url = "https://code-mentor-pro.preview.emergentagent.com"
     
     print("🔍 Testing Facebook posting logic directly...")
     

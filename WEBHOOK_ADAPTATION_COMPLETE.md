@@ -41,7 +41,7 @@ return items.map(item => {
 ## 🔧 **Configuration N8N**
 
 ### **HTTP Request Node**
-- **URL**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced`
+- **URL**: `https://code-mentor-pro.preview.emergentagent.com/api/webhook/enhanced`
 - **Method**: `POST`
 - **Body Type**: `Multipart-Form Data`
 - **Fields**:
@@ -80,9 +80,9 @@ sudo supervisorctl status
 
 ## 🔗 **URLs de Production**
 
-- **Webhook Enhanced**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced`
-- **Documentation**: `https://ai-code-helper-4.preview.emergentagent.com/api/webhook/enhanced` (GET)
-- **Interface Web**: `https://ai-code-helper-4.preview.emergentagent.com`
+- **Webhook Enhanced**: `https://code-mentor-pro.preview.emergentagent.com/api/webhook/enhanced`
+- **Documentation**: `https://code-mentor-pro.preview.emergentagent.com/api/webhook/enhanced` (GET)
+- **Interface Web**: `https://code-mentor-pro.preview.emergentagent.com`
 
 ## 📁 **Fichiers Créés**
 

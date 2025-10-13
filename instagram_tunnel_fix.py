@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE = "http://localhost:8001"
-BACKEND_URL = "https://ai-code-helper-4.preview.emergentagent.com"
+BACKEND_URL = "https://code-mentor-pro.preview.emergentagent.com"
 
 def test_connection():
     """Test la connexion au backend"""
